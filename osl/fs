@@ -1,5 +1,5 @@
-#ifndef STORAGE_HPP
-#define STORAGE_HPP
+#ifndef FS_HPP
+#define FS_HPP
 
 #include <windows.h>
 #include <virtdisk.h>
@@ -31,6 +31,30 @@ class DllHelper
 
     HMODULE hDll;
 };
+
+auto GetFileHandle(const std::wstring& file)
+{
+  return CreateFileW(
+    file.c_str(),
+    GENERIC_READ|GENERIC_WRITE,
+    FILE_SHARE_READ|FILE_SHARE_WRITE,
+    NULL,
+    OPEN_EXISTING,
+    FILE_ATTRIBUTE_NORMAL,
+    NULL);
+}
+
+auto GetFileHandle(const std::string& file)
+{
+  return CreateFileA(
+    file.c_str(),
+    GENERIC_READ|GENERIC_WRITE,
+    FILE_SHARE_READ|FILE_SHARE_WRITE,
+    NULL,
+    OPEN_EXISTING,
+    FILE_ATTRIBUTE_NORMAL,
+    NULL);
+}
 
 auto OpenVirtualDisk(const std::wstring& file)
 {

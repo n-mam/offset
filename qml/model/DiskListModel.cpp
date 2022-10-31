@@ -1,3 +1,5 @@
+#include <osl/osl>
+
 #include <DiskListModel.h>
 
 DiskListModel::DiskListModel()

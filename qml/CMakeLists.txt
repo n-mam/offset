@@ -22,5 +22,14 @@ add_executable(
 
 target_include_directories(offset PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/model)
 
-target_link_libraries(offset
-    PRIVATE Qt6::Quick Qt6::QuickControls2 Qt6::Gui)
+target_link_libraries(
+  offset
+  PRIVATE
+  Qt6::Quick
+  Qt6::QuickControls2
+  Qt6::Gui
+  rapidjson
+  OpenSSL::SSL
+  OpenSSL::Crypto
+  Crc32c::crc32c
+)

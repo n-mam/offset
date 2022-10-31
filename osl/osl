@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include <sstream>
+#include <iostream>
 #include <algorithm>
 #include <filesystem>
 
@@ -15,6 +16,9 @@
 #include <rapidjson/writer.h>
 #include <rapidjson/document.h>
 #include <rapidjson/stringbuffer.h>
+
+#include <osl/fs>
+#include <osl/str>
 
 #define _1K    1024
 #define _4K    4096
@@ -143,30 +147,6 @@ auto GetDirectoryList(std::string& dir)
       //file
     }
   }
-}
-
-auto GetFileHandle(const std::wstring& file)
-{
-  return CreateFileW(
-    file.c_str(),
-    GENERIC_READ|GENERIC_WRITE,
-    FILE_SHARE_READ|FILE_SHARE_WRITE,
-    NULL,
-    OPEN_EXISTING,
-    FILE_ATTRIBUTE_NORMAL,
-    NULL);
-}
-
-auto GetFileHandle(const std::string& file)
-{
-  return CreateFileA(
-    file.c_str(),
-    GENERIC_READ|GENERIC_WRITE,
-    FILE_SHARE_READ|FILE_SHARE_WRITE,
-    NULL,
-    OPEN_EXISTING,
-    FILE_ATTRIBUTE_NORMAL,
-    NULL);
 }
 
 auto WideToString(const std::wstring& src)
