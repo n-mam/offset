@@ -1,6 +1,6 @@
-### cpp-npl
+### offset
 
-C++ base offset components library
+C++ base components library
 
 #### Dependencies
 

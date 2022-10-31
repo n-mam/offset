@@ -60,7 +60,7 @@ Rectangle {
       create: rowDelegate.selectable
       visible: model.sizeRole > 0
       x: label.x + label.width + (2 * rowDelegate.padding)
-      width: 200
+      width: 150
       height: rowDelegate.height - (rowDelegate.height * 0.52)
     }
 

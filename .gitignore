@@ -1,4 +1,4 @@
 build
-output
+build.rel
+build.dbg
 .vscode
-vcpkg

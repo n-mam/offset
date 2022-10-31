@@ -29,7 +29,7 @@ Loader {
         id: used
         x: parent.x
         radius: 2
-        width: 200 * ((model.sizeRole - model.freeRole) / model.sizeRole)
+        width: loader.width * ((model.sizeRole - model.freeRole) / model.sizeRole)
         height: parent.height
         color: "lightskyblue"
         anchors.left: parent.left
@@ -43,7 +43,7 @@ Loader {
         id: remaining
         radius: 2
         x: used.x + used.width
-        width: 200 - used.width
+        width: loader.width - used.width
         height: usage.height
         color: "mintcream"
         anchors.right: parent.right

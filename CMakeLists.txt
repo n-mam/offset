@@ -8,21 +8,23 @@ find_package(OpenSSL REQUIRED)
 find_package(RapidJSON CONFIG REQUIRED)
 find_package(Crc32c CONFIG REQUIRED)
 
-add_executable(offset offset.cpp)
+add_subdirectory(qml)
 
-set_property(TARGET offset PROPERTY CXX_STANDARD 17)
+add_executable(Test test.cpp)
+
+set_property(TARGET Test PROPERTY CXX_STANDARD 17)
 
 target_include_directories(
-  offset
+  Test
   PRIVATE
-  ${CMAKE_SOURCE_DIR}/src
-  ${CMAKE_SOURCE_DIR}/src/osl
-  ${CMAKE_SOURCE_DIR}/src/npl
-  ${CMAKE_SOURCE_DIR}/src/fxc
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/osl
+  ${CMAKE_SOURCE_DIR}/npl
+  ${CMAKE_SOURCE_DIR}/fxc
 )
 
 target_link_libraries(
-  offset
+  Test
   rapidjson
   OpenSSL::SSL
   OpenSSL::Crypto
@@ -30,5 +32,5 @@ target_link_libraries(
 )
 
 if (WIN32)
-target_link_libraries(offset Ws2_32.lib VssApi.lib)
+  target_link_libraries(Test Ws2_32.lib VssApi.lib)
 endif(WIN32)
