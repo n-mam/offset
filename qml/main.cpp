@@ -26,7 +26,7 @@ int main(int argc, char *argv[])
 
   engine.load(url);
 
-  QFont font("Consolas", 11);
+  QFont font("Consolas", 10);
   app.setFont(font);
 
   return app.exec();

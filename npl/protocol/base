@@ -75,7 +75,7 @@ class Protocol : public Subject<T1, T2>
 
   Protocol(){};
 
-  Protocol(const std::string& name) : Subject(name) {}
+  Protocol(const std::string& name) : Subject<T1, T2>(name) {}
 
   virtual ~Protocol() {}
 

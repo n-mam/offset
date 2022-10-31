@@ -47,9 +47,7 @@ auto InitializeCOM(void) -> HRESULT
 { 
   if (bCOMInitialized) return S_OK;
 
-  HRESULT hr;
-
-  CHKCOM(hr = CoInitialize(NULL))
+  HRESULT hr = CoInitialize(NULL);
 
   CHKCOM(hr = CoInitializeSecurity(
       NULL,
@@ -123,6 +121,7 @@ auto CreateSnapshot(const std::vector<std::wstring>& volumes, ss::TSnapshotCBK c
   HRESULT hr = 0;
   HRESULT qhr = 0;
   TSnapshotSet ss;
+  VSS_ID m_snap[64] = { 0 };
   IVssAsync *pAS = nullptr;
   IVssBackupComponents *pBC = nullptr;
 
@@ -145,8 +144,6 @@ auto CreateSnapshot(const std::vector<std::wstring>& volumes, ss::TSnapshotCBK c
   VSS_ID m_set;
 
   CHKCOM(hr = pBC->StartSnapshotSet(&m_set))
-
-  VSS_ID m_snap[64] = { 0 };
 
   for (int i = 0; i < volumes.size(); i++)
   {
@@ -201,6 +198,53 @@ auto CreateSnapshot(const std::vector<std::wstring>& volumes, ss::TSnapshotCBK c
   if (pBC) pBC->Release();
 
   return (hr == S_OK && qhr == VSS_S_ASYNC_FINISHED);
+}
+
+auto EnumerateSnapshots()
+{
+  HRESULT hr;
+  VSS_OBJECT_PROP Prop;
+  std::vector<std::tuple<std::wstring, std::wstring>> ss;
+
+  fxc::ss::InitializeCOM();
+
+  IVssEnumObject *pIEnumSnapshots = nullptr;
+
+  IVssBackupComponents *pBC = nullptr;
+
+  CHKCOM(hr = InitializeBackupComponent(&pBC, false, nullptr))
+
+  CHKCOM(hr = pBC->SetContext(VSS_CTX_ALL))
+
+  CHKCOM(hr = pBC->SetBackupState(FALSE, TRUE, VSS_BT_FULL, FALSE))
+
+  CHKCOM(hr = pBC->Query(
+      GUID_NULL, 
+      VSS_OBJECT_NONE, 
+      VSS_OBJECT_SNAPSHOT,
+      &pIEnumSnapshots))
+  
+  while(true)
+  {
+    ULONG ulFetched;
+    VSS_SNAPSHOT_PROP& Snap = Prop.Obj.Snap;
+
+    hr = pIEnumSnapshots->Next(1, &Prop, &ulFetched);
+
+    if (ulFetched == 0)
+      break;
+
+    ss.push_back({
+      Snap.m_pwszSnapshotDeviceObject,
+      Snap.m_pwszOriginalVolumeName
+    });
+
+    VssFreeSnapshotProperties(&Snap);
+  }
+
+  _end:
+
+  return ss;
 }
 
 } //namespace fxc::ss

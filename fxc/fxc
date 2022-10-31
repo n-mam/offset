@@ -51,7 +51,8 @@ auto RecoverVirtualImageToPhysicalVolume(const std::wstring& source, const std::
   if (fRet == FALSE)
   {
     std::cout << "LockAndDismountVolume failed\n";
-    goto _end;
+    osl::UnlockVolume(hTarget);
+    return false;
   }
 
   uint64_t nDone = 0;
@@ -94,13 +95,6 @@ auto RecoverVirtualImageToPhysicalVolume(const std::wstring& source, const std::
 
   std::cout << "nTotal : " << nTotal << "\n";
 
-  _end:
-
-  if (hTarget != INVALID_HANDLE_VALUE)
-  {
-    osl::UnlockVolume(hTarget);
-  }
-
   return fRet;
 }
 
@@ -110,7 +104,9 @@ auto RecoverVolumeToVolume(const std::wstring& source, const std::wstring& targe
   std::unique_ptr<uint8_t[]> _buf;
   HANDLE hSource = INVALID_HANDLE_VALUE;
   HANDLE hTarget = INVALID_HANDLE_VALUE;
-
+  DWORD dwBytesWritten = 0;
+  DWORD lpNumberOfBytesRead = 0;
+  
   hSource = osl::GetVolumeHandle(source.c_str());
 
   if (hSource == INVALID_HANDLE_VALUE)
@@ -152,9 +148,6 @@ auto RecoverVolumeToVolume(const std::wstring& source, const std::wstring& targe
   }
 
   _buf = std::make_unique<uint8_t []>(_1M);
-
-  DWORD dwBytesWritten = 0;
-  DWORD lpNumberOfBytesRead = 0;
 
   do
   {
@@ -251,6 +244,8 @@ auto MountVirtualDiskAsVolume(const std::wstring& image)
 
 auto TestSnapshot(std::vector<std::wstring> volumes)
 {
+  fxc::ss::EnumerateSnapshots();
+  
   std::vector<std::wstring> supported, unsupported;
 
   for (const auto& volume : volumes)

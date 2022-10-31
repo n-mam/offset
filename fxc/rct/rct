@@ -111,7 +111,7 @@ auto ResilientChangeTrackingToDataBlockIO(const std::wstring& source, const std:
 {
   std::map<uint64_t, std::vector<DataBlockIO>> dbiomap;
 
-  auto& [ranges, count] = GetRCTRanges(source, rctid);
+  auto [ranges, count] = GetRCTRanges(source, rctid);
 
   for (ULONG i = 0; i < count; i++)
   {

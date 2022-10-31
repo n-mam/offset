@@ -2,9 +2,6 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
 find_package(Qt6 REQUIRED COMPONENTS Quick QuickControls2 Gui)
 
 qt6_add_resources(QT_RESOURCES 
@@ -20,6 +17,8 @@ add_executable(
   ${QT_RESOURCES}
 )
 
+set_property(TARGET offset PROPERTY CXX_STANDARD 17)
+
 target_include_directories(offset PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/model)
 
 target_link_libraries(
@@ -33,3 +32,7 @@ target_link_libraries(
   OpenSSL::Crypto
   Crc32c::crc32c
 )
+
+if (WIN32)
+  target_link_libraries(offset PRIVATE Ws2_32.lib VssApi.lib)
+endif(WIN32)

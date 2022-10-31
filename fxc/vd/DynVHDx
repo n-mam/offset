@@ -296,7 +296,7 @@ class CDynamicVHDx : public CBaseDisk
 
       for (uint32_t i = 1; i <= rt_header->EntryCount; i++)
       {
-        char *region_type = "Unknown Region";
+        auto region_type = "Unknown Region";
         
         if (rt_entry->Guid.Data1 == 0x8B7CA206 &&
             rt_entry->Guid.Data2 == 0x4790 &&
@@ -345,7 +345,7 @@ class CDynamicVHDx : public CBaseDisk
 
       for (uint32_t i = 1; i <= rt_header->EntryCount; i++)
       {
-        char *region_type = "Unknown Region";
+        auto region_type = "Unknown Region";
 
         if (rt_entry->Guid.Data1 == 0x8B7CA206 &&
             rt_entry->Guid.Data2 == 0x4790 &&
@@ -389,7 +389,7 @@ class CDynamicVHDx : public CBaseDisk
 
       for (int i = 0; i < metadata_table_hdr->EntryCount; i++)
       {
-        char *entry_type = "Unknown Metadata Table Entry";
+        auto entry_type = "Unknown Metadata Table Entry";
 
         if (mdt_entry->ItemId.Data1 == 0xCAA16737) {
           entry_type = "File Parameters";

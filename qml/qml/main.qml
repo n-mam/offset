@@ -44,7 +44,7 @@ ApplicationWindow {
       border.color: "#a7c497"
       TextField {
         id: destination
-        width: (parent.width * 0.70) - (3 * mainColumn.padding)
+        width: (parent.width * 0.70) - (2 * mainColumn.padding)
         anchors.left: parent.left
         anchors.margins: 10
         placeholderText: qsTr("Destination")

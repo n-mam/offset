@@ -34,7 +34,9 @@ Loader {
         color: "lightskyblue"
         anchors.left: parent.left
         Text {
-          text: model.sizeRole - model.freeRole
+          text: (model.sizeRole - model.freeRole) > 1 ? 
+                  (model.sizeRole - model.freeRole).toFixed(1) + "G" :
+                  ((model.sizeRole - model.freeRole) * 1024).toFixed(1) + "M"
           anchors.horizontalCenter: used.horizontalCenter
           anchors.verticalCenter: used.verticalCenter
         }
@@ -48,7 +50,9 @@ Loader {
         color: "mintcream"
         anchors.right: parent.right
         Text {
-          text: model.freeRole
+          text: model.freeRole > 1 ? 
+                  model.freeRole.toFixed(1) + "G":
+                  (model.freeRole * 1024).toFixed(1) + "M"
           anchors.horizontalCenter: remaining.horizontalCenter
           anchors.verticalCenter: remaining.verticalCenter
         }
