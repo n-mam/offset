@@ -15,7 +15,12 @@ DiskListModel::DiskListModel()
 
   for (const auto& names : volumes)
   {
-    QString label = QString::fromStdString(names[names.size() - 1]);
+    QString label;
+
+    if (names.size() == 2)
+      label += " [" + QString::fromStdString(names.back()) + "]";
+    else 
+      label += "      ";
 
     int children = 0;
 
@@ -45,18 +50,18 @@ DiskListModel::DiskListModel()
         auto tokens = osl::wsplit(std::get<0>(ss), L"GLOBALROOT\\Device\\");
         auto childlabel = QString::fromWCharArray((tokens[0] + tokens[1]).c_str());
         m_model.push_back(std::make_shared<BlockDevice>(childlabel, 1, 0, true));
-      } 
+      }
     }
   }
-//   m_model.push_back(std::make_shared<BlockDevice>("PhysicalDrive0", 0, 2));
-//   m_model.push_back(std::make_shared<BlockDevice>("C:\\", 1, 1, true, 300, 100));
-//   m_model.push_back(std::make_shared<BlockDevice>("\\\\?\\HarddiskVolumeShadowCopy2", 2, 0, true, 300, 50));  
-//   m_model.push_back(std::make_shared<BlockDevice>("C:\\mount_point\\1", 1, 0, true, 500, 125));
-//   m_model.push_back(std::make_shared<BlockDevice>("PhysicalDrive1", 0, 1));
-//   m_model.push_back(std::make_shared<BlockDevice>("E:\\", 1, 0, true));
-//   m_model.push_back(std::make_shared<BlockDevice>("PhysicalDrive2", 0, 2));
-//   m_model.push_back(std::make_shared<BlockDevice>("F:\\", 1, 0, true));
-//   m_model.push_back(std::make_shared<BlockDevice>("G:\\", 1, 0, true));
+  // m_model.push_back(std::make_shared<BlockDevice>("PhysicalDrive0", 0, 2));
+  // m_model.push_back(std::make_shared<BlockDevice>("C:\\", 1, 1, true, 300, 100));
+  // m_model.push_back(std::make_shared<BlockDevice>("\\\\?\\HarddiskVolumeShadowCopy2", 2, 0, true, 300, 50));  
+  // m_model.push_back(std::make_shared<BlockDevice>("C:\\mount_point\\1", 1, 0, true, 500, 125));
+  // m_model.push_back(std::make_shared<BlockDevice>("PhysicalDrive1", 0, 1));
+  // m_model.push_back(std::make_shared<BlockDevice>("E:\\", 1, 0, true));
+  // m_model.push_back(std::make_shared<BlockDevice>("PhysicalDrive2", 0, 2));
+  // m_model.push_back(std::make_shared<BlockDevice>("F:\\", 1, 0, true));
+  // m_model.push_back(std::make_shared<BlockDevice>("G:\\", 1, 0, true));
 }
 
 DiskListModel::~DiskListModel()

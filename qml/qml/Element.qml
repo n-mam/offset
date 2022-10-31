@@ -22,6 +22,10 @@ Loader {
     }
   }
 
+  function percent(one, two) {
+    return (one/(one + two)) * 100
+  }
+
   Component {
     id: usageComponent
     Rectangle {
@@ -41,7 +45,8 @@ Loader {
           text: loader.used > 1 ? 
                   loader.used.toFixed(1) + "G" :
                   (loader.used * 1024).toFixed(1) + "M"
-          anchors.horizontalCenter: used.horizontalCenter
+          anchors.horizontalCenter: percent(loader.used, loader.free) < 10 ? undefined : used.horizontalCenter
+          anchors.left: percent(loader.used, loader.free) < 10 ? used.left : undefined
           anchors.verticalCenter: used.verticalCenter
         }
       }
@@ -57,7 +62,8 @@ Loader {
           text: loader.free > 1 ? 
                   loader.free.toFixed(1) + "G":
                   (loader.free * 1024).toFixed(1) + "M"
-          anchors.horizontalCenter: remaining.horizontalCenter
+          anchors.horizontalCenter: percent(loader.free, loader.used) < 10 ? undefined : remaining.horizontalCenter
+          anchors.right: percent(loader.free, loader.used) < 10 ? remaining.right : undefined
           anchors.verticalCenter: remaining.verticalCenter
         }
       }
