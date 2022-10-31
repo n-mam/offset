@@ -1,0 +1,663 @@
+#ifndef DEVICE_SOCKET_HPP
+#define DEVICE_SOCKET_HPP
+
+#include <device/file>
+
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include <openssl/evp.h>
+
+#include <memory>
+#include <string>
+#include <functional>
+
+namespace npl {
+
+using TOnHandshake = std::function<void (void)>;
+
+enum TLS : uint8_t
+{
+  No = 0,
+  Yes,
+  Implicit //ftp
+};
+
+enum ESocketType : uint8_t
+{
+  EInvalidSocket = 0,
+  EClientSocket,
+  EListeningSocket,
+  EAcceptedSocket,
+};
+
+class SocketDevice : public FileDevice
+{
+  using SPSocketDevice = std::shared_ptr<SocketDevice>;
+  using WPSocketDevice = std::weak_ptr<SocketDevice>;
+
+  protected:
+
+  FD iAS;
+
+  int iPort = 0;
+
+  std::string iHost = "";
+
+  bool iStopped = false;
+
+  TLS iTLS = TLS::No;
+
+  SSL_CTX *ctx = nullptr;
+
+  SSL *ssl = nullptr;
+
+  BIO *rbio = nullptr;
+
+  BIO *wbio = nullptr;
+
+  bool iHandshakeDone = false;
+
+  TOnHandshake iOnHandShake = nullptr;
+
+  uint32_t iSocketType = ESocketType::EInvalidSocket;
+
+  public:
+
+  SSL_SESSION *iSession = nullptr;
+
+  SPSocketDevice iConnectedClient = nullptr;
+
+  SocketDevice(const std::string& name) : FileDevice(name)
+  {
+    iFD = (FD) socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    iDevicetype = EDeviceType::Socket;
+  }
+
+  SocketDevice(FD aSocket)
+  {
+    iFD = aSocket;
+    iDevicetype = EDeviceType::Socket;
+  }
+
+  ~SocketDevice()
+  {
+    std::cout << "~SocketDevice() --> " << GetName();
+    StopSocket();
+    shutdown((SOCKET)iFD, 0); //sd_recv
+    closesocket((SOCKET)iFD);
+    if (ssl)
+    {
+      SSL_free(ssl);
+    }
+    std::cout << "~SocketDevice() <-- " << GetName() << " shutdown(sd_recv)";
+  }
+
+  virtual void StopSocket(void)
+  {
+    if (!iStopped)
+    {
+      if (ssl)
+      {
+        int flag = SSL_get_shutdown(ssl);
+
+        if (!(flag & SSL_SENT_SHUTDOWN))
+        {
+          int rc = SSL_shutdown(ssl);
+          std::cout << GetName() << " : ssl_shutdown() rc : " << rc;
+          UpdateWBIO();
+        }
+      }
+
+      iStopped = true;
+
+      shutdown((SOCKET)iFD, 1); //sd_send
+
+      std::cout << GetName() << " : shutdown(sd_send)";
+    }
+  }
+
+  virtual void StartSocketClient(void)
+  {
+    assert(iHost.size() && iPort);
+
+    iSocketType = ESocketType::EClientSocket;
+
+    #ifdef WIN32
+
+    struct sockaddr_in addr;
+    ZeroMemory(&addr, sizeof(addr));
+    addr.sin_addr.s_addr = INADDR_ANY;
+    addr.sin_family = AF_INET;
+    addr.sin_port = 0;
+
+    int rc = bind((SOCKET)iFD, (SOCKADDR*) &addr, sizeof(addr));
+
+    assert(rc == 0);
+
+    Context *ctx = (Context *) calloc(1, sizeof(Context));
+
+    ctx->type = EIOType::CONNECT;
+
+    sockaddr_in sa;
+    memset(&sa, 0, sizeof(sa));
+    sa.sin_family = AF_INET;
+
+    inet_pton(AF_INET, iHost.c_str(), &sa.sin_addr);
+
+    sa.sin_port = htons(iPort);
+
+    auto ConnectEx = GetExtentionPfn(WSAID_CONNECTEX, iFD);
+
+    bool fRet = ((LPFN_CONNECTEX)ConnectEx)(
+      (SOCKET)iFD,
+      (SOCKADDR*) &sa,
+      sizeof(sa), 
+      NULL, 0, NULL,
+      (LPOVERLAPPED)ctx);
+
+    if (fRet)
+    {
+      #ifdef WIN32
+      setsockopt((SOCKET)iFD, SOL_SOCKET, SO_UPDATE_CONNECT_CONTEXT, NULL, 0 );
+      #endif          
+      OnConnect();
+    }
+    else if (WSAGetLastError() == ERROR_IO_PENDING)
+    {
+
+    }
+    else
+    {
+      std::cout << "ConnectEx failed : " << WSAGetLastError();
+    }
+
+    #else
+
+    SetSocketBlockingEnabled(iFD, false);
+
+    sockaddr_in sa;
+    memset(&sa, 0, sizeof(sa));
+    sa.sin_family = AF_INET;
+
+    inet_pton(AF_INET, iHost.c_str(), &sa.sin_addr);
+
+    sa.sin_port = htons(iPort);
+
+    int rc = connect((SOCKET)iFD, (const sockaddr *) &sa, sizeof(sa));
+
+    GetDispatcher()->AddSubjectToEventPort(shared_from_this());
+
+    #endif
+  }
+
+  virtual void StartSocketServer(void)
+  {
+    assert(iPort);
+
+    sockaddr_in sa;
+    memset(&sa, 0, sizeof(sa));
+    sa.sin_family = AF_INET;
+
+    inet_pton(AF_INET, iHost.c_str(), &sa.sin_addr);
+
+    sa.sin_port = htons(iPort);
+
+    int fRet = bind((SOCKET)iFD, (const sockaddr *) &sa, sizeof(sa));
+
+    if (fRet == -1)
+    {
+      std::cout << "bind failed, error : " << strerror(errno);
+    }
+
+    assert (fRet == 0);
+
+    fRet = listen((SOCKET)iFD, SOMAXCONN);
+
+    if (fRet == -1)
+    {
+      std::cout << "listen failed, error : " << strerror(errno);
+    }
+
+    assert(fRet == 0);
+
+    #ifndef WIN32
+    SetSocketBlockingEnabled(iFD, false);
+    GetDispatcher()->AddSubjectToEventPort(shared_from_this());
+    #endif
+
+    iSocketType = ESocketType::EListeningSocket;
+
+    #ifdef WIN32
+    AcceptNewConnection();
+    #endif
+  }
+
+  #ifdef WIN32
+  virtual void AcceptNewConnection(void)
+  {
+    auto AcceptEx = GetExtentionPfn(WSAID_ACCEPTEX, iFD);
+
+    uint8_t *b = (uint8_t *) calloc(1, 2 * (sizeof(SOCKADDR_STORAGE) + 16) + sizeof(Context));
+
+    ((Context *)b)->type = EIOType::ACCEPT;
+
+    iAS = (FD) socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+
+    DWORD bytesReceived;
+
+    bool rc = ((LPFN_ACCEPTEX)AcceptEx)(
+      (SOCKET)iFD,
+      (SOCKET)iAS,
+      b + sizeof(Context),
+      0,
+      sizeof(SOCKADDR_STORAGE) + 16,
+      sizeof(SOCKADDR_STORAGE) + 16,
+      &bytesReceived,
+      (LPOVERLAPPED)b);
+  }
+  #endif
+
+  virtual bool SetSocketBlockingEnabled(FD sock, bool blocking)
+  {
+    bool fret = false;
+
+    #ifndef WIN32
+      int flags = fcntl(sock, F_GETFL, 0);
+      if (flags == -1) return false;
+      flags = blocking ? (flags & ~O_NONBLOCK) : (flags | O_NONBLOCK);
+      return (fcntl((SOCKET)sock, F_SETFL, flags) == 0) ? true : false;
+    #else
+      unsigned long mode = blocking ? 0 : 1;
+      return (ioctlsocket((SOCKET)sock, FIONBIO, &mode) == 0) ? true : false;
+    #endif
+  }
+
+  virtual TLS GetTLS(void)
+  {
+    return iTLS;
+  }
+
+  virtual void SetTLS(TLS tls)
+  {
+    iTLS = tls;
+  }
+
+  virtual bool IsClientSocket(void)
+  {
+    return (iSocketType == ESocketType::EClientSocket);
+  }
+
+  virtual bool IsListeningSocket(void)
+  {
+    return (iSocketType == ESocketType::EListeningSocket);
+  }
+
+  virtual bool IsAcceptedSocket(void)
+  {
+    return (iSocketType == ESocketType::EAcceptedSocket);
+  }
+
+  virtual void SetHostAndPort(const std::string& aHost, int aPort)
+  {
+    iPort = aPort;
+
+    if (!std::isalpha(aHost[0]))
+    {
+      iHost = aHost;
+    }
+    else
+    {
+      struct addrinfo hints;
+      struct addrinfo *ptr = NULL;
+      struct addrinfo *result = NULL;
+      struct sockaddr_in *sockaddr_ipv4;
+
+      memset(&hints, 0, sizeof(hints));
+      hints.ai_family = AF_UNSPEC;
+      hints.ai_socktype = SOCK_STREAM;
+      hints.ai_protocol = IPPROTO_TCP;
+
+      int dwRetval = getaddrinfo(aHost.c_str(), nullptr, &hints, &result);
+      
+      if (dwRetval != 0) return;
+
+      for (ptr = result; ptr != nullptr; ptr = ptr->ai_next)
+      {
+        switch (ptr->ai_family)
+        {
+          case AF_UNSPEC:
+              break;
+          case AF_INET:
+              sockaddr_ipv4 = (struct sockaddr_in *) ptr->ai_addr;
+              iHost = std::string(inet_ntoa(sockaddr_ipv4->sin_addr));
+              break;
+          case AF_INET6:
+              break;
+          default:
+              break;
+        }
+      }
+
+      freeaddrinfo(result);
+    }
+  }
+
+  virtual void CheckPeerSSLShutdown()
+  {
+    int flag = SSL_get_shutdown(ssl);
+
+    if (flag & SSL_RECEIVED_SHUTDOWN)
+    {
+      std::cout<< GetName() << " SSL_RECEIVED_SHUTDOWN, flags : " << flag;
+
+      if (!(flag & SSL_SENT_SHUTDOWN))
+      {
+        StopSocket();
+      }
+    }
+  }
+
+  virtual void UpdateWBIO()
+  {
+    CheckPeerSSLShutdown();
+
+    int pending = BIO_pending(wbio);
+
+    constexpr int BioRBufSize = 32;
+
+    uint8_t buf[BioRBufSize];
+
+    while (pending)
+    {
+      int rc = BIO_read(wbio, buf, BioRBufSize);
+
+      FileDevice::Write(buf, rc);
+
+      pending = BIO_pending(wbio);
+    }
+  }
+
+  virtual void InitializeSSL(TOnHandshake cbk = nullptr)
+  {
+    iOnHandShake = cbk;
+
+    ctx = SSL_CTX_new(TLS_client_method());
+    SSL_CTX_set_verify(ctx, SSL_VERIFY_NONE, NULL);
+
+    ssl = SSL_new(ctx);
+
+    if (iSession)
+    {
+      SSL_set_session(ssl, iSession);
+    }
+
+    rbio = BIO_new(BIO_s_mem());
+    wbio = BIO_new(BIO_s_mem());
+
+    SSL_set_bio(ssl, rbio, wbio);
+
+    if (IsClientSocket())
+    {
+      SSL_set_connect_state(ssl);
+
+      SSL_do_handshake(ssl);
+
+      UpdateWBIO();
+    }
+    else
+    {
+      SSL_set_accept_state(ssl);
+    }
+  }
+
+  virtual void OnAccept(void) override
+  {
+    assert(IsListeningSocket());
+
+    #ifndef WIN32
+
+    struct sockaddr_storage ca;
+    socklen_t alen = sizeof(struct sockaddr_storage);
+
+    iAS = (FD) accept((SOCKET)iFD, (struct sockaddr *) &ca, &alen);
+
+    if (iAS == -1)
+    {
+      std::cout << "accept failed, error : " << strerror(errno) << " " << iSocketType;
+      return;
+    }
+
+    SetSocketBlockingEnabled(iAS, false);
+
+    #endif
+
+    iConnectedClient.reset();
+
+    iConnectedClient = std::make_shared<SocketDevice>(iAS);
+
+    iConnectedClient->iSocketType = ESocketType::EAcceptedSocket;
+
+    iConnectedClient->MarkConnected(true);
+
+    GetDispatcher()->AddEventListener(iConnectedClient);
+
+    FileDevice::OnAccept();
+
+    #ifdef WIN32
+    iConnectedClient->Read();
+    setsockopt((SOCKET)iAS, SOL_SOCKET, SO_UPDATE_ACCEPT_CONTEXT, (char*)&(iFD), sizeof(iFD));
+    AcceptNewConnection();
+    #endif
+  }
+
+  virtual void OnConnect() override
+  {
+    assert(IsClientSocket());
+
+    std::cout<< GetName() << " OnConnect()";
+
+    FileDevice::OnConnect();
+
+    #ifdef WIN32
+    FileDevice::Read();
+    setsockopt((SOCKET)iFD, SOL_SOCKET, SO_UPDATE_CONNECT_CONTEXT, NULL, 0 );
+    #endif
+  }
+
+  virtual void OnDisconnect() override
+  {
+    if(ssl) 
+      std::cout << GetName() <<
+      " shutdown mode : " << SSL_get_shutdown(ssl);
+    FileDevice::OnDisconnect();
+  }
+
+  virtual void OnRead(const uint8_t *b, size_t n) override
+  {
+    #ifdef WIN32
+    FileDevice::Read();
+    #endif
+
+    size_t _n = n;
+    std::string msg;
+    const uint8_t *_b = b;
+
+    if (ssl)
+    {
+      int rc = BIO_write(rbio, b, static_cast<int>(n));
+
+      assert(rc == n);
+
+      if (!iHandshakeDone)
+      {
+        rc = SSL_do_handshake(ssl);
+
+        if (rc == 1)
+        {
+          iHandshakeDone = true;
+
+          if (SSL_session_reused(ssl))
+          {
+            std::cout << "TLS session reused";
+          }
+          else
+          {
+            std::cout << "New TLS session";
+            iSession = SSL_get1_session(ssl);
+          }
+
+          std::cout << GetName() << " handshake done";
+
+          if (iOnHandShake)
+          {
+            iOnHandShake();
+          }
+        }
+        else
+        {
+          std::cout << GetName() << " handshake failed : " <<
+                  rc << " " << SSL_get_error(ssl, rc);
+        }
+      }
+
+      if (iHandshakeDone)
+      {
+        while (true)
+        {
+          char buf[DEVICE_BUFFER_SIZE];
+
+          rc = SSL_read(ssl, buf, DEVICE_BUFFER_SIZE);
+
+          if (rc > 0) 
+          {
+            msg.append(buf, rc);
+          }
+          else
+          {
+            break;
+          }
+        }
+      }
+
+      UpdateWBIO();
+
+      if (msg.size())
+      {
+        _b = (uint8_t *)msg.data(), _n = msg.size();
+      }
+      else
+      {
+        return;
+      }
+    }
+
+    FileDevice::OnRead(_b, _n);
+  }
+
+  virtual void OnWrite(const uint8_t *b, size_t n) override
+  {
+    if (ssl)
+    {
+      if (!iHandshakeDone)
+      {
+        SSL_do_handshake(ssl);
+        return;
+      }
+    }
+
+    FileDevice::OnWrite(b, n);
+  }
+
+  virtual void * Read(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override
+  {
+    return FileDevice::Read(b, l, o);
+  }
+
+  virtual void Write(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override
+  {
+    if (ssl)
+    {
+      SSL_write(ssl, b, static_cast<int>(l));
+      UpdateWBIO();
+    }
+    else
+    {
+      FileDevice::Write(b, l);
+    }
+  }
+  
+  protected:
+
+  #ifdef WIN32
+  void * GetExtentionPfn(GUID guid, FD fd)
+  {
+    void *pfn;
+    DWORD n;
+
+    int rc = WSAIoctl(
+      (SOCKET)fd,
+      SIO_GET_EXTENSION_FUNCTION_POINTER,
+      &guid, sizeof(guid),
+      &pfn, sizeof(pfn),
+      &n, NULL, NULL);
+
+    assert(rc == 0);
+
+    return pfn;
+  }
+  #endif
+};
+
+int Base64Encode(unsigned char *encoded, const unsigned char *source, int n)
+{
+  return EVP_EncodeBlock(encoded, source, n);
+}
+
+int MessageDigest(const unsigned char *message, size_t message_len, unsigned char *digest, unsigned int *digest_len)
+{
+  int fRet = 0;
+
+  EVP_MD_CTX *ctx = NULL;
+
+  ctx = EVP_MD_CTX_create();
+
+  if (ctx == NULL)
+    goto _end;
+
+  fRet = EVP_DigestInit_ex(ctx, EVP_sha1(), NULL);
+
+  if (1 != fRet)
+    goto _end;
+
+  fRet = EVP_DigestUpdate(ctx, message, message_len);
+
+  if (1 != fRet)
+    goto _end;
+
+  fRet = EVP_DigestFinal_ex(ctx, digest, digest_len);
+
+  if (1 != fRet)
+    goto _end;
+
+  _end:
+
+  if (ctx)
+  {
+    EVP_MD_CTX_destroy(ctx);
+  }
+
+  return fRet;
+}
+
+using SPSocketDevice = std::shared_ptr<SocketDevice>;
+using WPDeviceSocket = std::weak_ptr<SocketDevice>;
+
+} // namespace npl
+
+#ifdef WIN32
+WSADATA wsaData;
+int winsockinit = WSAStartup(MAKEWORD(2, 2), &wsaData);
+void * GetExtentionPfn(GUID guid, FD fd); 
+#endif
+
+#endif //SOCKET_HPP

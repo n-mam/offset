@@ -1,0 +1,700 @@
+#ifndef PROTOCOLFTP_HPP
+#define PROTOCOLFTP_HPP
+
+#include <list>
+#include <tuple>
+#include <mutex>
+#include <atomic>
+#include <vector>
+#include <string>
+#include <sstream>
+#include <cstring>
+#include <functional>
+
+#include <observer/listener>
+#include <protocol/base>
+
+namespace npl {
+
+class FTPMessage : public Message
+{
+  public:
+
+  FTPMessage(const std::vector<uint8_t>& m) : Message(m) {}
+};
+
+class ProtocolFTP : public Protocol<uint8_t, uint8_t>
+{
+  public:
+
+  using TStateFn = std::function<void (void)>;
+
+  enum : uint8_t
+  {
+    EStateInit = EStateConnected,
+    EStateFTPS,
+    EStateTLS,
+    EStateADAT,
+    EStateAUTH,
+    EStateUSER,
+    EStatePASS,
+    EStateACCT,
+    EStatePASV,
+    EStateDATA,
+    EStateREADY,
+    EState1YZ,
+    EStateXYZ,
+    EStateGEN
+  };
+
+  ProtocolFTP(const std::string& name) : Protocol(name) {}
+
+  virtual ~ProtocolFTP() {}
+
+  virtual void Upload(TTransferCbk cbk, const std::string& fRemote, const std::string& fLocal, TLS P = TLS::No)
+  {
+    std::lock_guard<std::mutex> lg(iQLock);
+
+    if (!fRemote.size() || !fLocal.size()) assert(false);
+
+    bool bQWasEmpty = iCmdQ.empty();
+
+    SetDCProtLevel(P);
+
+    iCmdQ.push_back({"PASV"});
+    iCmdQ.push_back({"STOR", fRemote, fLocal, nullptr, cbk});
+
+    CheckQueue(bQWasEmpty);
+  }
+
+  virtual void Download(TTransferCbk cbk, const std::string& fRemote, const std::string& fLocal, TLS P = TLS::No)
+  {
+    std::lock_guard<std::mutex> lg(iQLock);
+
+    if (!fRemote.size() || (!cbk && !fLocal.size())) assert(false);
+
+    bool bQWasEmpty = iCmdQ.empty();
+
+    SetDCProtLevel(P);
+
+    iCmdQ.push_back({"PASV"});
+    iCmdQ.push_back({"RETR", fRemote, fLocal, nullptr, cbk});
+
+    CheckQueue(bQWasEmpty);
+  }
+
+  virtual void ListDirectory(TTransferCbk cbk, const std::string& fRemote = "", TLS P = TLS::No)
+  {
+    std::lock_guard<std::mutex> lg(iQLock);
+
+    if (!cbk) assert(false);
+
+    bool bQWasEmpty = iCmdQ.empty();
+
+    SetDCProtLevel(P);
+
+    iCmdQ.push_back({"TYPE", "I"});
+    iCmdQ.push_back({"PASV"});
+    iCmdQ.push_back({"LIST", fRemote, "", nullptr, cbk});
+
+    CheckQueue(bQWasEmpty);
+  }
+
+  virtual void GetCurrentDir(TResponseCbk cbk = nullptr)
+  {
+    std::lock_guard<std::mutex> lg(iQLock);
+    bool bQWasEmpty = iCmdQ.empty();
+    iCmdQ.push_back({"PWD", "", "", cbk, nullptr});
+    CheckQueue(bQWasEmpty);
+  }
+
+  virtual void SetCurrentDir(const std::string& dir, TResponseCbk cbk = nullptr)
+  {
+    std::lock_guard<std::mutex> lg(iQLock);
+    bool bQWasEmpty = iCmdQ.empty();
+    iCmdQ.push_back({"CWD", dir, "", cbk, nullptr});
+    CheckQueue(bQWasEmpty);
+  }
+
+  virtual void CreateDir(const std::string& dir, TResponseCbk cbk)
+  {
+    std::lock_guard<std::mutex> lg(iQLock);
+    bool bQWasEmpty = iCmdQ.empty();
+    iCmdQ.push_back({"MKD", dir, "", cbk, nullptr});
+    CheckQueue(bQWasEmpty);
+  }
+
+  virtual void RemoveDir(const std::string& dir, TResponseCbk cbk)
+  {
+    std::lock_guard<std::mutex> lg(iQLock);
+    bool bQWasEmpty = iCmdQ.empty();
+    iCmdQ.push_back({"RMD", dir, "", cbk, nullptr});
+    CheckQueue(bQWasEmpty);
+  }
+
+  virtual void RemoveFile(const std::string& file, TResponseCbk cbk)
+  {
+    std::lock_guard<std::mutex> lg(iQLock);
+    bool bQWasEmpty = iCmdQ.empty();
+    iCmdQ.push_back({"DELE", file, "", cbk, nullptr});
+    CheckQueue(bQWasEmpty);
+  }
+
+  virtual void Quit(TResponseCbk cbk = nullptr)
+  {
+    std::lock_guard<std::mutex> lg(iQLock);
+    bool bQWasEmpty = iCmdQ.empty();
+    iCmdQ.push_back({"QUIT", "", "", cbk, nullptr});
+    CheckQueue(bQWasEmpty);
+  }
+
+  virtual void Stop(void) override
+  {
+    std::lock_guard<std::mutex> lg(iQLock);
+
+    if (iDataChannel)
+    {
+      std::dynamic_pointer_cast<SocketDevice>(iDataChannel)->StopSocket();
+      iDataChannel.reset();
+    }
+
+    Protocol::Stop();
+  }
+
+  protected:
+
+  TLS iDCProt = TLS::No;
+
+  bool iContinueTransfer = false;
+
+  uint64_t iCurrentFileOffset = 0;
+
+  SPSubject iFileDevice = nullptr;
+
+  SPSubject iDataChannel = nullptr;
+
+  struct Command
+  {
+    std::string m_name;
+    std::string m_remote = "";
+    std::string m_local = "";
+    TResponseCbk m_rcbk = nullptr;
+    TTransferCbk m_tcbk = nullptr;
+  };
+
+  struct Transition
+  {
+    uint8_t  iState;
+    char     iResponseCode;
+    uint8_t  iNextState;
+    TStateFn iTransitionFn;
+    uint8_t  iFlags = 0x00;
+  };
+
+  std::mutex iQLock;
+
+  std::list<Command> iCmdQ;
+
+  #define NEXT 0x10
+
+  Transition FSM[31] =
+  {
+    // Connection states
+    { EStateInit , '1', EStateInit  , nullptr                                            },
+    { EStateInit , '2', EStateFTPS  , [this] () { CheckExplicitFTPS();                   }, NEXT    },
+    { EStateInit , '4', EStateInit  , nullptr                                            },
+    // AUTH TLS states
+    { EStateAUTH , '2', EStateTLS   , [this] () { DoCCHandshake();                       },     1   },
+    { EStateAUTH , '3', EStateADAT  , nullptr                                             ,     1   },
+    { EStateAUTH , '4', EStateUSER  , [this] () { iCmdQ.push_front({"USER", iUserName}); }, NEXT|1  },
+    { EStateAUTH , '5', EStateUSER  , [this] () { iCmdQ.push_front({"USER", iUserName}); }, NEXT|1  },
+    // USER states
+    { EStateUSER , '1', EStateUSER  , nullptr                                            },
+    { EStateUSER , '2', EStateUSER  , nullptr                                            },
+    { EStateUSER , '3', EStatePASS  , [this] () { iCmdQ.push_front({"PASS", iPassword}); }, NEXT|1  },
+    { EStateUSER , '4', EStateUSER  , nullptr                                            },
+    { EStateUSER , '5', EStateUSER  , nullptr                                            },
+    // PASS states
+    { EStatePASS , '1', EStateUSER  , [this] () { ProcessLoginEvent(false);              },         },
+    { EStatePASS , '2', EStateREADY , [this] () { ProcessLoginEvent(true);               }, NEXT|1  },
+    { EStatePASS , '3', EStateACCT  , [this] () { iCmdQ.push_back({"ACCT"});             },         },
+    { EStatePASS , '4', EStateUSER  , [this] () { ProcessLoginEvent(false);              },         },
+    { EStatePASS , '5', EStateUSER  , [this] () { ProcessLoginEvent(false);              },         },
+    // PASV states
+    { EStatePASV , '1', EStateREADY , nullptr                                             , NEXT|2   },
+    { EStatePASV , '2', EStateDATA  , [this] () { ProcessPasvResponse();                 }, NEXT|1   },
+    { EStatePASV , '4', EStateREADY , nullptr                                             , NEXT|2   },
+    { EStatePASV , '5', EStateREADY , nullptr                                             , NEXT|2   },
+    // DATA command (LIST, RETR, STOR) states
+    { EStateDATA , '1', EState1YZ   , [this] () { ProcessDataCmdResponse('1');           }           },
+    { EState1YZ  , '2', EStateXYZ   , [this] () { ProcessDataCmdResponse('2');           }           },
+    { EState1YZ  , '4', EStateXYZ   , [this] () { ProcessDataCmdResponse('4');           }           },      
+    { EStateDATA , '4', EStateXYZ   , [this] () { ProcessDataCmdResponse('4');           }           },
+    { EStateDATA , '5', EStateXYZ   , [this] () { ProcessDataCmdResponse('5');           }           },
+    { EStateGEN  , '1', EStateREADY , nullptr                                             , NEXT|1   },
+    { EStateGEN  , '2', EStateREADY , nullptr                                             , NEXT|1   },
+    { EStateGEN  , '3', EStateREADY , nullptr                                             , NEXT|1   },
+    { EStateGEN  , '4', EStateREADY , nullptr                                             , NEXT|1   },
+    { EStateGEN  , '5', EStateREADY , nullptr                                             , NEXT|1   }
+  };
+
+  virtual void StateMachine(SPMessage msg) override
+  {
+    std::lock_guard<std::mutex> lg(iQLock);
+
+    auto l = msg->GetPayloadLength();
+    auto b = msg->GetPayloadBuffer();
+
+    std::cout<< "Response : " << std::string(b, l);
+
+    for (int i = 0; i < sizeof(FSM) / sizeof(FSM[0]); i++)
+    {
+      Transition t = FSM[i];
+
+      if ((t.iState == iCurrentState) && (t.iResponseCode ==  b[0]))
+      {
+        std::cout << +t.iState << " -> " << +t.iNextState
+          << ", " << +t.iFlags << ", " << iCmdQ.size();
+
+        iCurrentState = t.iNextState;
+
+        auto cbk = iCmdQ.front().m_rcbk;
+
+        if (cbk)
+        {
+          cbk(msg->GetPayloadString());
+        }
+
+        uint8_t f_skip = t.iFlags & 0x0F;
+
+        for (auto i = 0; i < f_skip; i++)
+        {
+          iCmdQ.pop_front();
+        }
+
+        if (t.iTransitionFn)
+        {
+          t.iTransitionFn();
+        }
+
+        auto next = (t.iFlags >> 4) & 0x0F;
+
+        if (next)
+        {
+          TriggerNextCommand();
+        }
+
+        break;
+      }
+    }
+  }
+
+  virtual SPMessage IsMessageComplete(const std::vector<uint8_t>& b) override
+  {
+    size_t l = b.size();
+
+    if (l >= 4)
+    {
+      if ((b[l-2] == '\r') && (b[l-1] == '\n'))
+      {
+        uint8_t code[4] = { 0, 0, 0, ' '};
+
+        memmove(code, b.data(), 3);
+
+        for (size_t i = 0; i < l; i++)
+        {
+          if (0 == memcmp(b.data() + i, code, 4))
+          {
+            return std::make_shared<FTPMessage>(b);
+          }
+        }
+      }
+    }
+
+    return nullptr;
+  }
+
+  virtual void SendCommand(const std::string& c, const std::string& arg = "")
+  {
+    auto cmd = c + " " + arg + "\r\n";
+    std::cout<< "Command  : " << cmd;
+    Write((uint8_t *)cmd.c_str(), cmd.size(), 0);
+  }
+
+  virtual void SetDCProtLevel(TLS P)
+  {
+    auto tls = GetChannelTLS(m_target.lock());
+
+    if (tls == TLS::Yes || tls == TLS::Implicit)
+    {
+      iCmdQ.push_back({"PBSZ", "0"});
+
+      auto level = (P == TLS::No) ? "C" : "P";
+
+      iCmdQ.push_back({"PROT", level, "",
+        [this, P](const std::string& res){
+          if (res[0] == '2')
+          {
+            iDCProt = P;
+          }
+        }, nullptr});
+    }
+  }
+
+  virtual void TriggerNextCommand(void)
+  {
+    if (iCmdQ.size())
+    {
+      auto& cmd = iCmdQ.front();
+      UpdateProtocolState(cmd.m_name);
+      SendCommand(cmd.m_name, cmd.m_remote);
+    }
+  }
+
+  virtual void UpdateProtocolState(const std::string& cmd)
+  {
+    if (cmd == "AUTH")
+    {
+      iCurrentState = EStateAUTH;
+    }
+    else if (cmd == "USER")
+    {
+      iCurrentState = EStateUSER;
+    }
+    else if (cmd == "PASS")
+    {
+      iCurrentState = EStatePASS;
+    }
+    else if (cmd == "PASV")
+    {
+      iCurrentState = EStatePASV;
+    }
+    else if (IsTransferCommand(cmd))
+    {
+      iCurrentState = EStateDATA;
+    }
+    else
+    {
+      iCurrentState = EStateGEN;
+    }
+  }
+
+  virtual void CheckExplicitFTPS(void)
+  {
+    auto tls = GetChannelTLS(m_target.lock());
+
+    if (tls == TLS::Yes)
+    {
+      iCmdQ.push_front({"AUTH", "TLS"});
+    }
+    else
+    {
+      iCmdQ.push_front({"USER", iUserName});
+    }
+  }
+
+  virtual void ProcessPasvResponse(void)
+  {
+    auto& m = iMessages.back();
+
+    auto& pasv = m->GetPayloadString();
+
+    auto spec = pasv.substr(pasv.find('('));
+
+    uint32_t h1, h2, h3, h4, p1, p2;
+
+    int fRet = sscanf(spec.c_str(), "(%d,%d,%d,%d,%d,%d)", &h1, &h2, &h3, &h4, &p1, &p2);
+
+    if (fRet < 6)
+    {
+      std::cout << "Faled to parse PASV response";
+    }
+
+    auto host = std::to_string(h1) + "." +
+                std::to_string(h2) + "." +
+                std::to_string(h3) + "." +
+                std::to_string(h4);
+
+    auto port = (p1 << 8) + p2;
+
+    OpenDataChannel(host, port);
+  }
+
+  virtual void OpenDataChannel(const std::string& host, int port)
+  {
+    iDataChannel = std::make_shared<SocketDevice>("ftp-dc");
+
+    auto observer = std::make_shared<Listener>(
+      [this]() {
+        OnDataChannelConnect();
+      },
+      [this](const uint8_t *b, size_t n) {
+        OnDataChannelRead(b, n);
+      },
+      [this](const uint8_t *b, size_t n) {
+        OnDataChannelWrite(b, n);
+      },
+      [this](){
+        OnDataChannelDisconnect();
+      });
+
+    GetDispatcher()->AddEventListener(iDataChannel)->AddEventListener(observer);
+
+    auto dc = std::dynamic_pointer_cast<SocketDevice>(iDataChannel);
+
+    auto cc = GetTargetSocketDevice();
+
+    dc->iSession = cc->iSession;
+
+    dc->SetHostAndPort(host, port);
+
+    dc->StartSocketClient();
+  }
+
+  virtual void ProcessDataCmdResponse(char code)
+  {
+    if (IsPositivePreliminaryReply(code))
+    {
+      InitializeFileDevice();
+
+      if (iDCProt == TLS::Yes)
+      {
+        std::dynamic_pointer_cast<SocketDevice>
+          (iDataChannel)->InitializeSSL(
+            [this] () {
+              TriggerDataTransfer();
+            });
+      }
+      else
+      {
+        TriggerDataTransfer();
+      }
+    }
+    else if (IsPositiveCompletionReply(code))
+    {
+      if (!iDataChannel)
+      {
+        iCmdQ.pop_front();
+        iCurrentState = EStateREADY;
+        TriggerNextCommand();
+      }
+    }
+    else
+    {
+      if (iDataChannel)
+      {
+        ResetSubject(iDataChannel);
+      }
+
+      if (iFileDevice)
+      {
+        ResetSubject(iFileDevice);
+      }
+
+      if (iCurrentState == EStateXYZ)
+      {
+        iCmdQ.pop_front();
+        iCurrentState = EStateREADY;
+        TriggerNextCommand();
+      }
+    }
+  }
+
+  virtual void InitializeFileDevice(void)
+  {
+    auto& [cmd, fRemote, fLocal, rcbk, tcbk] = iCmdQ.front();      
+
+    if (fLocal.size())
+    {
+      assert(!iFileDevice);
+
+      if (cmd == "LIST") assert(!fLocal.size());
+
+      iFileDevice = std::make_shared<FileDevice>(
+        fLocal.c_str(),
+        cmd == "RETR" ? true : false);
+
+      iCurrentFileOffset = 0;
+
+      auto observer = std::make_shared<Listener>(
+        nullptr,
+        [this] (const uint8_t *b, size_t n) {
+          OnFileRead(b, n);
+        },
+        [this] (const uint8_t *b, size_t n) {
+          OnFileWrite(b, n);
+        },
+        [this] () {
+          OnFileDisconnect();
+        }
+      );
+
+      GetDispatcher()->AddEventListener(iFileDevice)->AddEventListener(observer);
+    }
+
+    iContinueTransfer = true;
+  }
+
+  virtual void OnDataChannelConnect(void)
+  {
+  }
+
+  virtual void OnDataChannelRead(const uint8_t *b, size_t n)
+  {
+    auto& tcbk = iCmdQ.front().m_tcbk;
+
+    if (tcbk)
+    {
+      if (iContinueTransfer)
+      {
+        iContinueTransfer = tcbk((const char *)b, n);
+      }
+      else
+      {
+        std::dynamic_pointer_cast<SocketDevice>(iDataChannel)->StopSocket();
+        return;
+      }
+    }
+
+    if (iFileDevice)
+    {
+      iFileDevice->Write(b, n, iCurrentFileOffset);
+      iCurrentFileOffset += n;
+    }
+  }
+
+  virtual void OnDataChannelWrite(const uint8_t *b, size_t n)
+  {
+  }
+
+  virtual void OnDataChannelDisconnect(void)
+  {
+    auto& tcbk = iCmdQ.front().m_tcbk;
+  
+    if (tcbk)
+    {
+      tcbk(nullptr, 0);
+    }
+
+    ProcessDataCmdResponse('0');
+  }
+
+  virtual void OnFileRead(const uint8_t *b, size_t n)
+  {
+    auto& tcbk = iCmdQ.front().m_tcbk;
+
+    if (tcbk)
+    {
+      if (iContinueTransfer)
+      {
+        iContinueTransfer = tcbk((const char *)b, n);
+      }
+      else
+      {
+        std::dynamic_pointer_cast<SocketDevice>(iDataChannel)->StopSocket();
+        return;
+      }
+    }
+
+    iDataChannel->Write(b, n);
+
+    iCurrentFileOffset += n;
+
+    auto ctx = iFileDevice->Read(nullptr, 0, iCurrentFileOffset);
+
+    #ifndef WIN32
+    QueuePendingContext(iFileDevice, ctx);
+    #endif
+  }
+
+  virtual void OnFileWrite(const uint8_t *b, size_t n)
+  {
+  }
+
+  virtual void OnFileDisconnect(void)
+  {
+    std::dynamic_pointer_cast<SocketDevice>(iDataChannel)->StopSocket();
+  }
+
+  virtual void TriggerDataTransfer(void)
+  {
+    if (iCmdQ.front().m_name == "STOR")
+    {
+      auto ctx = iFileDevice->Read(nullptr, 0, iCurrentFileOffset);
+      #ifndef WIN32
+      QueuePendingContext(iFileDevice, ctx);
+      #endif
+    }
+  }
+
+  virtual void ProcessLoginEvent(bool status)
+  {
+    if (!status)
+    {
+      iCmdQ.clear();
+      std::cout << "User login failed";
+    }
+  }
+
+  virtual bool IsTransferCommand(const std::string& cmd)
+  {
+    return (cmd == "RETR" || 
+            cmd == "LIST" ||
+            cmd == "STOR");
+  }
+
+  virtual bool IsPositiveCompletionReply(char c)
+  {
+    return (c == '2');
+  }
+
+  virtual bool IsPositivePreliminaryReply(char c)
+  {
+    return (c == '1');
+  }
+
+  virtual void OnConnect(void) override
+  {
+    Protocol::OnConnect();
+
+    auto tls = GetChannelTLS(m_target.lock());
+
+    if (tls == TLS::Implicit)
+    {
+      DoCCHandshake();
+    }
+  }
+
+  virtual void DoCCHandshake()
+  {
+    auto sock = GetTargetSocketDevice();
+
+    if (sock)
+    {
+      sock->InitializeSSL(
+        [this]() {
+          auto tls = GetChannelTLS(m_target.lock()); 
+          if (tls == TLS::Yes)
+          {
+            iCmdQ.push_front({"USER", iUserName});
+          }
+          TriggerNextCommand();
+        }
+      );
+    }
+  }
+
+  virtual void CheckQueue(bool bQWasEmpty)
+  {
+    if (bQWasEmpty && iCurrentState == EStateREADY)
+    {
+      TriggerNextCommand();
+    }
+  }
+};
+
+using SPProtocolFTP = std::shared_ptr<ProtocolFTP>;
+
+} //namespace npl
+
+#endif //PROTOCOLFTP_HPP

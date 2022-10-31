@@ -1,0 +1,297 @@
+#ifndef DEVICE_FILE_HPP
+#define DEVICE_FILE_HPP
+
+#include <assert.h>
+
+#include <observer/common>
+#include <observer/subject>
+
+namespace npl {
+
+constexpr uint32_t DEVICE_BUFFER_SIZE = 256;
+
+class FileDevice : public Subject<uint8_t, uint8_t>
+{
+  public:
+
+  FD iFD;
+
+  FD iFDsync;
+
+  protected:
+
+  EDeviceType iDevicetype = EDeviceType::None;
+
+  public:
+
+  FileDevice(){};
+
+  FileDevice(const std::string& name) : Subject(name) {};
+
+  FileDevice(const std::string& file, bool bCreateNew) : Subject("file")
+  {
+    MarkConnected(true);
+
+    #ifdef WIN32
+    iFD = CreateFileA(
+      file.c_str(),
+      GENERIC_READ|GENERIC_WRITE,
+      FILE_SHARE_READ|FILE_SHARE_WRITE,
+      NULL,
+      (bCreateNew ? CREATE_ALWAYS : OPEN_EXISTING),
+      FILE_FLAG_OVERLAPPED|FILE_FLAG_SEQUENTIAL_SCAN,
+      NULL);
+
+    if (iFD == INVALID_HANDLE_VALUE)
+    {
+      MarkConnected(false);
+      std::cout << file << ", iFD error : " << GetLastError();
+    }
+
+    iFDsync = CreateFileA(
+      file.c_str(),
+      GENERIC_READ|GENERIC_WRITE,
+      FILE_SHARE_READ|FILE_SHARE_WRITE,
+      NULL,
+      OPEN_EXISTING,
+      FILE_ATTRIBUTE_NORMAL,
+      NULL);
+
+    if (iFDsync == INVALID_HANDLE_VALUE)
+    {
+      MarkConnected(false);
+      std::cout << file << ", iFDsync error : " << GetLastError();
+    }
+    #else
+    int flags = 0|O_RDWR ;
+
+    if (bCreateNew)
+    {
+      flags |= O_CREAT;
+    }
+
+    iFD = open(file.c_str(), flags, 0640);
+
+    if (iFD < 0)
+    {
+      MarkConnected(false);
+      std::cout << file << ", error : " << strerror(errno);
+    }
+    #endif
+
+    iDevicetype = EDeviceType::File;
+  }
+
+  #ifdef WIN32
+  FileDevice(const std::wstring& file, bool bCreateNew)
+  {
+    MarkConnected(true);
+
+    iFD = CreateFileW(
+      file.c_str(),
+      GENERIC_READ|GENERIC_WRITE,
+      FILE_SHARE_READ|FILE_SHARE_WRITE,
+      NULL,
+      (bCreateNew ? CREATE_ALWAYS : OPEN_EXISTING),
+      FILE_FLAG_OVERLAPPED|FILE_FLAG_SEQUENTIAL_SCAN,
+      NULL);
+
+    if (iFD == INVALID_HANDLE_VALUE)
+    {
+      MarkConnected(false);
+      std::wcout << L"Device() " << file << L", iFD error : " << GetLastError() << L"\n";
+    }
+
+    iFDsync = CreateFileW(
+      file.c_str(),
+      GENERIC_READ|GENERIC_WRITE,
+      FILE_SHARE_READ|FILE_SHARE_WRITE,
+      NULL,
+      OPEN_EXISTING,
+      FILE_ATTRIBUTE_NORMAL,
+      NULL);
+
+    if (iFDsync == INVALID_HANDLE_VALUE)
+    {
+      MarkConnected(false);
+      std::wcout << L"Device() " << file << L", iFDsync error : " << GetLastError() << L"\n";
+    }
+
+    iDevicetype = EDeviceType::File;
+  }
+  #endif
+
+  virtual ~FileDevice()
+  {
+    if (iDevicetype == EDeviceType::File)
+    {
+      #ifdef WIN32
+      CloseHandle(iFD);
+      CloseHandle(iFDsync);
+      #else
+      close(iFD);
+      close(iFDsync);
+      #endif
+    }
+  }
+
+  virtual EDeviceType GetDeviceType(void)
+  {
+    return iDevicetype;
+  }
+
+  virtual void * Read(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override
+  {
+    if (!IsConnected())
+    {
+      std::cout << GetName() << " FileDevice::Read() not connected";
+      return nullptr;
+    }
+
+    Context *ctx = (Context *)calloc(1, sizeof(Context));
+
+    ctx->type = EIOType::READ;
+
+    if (b)
+    {
+      ctx->b = b;
+      ctx->bFree = false;
+    }
+    else
+    {
+      ctx->b = (uint8_t *) calloc(1, DEVICE_BUFFER_SIZE);
+      ctx->bFree = true;
+      l = DEVICE_BUFFER_SIZE;
+    }
+
+    #ifdef WIN32
+
+    (ctx->ol).Offset = o & 0x00000000FFFFFFFF;
+    (ctx->ol).OffsetHigh = (o & 0xFFFFFFFF00000000) >> 32;
+
+    BOOL fRet = ReadFile(iFD, (LPVOID) ctx->b, static_cast<DWORD>(l), NULL, &ctx->ol);
+
+    if (!fRet && GetLastError() != ERROR_IO_PENDING)
+    {
+      std::cout << GetName() << " ReadFile failed : " << GetLastError();
+    }
+
+    return nullptr;
+
+    #else
+
+    ctx->n = read(iFD, (void *) ctx->b, l);
+
+    if ((int)ctx->n == -1)
+    {
+      std::cout << GetName() << " read() failed, error : " << strerror(errno);
+
+      if (!b)
+      {
+        free ((void *)ctx->b);
+      }
+
+      free (ctx), ctx = nullptr;
+    }
+
+    return ctx;
+
+    #endif
+  }
+
+  virtual void Write(const uint8_t *b = nullptr , size_t l = 0, uint64_t o = 0) override
+  {
+    if (!IsConnected())
+    {
+      std::cout << GetName() << " FileDevice::Write() not connected";
+      return;
+    }
+
+    assert(b && l);
+
+    #ifdef WIN32
+
+    Context *ctx = (Context *) calloc(1, sizeof(Context));
+
+    ctx->type = EIOType::WRITE;
+
+    ctx->b = (uint8_t *) calloc(l, 1);
+
+    memmove((void *)ctx->b, b, l);
+
+    ctx->bFree = true;
+
+    (ctx->ol).Offset = o & 0x00000000FFFFFFFF;
+    (ctx->ol).OffsetHigh = (o & 0xFFFFFFFF00000000) >> 32;
+
+    BOOL fRet = WriteFile(iFD, (LPVOID) ctx->b, static_cast<DWORD>(l), NULL, &ctx->ol);
+
+    if (!fRet && GetLastError() != ERROR_IO_PENDING)
+    {
+      std::cout << GetName() << " WriteFile() failed : " << GetLastError();
+    }
+
+    #else
+
+    int rc = write(iFD, b, l);
+
+    if (rc == -1)
+    {
+      std::cout << GetName() << " write() failed : " << strerror(errno);
+      assert(false);
+    }
+
+    #endif
+  }
+
+  #ifdef WIN32
+  virtual int32_t ReadSync(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override
+  {
+    DWORD nBytesRead = -1;
+    LARGE_INTEGER offset;
+    offset.QuadPart = o;
+
+    BOOL fRet = SetFilePointerEx(iFDsync, offset, NULL, FILE_BEGIN);
+
+    if (fRet)
+    {
+      fRet = ReadFile(iFDsync, (LPVOID) b, static_cast<DWORD>(l), &nBytesRead, NULL);
+
+      if (fRet == FALSE)
+      {
+        std::cout << GetName() << " ReadSync ReadFile() failed : " << GetLastError();
+      }
+    }
+
+    return nBytesRead;
+  }
+
+  virtual int32_t WriteSync(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override
+  {
+    DWORD nBytesWritten;
+    LARGE_INTEGER offset;
+    offset.QuadPart = o;
+
+    BOOL fRet = SetFilePointerEx(iFDsync, offset, NULL, FILE_BEGIN);
+
+    if (fRet)
+    {
+      fRet = WriteFile(iFDsync, (LPVOID) b, static_cast<DWORD>(l), &nBytesWritten, NULL);
+
+      if (fRet == FALSE)
+      {
+        std::cout << GetName() << " WriteSync WriteFile() failed : " << GetLastError();
+      }
+    }
+
+    return nBytesWritten;
+  }
+  #endif
+};
+
+using SPFileDevice = std::shared_ptr<FileDevice>;
+using WPFileDevice = std::weak_ptr<FileDevice>;
+
+} // namespace
+
+#endif //FILE_DEVICE_HPP

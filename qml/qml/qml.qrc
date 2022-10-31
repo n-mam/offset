@@ -1,0 +1,9 @@
+<RCC>
+  <qresource prefix="/">
+      <file>main.qml</file>
+      <file>Tree.qml</file>
+      <file>Element.qml</file>
+      <file>List.qml</file>
+      <file>RowDelegate.qml</file>
+  </qresource>
+</RCC>

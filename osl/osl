@@ -1,0 +1,355 @@
+#ifndef OSL_HPP
+#define OSL_HPP
+
+#include <windows.h>
+
+#include <string>
+#include <vector>
+#include <sstream>
+#include <algorithm>
+#include <filesystem>
+
+#include <openssl/evp.h>
+
+#define RAPIDJSON_HAS_STDSTRING 1
+#include <rapidjson/writer.h>
+#include <rapidjson/document.h>
+#include <rapidjson/stringbuffer.h>
+
+#define _1K    1024
+#define _4K    4096
+#define _64K   65536
+#define _1M    1048576                     // 1ULL*1024*1024
+#define _2M    2097152                     // 2ULL*1024*1024
+#define _3M    3145728
+#define _4M    4194304                     
+#define _1G    1073741824                  // 1*1024*1024*1024
+#define _1T    1099511627776
+#define _2T    2199023255552               // 2*1024*1024*1024*1024
+#define _4T    4398046511104
+#define _12T   13194139533312              // 12*1024*1024*1024*1024
+#define _64T   422212465065984             // _2T*32ULL
+#define SPAN   _4T
+
+#define CHKCOM(hr) if((hr != S_OK) && (hr != VSS_S_ASYNC_FINISHED)) \
+  { \
+    printf("\n %s: failed line %d hr %x\n", __FUNCTION__, __LINE__, hr); \
+    goto _end; \
+  }
+
+namespace osl {
+
+auto GetArgumentsVector(int argc, wchar_t *argv[])
+{
+  std::vector<std::wstring> arguments;
+
+  for(int i = 1; i < argc; i++)
+  {
+    arguments.push_back(argv[i]);
+  }
+
+  return arguments;
+}
+
+auto GetArgumentsVector(int argc, char *argv[])
+{
+  std::vector<std::string> arguments;
+
+  for(int i = 1; i < argc; i++)
+  {
+    arguments.push_back(argv[i]);
+  }
+
+  return arguments;
+}
+
+auto GetCurrentDateTime(void)
+{
+  char buf[80];
+  struct tm tstruct;      
+  time_t now = time(0);
+
+  tstruct = *localtime(&now);
+  // Visit http://en.cppreference.com/w/cpp/chrono/c/strftime
+  // for more information about date/time format
+  // Get current date/time, format is YYYY-MM-DD.HH:mm:ss
+  strftime(buf, sizeof(buf), "%Y-%m-%d.%X", &tstruct);
+
+  return std::string(buf);
+}
+
+auto Base64Encode(unsigned char *encoded, const unsigned char *source, int n)
+{
+  return EVP_EncodeBlock(encoded, source, n);
+}
+
+auto MessageDigest(const unsigned char *message, size_t message_len, unsigned char *digest, unsigned int *digest_len)
+{
+  int fRet = 0;
+
+  EVP_MD_CTX *ctx = NULL;
+
+  ctx = EVP_MD_CTX_create();
+
+  if (ctx == NULL)
+    goto _end;
+
+  fRet = EVP_DigestInit_ex(ctx, EVP_sha1(), NULL);
+
+  if (1 != fRet)
+    goto _end;
+
+  fRet = EVP_DigestUpdate(ctx, message, message_len);
+
+  if (1 != fRet)
+    goto _end;
+
+  fRet = EVP_DigestFinal_ex(ctx, digest, digest_len);
+
+  if (1 != fRet)
+    goto _end;
+
+  _end:
+
+  if (ctx)
+  {
+    EVP_MD_CTX_destroy(ctx);
+  }
+
+  return fRet;
+}
+
+auto GetDirectoryList(std::string& dir)
+{
+  if (!dir.size())
+  {
+    dir = std::filesystem::current_path().string();
+  }
+
+  for (auto& e : std::filesystem::directory_iterator(dir))
+  {
+    e.path().filename().string();
+
+    if (std::filesystem::is_symlink(e))
+    {
+      
+    }
+    else if (std::filesystem::is_directory(e))
+    {
+      
+    }
+    else
+    {
+      //file
+    }
+  }
+}
+
+auto GetFileHandle(const std::wstring& file)
+{
+  return CreateFileW(
+    file.c_str(),
+    GENERIC_READ|GENERIC_WRITE,
+    FILE_SHARE_READ|FILE_SHARE_WRITE,
+    NULL,
+    OPEN_EXISTING,
+    FILE_ATTRIBUTE_NORMAL,
+    NULL);
+}
+
+auto GetFileHandle(const std::string& file)
+{
+  return CreateFileA(
+    file.c_str(),
+    GENERIC_READ|GENERIC_WRITE,
+    FILE_SHARE_READ|FILE_SHARE_WRITE,
+    NULL,
+    OPEN_EXISTING,
+    FILE_ATTRIBUTE_NORMAL,
+    NULL);
+}
+
+auto WideToString(const std::wstring& src)
+{
+  std::vector<CHAR> chBuffer;
+
+  int iChars = WideCharToMultiByte(CP_ACP, 0, src.c_str(), -1, NULL, 0, NULL, NULL);
+
+  if (iChars > 0)
+  {
+    chBuffer.resize(iChars);
+    WideCharToMultiByte(CP_ACP, 0, src.c_str(), -1, &chBuffer.front(), (int)chBuffer.size(), NULL, NULL);
+  }
+
+  return std::string(&chBuffer.front());
+}
+
+auto SetRegistry(HKEY hKey, std::wstring subKey, DWORD dwType, std::wstring valueName, std::wstring value)
+{
+  HKEY hkResult;
+  LSTATUS status;
+
+  status = RegCreateKeyExW(
+              hKey,
+              subKey.c_str(),
+              0,
+              NULL,
+              REG_OPTION_NON_VOLATILE,
+              KEY_ALL_ACCESS,
+              NULL,
+              &hkResult,
+              NULL);
+
+  if (status != ERROR_SUCCESS)
+  {
+    std::cout << "RegCreateKeyExW() failed " << status << "\n";
+    return false;
+  }
+
+  status = RegSetValueExW(
+              hkResult,
+              valueName.c_str(),
+              0,
+              dwType,
+              (BYTE*)value.c_str(),
+              (DWORD)value.length() * sizeof(WCHAR));
+
+  if (status != ERROR_SUCCESS)
+  {
+    std::cout << "RegSetValueExW() failed " << status << "\n";
+  }
+
+  RegCloseKey(hkResult);
+
+  return (status == ERROR_SUCCESS);
+}
+
+BSTR ReadFileAsBSTR(const std::wstring& fileName)
+{
+  HANDLE hFile = GetFileHandle(fileName);
+
+  if (hFile == INVALID_HANDLE_VALUE)
+  {
+    std::cout << "CreateFile failed : "<< GetLastError() << "\n";
+    return NULL;
+  }
+
+  DWORD dwFileSize = GetFileSize(hFile, 0);
+  auto buf = std::make_unique<uint8_t []>(dwFileSize);
+
+  DWORD dwRead;
+  BOOL fRet = ReadFile(hFile, buf.get(), dwFileSize, &dwRead, NULL);
+
+  if (fRet == FALSE)
+  {
+    return NULL;
+  }
+
+  BSTR bstrContents = SysAllocStringLen((OLECHAR *)buf.get(), dwRead);
+
+  return bstrContents;
+}
+
+template<typename T>
+auto endian_reverse(T x)
+{
+  auto l = sizeof(T);
+
+  uint8_t *p = (uint8_t *) &x;
+
+  for (int i = 0; i < l/2; i++)
+  {
+    *(p + i) = *(p + i) ^ *(p + l - 1 - i);
+    *(p + l - 1 - i) = *(p + i) ^ *(p + l - 1 - i);
+    *(p + i) = *(p + i) ^ *(p + l - 1 - i);
+  }
+
+  return x;
+}
+
+auto DumpBufferToFile(const std::string& path, const uint8_t *b, uint64_t l)
+{
+  FILE *file;
+  file = fopen(path.c_str(), "wb");
+  fwrite(b, 1, l, file);
+  fclose(file);
+}
+
+auto DocToJsonString(rapidjson::Document& rjd)
+{
+  rapidjson::StringBuffer buffer;
+  rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+  rjd.Accept(writer);
+  return buffer.GetString();
+}
+
+uint64_t BTOL(const uint8_t *msb, uint8_t size)
+{
+   uint8_t be[8] = { 0 };
+
+   for (int i = 0; i < size; i++)
+   {
+     be[i] = msb[i];
+   }
+
+   for (int i = 0; i < size/2; i++)
+   {
+      be[i]        =  be[i] ^ be[size-1-i];
+      be[size-1-i] =  be[i] ^ be[size-1-i];
+      be[i]        =  be[i] ^ be[size-1-i];
+   }
+
+   if (size == 8) 
+   {
+     return (*((uint64_t *)&be));
+   }
+   else if (size == 4)
+   {
+     return (*((uint32_t *)&be));
+   }
+   else if (size == 2)
+   {
+     return (*((uint16_t *)&be));
+   }
+   else
+   {
+     assert(false);
+     return 0;
+   }
+}
+uint16_t BTOL16(const uint8_t *msb)
+{
+  return static_cast<uint16_t>(BTOL(msb, 2));
+}
+uint32_t BTOL32(const uint8_t *msb)
+{
+  return static_cast<uint32_t>(BTOL(msb, 4));
+}
+uint64_t BTOL64(const uint8_t *msb)
+{
+  return BTOL(msb, 8);
+}
+
+void LTOB(uint64_t value, unsigned char *memory, int size)
+{
+  for (int i = 0; i < size; i++)
+  {
+    memory[size - 1 - i] = *((unsigned char *)(&value) + i);
+  }
+}
+void LTOB16(uint64_t value, unsigned char *memory)
+{
+  LTOB(value, memory, 2);
+}
+void LTOB32(uint64_t value, unsigned char *memory)
+{
+  LTOB(value, memory, 4);
+}
+void LTOB64(uint64_t value, unsigned char *memory)
+{
+  LTOB(value, memory, 8);
+}
+
+} //namespace
+
+#endif //OSL_HPP

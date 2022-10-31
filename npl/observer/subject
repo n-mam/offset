@@ -1,0 +1,390 @@
+#ifndef SUBJECT_HPP
+#define SUBJECT_HPP
+
+#include <map>
+#include <any>
+#include <mutex>
+#include <vector>
+#include <memory>
+#include <string>
+#include <iostream>
+#include <algorithm>
+
+namespace npl {
+
+template <typename T1, typename T2>
+class Subject : public std::enable_shared_from_this<Subject<T1, T2>>
+{
+  protected:
+
+  using SPSubject = std::shared_ptr<Subject<T1, T2>>;
+  using WPSubject = std::weak_ptr<Subject<T1, T2>>;
+
+  std::mutex m_lock;
+
+  WPSubject m_target;
+
+  std::string m_name = "xxx";
+
+  bool m_connected = false;
+
+  bool m_removeAllListeners = false;
+
+  bool m_removeSelfAsListener = false;
+
+  std::vector<SPSubject> m_observers;
+
+  std::map<std::string, std::string> m_properties;
+
+  public:
+
+  Subject(){}
+
+  Subject(const std::string& name){ m_name = name; }
+
+  virtual ~Subject()
+  {
+    std::lock_guard<std::mutex> lg(m_lock);
+    RemoveAllEventListenersInternal();
+    std::cout << "~Subject : " << GetName() << std::endl;
+  }
+
+  virtual std::string GetName(void)
+  {
+    return m_name;
+  }
+
+  virtual void SetTarget(const WPSubject& target)
+  {
+    std::lock_guard<std::mutex> lg(m_lock);
+    m_target = target;
+  }
+
+  virtual void QueuePendingContext(SPSubject s, void *c)
+  {
+    auto target = m_target.lock();
+
+    if (target)
+    {
+      return target->QueuePendingContext(s, c);
+    }
+  }
+
+  virtual void * Read(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0)
+  {
+    std::lock_guard<std::mutex> lg(m_lock);
+
+    auto target = m_target.lock();
+
+    if (target)
+    {
+      return target->Read(b, l, o);
+    }
+
+    return nullptr;
+  }
+
+  virtual void Write(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0)
+  {
+    std::lock_guard<std::mutex> lg(m_lock);
+
+    auto target = m_target.lock();
+
+    if (target)
+    {
+      target->Write(b, l, o);
+    }
+  }
+
+  virtual int32_t ReadSync(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0)
+  {
+    std::lock_guard<std::mutex> lg(m_lock);
+
+    auto target = m_target.lock();
+
+    if (target)
+    {
+      return target->ReadSync(b, l, o);
+    }
+
+    return -1;
+  }
+
+  virtual int32_t WriteSync(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0)
+  {
+    std::lock_guard<std::mutex> lg(m_lock);
+
+    auto target = m_target.lock();
+
+    if (target)
+    {
+      return target->WriteSync(b, l, o);
+    }
+
+    return -1;
+  }
+
+  virtual void OnAccept(void)
+  {
+    std::lock_guard<std::mutex> lg(m_lock);
+    NotifyAccept();
+  }
+
+  virtual void OnConnect(void)
+  {
+    std::lock_guard<std::mutex> lg(m_lock);
+    m_connected = true;
+    NotifyConnect();
+  }
+
+  virtual void OnRead(const T1 *b, size_t n)
+  {
+    std::lock_guard<std::mutex> lg(m_lock);
+    NotifyRead((const T2 *)b, n);
+  }
+
+  virtual void OnWrite(const T1 *b, size_t n)
+  {
+    std::lock_guard<std::mutex> lg(m_lock);
+    NotifyWrite(b, n);
+  }
+
+  virtual void OnDisconnect(void)
+  {
+    std::lock_guard<std::mutex> lg(m_lock);
+    m_connected = false;
+    NotifyDisconnect();
+    MarkRemoveAllListeners();
+    MarkRemoveSelfAsListener();
+  }
+
+  virtual void OnEvent(std::any e)
+  {
+    std::lock_guard<std::mutex> lg(m_lock);
+    NotifyEvent(e);
+  }
+
+  virtual void AddSubjectToEventPort(SPSubject device)
+  {
+  }
+
+  virtual const SPSubject& AddEventListener(const SPSubject& observer)
+  {
+    std::lock_guard<std::mutex> lg(m_lock);
+    m_observers.push_back(observer);
+    observer->SetTarget(this->weak_from_this());
+    return observer;
+  }
+
+  virtual void RemoveEventListener(const SPSubject& observer)
+  {
+    std::lock_guard<std::mutex> lg(m_lock);
+    RemoveEventListenerInternal(observer);
+  }
+
+  virtual void RemoveAllEventListeners(void)
+  {
+    std::lock_guard<std::mutex> lg(m_lock);
+    RemoveAllEventListenersInternal();
+  }
+
+  virtual void MarkRemoveAllListeners(void)
+  {
+    m_removeAllListeners = true;
+  }
+
+  virtual void MarkRemoveSelfAsListener(void)
+  {
+    m_removeSelfAsListener = true;
+  }
+
+  virtual void MarkConnected(bool connected)
+  {
+    m_connected = connected;
+  }
+
+  virtual bool IsConnected(void)
+  {
+    return m_connected;
+  }
+
+  virtual bool IsRemoveSelfAsListenerMarked(void)
+  {
+    return m_removeSelfAsListener;
+  }
+
+  virtual bool IsDispatcher(void)
+  {
+    return false;
+  }
+
+  SPSubject GetDispatcher(void)
+  {
+    auto target = m_target;
+
+    while (true)
+    {
+      auto sp = target.lock();
+
+      if (sp)
+      {
+        if (sp->IsDispatcher())
+        {
+          return sp;
+        }
+        else
+        {
+          target = sp->m_target;
+        }
+      }
+      else
+      {
+        return nullptr;
+      }
+    }
+  }
+
+  virtual void SetProperty(const std::string& key, const std::string& value)
+  {
+    std::lock_guard<std::mutex> lg(m_lock);
+    m_properties[key] = value;
+  }
+
+  virtual std::string GetProperty(const std::string& key)
+  {
+    std::lock_guard<std::mutex> lg(m_lock);
+
+    std::string value = "";
+
+    try
+    {
+      value = m_properties.at(key);
+    }
+    catch(const std::exception& e)
+    {
+      std::cout << e.what() << std::endl;
+    }
+    
+    return value;
+  }
+
+  virtual int GetPropertyAsInt(const std::string& key)
+  {
+    auto value = GetProperty(key);
+    return std::stoi(value);
+  }
+
+  virtual bool GetPropertyAsBool(const std::string& key)
+  {
+    auto value = GetProperty(key); 
+    return ((value.size() && value == "true") ? true : false);
+  }
+
+  protected:
+
+  virtual void ResetSubject(SPSubject& subject)
+  {
+    subject->MarkRemoveAllListeners();
+    subject->MarkRemoveSelfAsListener();
+    subject.reset();
+  }
+
+  virtual void ProcessListenersMarkedForRemoval(void)
+  {
+    if (this->m_removeAllListeners)
+    {
+      this->RemoveAllEventListenersInternal();        
+    }
+
+    for (auto ob = m_observers.begin(); ob != m_observers.end(); )
+    {
+      if ((*ob)->IsRemoveSelfAsListenerMarked())
+      {
+        ob = this->RemoveEventListenerInternal(*ob);
+      }
+      else
+      {
+        ob++;
+      }
+    }
+  }
+
+  virtual void RemoveAllEventListenersInternal()
+  {
+    m_observers.clear();
+    m_removeAllListeners = false;      
+  }
+
+  auto RemoveEventListenerInternal(const SPSubject& consumer)
+  {
+    return m_observers.erase(
+      std::remove(
+        m_observers.begin(), m_observers.end(), consumer),
+      m_observers.end()
+    );
+  }
+
+  virtual void NotifyConnect()
+  {
+    for (auto& observer : m_observers)
+    {
+      observer->OnConnect();
+    }
+    ProcessListenersMarkedForRemoval();
+  }
+
+  virtual void NotifyRead(const T2 *b, size_t n)
+  {
+    for (auto& observer : m_observers)
+    {
+      observer->OnRead(b, n);
+    }
+    ProcessListenersMarkedForRemoval();
+  }
+
+  virtual void NotifyWrite(const T2 *b, size_t n)
+  {
+    for (auto& observer : m_observers)
+    {
+      observer->OnWrite(b, n);
+    }
+    ProcessListenersMarkedForRemoval();
+  }
+
+  virtual void NotifyDisconnect()
+  {
+    for (auto& observer : m_observers)
+    {
+      observer->OnDisconnect();
+    }
+    ProcessListenersMarkedForRemoval();
+  }
+
+  virtual void NotifyAccept(void)
+  {
+    for (auto& observer : m_observers)
+    {
+      observer->OnAccept();
+    }
+    ProcessListenersMarkedForRemoval();
+  }
+
+  virtual void NotifyEvent(std::any e)
+  {
+    for (auto& observer : m_observers)
+    {
+      observer->OnEvent(e);
+    }
+    ProcessListenersMarkedForRemoval();
+  }
+};
+
+template <typename T1, typename T2>
+using SPSubject = std::shared_ptr<Subject<T1, T2>>;
+
+template<typename T1, typename T2>
+using WPSubject = std::weak_ptr<Subject<T1, T2>>;
+
+} // namespace npl
+
+#endif //SUBJECT_HPP

@@ -1,0 +1,208 @@
+#ifndef FXCSS_HPP
+#define FXCSS_HPP
+
+#include <vss.h>
+#include <vswriter.h>
+#include <vsbackup.h>
+
+#include <tuple>
+#include <string>
+#include <iostream>
+#include <functional>
+
+namespace fxc::ss {
+
+bool bCOMInitialized = false;
+
+using TSnapshotSet = std::vector<
+  std::tuple<std::wstring, std::wstring, std::wstring>>;
+
+using TSnapshotCBK = std::function<void (TSnapshotSet)>;
+
+auto AsyncWait(IVssAsync **async) -> HRESULT
+{
+  HRESULT hr = (*async)->Wait();
+
+  if (hr != S_OK)
+  {
+    std::cout << "Wait failed " << std::hex << hr << "\n";
+    return hr;
+  }
+
+  HRESULT status;
+
+  hr = (*async)->QueryStatus(&status, NULL);
+
+  if ((hr != S_OK) && (status != VSS_S_ASYNC_FINISHED))
+  {
+    std::cout << "QueryStatus failed " << std::hex << hr << "\n";
+  }
+
+  (*async)->Release(), (*async) = nullptr;
+
+  return hr;
+}
+
+auto InitializeCOM(void) -> HRESULT
+{ 
+  if (bCOMInitialized) return S_OK;
+
+  HRESULT hr;
+
+  CHKCOM(hr = CoInitialize(NULL))
+
+  CHKCOM(hr = CoInitializeSecurity(
+      NULL,
+      -1,
+      NULL,
+      NULL,
+      RPC_C_AUTHN_LEVEL_PKT_PRIVACY,
+      RPC_C_IMP_LEVEL_IMPERSONATE,
+      NULL,
+      EOAC_DYNAMIC_CLOAKING,
+      NULL))
+
+  _end:
+
+  bCOMInitialized = (hr == S_OK);
+
+  return hr;
+}
+
+auto InitializeBackupComponent(IVssBackupComponents **bc, bool bForRestore = true, BSTR document = NULL) -> HRESULT
+{
+  HRESULT hr = CreateVssBackupComponents(bc);
+
+  if (hr != S_OK)
+  {
+    std::cout << "CreateVssBackupComponents failed " << std::hex << hr << "\n";
+    goto end;
+  }
+
+  if (bForRestore)
+  {
+    hr = (*bc)->InitializeForRestore(document);
+  }
+  else
+  {
+    hr = (*bc)->InitializeForBackup();
+  }
+
+  if (hr != S_OK)
+  {
+    std::cout << "InitializeFor" << (bForRestore ? "Restore" : "Backup") << " failed " << std::hex << hr << "\n";
+  }
+
+  end:
+
+  return hr;
+}
+
+auto IsVolumeSupported(const std::wstring& volumePath) -> bool
+{
+  HRESULT hr;
+  BOOL bSupported = FALSE;
+
+  fxc::ss::InitializeCOM();
+
+  IVssBackupComponents *pBC = nullptr;
+
+  CHKCOM(hr = InitializeBackupComponent(&pBC, false, nullptr))
+
+  CHKCOM(hr = pBC->IsVolumeSupported(GUID_NULL, (wchar_t *)volumePath.c_str(), &bSupported))
+
+  _end:
+
+  if (pBC) pBC->Release();
+
+  return bSupported;
+}
+
+auto CreateSnapshot(const std::vector<std::wstring>& volumes, ss::TSnapshotCBK cbk = nullptr) -> bool
+{
+  HRESULT hr = 0;
+  HRESULT qhr = 0;
+  TSnapshotSet ss;
+  IVssAsync *pAS = nullptr;
+  IVssBackupComponents *pBC = nullptr;
+
+  fxc::ss::InitializeCOM();
+
+  std::cout << "\n Creating backup component ...\n";
+
+  CHKCOM(hr = InitializeBackupComponent(&pBC, false, nullptr))
+
+  CHKCOM(hr = pBC->SetBackupState(FALSE, TRUE, VSS_BT_FULL, FALSE))
+
+  std::cout << "\n Gather writer metadata ...\n";
+
+  CHKCOM(hr = pBC->GatherWriterMetadata(&pAS))
+
+  CHKCOM(hr = AsyncWait(&pAS))
+
+  std::cout << "\n StartSnapshotSet ...\n";
+
+  VSS_ID m_set;
+
+  CHKCOM(hr = pBC->StartSnapshotSet(&m_set))
+
+  VSS_ID m_snap[64] = { 0 };
+
+  for (int i = 0; i < volumes.size(); i++)
+  {
+    CHKCOM(hr = pBC->AddToSnapshotSet(
+        (wchar_t *)volumes[i].c_str(), 
+        GUID_NULL, 
+        &m_snap[i]))
+  }
+
+  std::cout << "\n PrepareForBackup ...\n";
+
+  CHKCOM(hr = pBC->PrepareForBackup(&pAS))
+
+  CHKCOM(hr = AsyncWait(&pAS))
+
+  std::cout << "\n DoSnapshotSet ...\n";
+
+  CHKCOM(hr = pBC->DoSnapshotSet(&pAS))
+
+  CHKCOM(hr = AsyncWait(&pAS))
+
+  for (int i = 0; i < 64; i++)
+  {
+    if (m_snap[i] != GUID_NULL)
+    {
+      VSS_SNAPSHOT_PROP m_prop = {0};
+      CHKCOM(hr = pBC->GetSnapshotProperties(m_snap[i], &m_prop))
+      ss.push_back({
+        volumes[i], 
+        m_prop.m_pwszSnapshotDeviceObject, 
+        m_prop.m_pwszOriginalVolumeName
+      });
+    }
+  }
+
+  if (cbk)
+  {
+    std::cout << "\n TSnapshotCBK ...\n\n";
+    cbk(ss);
+  }
+
+  std::cout << "\n BackupComplete ...\n";
+
+  CHKCOM(hr = pBC->BackupComplete(&pAS))
+
+  CHKCOM(hr = AsyncWait(&pAS))
+
+  _end:
+
+  if (pAS) pAS->Release();
+
+  if (pBC) pBC->Release();
+
+  return (hr == S_OK && qhr == VSS_S_ASYNC_FINISHED);
+}
+
+} //namespace fxc::ss
+
+#endif 

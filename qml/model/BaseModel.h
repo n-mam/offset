@@ -1,0 +1,61 @@
+#ifndef BASEMODEL_H
+#define BASEMODEL_H
+
+#include <memory>
+
+#include <QModelIndex>
+#include <QAbstractItemModel>
+
+struct BaseItem
+{
+  BaseItem(
+    QString name, 
+    int depth = 0, 
+    int children = 0, 
+    int selectable = false)
+  {
+    m_name = name;
+    m_depth = depth;
+    m_children = children;
+    m_selectable = selectable;
+  }
+  QString m_name;
+  int m_depth = 0;
+  int m_children = 0;
+  bool m_selectable = false;
+};
+
+using SPBaseItem = std::shared_ptr<BaseItem>;
+
+class BaseModel : public QAbstractItemModel
+{
+  Q_OBJECT
+
+  public:
+
+  BaseModel();
+  ~BaseModel();
+
+  QModelIndex index(int row, int column, const QModelIndex& parent = QModelIndex()) const override;
+  QModelIndex parent(const QModelIndex& index) const override;
+  int rowCount(const QModelIndex& index = QModelIndex()) const override;
+  int columnCount(const QModelIndex& index = QModelIndex()) const override;
+  QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
+
+  Q_INVOKABLE void updateItemSelection(QString name, bool selected);
+  Q_INVOKABLE QVector<QString> getSelectedItems(void);
+
+  std::vector<SPBaseItem> m_model;
+  QVector<QString> m_selected;
+
+  enum Roles
+  {
+    EDepth = Qt::UserRole,
+    ESelectable,
+    EHasChildren,
+    ELastRole
+  };
+
+};
+
+#endif // BASEMODEL_H

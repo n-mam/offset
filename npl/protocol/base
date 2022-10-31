@@ -1,0 +1,232 @@
+#ifndef PROTOCOL_HPP
+#define PROTOCOL_HPP
+
+#include <device/socket>
+
+#include <functional>
+
+namespace npl {
+
+class Message
+{
+  protected:
+
+  std::string iMessage;
+
+  virtual void ParseMessage(void) { }
+
+  public:
+
+  Message(const std::string& m)
+  {
+    iMessage = m;
+  }
+
+  Message(const uint8_t *b, size_t l)
+  {
+    iMessage = std::string((char *)b, l);
+  }
+
+  Message(const std::vector<uint8_t>& m)
+  {
+    iMessage = std::string((char *) m.data(), m.size());
+  }
+
+  virtual size_t GetPayloadLength(void)
+  {
+    return iMessage.size();
+  }  
+
+  virtual const std::string& GetPayloadString(void)
+  {
+    return iMessage;
+  }
+
+  virtual const char * GetPayloadBuffer(void)
+  {
+    return iMessage.c_str();
+  }
+};
+
+using SPMessage = std::shared_ptr<Message>;
+
+using TResponseCbk = std::function<void (const std::string&)>;
+
+using TTransferCbk = std::function<bool (const char *, size_t)>;
+
+template <typename T1, typename T2>
+class Protocol : public Subject<T1, T2>
+{
+  public:
+
+  using SPProtocol = std::shared_ptr<Protocol<T1, T2>>;
+
+  using TOnConnectCbk = std::function<void (SPProtocol)>;
+
+  using TOnClientMessageCbk = std::function<void (SPProtocol, const std::string&)>;
+
+  enum : uint8_t
+  {
+    EStateConnecting = 0x00,
+    EStateConnected = 0x01,
+    // protocol specific
+    EStateDisconnected = 0xFF
+  };
+
+  Protocol(){};
+
+  Protocol(const std::string& name) : Subject(name) {}
+
+  virtual ~Protocol() {}
+
+  virtual void StartClient(TOnConnectCbk cbk = nullptr)
+  {
+    iConnectCbk = cbk;
+
+    auto sock = GetTargetSocketDevice();
+
+    if (sock)
+    {
+      sock->StartSocketClient();
+    }
+  }
+
+  virtual void StartServer(void)
+  {
+    auto sock = GetTargetSocketDevice();
+
+    if (sock)
+    {
+      sock->StartSocketServer();
+    }
+  }
+
+  virtual void Stop(void)
+  {
+    auto sock = GetTargetSocketDevice();
+
+    if (sock)
+    {
+      sock->StopSocket();
+    }      
+  }
+
+  virtual size_t GetMessageCount(void)
+  {
+    return iMessages.size();
+  }
+
+  virtual void SetCredentials(const std::string& user, const std::string& pass)
+  {
+    iUserName = user;
+    iPassword = pass;
+  }
+
+  virtual void SetResponseCallback(TResponseCbk cbk)
+  {
+    iResponseCallback = cbk;
+  }
+
+  virtual void SetClientMessageCallback(TOnClientMessageCbk cbk)
+  {
+    iClientMessageCallback = cbk;
+  }
+
+  virtual void SendProtocolMessage(const uint8_t *message, size_t len)
+  {
+    return;
+  }
+
+  virtual void OnConnect(void) override
+  {
+    if (iConnectCbk)
+    {
+      iConnectCbk(std::dynamic_pointer_cast<Protocol<T1, T2>>(this->shared_from_this()));
+    }
+
+    iCurrentState = EStateConnected;
+  }
+
+  virtual void OnDisconnect(void) override
+  {
+    iCurrentState = EStateDisconnected;
+  }
+
+  virtual void OnRead(const T1 *b, size_t n) override
+  {
+    for (size_t i = 0; i < n; i++)
+    {
+      iBuffer.push_back(b[i]);
+
+      auto message = IsMessageComplete(iBuffer);
+
+      if (message)
+      {
+        iMessages.push_back(message);
+        StateMachine(message);
+        Subject<T1, T2>::OnRead(
+          iBuffer.data(),
+          iBuffer.size());
+        iBuffer.clear();
+      }
+    }
+  }
+
+  virtual TLS GetChannelTLS(npl::SPSubject<T1, T2> channel)
+  {
+    auto sock = std::dynamic_pointer_cast<SocketDevice>(channel);
+
+    if (sock)
+    {
+      return sock->GetTLS();
+    }
+
+    return TLS::No;
+  }
+
+  protected:
+
+  virtual SPMessage IsMessageComplete(const std::vector<T1>& b) = 0;
+
+  virtual void StateMachine(SPMessage message)
+  {
+  }
+
+  virtual SPSocketDevice GetTargetSocketDevice(void)
+  {
+    auto target = (this->m_target).lock();
+
+    if (target)
+    {
+      return std::dynamic_pointer_cast<SocketDevice>(target);
+    }
+
+    return nullptr;
+  }
+
+  std::string iUserName;
+
+  std::string iPassword;
+
+  std::vector<T1> iBuffer;
+
+  std::vector<SPMessage> iMessages;
+
+  TOnConnectCbk iConnectCbk = nullptr;
+
+  uint8_t iCurrentState = EStateConnecting;
+
+  TResponseCbk iResponseCallback = nullptr;
+
+  TOnClientMessageCbk iClientMessageCallback = nullptr;
+};
+
+using SPProtocol = std::shared_ptr<Protocol<uint8_t, uint8_t>>;
+
+using TOnConnectCbk = std::function<void (SPProtocol)>;
+
+using TOnClientMessageCbk = std::function<void (SPProtocol, const std::string&)>;
+
+} // namespace
+
+#endif //PROTOCOL_HPP

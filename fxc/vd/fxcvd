@@ -1,0 +1,101 @@
+#ifndef VIRTUALDISK_HPP
+#define VIRTUALDISK_HPP
+
+#include <fxc/vd/vhd>
+#include <fxc/vd/vhdx>
+
+namespace fxc::vd {
+
+auto make_virtual_disk(const std::wstring& path)
+{
+  SPCBaseDisk disk = nullptr;
+
+  uint8_t buf[512] = { 0 };
+
+  auto file = npl::make_file(path, false);
+
+  if (!file)
+  {
+    std::wcout << L"Failed to open file " << path << "\n";
+    return disk;
+  }
+
+  file->ReadSync(buf, sizeof(buf), 0);
+
+  file.reset();
+
+  std::wcout << L"\n";
+
+  if (memcmp(buf, "conectix", strlen("conectix")) == 0)
+  {
+    std::wcout << L"Dynamic VHD detected\n";
+    disk = std::make_shared<CDynamicVHD>(path);
+  }
+  else if (memcmp(buf, "vhdxfile", strlen("vhdxfile")) == 0)
+  {
+    std::wcout << L"Dynamic VHDx detected\n";
+    disk = std::make_shared<CDynamicVHDx>(path);
+  }
+  else
+  {
+    std::wcout << L"Unknown image file format\n";
+  }
+
+  disk->Initialize();
+
+  return disk;
+}
+
+void CreateBaseVirtualDisk(
+  const std::wstring& format,
+  const std::wstring& source,
+  const std::wstring& target)
+{
+  if (format == L"vhd")
+  {
+    fxc::vhd::create_base_vhd(source, target);
+  }
+  else if (format == L"vhdx")
+  {
+    fxc::vhdx::create_base_vhdx(source, target);
+  }
+}
+
+void CreateIncrementalVirtualDisk(
+  const std::wstring& format,
+  const std::wstring& source,
+  const std::wstring& parent,
+  const std::wstring& target,
+  const std::wstring& rctid)
+{
+  if (format == L"vhd")
+  {
+    fxc::vhd::create_child_vhd(
+        source, // live source checkpointed base vhd
+        parent, // parent path link absolute/relative
+        target, // incr child vhd path
+        rctid); // rctid
+  }
+  else if (format == L"vhdx")
+  {
+    fxc::vhdx::create_child_vhdx(
+        source, // live source checkpointed base vhdx
+        parent, // parent path link absolute/relative
+        target, // incr child vhdx path
+        rctid); // rctid
+  }
+}
+
+void DumpVirtualDisk(const std::wstring& path)
+{
+  auto disk = fxc::vd::make_virtual_disk(path);
+
+  if (disk)
+  {
+    disk->DumpStructure();
+  }
+}
+
+}
+
+#endif
