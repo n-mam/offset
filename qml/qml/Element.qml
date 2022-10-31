@@ -5,11 +5,15 @@ import QtQuick.Controls.Material 2.12
 
 Loader {
   id: loader
-  property string text
-  property string color
+
   required property string type
   required property bool create
-  
+
+  property string text
+  property string color
+  property var used
+  property var free
+
   Component {
     id: textComponent
     Text {
@@ -29,14 +33,14 @@ Loader {
         id: used
         x: parent.x
         radius: 2
-        width: loader.width * ((model.sizeRole - model.freeRole) / model.sizeRole)
+        width: loader.width * (loader.used / (loader.used + loader.free))
         height: parent.height
         color: "lightskyblue"
         anchors.left: parent.left
         Text {
-          text: (model.sizeRole - model.freeRole) > 1 ? 
-                  (model.sizeRole - model.freeRole).toFixed(1) + "G" :
-                  ((model.sizeRole - model.freeRole) * 1024).toFixed(1) + "M"
+          text: loader.used > 1 ? 
+                  loader.used.toFixed(1) + "G" :
+                  (loader.used * 1024).toFixed(1) + "M"
           anchors.horizontalCenter: used.horizontalCenter
           anchors.verticalCenter: used.verticalCenter
         }
@@ -50,9 +54,9 @@ Loader {
         color: "mintcream"
         anchors.right: parent.right
         Text {
-          text: model.freeRole > 1 ? 
-                  model.freeRole.toFixed(1) + "G":
-                  (model.freeRole * 1024).toFixed(1) + "M"
+          text: loader.free > 1 ? 
+                  loader.free.toFixed(1) + "G":
+                  (loader.free * 1024).toFixed(1) + "M"
           anchors.horizontalCenter: remaining.horizontalCenter
           anchors.verticalCenter: remaining.verticalCenter
         }

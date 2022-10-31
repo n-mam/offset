@@ -3,23 +3,22 @@ import QtQuick.Controls
 import Qt.labs.platform
 
 ApplicationWindow {
-  width: 575
-  height: 465
+  width: 620
+  height: 475
   visible: true
   title: qsTr("FXC")
 
   Column {
     id: mainColumn
     spacing: 5
-    padding: 5
+    topPadding: 10
     width: parent.width - padding
     height: parent.height - padding
 
     Rectangle {
       anchors.left: parent.left
       anchors.right: parent.right
-      anchors.rightMargin: 10
-      anchors.leftMargin: 10
+      anchors.margins: 10
       height: parent.height * 0.75
       color: Material.background
       radius: 5

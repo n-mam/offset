@@ -58,9 +58,11 @@ Rectangle {
       id: usage
       type: "usage"
       create: rowDelegate.selectable
+      used: model.sizeRole - model.freeRole
+      free: model.freeRole
       visible: model.sizeRole > 0
       x: label.x + label.width + (2 * rowDelegate.padding)
-      width: 150
+      width: 185
       height: rowDelegate.height - (rowDelegate.height * 0.52)
     }
 
