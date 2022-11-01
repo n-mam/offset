@@ -1,5 +1,5 @@
-#ifndef DiskListModel_HPP
-#define DiskListModel_HPP
+#ifndef DISKLISTMODEL_HPP
+#define DISKLISTMODEL_HPP
 
 #include <memory>
 #include <future>
@@ -53,7 +53,6 @@ class DiskListModel : public BaseModel
   signals:
 
   void progress(QString, int);
-
 };
 
 #endif

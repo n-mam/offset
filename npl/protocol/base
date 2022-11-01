@@ -2,6 +2,7 @@
 #define PROTOCOL_HPP
 
 #include <device/socket>
+#include <osl/osl>
 
 #include <functional>
 

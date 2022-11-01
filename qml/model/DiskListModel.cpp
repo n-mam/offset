@@ -4,13 +4,17 @@
 
 DiskListModel::DiskListModel()
 {
-  auto volumes = osl::EnumerateVolumes();
+  npl::make_dispatcher();
+
   auto snapshots = fxc::ss::EnumerateSnapshots();
 
+  auto volumes = osl::EnumerateVolumes();
+
   std::sort(volumes.begin(), volumes.end(), 
-    [](const auto& one, const auto& two) -> bool { 
+    [](const auto& one, const auto& two) -> bool {
       return one.back()[0] < two.back()[0];
-    });
+    }
+  );
 
   for (const auto& names : volumes)
   {
@@ -20,8 +24,8 @@ DiskListModel::DiskListModel()
 
     for (const auto& ss : snapshots)
     {
-       if (QString::fromWCharArray((std::get<1>(ss)).c_str()) == QString::fromStdString(names.front()))
-        children++;
+      if (QString::fromWCharArray((std::get<1>(ss)).c_str()) == QString::fromStdString(names.front()))
+      children++;
     }
 
     auto [size, free] = osl::GetTotalAndFree(names[0]);

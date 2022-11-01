@@ -1,7 +1,5 @@
 #include <iostream>
 
-#include <npl/npl>
-
 #include <fxc/fxc>
 
 int wmain(int argc, wchar_t *argv[])

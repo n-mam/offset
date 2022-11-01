@@ -3,8 +3,6 @@
 
 #include <observer/dispatcher>
 #include <device/socket>
-
-#include <osl/osl>
 #include <protocol/ftp>
 #include <protocol/websocket>
 
