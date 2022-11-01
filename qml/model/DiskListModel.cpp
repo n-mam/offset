@@ -15,7 +15,7 @@ DiskListModel::DiskListModel()
 
   for (const auto& names : volumes)
   {
-    QString label = " [" + QString::fromStdString(names.back()) + "]";
+    QString label = "[" + QString::fromStdString(names.back()) + "]";
 
     int children = 0;
 
@@ -35,7 +35,10 @@ DiskListModel::DiskListModel()
       {
         auto tokens = osl::wsplit(std::get<0>(ss), L"GLOBALROOT\\Device\\");
         auto childlabel = QString::fromWCharArray((tokens[0] + tokens[1]).c_str());
-        m_model.push_back(std::make_shared<BlockDevice>(childlabel, 1, 0, true));
+
+        auto child = std::make_shared<BlockDevice>(childlabel, 1, 0, true);
+        child->m_textColor = QColor(220, 220, 170);
+        m_model.push_back(child);
       }
     }
   }
@@ -100,3 +103,32 @@ QVariant DiskListModel::data(const QModelIndex &index, int role) const
 
   return QVariant();
 }
+
+void DiskListModel::ConvertSelectedItemsToVirtualDisks(void)
+{
+  auto selected = getSelectedItems();
+
+  std::vector<fxc::TBackupConfig> configuration;
+
+  for (auto& device : selected)
+  {
+    auto name = device;
+    configuration.push_back({
+      name.remove(0, 1).remove(name.size() - 1, 1).toStdWString(), 
+      L"0",
+      L"C:\\Users\\nmam\\Desktop",
+      L"vhd",
+      L""
+    });
+  }
+
+  futures.push_back(std::async(std::launch::async, [this, configuration](){
+    fxc::ConvertPhysicalVolumesToVirtualImages(configuration, 
+      [this](auto device, auto percent){
+        QMetaObject::invokeMethod(this, [this, device, percent](){
+          emit this->progress(QString::fromStdWString(device), percent);
+        }, Qt::QueuedConnection);
+      });
+  }));
+}
+

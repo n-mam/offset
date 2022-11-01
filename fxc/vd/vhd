@@ -1,9 +1,6 @@
 #ifndef VHD_HPP
 #define VHD_HPP
 
-#include <npl>
-#include <osl/osl>
-
 #include <fxc/vd/DynVHD>
 #include <fxc/rct/rct>
 

@@ -69,12 +69,18 @@ Rectangle {
     }
 
     ProgressBar {
-      visible: model.sizeRole > 0
+      visible: rowDelegate.selectable && (model.sizeRole > 0)
       x: label.x + label.width + (2 * rowDelegate.padding)
       from: 0
       to: 100
       value: model.sizeRole ? (100 * ((model.sizeRole - model.freeRole) / model.sizeRole)) : 0 
       width: usage.width
+      function progress(device, percent) {
+          console.log(device, percent, model.display)
+      }
+      Component.onCompleted: {
+        diskListModel.progress.connect(progress)
+      }
     }
   }
 

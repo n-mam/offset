@@ -2,6 +2,7 @@
 #define DiskListModel_HPP
 
 #include <memory>
+#include <future>
 
 #include <BaseModel.h>
 
@@ -37,6 +38,8 @@ class DiskListModel : public BaseModel
   QHash<int, QByteArray> roleNames() const override;
   QVariant data(const QModelIndex &index, int role) const override;
 
+  Q_INVOKABLE void ConvertSelectedItemsToVirtualDisks(void);
+
   enum Roles
   {
     ESize = BaseModel::ELastRole + 1,
@@ -44,6 +47,12 @@ class DiskListModel : public BaseModel
   };
 
   private:
+
+  std::vector<std::future<void>> futures;
+
+  signals:
+
+  void progress(QString, int);
 
 };
 

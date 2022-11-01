@@ -1,6 +1,9 @@
 #ifndef VIRTUALDISK_HPP
 #define VIRTUALDISK_HPP
 
+#include <npl/npl>
+#include <osl/osl>
+
 #include <fxc/vd/vhd>
 #include <fxc/vd/vhdx>
 

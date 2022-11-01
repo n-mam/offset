@@ -3,6 +3,7 @@
 
 #include <memory>
 
+#include <QColor>
 #include <QModelIndex>
 #include <QAbstractItemModel>
 
@@ -23,6 +24,7 @@ struct BaseItem
   int m_depth = 0;
   int m_children = 0;
   bool m_selectable = false;
+  QColor m_textColor = QColor(103, 205, 254);
 };
 
 using SPBaseItem = std::shared_ptr<BaseItem>;

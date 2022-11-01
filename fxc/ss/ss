@@ -1,5 +1,5 @@
-#ifndef FXCSS_HPP
-#define FXCSS_HPP
+#ifndef SS_HPP
+#define SS_HPP
 
 #include <vss.h>
 #include <vswriter.h>
@@ -12,7 +12,8 @@
 
 namespace fxc::ss {
 
-bool bCOMInitialized = false;
+bool bCoInitializedSecurity = false;
+thread_local bool bCoInitialized = false;
 
 using TSnapshotSet = std::vector<
   std::tuple<std::wstring, std::wstring, std::wstring>>;
@@ -45,24 +46,27 @@ auto AsyncWait(IVssAsync **async) -> HRESULT
 
 auto InitializeCOM(void) -> HRESULT
 { 
-  if (bCOMInitialized) return S_OK;
+  if (bCoInitialized) return S_OK;
 
   HRESULT hr = CoInitialize(NULL);
 
-  CHKCOM(hr = CoInitializeSecurity(
-      NULL,
-      -1,
-      NULL,
-      NULL,
-      RPC_C_AUTHN_LEVEL_PKT_PRIVACY,
-      RPC_C_IMP_LEVEL_IMPERSONATE,
-      NULL,
-      EOAC_DYNAMIC_CLOAKING,
-      NULL))
+  if (!bCoInitializedSecurity) {
+    CHKCOM(hr = CoInitializeSecurity(
+        NULL,
+        -1,
+        NULL,
+        NULL,
+        RPC_C_AUTHN_LEVEL_PKT_PRIVACY,
+        RPC_C_IMP_LEVEL_IMPERSONATE,
+        NULL,
+        EOAC_DYNAMIC_CLOAKING,
+        NULL))
+    bCoInitializedSecurity = true;
+  }
 
   _end:
 
-  bCOMInitialized = (hr == S_OK);
+  bCoInitialized = (hr == S_OK);
 
   return hr;
 }

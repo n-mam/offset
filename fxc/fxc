@@ -1,10 +1,10 @@
 #ifndef FXC_HPP
 #define FXC_HPP
 
-#include <fxc/vd/fxcvd>
-#include <fxc/ss/fxcss>
-
 #include <iostream>
+
+#include <fxc/vd/vd>
+#include <fxc/ss/ss>
 
 namespace fxc {
 
@@ -16,6 +16,8 @@ struct TBackupConfig
   std::wstring m_format;
   std::wstring m_exclude;
 };
+
+using TProgressCallback = std::function<void (std::wstring, int)>;
 
 auto usage(void)
 {
@@ -186,16 +188,8 @@ auto RecoverVolumeToVolume(const std::wstring& source, const std::wstring& targe
   return fRet;
 }
 
-auto ConvertPhysicalVolumesToVirtualImages(const std::vector<TBackupConfig> configuration)
+auto ConvertPhysicalVolumesToVirtualImages(const std::vector<TBackupConfig> configuration, TProgressCallback cbk)
 {
-  HRESULT hr = fxc::ss::InitializeCOM();
-
-  if (hr != S_OK)
-  {
-    std::cout << "fxc::ssInitializeCOM failed" << std::endl;
-    return false;
-  }
-
   std::vector<std::wstring> supported, unsupported;
 
   for (const auto& config : configuration)
@@ -214,25 +208,33 @@ auto ConvertPhysicalVolumesToVirtualImages(const std::vector<TBackupConfig> conf
     }
   }
 
-  ss::CreateSnapshot(
-    supported,
-    [&] (fxc::ss::TSnapshotSet ss)
-    {
-      for (int i = 0; i < ss.size(); i++)
+  if (supported.size())
+  {
+    ss::CreateSnapshot(
+      supported,
+      [&] (fxc::ss::TSnapshotSet ss)
       {
-        auto [volume1, snapshotDevice, volumeDevice] = ss[i];
-        auto [volume2, level, folder, format, exclude] = configuration[i];
+        for (int i = 0; i < ss.size(); i++)
+        {
+          auto [volume1, snapshotDevice, volumeDevice] = ss[i];
+          auto [volume2, level, folder, format, exclude] = configuration[i];
 
-        std::wcout << " " << volume1 << " " << snapshotDevice << " " << volumeDevice << std::endl;
+          std::wcout << " " << volume1 << " " << snapshotDevice << " " << volumeDevice << std::endl;
 
-        auto target = folder + L"\\" + volumeDevice.substr(4, volumeDevice.size() - 5) + L"." + format;
+          auto target = folder + L"\\" + volumeDevice.substr(4, volumeDevice.size() - 5) + L"." + format;
 
-        fxc::vd::CreateBaseVirtualDisk(format, snapshotDevice, target);
-      }
+          fxc::vd::CreateBaseVirtualDisk(format, snapshotDevice, target);
+        }
+      });
+  }
+
+  if (unsupported.size())
+  {
+    for (const auto& rawvolume : unsupported)
+    {
+
     }
-  );
-
-  // todo: full image backup for rawset volumes
+  }
 
   return true;
 }

@@ -78,8 +78,7 @@ ApplicationWindow {
         anchors.margins: mainColumn.spacing
         anchors.verticalCenter: actions.verticalCenter
         onClicked: {
-          var selected = diskListModel.getSelectedItems()
-          console.log(selected)
+          diskListModel.ConvertSelectedItemsToVirtualDisks()
         }
       }
       Button {

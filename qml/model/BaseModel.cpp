@@ -1,8 +1,5 @@
 #include <BaseModel.h>
 
-#include <QBrush>
-#include <QColor>
-
 #include <vector>
 
 BaseModel::BaseModel()
@@ -79,7 +76,7 @@ QVariant BaseModel::data(const QModelIndex &index, int role) const
     
     case Qt::ForegroundRole:
     {
-      return QColor(Qt::white);
+      return QColor(m_model[row]->m_textColor);
     }
 
     case EHasChildren:
