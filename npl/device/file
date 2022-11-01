@@ -3,12 +3,82 @@
 
 #include <assert.h>
 
-#include <observer/common>
 #include <observer/subject>
+
+#ifdef WIN32
+  #include <winsock2.h>
+  #include <MSWSock.h>
+  #include <Ws2tcpip.h>
+  using FD = HANDLE;
+#else
+  #include <netdb.h>
+  #include <fcntl.h>
+  #include <string.h>
+  #include <unistd.h>
+  #include <arpa/inet.h>
+  #include <sys/types.h>
+  #include <sys/socket.h>
+  #include <netinet/in.h>
+  #include <netinet/tcp.h>
+  using FD = int;
+  using SOCKET = int;
+  #define closesocket close;
+#endif
 
 namespace npl {
 
 constexpr uint32_t DEVICE_BUFFER_SIZE = 256;
+
+enum EDeviceType : uint8_t
+{
+  None = 0,
+  File,
+  Socket
+};
+
+enum EIOType : uint8_t
+{
+  CONNECT = 0,
+  ACCEPT,
+  READ,
+  WRITE,
+  IOCTL
+};
+
+struct Context
+{
+  #ifdef WIN32
+  OVERLAPPED      ol;
+  #else
+
+  #endif
+  EIOType         type;
+  void          * k;
+  const uint8_t * b;
+  unsigned long   n;
+  bool            bFree;
+};
+
+auto EIOToString(EIOType t)
+{
+  switch(t)
+  {
+    case EIOType::ACCEPT:
+      return "OnAccept";
+      break;
+    case EIOType::CONNECT:
+      return "OnConnect";
+      break;
+    case EIOType::READ:
+      return "OnRead";
+      break;
+    case EIOType::WRITE:
+      return "OnWrite";
+      break;
+    default:
+      return "INVALID";
+  }
+}
 
 class FileDevice : public Subject<uint8_t, uint8_t>
 {
