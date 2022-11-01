@@ -3,8 +3,12 @@
 
 #include <iostream>
 
+#include <npl/npl>
+#include <osl/osl>
+
 #include <fxc/vd/vd>
 #include <fxc/ss/ss>
+#include <fxc/rct/rct>
 
 namespace fxc {
 

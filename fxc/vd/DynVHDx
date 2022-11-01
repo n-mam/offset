@@ -1,13 +1,11 @@
 #ifndef DYNVHDX_HPP
 #define DYNVHDX_HPP
 
-#include <fxc/vd/BaseDisk>
-#include <fxc/vd/formats>
-
-#include <osl/osl>
-
 #include <string>
 #include <math.h>
+
+#include <fxc/vd/BaseDisk>
+#include <fxc/vd/formats>
 
 #include <crc32c/crc32c.h>
 

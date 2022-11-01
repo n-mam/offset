@@ -1,12 +1,10 @@
 #ifndef DYNVHD_HPP
 #define DYNVHD_HPP
 
-#include <osl/osl>
+#include <string>
 
 #include <fxc/vd/BaseDisk>
 #include <fxc/vd/formats>
-
-#include <string>
 
 class CDynamicVHD : public CBaseDisk
 {
