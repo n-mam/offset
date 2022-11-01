@@ -47,6 +47,8 @@ Rectangle {
     id: label
     text: model.display
     color: model.textColorRole
+    elide: Text.ElideRight
+    width: (rowDelegate.depth == 0) ? 125 : undefined
     anchors.verticalCenter: rowDelegate.verticalCenter
     x: checkBox.x + checkBox.width + rowDelegate.padding
   }

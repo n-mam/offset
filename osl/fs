@@ -345,6 +345,23 @@ auto GetVolumeDiskExtents(const std::wstring& volume)
   return disks;
 }
 
+template<typename T>
+auto GetTotalAndFree(const T& volume)
+{
+  auto h = osl::GetVolumeHandle(volume);
+
+  auto l = osl::GetPartitionLength(h);
+
+  auto nvdb = osl::GetNTFSVolumeData(h);
+
+  CloseHandle(h);
+
+  double size = (double)(nvdb.TotalClusters.QuadPart * nvdb.BytesPerCluster) / (1ULL*1024*1024*1024);
+  double free = (double)(nvdb.FreeClusters.QuadPart * nvdb.BytesPerCluster) / (1ULL*1024*1024*1024);
+
+  return std::make_pair(size, free);
+}
+
 auto EnumerateVolumes(void)
 {
   char _guid[128];

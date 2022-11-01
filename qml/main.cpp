@@ -12,6 +12,9 @@ int main(int argc, char *argv[])
 
   QGuiApplication app(argc, argv);
 
+  QFont font("Consolas", 10);
+  app.setFont(font);
+  
   QQmlApplicationEngine engine;
 
   const QUrl url(u"qrc:/main.qml"_qs);
@@ -25,9 +28,6 @@ int main(int argc, char *argv[])
   engine.rootContext()->setContextProperty("diskListModel", new DiskListModel());
 
   engine.load(url);
-
-  QFont font("Consolas", 10);
-  app.setFont(font);
 
   return app.exec();
 }

@@ -15,12 +15,7 @@ DiskListModel::DiskListModel()
 
   for (const auto& names : volumes)
   {
-    QString label;
-
-    if (names.size() == 2)
-      label += " [" + QString::fromStdString(names.back()) + "]";
-    else 
-      label += "      ";
+    QString label = " [" + QString::fromStdString(names.back()) + "]";
 
     int children = 0;
 
@@ -30,16 +25,7 @@ DiskListModel::DiskListModel()
         children++;
     }
 
-    auto h = osl::GetVolumeHandle(names[0]);
-
-    auto l = osl::GetPartitionLength(h);
-
-    auto nvdb = osl::GetNTFSVolumeData(h);
-
-    CloseHandle(h);
-
-    double size = (double)(nvdb.TotalClusters.QuadPart * nvdb.BytesPerCluster) / (1ULL*1024*1024*1024);
-    double free = (double)(nvdb.FreeClusters.QuadPart * nvdb.BytesPerCluster) / (1ULL*1024*1024*1024);
+    auto [size, free] = osl::GetTotalAndFree(names[0]);
 
     m_model.push_back(std::make_shared<BlockDevice>(label, 0, children, true, size, free));
 

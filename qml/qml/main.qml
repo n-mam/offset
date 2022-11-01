@@ -3,7 +3,7 @@ import QtQuick.Controls
 import Qt.labs.platform
 
 ApplicationWindow {
-  width: 620
+  width: 500
   height: 475
   visible: true
   title: qsTr("FXC")
@@ -43,7 +43,7 @@ ApplicationWindow {
       border.color: "#a7c497"
       TextField {
         id: destination
-        width: (parent.width * 0.70) - (2 * mainColumn.padding)
+        width: (parent.width * 0.75) - mainColumn.spacing
         anchors.left: parent.left
         anchors.margins: 10
         placeholderText: qsTr("Destination")
@@ -67,7 +67,7 @@ ApplicationWindow {
       // border.color: "#a7c497"
       color: Material.background
       anchors.horizontalCenter: parent.horizontalCenter
-      width: 75 + 75 + (3 * mainColumn.padding)
+      width: 75 + 75 + (3 * mainColumn.spacing)
       height: parent.height * 0.10
       Button {
         id: startButton
@@ -75,7 +75,7 @@ ApplicationWindow {
         text: "START"
         height: actions.height * 0.80
         anchors.left: actions.left
-        anchors.margins: mainColumn.padding
+        anchors.margins: mainColumn.spacing
         anchors.verticalCenter: actions.verticalCenter
         onClicked: {
           var selected = diskListModel.getSelectedItems()
@@ -88,7 +88,7 @@ ApplicationWindow {
         text: "CANCEL"
         height: actions.height * 0.80
         anchors.left: startButton.right
-        anchors.margins: mainColumn.padding
+        anchors.margins: mainColumn.spacing
         anchors.verticalCenter: actions.verticalCenter
       }
     }
