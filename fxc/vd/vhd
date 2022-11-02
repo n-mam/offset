@@ -114,9 +114,11 @@ void create_base_vhd(const std::wstring& volume, const std::wstring& file, fxc::
 
   nTotalPayloadBlocks--;
 
+  bool stop = false;
+
   // payload blocks
 
-  for (uint64_t index = 1; index < disk->GetTotalBATEntries(); index++)
+  for (uint64_t index = 1; index < disk->GetTotalBATEntries() && !stop; index++)
   {
     uint32_t entry = osl::endian_reverse(*(bat.get() + index));
 
@@ -145,8 +147,17 @@ void create_base_vhd(const std::wstring& volume, const std::wstring& file, fxc::
 
       nTotalPayloadBlocks--;
 
-      if (cbk) cbk(volume, (1.00 - ((float)nTotalPayloadBlocks/(float)validBATEntryCount)) * 100);
+      if (cbk)
+      {
+        stop = cbk(volume, (1.00 - ((float)nTotalPayloadBlocks/(float)validBATEntryCount)) * 100);
+      }
     }
+  }
+
+  if (stop)
+  {
+    std::cout << "create_base_vhd stop true" << std::endl;
+    return;
   }
 
   assert(nTotalPayloadBlocks == 0);
@@ -157,7 +168,7 @@ void create_base_vhd(const std::wstring& volume, const std::wstring& file, fxc::
   {
     //DumpData("cbat.bin", (uint8_t *) bat.get(), disk->iBATSize);
     //DumpData("rbat.bin", (uint8_t *) disk->iBAT.get(), disk->iBATSize);
-    throw std::runtime_error("constructed bat does not match runtime bat");
+    std::cout << "constructed bat does not match runtime bat" << std::endl;
   }
 
   // footer

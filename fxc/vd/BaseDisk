@@ -20,7 +20,7 @@ struct DataBlockIO
   size_t length = 0;
 };
 
-using TProgressCallback = std::function<void (std::wstring, int)>;
+using TProgressCallback = std::function<bool (std::wstring, int)>;
 
 class CBaseDisk : public npl::Subject<uint8_t, uint8_t>
 {

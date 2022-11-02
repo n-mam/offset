@@ -121,6 +121,16 @@ void DiskListModel::setTransfer(bool current)
   }
 }
 
+bool DiskListModel::getStop() const
+{
+  return this->stop;
+}
+
+void DiskListModel::setStop(bool stop)
+{
+  this->stop = stop;
+}
+
 void DiskListModel::ConvertSelectedItemsToVirtualDisks(QString folder)
 {
   setTransfer(true);
@@ -141,7 +151,6 @@ void DiskListModel::ConvertSelectedItemsToVirtualDisks(QString folder)
     });
   }
 
-
   futures.push_back(std::async(std::launch::async, 
     [this, configuration](){
       fxc::ConvertPhysicalVolumesToVirtualImages(configuration, 
@@ -149,8 +158,10 @@ void DiskListModel::ConvertSelectedItemsToVirtualDisks(QString folder)
           QMetaObject::invokeMethod(this, [this, device, percent](){
             emit this->progress(QString::fromStdWString(device), percent);
           }, Qt::QueuedConnection);
+          return this->stop;
         });
       this->setTransfer(false);
+      this->setStop(false);
     }
   ));
 }

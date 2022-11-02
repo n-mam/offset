@@ -86,7 +86,7 @@ ApplicationWindow {
         anchors.margins: mainColumn.spacing
         anchors.verticalCenter: actions.verticalCenter
         onClicked: {
-          diskListModel.ConvertSelectedItemsToVirtualDisks(destination.text)
+          diskListModel.ConvertSelectedItemsToVirtualDisks(destination.text.length ? destination.text : ".\\")
         }
       }
       Button {
@@ -99,7 +99,7 @@ ApplicationWindow {
         anchors.margins: mainColumn.spacing
         anchors.verticalCenter: actions.verticalCenter
         onClicked: {
-          diskListModel.CancelTransfer()
+          diskListModel.stop = true;
         }
       }
     }

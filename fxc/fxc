@@ -230,7 +230,7 @@ auto ConvertPhysicalVolumesToVirtualImages(const std::vector<TBackupConfig> conf
           futures.push_back(std::async(std::launch::async, [=](){
             fxc::CreateBaseVirtualDisk(format, snapshotDevice, target,
               [=](auto snapshot, auto percent){
-                if (cbk) cbk(volume1, percent);
+                  return cbk(volume1, percent);
               });
           }));
         }

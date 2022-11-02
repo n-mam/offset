@@ -40,6 +40,7 @@ class DiskListModel : public BaseModel
 
   Q_INVOKABLE void ConvertSelectedItemsToVirtualDisks(QString folder);
 
+  Q_PROPERTY(bool stop READ getStop WRITE setStop);
   Q_PROPERTY(bool transfer READ getTransfer WRITE setTransfer NOTIFY transferChanged);
 
   enum Roles
@@ -52,10 +53,13 @@ class DiskListModel : public BaseModel
 
   bool getTransfer() const;
   void setTransfer(bool);
+  bool getStop() const;
+  void setStop(bool);
 
   private:
 
   bool transfer = false;
+  bool stop = false;
   std::vector<std::future<void>> futures;
 
   signals:
