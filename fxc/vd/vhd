@@ -88,7 +88,7 @@ void create_base_vhd(const std::wstring& volume, const std::wstring& file, fxc::
     {
       uint64_t batindex = f.offset / bs;
 
-      uint32_t batentry = osl::BTOL32((uint8_t *) (bat.get() + batindex));
+      uint32_t batentry = osl::endian_reverse(*(bat.get() + batindex));
 
       if (batentry == ~((uint32_t)0))
       {
@@ -115,7 +115,7 @@ void create_base_vhd(const std::wstring& volume, const std::wstring& file, fxc::
 
   for (index = 1; index < disk->GetTotalBATEntries(); index++)
   {
-    uint32_t entry = osl::BTOL32((uint8_t *) (bat.get() + index));
+    uint32_t entry = osl::endian_reverse(*(bat.get() + index));
 
     if (entry != ~((uint32_t)0))
     {

@@ -54,28 +54,28 @@ class CDynamicVHD : public CBaseDisk
       iFile->ReadSync(
         (uint8_t *) iBAT.get(), 
         iBATSize, 
-        osl::BTOL64((uint8_t *) &(iHeader.TableOffset))
+        osl::endian_reverse(*((uint64_t *)&iHeader.TableOffset))
       );
     }
 
     virtual uint32_t GetBlockSize() override
     {
-      return osl::BTOL32((uint8_t *) &(iHeader.BlockSize));
+      return osl::endian_reverse(*((uint32_t *)&iHeader.BlockSize));
     }
 
     virtual uint64_t GetTotalBATEntries(void)
     {
-      return osl::BTOL32((uint8_t *) &(iHeader.MaxTableEntries));
+      return osl::endian_reverse(*((uint32_t *)&iHeader.MaxTableEntries));
     }
 
     virtual uint64_t GetLogicalDiskLength() override
     {
-      return osl::BTOL((uint8_t *) &(iFooter.CurrentSize), 8);
+      return osl::endian_reverse(*((uint64_t *)&iFooter.CurrentSize));
     }
 
     virtual bool IsDifferencing() override
     {
-      return ((osl::BTOL32((uint8_t *) &(iFooter.DiskType)) == 4) ? true : false);
+      return ((osl::endian_reverse(*((uint32_t *)&iFooter.DiskType)) == 4) ? true : false);
     }
 
     virtual std::vector<std::wstring> GetParentLocators(void) override
@@ -84,8 +84,8 @@ class CDynamicVHD : public CBaseDisk
 
       for (int i = 0; i < 8; i++)
       {
-        auto off = osl::BTOL64((uint8_t *) &iHeader.ParentLocatorTable[i].PlatformDataOffset);
-        auto len = osl::BTOL32((uint8_t *) &iHeader.ParentLocatorTable[i].PlatformDataSpace);
+        auto off = osl::endian_reverse(*((uint64_t *)&iHeader.ParentLocatorTable[i].PlatformDataOffset));
+        auto len = osl::endian_reverse(*((uint32_t *)&iHeader.ParentLocatorTable[i].PlatformDataSpace));
 
         auto _buf = std::make_unique<uint8_t []>(len);
 
@@ -195,18 +195,18 @@ class CDynamicVHD : public CBaseDisk
       std::cout << "VHD Footer : \n\n";
 
       std::cout << "Cookie                       : " << std::string((char *)iFooter.Cookie, 8) << std::endl;
-      std::cout << "DataOffset                   : " << osl::BTOL64((uint8_t *) &(iFooter.DataOffset)) << std::endl;   
-      std::cout << "Original Size                : " << osl::BTOL64((uint8_t *) &(iFooter.OriginalSize)) << std::endl;
-      std::cout << "Current Size                 : " << osl::BTOL64((uint8_t *) &(iFooter.CurrentSize)) << std::endl;
+      std::cout << "DataOffset                   : " << osl::endian_reverse(*((uint64_t *)&iFooter.DataOffset)) << std::endl;   
+      std::cout << "Original Size                : " << osl::endian_reverse(*((uint64_t *)&iFooter.OriginalSize)) << std::endl;
+      std::cout << "Current Size                 : " << osl::endian_reverse(*((uint64_t *)&iFooter.CurrentSize)) << std::endl;
       std::cout << "Creator Application          : " << std::string((char *)iFooter.CreatorApplication, 4) << std::endl;
 
       std::cout << std::endl;
       std::cout << "VHD Sparse Header : \n\n";
       
       std::cout << "Cookie                       : " << std::string((char *)iHeader.Cookie, 8) << std::endl;
-      std::cout << "DataOffset                   : " << osl::BTOL64((uint8_t *) &(iHeader.DataOffset)) << std::endl;
-      std::cout << "Table Offset                 : " << osl::BTOL64((uint8_t *) &(iHeader.TableOffset)) << std::endl;
-      std::cout << "Block Size                   : " << osl::BTOL32((uint8_t *) &(iHeader.BlockSize)) << std::endl;
+      std::cout << "DataOffset                   : " << osl::endian_reverse(*((uint64_t *)&iHeader.DataOffset)) << std::endl;
+      std::cout << "Table Offset                 : " << osl::endian_reverse(*((uint64_t *)&iHeader.TableOffset)) << std::endl;
+      std::cout << "Block Size                   : " << osl::endian_reverse(*((uint64_t *)&iHeader.BlockSize)) << std::endl;
 
       std::cout << "Parent UniqueId              : ";
       DumpBytes(iHeader.ParentUniqueId, 16, true);
@@ -249,7 +249,7 @@ class CDynamicVHD : public CBaseDisk
     virtual size_t DataBlockRead(DataBlockIO& f) override
     {
       uint64_t batindex = f.offset / GetBlockSize();
-      uint32_t batentry = osl::BTOL32((uint8_t *) (iBAT.get() + batindex));
+      uint32_t batentry = osl::endian_reverse(*(iBAT.get() + batindex));
 
       uint64_t blockoff = f.offset % GetBlockSize();
 
@@ -269,7 +269,7 @@ class CDynamicVHD : public CBaseDisk
     virtual size_t DataBlockWrite(DataBlockIO& f) override
     {
       uint64_t batindex = f.offset / GetBlockSize();
-      uint32_t batentry = osl::BTOL32((uint8_t *) (iBAT.get() + batindex));
+      uint32_t batentry = osl::endian_reverse(*(iBAT.get() + batindex));
 
       auto blockoff = f.offset % GetBlockSize();
 
@@ -432,7 +432,7 @@ class CDynamicVHD : public CBaseDisk
 
     void InitializeBAT()
     {
-      uint64_t n = osl::BTOL((uint8_t *) &(iHeader.MaxTableEntries), 4);
+      uint64_t n = osl::endian_reverse(*((uint32_t *)&iHeader.MaxTableEntries));
 
       iBATSize = n * sizeof(uint32_t);
 
