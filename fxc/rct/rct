@@ -5,7 +5,7 @@
 #include <string>
 #include <iostream>
 
-namespace fxc::rct {
+namespace fxc {
 
 using RCTCBT = std::tuple <
   std::unique_ptr<QUERY_CHANGES_VIRTUAL_DISK_RANGE []>, ULONG
@@ -31,7 +31,7 @@ RCTCBT GetRCTRanges(const std::wstring& file, const std::wstring& rctid)
 
   if (pfnGetVirtualDiskInformation == NULL)
   {
-    std::cout << "Failed to get poinetr to GetVirtualDiskInformation " << GetLastError() << "\n";
+    std::cout << "Failed to get poinetr to GetVirtualDiskInformation " << GetLastError() << std::endl;
     return {};
   }
 
@@ -43,11 +43,11 @@ RCTCBT GetRCTRanges(const std::wstring& file, const std::wstring& rctid)
 
   if (fRet != ERROR_SUCCESS)
   {
-    std::cout << "GetVirtualDiskInformation GET_VIRTUAL_DISK_INFO_CHANGE_TRACKING_STATE failed " << fRet << "\n";
+    std::cout << "GetVirtualDiskInformation GET_VIRTUAL_DISK_INFO_CHANGE_TRACKING_STATE failed " << fRet << std::endl;
     return {};
   }
 
-  std::wcout << "RCT ID : " << std::wstring(((GET_VIRTUAL_DISK_INFO *)vdinfo)->ChangeTrackingState.MostRecentId) << "\n";
+  std::wcout << "RCT ID : " << std::wstring(((GET_VIRTUAL_DISK_INFO *)vdinfo)->ChangeTrackingState.MostRecentId) << std::endl;
 
   // query disk length
   memset(vdinfo, 0, sizeof(vdinfo));
@@ -62,11 +62,11 @@ RCTCBT GetRCTRanges(const std::wstring& file, const std::wstring& rctid)
 
   if (fRet != ERROR_SUCCESS)
   {
-    std::cout << "GetVirtualDiskInformation GET_VIRTUAL_DISK_INFO_SIZE failed " << fRet << "\n";
+    std::cout << "GetVirtualDiskInformation GET_VIRTUAL_DISK_INFO_SIZE failed " << fRet << std::endl;
     return {};
   }
 
-  std::cout << "Disk length : " << ((GET_VIRTUAL_DISK_INFO *)vdinfo)->Size.VirtualSize << "\n";
+  std::cout << "Disk length : " << ((GET_VIRTUAL_DISK_INFO *)vdinfo)->Size.VirtualSize << std::endl;
 
   ULONG count = 4096;
   ULONG64 ProcessedLength = 0;
@@ -77,7 +77,7 @@ RCTCBT GetRCTRanges(const std::wstring& file, const std::wstring& rctid)
 
   if (pfnQueryChangesVirtualDisk == NULL)
   {
-    std::cout << "Failed to get poinetr to QueryChangesVirtualDisk " << GetLastError() << "\n";
+    std::cout << "Failed to get poinetr to QueryChangesVirtualDisk " << GetLastError() << std::endl;
     return {};
   }
 
@@ -93,12 +93,12 @@ RCTCBT GetRCTRanges(const std::wstring& file, const std::wstring& rctid)
 
   if (fRet != ERROR_SUCCESS)
   {
-    std::cout << "QueryChangesVirtualDisk failed " << fRet << "\n";
+    std::cout << "QueryChangesVirtualDisk failed " << fRet << std::endl;
     return {};
   }
 
-  std::cout << "Range count : " << count << "\n";
-  std::cout << "Processed length : " << ProcessedLength << "\n";
+  std::cout << "Range count : " << count << std::endl;
+  std::cout << "Processed length : " << ProcessedLength << std::endl;
 
   CloseHandle(hvhd);
 
@@ -107,7 +107,7 @@ RCTCBT GetRCTRanges(const std::wstring& file, const std::wstring& rctid)
 
 auto ResilientChangeTrackingToDataBlockIO(const std::wstring& source, const std::wstring& rctid, uint32_t bs)
 {
-  std::map<uint64_t, std::vector<DataBlockIO>> dbiomap;
+  std::map<uint64_t, std::vector<fxc::DataBlockIO>> dbiomap;
 
   auto [ranges, count] = GetRCTRanges(source, rctid);
 
@@ -116,7 +116,7 @@ auto ResilientChangeTrackingToDataBlockIO(const std::wstring& source, const std:
     auto off = ranges[i].ByteOffset;
     auto len = ranges[i].ByteLength;
 
-    auto fragments = CBaseDisk::LogicalToDataBlock(off, len, bs);
+    auto fragments = fxc::CBaseDisk::LogicalToDataBlock(off, len, bs);
 
     for (auto& fragmet : fragments)
     {
@@ -126,7 +126,7 @@ auto ResilientChangeTrackingToDataBlockIO(const std::wstring& source, const std:
     }
   }
 
-  std::cout << "Data block io map size : " << dbiomap.size() << "\n";
+  std::cout << "Data block io map size : " << dbiomap.size() << std::endl;
 
   for (auto& kv : dbiomap)
   { 

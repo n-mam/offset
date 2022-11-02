@@ -20,8 +20,6 @@ struct TBackupConfig
   std::wstring m_exclude;
 };
 
-using TProgressCallback = std::function<void (std::wstring, int)>;
-
 auto usage(void)
 {
   std::cout << std::endl;
@@ -33,7 +31,7 @@ auto usage(void)
 
 auto RecoverVirtualImageToPhysicalVolume(const std::wstring& source, const std::wstring& target)
 {
-  auto disk = fxc::vd::make_virtual_disk(source);
+  auto disk = fxc::make_virtual_disk(source);
 
   if (!disk)
   {
@@ -45,7 +43,7 @@ auto RecoverVirtualImageToPhysicalVolume(const std::wstring& source, const std::
 
   if (hTarget == INVALID_HANDLE_VALUE)
   {
-    std::cout << "Failed to open target " << target.c_str() << ", error " << GetLastError() << "\n";
+    std::cout << "Failed to open target " << target.c_str() << ", error " << GetLastError() << std::endl;
     return false;
   }
 
@@ -80,7 +78,7 @@ auto RecoverVirtualImageToPhysicalVolume(const std::wstring& source, const std::
 
     if (n != nToRead)
     {
-      std::cout << "ReadSync on source returned " << n << "\n";
+      std::cout << "ReadSync on source returned " << n << std::endl;
       break;
     }
 
@@ -94,11 +92,11 @@ auto RecoverVirtualImageToPhysicalVolume(const std::wstring& source, const std::
 
     nDone += n;
 
-    std::cout << "n : " << n << " nDone : " << nDone << "\n";
+    std::cout << "n : " << n << " nDone : " << nDone << std::endl;
 
   } while (nDone != nTotal);
 
-  std::cout << "nTotal : " << nTotal << "\n";
+  std::cout << "nTotal : " << nTotal << std::endl;
 
   return fRet;
 }
@@ -116,7 +114,7 @@ auto RecoverVolumeToVolume(const std::wstring& source, const std::wstring& targe
 
   if (hSource == INVALID_HANDLE_VALUE)
   {
-    std::cout << "Failed to open source volume, error : " << GetLastError() << "\n";
+    std::cout << "Failed to open source volume, error : " << GetLastError() << std::endl;
     goto _end;
   }
 
@@ -132,7 +130,7 @@ auto RecoverVolumeToVolume(const std::wstring& source, const std::wstring& targe
 
   if (fRet == FALSE)
   {
-    std::cout << "EXTENDED_DASD_IO failed on source, error : " << GetLastError() << "\n";
+    std::cout << "EXTENDED_DASD_IO failed on source, error : " << GetLastError() << std::endl;
     goto _end;
   }
 
@@ -140,7 +138,7 @@ auto RecoverVolumeToVolume(const std::wstring& source, const std::wstring& targe
 
   if (hTarget == INVALID_HANDLE_VALUE)
   {
-    std::cout << "Failed to open target " << target.c_str() << ", error " << GetLastError() << "\n";
+    std::cout << "Failed to open target " << target.c_str() << ", error " << GetLastError() << std::endl;
     goto _end;
   }
 
@@ -164,12 +162,12 @@ auto RecoverVolumeToVolume(const std::wstring& source, const std::wstring& targe
 
       if (fRet == FALSE)
       {
-        std::cout << "WriteFile on target failed, error : " << GetLastError() << "\n";
+        std::cout << "WriteFile on target failed, error : " << GetLastError() << std::endl;
       }
     }
     else
     {
-      std::cout << "ReadFile on source failed, error : " << GetLastError() << "\n";
+      std::cout << "ReadFile on source failed, error : " << GetLastError() << std::endl;
     }
 
     if (lpNumberOfBytesRead < _1M) break;
@@ -199,7 +197,7 @@ auto ConvertPhysicalVolumesToVirtualImages(const std::vector<TBackupConfig> conf
   {
     auto [volume, level, folder, format, exclude] = config;
 
-    bool isSupported = fxc::ss::IsVolumeSupported(volume.c_str());
+    bool isSupported = fxc::IsVolumeSupported(volume.c_str());
 
     if (isSupported)
     {
@@ -213,9 +211,9 @@ auto ConvertPhysicalVolumesToVirtualImages(const std::vector<TBackupConfig> conf
 
   if (supported.size())
   {
-    ss::CreateSnapshot(
+    CreateSnapshot(
       supported,
-      [&] (fxc::ss::TSnapshotSet ss)
+      [&] (fxc::TSnapshotSet ss)
       {
         for (int i = 0; i < ss.size(); i++)
         {
@@ -226,7 +224,7 @@ auto ConvertPhysicalVolumesToVirtualImages(const std::vector<TBackupConfig> conf
 
           auto target = folder + L"\\" + volumeDevice.substr(4, volumeDevice.size() - 5) + L"." + format;
 
-          fxc::vd::CreateBaseVirtualDisk(format, snapshotDevice, target);
+          fxc::CreateBaseVirtualDisk(format, snapshotDevice, target, cbk);
         }
       });
   }
@@ -249,13 +247,13 @@ auto MountVirtualDiskAsVolume(const std::wstring& image)
 
 auto TestSnapshot(std::vector<std::wstring> volumes)
 {
-  fxc::ss::EnumerateSnapshots();
+  fxc::EnumerateSnapshots();
   
   std::vector<std::wstring> supported, unsupported;
 
   for (const auto& volume : volumes)
   {
-    if (fxc::ss::IsVolumeSupported(volume))
+    if (fxc::IsVolumeSupported(volume))
     {
       supported.push_back(volume);
     }
@@ -265,9 +263,9 @@ auto TestSnapshot(std::vector<std::wstring> volumes)
     }
   }
 
-  fxc::ss::CreateSnapshot(
+  fxc::CreateSnapshot(
     supported,
-    [] (fxc::ss::TSnapshotSet ss) {
+    [] (fxc::TSnapshotSet ss) {
       for (auto& s : ss)
       {
         auto [volume, snapshotDevice, volumeDevice] = s;
@@ -295,18 +293,19 @@ auto entry(std::vector<std::wstring> arguments)
   }
   else if (cmd == L"-d")
   {
-    fxc::vd::DumpVirtualDisk(arguments[0]);
+    fxc::DumpVirtualDisk(arguments[0]);
   }
   else if (cmd == L"-f")
   {
-    fxc::vd::CreateBaseVirtualDisk(
+    fxc::CreateBaseVirtualDisk(
         arguments[0],
         arguments[1],
-        arguments[2]);
+        arguments[2],
+        nullptr);
   }
   else if (cmd == L"-i")
   {
-    fxc::vd::CreateIncrementalVirtualDisk(
+    fxc::CreateIncrementalVirtualDisk(
         arguments[0],
         arguments[1],
         arguments[2],
@@ -315,7 +314,7 @@ auto entry(std::vector<std::wstring> arguments)
   }
   else if (cmd == L"-r")
   {
-    fxc::rct::ResilientChangeTrackingToDataBlockIO(
+    fxc::ResilientChangeTrackingToDataBlockIO(
         arguments[0], // source live vhd
         arguments[1], // rctid
         _2M);

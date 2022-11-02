@@ -6,10 +6,10 @@
 
 #include <string>
 
-namespace fxc::vhdx {
+namespace fxc {
 
 //create base parent vhdx from a volume/snapshot block device 
-void create_base_vhdx(const std::wstring& volume, const std::wstring& file)
+void create_base_vhdx(const std::wstring& volume, const std::wstring& file, fxc::TProgressCallback cbk)
 {
   auto source = npl::make_file(volume, false);
 
@@ -17,7 +17,7 @@ void create_base_vhdx(const std::wstring& volume, const std::wstring& file)
 
   uint64_t length = osl::GetPartitionLength(source->iFDsync);
 
-  std::cout << "Source volume length " << length << "\n";
+  std::cout << "Source volume length " << length << std::endl;
 
   auto disk = std::make_shared<CDynamicVHDx>(length, _4M);
 
@@ -106,15 +106,15 @@ void create_base_vhdx(const std::wstring& volume, const std::wstring& file)
     }
   }
 
-  std::cout << "BAT constructed with " << count << " block entries. Last index " << index << "\n";
+  std::cout << "BAT constructed with " << count << " block entries. Last index " << index << std::endl;
 
   uint64_t totalClusterLength = nvdb.TotalClusters.QuadPart * nvdb.BytesPerCluster;
 
-  std::cout << "Source volume total cluster length " << totalClusterLength << "\n";
+  std::cout << "Source volume total cluster length " << totalClusterLength << std::endl;
 
   uint64_t pendinglen = length - totalClusterLength;
 
-  std::cout << "Source volume pending length " << pendinglen << "\n";
+  std::cout << "Source volume pending length " << pendinglen << std::endl;
 
   if (pendinglen)
   {
@@ -139,7 +139,7 @@ void create_base_vhdx(const std::wstring& volume, const std::wstring& file)
 
       if (VHDX_BAT_ENTRY_GET_STATE(batentry) == VHDX_BAT_ENTRY_PAYLOAD_BLOCK_NOT_PRESENT)
       {
-        std::cout << "BAT setting entry for pending len at " << batindex << "\n";
+        std::cout << "BAT setting entry for pending len at " << batindex << std::endl;
         uint64_t blockFileOffsetMB = disk->FirstDataBlockOffsetMB() + ((count * bs) / _1M);
         VHDX_BAT_ENTRY entry = { VHDX_BAT_ENTRY_PAYLOAD_BLOCK_FULLY_PRESENT, 0, blockFileOffsetMB };
         bat[batindex] = *((uint64_t *) &entry);
@@ -186,12 +186,12 @@ void create_base_vhdx(const std::wstring& volume, const std::wstring& file)
       // read the source device
       auto fRet = source->ReadSync(_buf.get(), len, off);
 
-      assert (fRet == len);
+      assert(fRet == len);
 
       // disk level write of volume level data block
       fRet = disk->WriteSync(_buf.get(), len, off + disk->GetPartitionStartOffset(0));
 
-      assert (fRet == len);
+      assert(fRet == len);
 
       assert(bat[index] == disk->iBAT[index]);
 
@@ -269,7 +269,7 @@ bool create_child_vhdx(const std::wstring& source, const std::wstring& parent, c
 
   auto bs = diff->GetBlockSize();
 
-  auto dbiomap = fxc::rct::ResilientChangeTrackingToDataBlockIO(source, rctid, bs);
+  auto dbiomap = fxc::ResilientChangeTrackingToDataBlockIO(source, rctid, bs);
 
   uint64_t blockCount = 0;
 
@@ -284,7 +284,7 @@ bool create_child_vhdx(const std::wstring& source, const std::wstring& parent, c
 
     bat[batindex] = *((uint64_t *) &entry);
 
-    std::cout << "Bat construction : setting bat entry : " << kv.first << "\n";
+    std::cout << "Bat construction : setting bat entry : " << kv.first << std::endl;
 
     blockCount++;
   }
@@ -316,7 +316,7 @@ bool create_child_vhdx(const std::wstring& source, const std::wstring& parent, c
 
   for (auto& kv : dbiomap)
   {
-    std::cout << "BAT index : " << kv.first << "\n";
+    std::cout << "BAT index : " << kv.first << std::endl;
 
     auto fRet = phyDisk->ReadSync(_buf.get(), bs, bs * kv.first);
 
@@ -335,7 +335,7 @@ bool create_child_vhdx(const std::wstring& source, const std::wstring& parent, c
 
   if (pfnDetachVirtualDisk == NULL)
   {
-    std::cout << "Failed to get poinetr to DetachVirtualDisk " << GetLastError() << "\n";
+    std::cout << "Failed to get poinetr to DetachVirtualDisk " << GetLastError() << std::endl;
     return false;
   }
 

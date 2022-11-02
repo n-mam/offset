@@ -73,10 +73,11 @@ Rectangle {
       x: label.x + label.width + (2 * rowDelegate.padding)
       from: 0
       to: 100
-      value: model.sizeRole ? (100 * ((model.sizeRole - model.freeRole) / model.sizeRole)) : 0 
+      value: 0 //model.sizeRole ? (100 * ((model.sizeRole - model.freeRole) / model.sizeRole)) : 0 
       width: usage.width
       function progress(device, percent) {
-          console.log(device, percent, model.display)
+        console.log(device, percent, model.display)
+        value = percent
       }
       Component.onCompleted: {
         diskListModel.progress.connect(progress)

@@ -6,10 +6,10 @@
 
 #include <string>
 
-namespace fxc::vhd {
+namespace fxc {
 
 //create base parent vhd from a volume/snapshot block device 
-void create_base_vhd(const std::wstring& volume, const std::wstring& file)
+void create_base_vhd(const std::wstring& volume, const std::wstring& file, fxc::TProgressCallback cbk)
 {
   auto source = npl::make_file(volume, false);
 
@@ -17,7 +17,7 @@ void create_base_vhd(const std::wstring& volume, const std::wstring& file)
 
   uint64_t length = osl::GetPartitionLength(source->iFDsync);
 
-  std::cout << "Source volume length " << length << "\n";
+  std::cout << "Source volume length " << length << std::endl;
 
   auto disk = std::make_shared<CDynamicVHD>(length, _2M);
 
@@ -35,9 +35,10 @@ void create_base_vhd(const std::wstring& volume, const std::wstring& file)
 
   // pre-compute the BAT
   auto bat = std::make_unique<uint32_t []>(disk->iBATSize / sizeof(uint32_t));
+
   memset(bat.get(), 0xFF, disk->iBATSize);
 
-  // MBR block bat entry
+  // MBR block's BAT entry
   osl::LTOB32(disk->FirstDataBlockOffset() / 512, (unsigned char *) (bat.get() + 0));
 
   uint64_t index = 1;
@@ -67,21 +68,21 @@ void create_base_vhd(const std::wstring& volume, const std::wstring& file)
     }
   }
 
-  std::cout << "BAT constructed with " << count << " block entries. Last index " << index << "\n";
+  std::cout << "BAT constructed with " << count << " block entries, Last index " << index << std::endl;
 
   uint64_t totalClusterLength = nvdb.TotalClusters.QuadPart * nvdb.BytesPerCluster;
 
-  std::cout << "Source volume total cluster length " << totalClusterLength << "\n";
+  std::cout << "Source volume total cluster length " << totalClusterLength << std::endl;
 
   uint64_t pendinglen = length - totalClusterLength;
 
-  std::cout << "Source volume pending length " << pendinglen << "\n";
+  std::cout << "Source volume pending length " << pendinglen << std::endl;
 
   if (pendinglen)
   {
     uint64_t pendingoff = bs + totalClusterLength;
 
-    auto fragments = CBaseDisk::LogicalToDataBlock(pendingoff, pendinglen, bs);
+    auto fragments = fxc::CBaseDisk::LogicalToDataBlock(pendingoff, pendinglen, bs);
 
     for (auto& f : fragments)
     {
@@ -91,7 +92,7 @@ void create_base_vhd(const std::wstring& volume, const std::wstring& file)
 
       if (batentry == ~((uint32_t)0))
       {
-        std::cout << "BAT setting entry for pending len at " << batindex << "\n";
+        std::cout << "BAT setting entry for pending len at " << batindex << std::endl;
         uint64_t blockFileOffset = disk->FirstDataBlockOffset() + (count * (512 + bs));
         osl::LTOB32(blockFileOffset / 512, (unsigned char *) (bat.get() + batindex));
         count++;
@@ -130,16 +131,18 @@ void create_base_vhd(const std::wstring& volume, const std::wstring& file)
       // read the source device
       auto fRet = source->ReadSync(_buf.get(), len, off);
 
-      assert (fRet == len);
+      assert(fRet == len);
 
       // disk level write of volume level data block
       fRet = disk->WriteSync(_buf.get(), len, off + disk->GetPartitionStartOffset(0));
 
-      assert (fRet == len);
+      assert(fRet == len);
 
       assert(bat[index] == disk->iBAT[index]);
 
       count--;
+
+      if (cbk) cbk(L"qwerty", (count / disk->GetTotalBATEntries()) * 100);
     }
   }
 
@@ -200,7 +203,7 @@ bool create_child_vhd(const std::wstring& source, const std::wstring& parent, co
 
   auto bs = diff->GetBlockSize();
 
-  auto dbiomap = fxc::rct::ResilientChangeTrackingToDataBlockIO(source, rctid, bs);
+  auto dbiomap = fxc::ResilientChangeTrackingToDataBlockIO(source, rctid, bs);
 
   uint64_t blockCount = 0;
 
@@ -239,13 +242,13 @@ bool create_child_vhd(const std::wstring& source, const std::wstring& parent, co
 
   for (auto& kv : dbiomap)
   {
-    std::cout << "BAT index : " << kv.first << "\n";
+    std::cout << "BAT index : " << kv.first << std::endl;
 
     memset(_buf.get(), 0, 512 + bs);
 
     for (auto& dbio : kv.second)
     {
-      std::cout << "off : " << dbio.offset << " len : " << dbio.length << "\n";
+      std::cout << "off : " << dbio.offset << " len : " << dbio.length << std::endl;
 
       auto blockoff = dbio.offset % bs;
 
@@ -269,7 +272,7 @@ bool create_child_vhd(const std::wstring& source, const std::wstring& parent, co
 
   if (pfnDetachVirtualDisk == NULL)
   {
-    std::cout << "Failed to get pointer to DetachVirtualDisk " << GetLastError() << "\n";
+    std::cout << "Failed to get pointer to DetachVirtualDisk " << GetLastError() << std::endl;
     return false;
   }
 

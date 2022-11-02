@@ -182,7 +182,7 @@ auto SetRegistry(HKEY hKey, std::wstring subKey, DWORD dwType, std::wstring valu
 
   if (status != ERROR_SUCCESS)
   {
-    std::cout << "RegCreateKeyExW() failed " << status << "\n";
+    std::cout << "RegCreateKeyExW() failed " << status << std::endl;
     return false;
   }
 
@@ -196,7 +196,7 @@ auto SetRegistry(HKEY hKey, std::wstring subKey, DWORD dwType, std::wstring valu
 
   if (status != ERROR_SUCCESS)
   {
-    std::cout << "RegSetValueExW() failed " << status << "\n";
+    std::cout << "RegSetValueExW() failed " << status << std::endl;
   }
 
   RegCloseKey(hkResult);
@@ -210,7 +210,7 @@ BSTR ReadFileAsBSTR(const std::wstring& fileName)
 
   if (hFile == INVALID_HANDLE_VALUE)
   {
-    std::cout << "CreateFile failed : "<< GetLastError() << "\n";
+    std::cout << "CreateFile failed : "<< GetLastError() << std::endl;
     return NULL;
   }
 

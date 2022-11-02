@@ -6,7 +6,7 @@ DiskListModel::DiskListModel()
 {
   npl::make_dispatcher();
 
-  auto snapshots = fxc::ss::EnumerateSnapshots();
+  auto snapshots = fxc::EnumerateSnapshots();
 
   auto volumes = osl::EnumerateVolumes();
 

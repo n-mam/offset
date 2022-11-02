@@ -4,7 +4,7 @@
 #include <fxc/vd/vhd>
 #include <fxc/vd/vhdx>
 
-namespace fxc::vd {
+namespace fxc {
 
 auto make_virtual_disk(const std::wstring& path)
 {
@@ -16,7 +16,7 @@ auto make_virtual_disk(const std::wstring& path)
 
   if (!file)
   {
-    std::wcout << L"Failed to open file " << path << "\n";
+    std::wcout << L"Failed to open file " << path << std::endl;
     return disk;
   }
 
@@ -49,15 +49,16 @@ auto make_virtual_disk(const std::wstring& path)
 void CreateBaseVirtualDisk(
   const std::wstring& format,
   const std::wstring& source,
-  const std::wstring& target)
+  const std::wstring& target,
+  fxc::TProgressCallback cbk)
 {
   if (format == L"vhd")
   {
-    fxc::vhd::create_base_vhd(source, target);
+    fxc::create_base_vhd(source, target, cbk);
   }
   else if (format == L"vhdx")
   {
-    fxc::vhdx::create_base_vhdx(source, target);
+    fxc::create_base_vhdx(source, target, cbk);
   }
 }
 
@@ -70,7 +71,7 @@ void CreateIncrementalVirtualDisk(
 {
   if (format == L"vhd")
   {
-    fxc::vhd::create_child_vhd(
+    fxc::create_child_vhd(
         source, // live source checkpointed base vhd
         parent, // parent path link absolute/relative
         target, // incr child vhd path
@@ -78,7 +79,7 @@ void CreateIncrementalVirtualDisk(
   }
   else if (format == L"vhdx")
   {
-    fxc::vhdx::create_child_vhdx(
+    fxc::create_child_vhdx(
         source, // live source checkpointed base vhdx
         parent, // parent path link absolute/relative
         target, // incr child vhdx path
@@ -88,7 +89,7 @@ void CreateIncrementalVirtualDisk(
 
 void DumpVirtualDisk(const std::wstring& path)
 {
-  auto disk = fxc::vd::make_virtual_disk(path);
+  auto disk = fxc::make_virtual_disk(path);
 
   if (disk)
   {

@@ -11,12 +11,16 @@
 
 #include <fxc/vd/formats>
 
+namespace fxc {
+
 struct DataBlockIO
 {
   const uint8_t *buffer = nullptr;
   uint64_t offset = 0;
   size_t length = 0;
 };
+
+using TProgressCallback = std::function<void (std::wstring, int)>;
 
 class CBaseDisk : public npl::Subject<uint8_t, uint8_t>
 {
@@ -182,7 +186,7 @@ class CBaseDisk : public npl::Subject<uint8_t, uint8_t>
 
     virtual void DumpStructure(void)
     {
-      std::cout << "\n";
+      std::cout << std::endl;
       std::cout << "Master Boot Record : \n\n";
       
       std::cout << "DiskID                       : ";
@@ -193,10 +197,10 @@ class CBaseDisk : public npl::Subject<uint8_t, uint8_t>
       {
         std::cout << "start_sector                 : " << iMBR.partitions[i].start_sector << " sector \n";
         std::cout << "total_sectors                : " << iMBR.partitions[i].total_sectors << " sector \n";
-        std::cout << "------------------" << "\n";
+        std::cout << "------------------" << std::endl;
       }
 
-      std::cout << "signature                    : " << iMBR.signature << "\n"; 
+      std::cout << "signature                    : " << iMBR.signature << std::endl; 
     }
     
   protected:
@@ -237,5 +241,7 @@ class CBaseDisk : public npl::Subject<uint8_t, uint8_t>
 };
 
 using SPCBaseDisk = std::shared_ptr<CBaseDisk>;
+
+} //namespace fxc
 
 #endif

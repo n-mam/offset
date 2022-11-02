@@ -63,7 +63,7 @@ void DumpBytes(const uint8_t *buf, int len, bool hex)
     }
   }
 
-  std::cout << "\n";
+  std::cout << std::endl;
 }
 
 typedef struct PARTITION

@@ -209,7 +209,7 @@ class SocketDevice : public FileDevice
       std::cout << "bind failed, error : " << strerror(errno);
     }
 
-    assert (fRet == 0);
+    assert(fRet == 0);
 
     fRet = listen((SOCKET)iFD, SOMAXCONN);
 
