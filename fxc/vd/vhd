@@ -41,8 +41,8 @@ void create_base_vhd(const std::wstring& volume, const std::wstring& file, fxc::
   // MBR block's BAT entry
   osl::LTOB32(disk->FirstDataBlockOffset() / 512, (unsigned char *) (bat.get() + 0));
 
-  uint64_t index = 1;
-  uint64_t count = 1;
+  uint64_t batIndex = 1;
+  uint64_t validBATEntryCount = 1;
 
   auto blockInUse = false;
 
@@ -59,24 +59,22 @@ void create_base_vhd(const std::wstring& volume, const std::wstring& file, fxc::
     {
       if (blockInUse)
       {
-        uint64_t blockFileOffset = disk->FirstDataBlockOffset() + (count * (512 + bs));
-        osl::LTOB32(blockFileOffset / 512, (unsigned char *) (bat.get() + index));
+        uint64_t blockFileOffset = disk->FirstDataBlockOffset() + (validBATEntryCount * (512 + bs));
+        osl::LTOB32(blockFileOffset / 512, (unsigned char *) (bat.get() + batIndex));
         blockInUse = false;
-        count++;
+        validBATEntryCount++;
       }
-      index++;
+      batIndex++;
     }
   }
 
-  std::cout << "BAT constructed with " << count << " block entries, Last index " << index << std::endl;
-
   uint64_t totalClusterLength = nvdb.TotalClusters.QuadPart * nvdb.BytesPerCluster;
 
-  std::cout << "Source volume total cluster length " << totalClusterLength << std::endl;
+  std::cout << "source volume total cluster length " << totalClusterLength << std::endl;
 
   uint64_t pendinglen = length - totalClusterLength;
 
-  std::cout << "Source volume pending length " << pendinglen << std::endl;
+  std::cout << "source volume pending length " << pendinglen << std::endl;
 
   if (pendinglen)
   {
@@ -86,19 +84,24 @@ void create_base_vhd(const std::wstring& volume, const std::wstring& file, fxc::
 
     for (auto& f : fragments)
     {
-      uint64_t batindex = f.offset / bs;
+      batIndex = f.offset / bs;
 
-      uint32_t batentry = osl::endian_reverse(*(bat.get() + batindex));
+      uint32_t batentry = osl::endian_reverse(*(bat.get() + batIndex));
 
       if (batentry == ~((uint32_t)0))
       {
-        std::cout << "BAT setting entry for pending len at " << batindex << std::endl;
-        uint64_t blockFileOffset = disk->FirstDataBlockOffset() + (count * (512 + bs));
-        osl::LTOB32(blockFileOffset / 512, (unsigned char *) (bat.get() + batindex));
-        count++;
+        std::cout << "setting BAT entry for pending len at " << batIndex << std::endl;
+        uint64_t blockFileOffset = disk->FirstDataBlockOffset() + (validBATEntryCount * (512 + bs));
+        osl::LTOB32(blockFileOffset / 512, (unsigned char *) (bat.get() + batIndex));
+        validBATEntryCount++;
       }
     }
   }
+
+  std::cout << "BAT constructed with " << validBATEntryCount
+     << " block entries, last BAT index " << batIndex << std::endl;
+
+  uint64_t nTotalPayloadBlocks = validBATEntryCount;
 
   // bat
   target->WriteSync((uint8_t *) bat.get(), disk->iBATSize, sizeof(VHD_FOOTER_HEADER));
@@ -109,11 +112,11 @@ void create_base_vhd(const std::wstring& volume, const std::wstring& file, fxc::
   // MBR block
   disk->WriteSync((uint8_t *) &(disk->iMBR), sizeof(MBR), 0);
 
-  count--;
+  nTotalPayloadBlocks--;
 
   // payload blocks
 
-  for (index = 1; index < disk->GetTotalBATEntries(); index++)
+  for (uint64_t index = 1; index < disk->GetTotalBATEntries(); index++)
   {
     uint32_t entry = osl::endian_reverse(*(bat.get() + index));
 
@@ -140,13 +143,13 @@ void create_base_vhd(const std::wstring& volume, const std::wstring& file, fxc::
 
       assert(bat[index] == disk->iBAT[index]);
 
-      count--;
+      nTotalPayloadBlocks--;
 
-      if (cbk) cbk(L"qwerty", (count / disk->GetTotalBATEntries()) * 100);
+      if (cbk) cbk(volume, (1.00 - ((float)nTotalPayloadBlocks/(float)validBATEntryCount)) * 100);
     }
   }
 
-  assert(count == 0);
+  assert(nTotalPayloadBlocks == 0);
 
   // assert the fact that constructed bat matches the one 
   // which is dynamically maintained due to disk level writes

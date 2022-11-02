@@ -1,6 +1,7 @@
 #ifndef FXC_HPP
 #define FXC_HPP
 
+#include <future>
 #include <iostream>
 
 #include <npl/npl>
@@ -215,6 +216,8 @@ auto ConvertPhysicalVolumesToVirtualImages(const std::vector<TBackupConfig> conf
       supported,
       [&] (fxc::TSnapshotSet ss)
       {
+        std::vector<std::future<void>> futures;
+
         for (int i = 0; i < ss.size(); i++)
         {
           auto [volume1, snapshotDevice, volumeDevice] = ss[i];
@@ -224,8 +227,15 @@ auto ConvertPhysicalVolumesToVirtualImages(const std::vector<TBackupConfig> conf
 
           auto target = folder + L"\\" + volumeDevice.substr(4, volumeDevice.size() - 5) + L"." + format;
 
-          fxc::CreateBaseVirtualDisk(format, snapshotDevice, target, cbk);
+          futures.push_back(std::async(std::launch::async, [=](){
+            fxc::CreateBaseVirtualDisk(format, snapshotDevice, target,
+              [=](auto snapshot, auto percent){
+                if (cbk) cbk(volume1, percent);
+              });
+          }));
         }
+
+        for (auto& f : futures) f.get();
       });
   }
 

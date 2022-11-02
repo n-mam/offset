@@ -76,8 +76,9 @@ Rectangle {
       value: 0 //model.sizeRole ? (100 * ((model.sizeRole - model.freeRole) / model.sizeRole)) : 0 
       width: usage.width
       function progress(device, percent) {
-        console.log(device, percent, model.display)
-        value = percent
+        if (model.display.includes(device)) {
+          value = percent
+        }
       }
       Component.onCompleted: {
         diskListModel.progress.connect(progress)
