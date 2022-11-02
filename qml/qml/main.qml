@@ -3,8 +3,8 @@ import QtQuick.Controls
 import Qt.labs.platform
 
 ApplicationWindow {
-  width: 460
-  height: 550
+  width: 475
+  height: 570
   visible: true
   title: qsTr("FXC")
 

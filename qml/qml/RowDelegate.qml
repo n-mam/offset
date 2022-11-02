@@ -25,67 +25,80 @@ Rectangle {
 
   signal updateItemSelection(var name, bool selected)
 
+  height: arrow.height + checkBox.height + details.height + 12
+
   Image {
     id: arrow
     source: "qrc:/arrow.png"
     width: 12; height: 12
     visible: rowDelegate.isTreeNode && rowDelegate.hasChildren
-    x: rowDelegate.padding + (rowDelegate.depth * 3 * rowDelegate.indent)
-    anchors.verticalCenter: rowDelegate.verticalCenter
+    x: rowDelegate.padding + (3 * rowDelegate.depth * rowDelegate.indent)
     rotation: rowDelegate.expanded ? 90 : 0
+    anchors.top: rowDelegate.top
+    anchors.margins: 5
+
   }
 
   Element {
     id: checkBox
     type: "checkBox"
     create: rowDelegate.selectable
-    anchors.verticalCenter: rowDelegate.verticalCenter
     x: arrow.x + arrow.width + rowDelegate.padding
-  }
-
-  Text {
-    id: label
-    text: model.display
-    color: model.textColorRole
-    elide: Text.ElideRight
-    width: (rowDelegate.depth == 0) ? 125 : undefined
-    anchors.verticalCenter: rowDelegate.verticalCenter
-    x: checkBox.x + checkBox.width + rowDelegate.padding
+    anchors.top: rowDelegate.top
+    anchors.margins: 5
   }
 
   Column {
+    id: details
     spacing: 2
-    anchors.verticalCenter: rowDelegate.verticalCenter
+    anchors.top: rowDelegate.top
+    anchors.margins: 5
+    x: checkBox.x + checkBox.width + (2 * rowDelegate.padding)
+
+    Text {
+      id: label
+      font.bold: true
+      text: model.display[0]
+      color: model.textColorRole
+    }
+
+    Text {
+      id: seconLabel
+      text: model.display[1] !== undefined ? model.display[1] : ""
+      color: "#FF4EBC7C"
+    }
+
     Element {
       id: usage
       type: "usage"
-      create: rowDelegate.selectable
+      create: rowDelegate.selectable && model.sizeRole > 0
       used: model.sizeRole - model.freeRole
       free: model.freeRole
-      visible: model.sizeRole > 0
-      x: label.x + label.width + (2 * rowDelegate.padding)
+      visible: usage.create
       width: 185
-      height: rowDelegate.height - (rowDelegate.height * 0.52)
+      height: usage.create ? 16 : 0
     }
 
-    ProgressBar {
+    Element {
       id: progress
-      visible: rowDelegate.selectable && (model.sizeRole > 0)
-      x: label.x + label.width + (2 * rowDelegate.padding)
-      from: 0
-      to: 100
-      value: 0 //model.sizeRole ? (100 * ((model.sizeRole - model.freeRole) / model.sizeRole)) : 0 
+      type: "progress"
+      create: rowDelegate.selectable && (model.sizeRole > 0)
+      visible: false
+      value: 0
       width: usage.width
+      height: progress.create ? 2 : 0
       Connections {
         target: diskListModel
         function onProgress(device, percent) {
           if (model.display.includes(device)) {
+            progress.visible = true
             progress.value = percent
           }
         }
-      }
+      }      
     }
   }
+  
 
   Component.onCompleted: {
   }

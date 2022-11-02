@@ -13,6 +13,11 @@ Loader {
   property string color
   property var used
   property var free
+  property var value
+
+  function percent(one, two) {
+    return (one/(one + two)) * 100
+  }
 
   Component {
     id: textComponent
@@ -22,8 +27,13 @@ Loader {
     }
   }
 
-  function percent(one, two) {
-    return (one/(one + two)) * 100
+  Component {
+    id: progressComponent
+    ProgressBar {
+      from: 0
+      to: 100
+      value: loader.value
+    }
   }
 
   Component {
@@ -55,7 +65,7 @@ Loader {
         radius: 2
         x: used.x + used.width
         width: loader.width - used.width
-        height: usage.height
+        height: parent.height
         color: "mintcream"
         anchors.right: parent.right
         Text {
@@ -79,7 +89,6 @@ Loader {
         readonly property int size: 12
         implicitWidth: size
         implicitHeight: size
-        y: parent.height / 2 - height / 2
         radius: 4
         border.color: cb.down ? "black" : "darkgrey"
 
@@ -110,9 +119,15 @@ Loader {
       else if (type === "text") {
         loader.sourceComponent = textComponent
       }
+      else if (type === "progress") {
+        loader.sourceComponent = progressComponent
+      }
       else {
         loader.sourceComponent = undefined
       }
+    }
+    else {
+      loader.width = loader.height = 0
     }
   }
 }

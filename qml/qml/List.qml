@@ -13,19 +13,20 @@ ListView {
     // border.color: "grey"
     color: Material.background
     width: listView.width
-    height: 32
+    implicitHeight: rd.height //75
 
     RowDelegate {
+      id: rd
       depth: model.depthRole
       selectable: model.selectableRole
       isTreeNode: model.hasChildrenRole
       hasChildren: model.hasChildrenRole
-      onUpdateItemSelection: (name, selected) => {
-        listView.model.updateItemSelection(name, selected);
+      onUpdateItemSelection: (names, selected) => {
+        listView.model.updateItemSelection(names, selected);
       }
     }
     TapHandler {
       onTapped: console.log("list row tapped")
-    }    
+    }
   }
 }

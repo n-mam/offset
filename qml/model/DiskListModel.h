@@ -9,13 +9,13 @@
 struct BlockDevice : public BaseItem
 {
   BlockDevice(
-    QString name,
+    QVector<QString> names,
     int depth = 0,
     int children = 0,
     bool selectable = false,
     double size = 0,
     double free = 0) : 
-  BaseItem(name, depth, children, selectable)
+  BaseItem(names, depth, children, selectable)
   {
     m_size = size;
     m_free = free;

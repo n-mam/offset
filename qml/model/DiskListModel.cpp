@@ -18,19 +18,22 @@ DiskListModel::DiskListModel()
 
   for (const auto& names : volumes)
   {
-    QString label = "[" + QString::fromStdString(names.back()) + "]";
-
     int children = 0;
 
     for (const auto& ss : snapshots)
     {
       if (QString::fromWCharArray((std::get<1>(ss)).c_str()) == QString::fromStdString(names.front()))
-      children++;
+        children++;
     }
 
     auto [size, free] = osl::GetTotalAndFree(names[0]);
 
-    m_model.push_back(std::make_shared<BlockDevice>(label, 0, children, true, size, free));
+    QVector<QString> qnames; 
+    
+    for (const auto& name : names)
+       qnames.prepend(QString::fromStdString(name));
+
+    m_model.push_back(std::make_shared<BlockDevice>(qnames, 0, children, true, size, free));
 
     for (const auto& ss : snapshots)
     {
@@ -39,7 +42,7 @@ DiskListModel::DiskListModel()
         auto tokens = osl::wsplit(std::get<0>(ss), L"GLOBALROOT\\Device\\");
         auto childlabel = QString::fromWCharArray((tokens[0] + tokens[1]).c_str());
 
-        auto child = std::make_shared<BlockDevice>(childlabel, 1, 0, true);
+        auto child = std::make_shared<BlockDevice>(QVector<QString>(childlabel), 1, 0, true);
         child->m_textColor = QColor(220, 220, 170);
         m_model.push_back(child);
       }
@@ -143,7 +146,7 @@ void DiskListModel::ConvertSelectedItemsToVirtualDisks(QString folder)
   {
     auto name = device;
     configuration.push_back({
-      name.remove(0, 1).remove(name.size() - 1, 1).toStdWString(), 
+      device.toStdWString(), 
       L"0",
       folder.toStdWString(),
       L"vhd",

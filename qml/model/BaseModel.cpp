@@ -69,7 +69,7 @@ QVariant BaseModel::data(const QModelIndex &index, int role) const
     {
       if (column == 0 && !index.parent().isValid())
       {
-        return m_model[row]->m_name;
+        return m_model[row]->m_names;
       }
       break;
     }
@@ -113,17 +113,17 @@ QVariant BaseModel::data(const QModelIndex &index, int role) const
   return QVariant();
 }
 
-void BaseModel::updateItemSelection(QString name, bool selected)
+void BaseModel::updateItemSelection(QVector<QString> names, bool selected)
 {
-  qDebug() << name << selected;
+  qDebug() << names << selected;
   if (selected)
   {
-    m_selected.push_back(name);
+    m_selected.push_back(names[0]);
   }
   else
   {
     m_selected.erase(
-      std::remove(m_selected.begin(), m_selected.end(), name),
+      std::remove(m_selected.begin(), m_selected.end(), names[0]),
       m_selected.end()
     );
   }
