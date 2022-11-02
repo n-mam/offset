@@ -38,7 +38,9 @@ class DiskListModel : public BaseModel
   QHash<int, QByteArray> roleNames() const override;
   QVariant data(const QModelIndex &index, int role) const override;
 
-  Q_INVOKABLE void ConvertSelectedItemsToVirtualDisks(void);
+  Q_INVOKABLE void ConvertSelectedItemsToVirtualDisks(QString folder);
+
+  Q_PROPERTY(bool transfer READ getTransfer WRITE setTransfer NOTIFY transferChanged);
 
   enum Roles
   {
@@ -46,12 +48,19 @@ class DiskListModel : public BaseModel
     EFree
   };
 
+  public slots:
+
+  bool getTransfer() const;
+  void setTransfer(bool);
+
   private:
 
+  bool transfer = false;
   std::vector<std::future<void>> futures;
 
   signals:
 
+  void transferChanged(bool);
   void progress(QString, int);
 };
 

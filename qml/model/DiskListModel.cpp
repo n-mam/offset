@@ -107,8 +107,24 @@ QVariant DiskListModel::data(const QModelIndex &index, int role) const
   return QVariant();
 }
 
-void DiskListModel::ConvertSelectedItemsToVirtualDisks(void)
+bool DiskListModel::getTransfer() const
 {
+  return transfer;
+}
+
+void DiskListModel::setTransfer(bool current)
+{
+  if (transfer != current)
+  {
+    transfer = current;
+    emit transferChanged(transfer);
+  }
+}
+
+void DiskListModel::ConvertSelectedItemsToVirtualDisks(QString folder)
+{
+  setTransfer(true);
+
   auto selected = getSelectedItems();
 
   std::vector<fxc::TBackupConfig> configuration;
@@ -119,19 +135,23 @@ void DiskListModel::ConvertSelectedItemsToVirtualDisks(void)
     configuration.push_back({
       name.remove(0, 1).remove(name.size() - 1, 1).toStdWString(), 
       L"0",
-      L"C:\\Users\\nmam\\Desktop",
+      folder.toStdWString(),
       L"vhd",
       L""
     });
   }
 
-  futures.push_back(std::async(std::launch::async, [this, configuration](){
-    fxc::ConvertPhysicalVolumesToVirtualImages(configuration, 
-      [this](auto device, auto percent){
-        QMetaObject::invokeMethod(this, [this, device, percent](){
-          emit this->progress(QString::fromStdWString(device), percent);
-        }, Qt::QueuedConnection);
-      });
-  }));
+
+  futures.push_back(std::async(std::launch::async, 
+    [this, configuration](){
+      fxc::ConvertPhysicalVolumesToVirtualImages(configuration, 
+        [this](auto device, auto percent){
+          QMetaObject::invokeMethod(this, [this, device, percent](){
+            emit this->progress(QString::fromStdWString(device), percent);
+          }, Qt::QueuedConnection);
+        });
+      this->setTransfer(false);
+    }
+  ));
 }
 

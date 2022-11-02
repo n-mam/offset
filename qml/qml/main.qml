@@ -28,6 +28,12 @@ ApplicationWindow {
         anchors.fill: parent
         anchors.margins: 2
         model: diskListModel
+        Connections {
+          target: diskListModel
+          function onTransferChanged(transfer) {
+            console.log(transfer)
+          }
+        }
       }
     }
 
@@ -48,6 +54,7 @@ ApplicationWindow {
         anchors.margins: 10
         placeholderText: qsTr("Destination")
         text: folderDialog.currentFolder
+        anchors.verticalCenter: parent.verticalCenter
       }
       Button {
         text: "Select"
@@ -73,22 +80,27 @@ ApplicationWindow {
         id: startButton
         width: 75
         text: "START"
+        enabled: !diskListModel.transfer
         height: actions.height * 0.80
         anchors.left: actions.left
         anchors.margins: mainColumn.spacing
         anchors.verticalCenter: actions.verticalCenter
         onClicked: {
-          diskListModel.ConvertSelectedItemsToVirtualDisks()
+          diskListModel.ConvertSelectedItemsToVirtualDisks(destination.text)
         }
       }
       Button {
         id: cancelbutton
         width: 75
         text: "CANCEL"
+        enabled: diskListModel.transfer
         height: actions.height * 0.80
         anchors.left: startButton.right
         anchors.margins: mainColumn.spacing
         anchors.verticalCenter: actions.verticalCenter
+        onClicked: {
+          diskListModel.CancelTransfer()
+        }
       }
     }
   }
