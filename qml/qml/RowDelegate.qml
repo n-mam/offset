@@ -50,9 +50,9 @@ Rectangle {
 
   Column {
     id: details
-    spacing: 2
+    spacing: 1
     anchors.top: rowDelegate.top
-    anchors.margins: 5
+    anchors.margins: 3
     x: checkBox.x + checkBox.width + (2 * rowDelegate.padding)
 
     Text {
@@ -75,7 +75,7 @@ Rectangle {
       used: model.sizeRole - model.freeRole
       free: model.freeRole
       visible: usage.create
-      width: 185
+      width: 205
       height: usage.create ? 16 : 0
     }
 

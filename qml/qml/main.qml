@@ -12,14 +12,56 @@ ApplicationWindow {
     id: mainColumn
     spacing: 5
     topPadding: 10
-    width: parent.width - padding
-    height: parent.height - padding
+    width: parent.width
+    height: parent.height
+
+    Rectangle {
+      id: toolbar
+      // radius: 5
+      // border.width: 1
+      // border.color: "#a7c497"
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.margins: 10
+      height: parent.height * 0.05
+      color: Material.background
+      CheckBox {
+        id: tcb
+        checkState: Qt.Unchecked
+        text: "Log"
+        anchors.verticalCenter: toolbar.verticalCenter
+        onClicked: {
+          log.height = (checkState === Qt.Checked) ? (mainColumn.height * 0.20) : 0
+          mainColumn.forceLayout()
+        }
+      }
+    }
+
+    Rectangle {
+      id: log
+      radius: 5
+      border.width: 1
+      border.color: "#a7c497"
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.margins: 10
+      height: (tcb.checkState === Qt.Checked) ? (mainColumn.height * 0.20) : 0
+      color: Material.background
+      Text {
+        id: logText
+        color: "white"
+        visible: (tcb.checkState === Qt.Checked)
+        anchors.fill: parent
+        anchors.margins: 5
+        text: "<b>Hello</b> <i>World!</i>"
+      }
+    }
 
     Rectangle {
       anchors.left: parent.left
       anchors.right: parent.right
       anchors.margins: 10
-      height: parent.height * 0.75
+      height: parent.height * (log.height ? 0.50 : 0.70)
       color: Material.background
       radius: 5
       border.width: 1
@@ -42,7 +84,7 @@ ApplicationWindow {
       anchors.right: parent.right
       anchors.rightMargin: 10
       anchors.leftMargin: 10
-      height: parent.height * 0.10
+      height: parent.height * 0.09
       color: Material.background
       radius: 5
       border.width: 1
@@ -69,13 +111,13 @@ ApplicationWindow {
 
     Rectangle {
       id: actions
-      // radius: 5
-      // border.width: 1
-      // border.color: "#a7c497"
+      radius: 5
+      border.width: 1
+      border.color: "#a7c497"
       color: Material.background
       anchors.horizontalCenter: parent.horizontalCenter
       width: 75 + 75 + (3 * mainColumn.spacing)
-      height: parent.height * 0.10
+      height: parent.height * 0.09
       Button {
         id: startButton
         width: 75

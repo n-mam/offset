@@ -32,6 +32,8 @@ DiskListModel::DiskListModel()
 
     auto [size, free] = osl::GetTotalAndFree(names[0]);
 
+    if (!size || !free) continue;
+
     QVector<QString> qnames; 
 
     for (auto& name : names)
