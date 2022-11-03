@@ -104,6 +104,7 @@ Loader {
 
       onClicked: {
         rowDelegate.updateItemSelection(model.display, (checkState !== Qt.Unchecked))
+        rowDelegate.color = (checkState !== Qt.Unchecked) ? "#5A5A5A" : Material.background
       }
     }
   }
