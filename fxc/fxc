@@ -206,7 +206,7 @@ auto ConvertPhysicalVolumesToVirtualImages(const std::vector<TBackupConfig>& con
     }
     else
     {
-      auto target = folder + L"\\" + volume.substr(4) + L"." + format;
+      auto target = folder + L"\\" + volume.substr(4, 44) + L"." + format;
 
       futures1.push_back(std::async(std::launch::async, [=](){
         fxc::CreateBaseVirtualDisk(format, volume, target,
@@ -241,7 +241,7 @@ auto ConvertPhysicalVolumesToVirtualImages(const std::vector<TBackupConfig>& con
             }
           }
 
-          auto target = folder + L"\\" + originalVolume.substr(11, 36) + L"." + format;
+          auto target = folder + L"\\" + originalVolume.substr(4, 44) + L"." + format;
 
           futures2.push_back(std::async(std::launch::async, [=](){
             fxc::CreateBaseVirtualDisk(format, snapshotDevice, target,

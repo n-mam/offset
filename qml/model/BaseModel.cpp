@@ -118,12 +118,12 @@ void BaseModel::updateItemSelection(QVector<QString> names, bool selected)
   qDebug() << names << selected;
   if (selected)
   {
-    m_selected.push_back(names[0]);
+    m_selected.push_back(names.size() > 1 ? names[1] : names[0]);
   }
   else
   {
     m_selected.erase(
-      std::remove(m_selected.begin(), m_selected.end(), names[0]),
+      std::remove(m_selected.begin(), m_selected.end(), names.size() > 1 ? names[1] : names[0]),
       m_selected.end()
     );
   }
