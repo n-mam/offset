@@ -287,16 +287,23 @@ auto GetVolumeHandle(const std::wstring& name)
 {
   wchar_t _guid[128] = { 0 };
 
-  auto fRet = GetVolumeNameForVolumeMountPointW(
-    (name.back() == L'\\') ? 
-        name.c_str() : (name + L"\\").c_str(), 
-    _guid, 
-    sizeof(_guid));
-
-  if (fRet)
+  if (name.find(L"HarddiskVolumeShadowCopy") != std::string::npos)
   {
-    _guid[wcslen(_guid) - 1] = L'\0';
-    return GetFileHandle(_guid);
+    return GetFileHandle(name);
+  }
+  else
+  {
+    auto fRet = GetVolumeNameForVolumeMountPointW(
+                    (name.back() == L'\\') ?
+                        name.c_str() : (name + L"\\").c_str(),
+                    _guid,
+                    sizeof(_guid));
+
+    if (fRet)
+    {
+      _guid[wcslen(_guid) - 1] = L'\0';
+      return GetFileHandle(_guid);
+    }
   }
 
   return INVALID_HANDLE_VALUE;
@@ -364,26 +371,26 @@ auto GetTotalAndFree(const T& volume)
 
 auto EnumerateVolumes(void)
 {
-  char _guid[128];
-  BOOL fRet = TRUE;
-  char _buf[MAX_PATH];
+  wchar_t _guid[128];
+  wchar_t _buf[MAX_PATH];
   DWORD nReturned = 0;
+  BOOL fRet = TRUE;
 
-  std::vector<std::vector<std::string>> out;
+  std::vector<std::vector<std::wstring>> out;
 
-  HANDLE hFind = FindFirstVolumeA(_guid, sizeof(_guid) / sizeof(char));
+  HANDLE hFind = FindFirstVolumeW(_guid, sizeof(_guid) / sizeof(wchar_t));
 
   if (hFind == INVALID_HANDLE_VALUE)
   {
-    std::cout << "FindFirstVolumeW failed, error " << GetLastError() << std::endl;
+    std::cout << "FindFirstVolume failed, error " << GetLastError() << std::endl;
     return out;
   }
 
   do
   {
-    std::vector<std::string> names = { _guid };
+    std::vector<std::wstring> names = { _guid };
 
-    fRet = GetVolumePathNamesForVolumeNameA(
+    fRet = GetVolumePathNamesForVolumeNameW(
       _guid,
       _buf,
       MAX_PATH,
@@ -391,20 +398,20 @@ auto EnumerateVolumes(void)
 
     if (!fRet)
     {
-      std::cout << "GetVolumePathNamesForVolumeNameA failed, error " << GetLastError() << std::endl;
+      std::cout << "GetVolumePathNamesForVolumeName failed, error " << GetLastError() << std::endl;
     }
 
-    char *path = _buf;
+    wchar_t *path = _buf;
 
     while (*path)
     {
       names.push_back(path);
-      path += strlen(path) + 1;
+      path += wcslen(path) + 1;
     }
 
     out.push_back(names);
 
-    fRet = FindNextVolumeA(hFind, _guid, sizeof(_guid) / sizeof(char));
+    fRet = FindNextVolumeW(hFind, _guid, sizeof(_guid) / sizeof(wchar_t));
 
     if (!fRet)
     {
@@ -427,11 +434,11 @@ auto GetVolumeList(void)
 
   for(const auto& names : volumes)
   {
-    std::string paths;
+    std::wstring paths;
 
     for(auto i = 1; i < names.size(); i++)
     {
-      paths += names[i] + " ";
+      paths += names[i] + L" ";
     }
 
     auto h = GetVolumeHandle(names[0]);

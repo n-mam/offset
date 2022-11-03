@@ -190,23 +190,30 @@ auto RecoverVolumeToVolume(const std::wstring& source, const std::wstring& targe
   return fRet;
 }
 
-auto ConvertPhysicalVolumesToVirtualImages(const std::vector<TBackupConfig> configuration, TProgressCallback cbk)
+auto ConvertPhysicalVolumesToVirtualImages(const std::vector<TBackupConfig>& configuration, TProgressCallback cbk)
 {
-  std::vector<std::wstring> supported, unsupported;
+  std::vector<std::wstring> supported;
+
+  std::vector<std::future<void>> futures1, futures2;
 
   for (const auto& config : configuration)
   {
     auto [volume, level, folder, format, exclude] = config;
 
-    bool isSupported = fxc::IsVolumeSupported(volume.c_str());
-
-    if (isSupported)
+    if (fxc::IsVolumeSupported(volume.c_str()))
     {
       supported.push_back(volume);
     }
     else
     {
-      unsupported.push_back(volume);
+      auto target = folder + L"\\" + volume.substr(4) + L"." + format;
+
+      futures1.push_back(std::async(std::launch::async, [=](){
+        fxc::CreateBaseVirtualDisk(format, volume, target,
+          [=](auto snapshot, auto percent){
+              return cbk(volume, percent);
+          });
+      }));
     }
   }
 
@@ -216,36 +223,38 @@ auto ConvertPhysicalVolumesToVirtualImages(const std::vector<TBackupConfig> conf
       supported,
       [&] (fxc::TSnapshotSet ss)
       {
-        std::vector<std::future<void>> futures;
-
         for (int i = 0; i < ss.size(); i++)
         {
-          auto [volume1, snapshotDevice, volumeDevice] = ss[i];
-          auto [volume2, level, folder, format, exclude] = configuration[i];
+          auto [inputVolume, snapshotDevice, originalVolume] = ss[i];
 
-          std::wcout << " " << volume1 << " " << snapshotDevice << " " << volumeDevice << std::endl;
+          std::wcout << " " << inputVolume << " " << snapshotDevice << " " << originalVolume << std::endl;
 
-          auto target = folder + L"\\" + volumeDevice.substr(4, volumeDevice.size() - 5) + L"." + format;
+          std::wstring folder = L"";
+          std::wstring format = L"";
 
-          futures.push_back(std::async(std::launch::async, [=](){
+          for (const auto& c : configuration)
+          {
+            if (c.m_volume == inputVolume)
+            {
+              folder = c.m_folder;
+              format = c.m_format;
+            }
+          }
+
+          auto target = folder + L"\\" + originalVolume.substr(11, 36) + L"." + format;
+
+          futures2.push_back(std::async(std::launch::async, [=](){
             fxc::CreateBaseVirtualDisk(format, snapshotDevice, target,
               [=](auto snapshot, auto percent){
-                  return cbk(volume1, percent);
+                  return cbk(inputVolume, percent);
               });
           }));
         }
-
-        for (auto& f : futures) f.get();
+        for (auto& f : futures2) f.get();
       });
   }
 
-  if (unsupported.size())
-  {
-    for (const auto& rawvolume : unsupported)
-    {
-
-    }
-  }
+  for (auto& f : futures1) f.get();
 
   return true;
 }

@@ -6,9 +6,9 @@ DiskListModel::DiskListModel()
 {
   npl::make_dispatcher();
 
-  auto snapshots = fxc::EnumerateSnapshots();
-
   auto volumes = osl::EnumerateVolumes();
+
+  auto snapshots = fxc::EnumerateSnapshots();
 
   std::sort(volumes.begin(), volumes.end(), 
     [](const auto& one, const auto& two) -> bool {
@@ -16,36 +16,37 @@ DiskListModel::DiskListModel()
     }
   );
 
-  for (const auto& names : volumes)
+  for (auto& names : volumes)
   {
-    int children = 0;
+    QVector<QString> children; 
 
     for (const auto& ss : snapshots)
     {
-      if (QString::fromWCharArray((std::get<1>(ss)).c_str()) == QString::fromStdString(names.front()))
-        children++;
+      if (std::get<1>(ss) == names.front())
+      {
+        auto tokens = osl::wsplit(std::get<0>(ss), L"GLOBALROOT\\Device\\");
+        auto childlabel = QString::fromWCharArray((tokens[0] + tokens[1]).c_str());
+        children.push_back(childlabel);
+      }
     }
 
     auto [size, free] = osl::GetTotalAndFree(names[0]);
 
     QVector<QString> qnames; 
-    
-    for (const auto& name : names)
-       qnames.prepend(QString::fromStdString(name));
 
-    m_model.push_back(std::make_shared<BlockDevice>(qnames, 0, children, true, size, free));
-
-    for (const auto& ss : snapshots)
+    for (auto& name : names)
     {
-      if (QString::fromWCharArray((std::get<1>(ss)).c_str()) == QString::fromStdString(names.front()))
-      {
-        auto tokens = osl::wsplit(std::get<0>(ss), L"GLOBALROOT\\Device\\");
-        auto childlabel = QString::fromWCharArray((tokens[0] + tokens[1]).c_str());
+      qnames.prepend(QString::fromStdWString(name));
+    }
 
-        auto child = std::make_shared<BlockDevice>(QVector<QString>(childlabel), 1, 0, true);
-        child->m_textColor = QColor(220, 220, 170);
-        m_model.push_back(child);
-      }
+    m_model.push_back(std::make_shared<BlockDevice>(qnames, 0, children.size(), true, size, free));
+
+    for (const auto& child : children)
+    {
+      auto [size, free] = osl::GetTotalAndFree(child.toStdWString().c_str());
+      auto c = std::make_shared<BlockDevice>(QVector<QString>(child), 1, 0, true, size, free);
+      c->m_textColor = QColor(220, 220, 170);
+      m_model.push_back(c);
     }
   }
   // m_model.push_back(std::make_shared<BlockDevice>("PhysicalDrive0", 0, 2));

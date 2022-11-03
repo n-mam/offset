@@ -329,7 +329,7 @@ class FileDevice : public Subject<uint8_t, uint8_t>
 
       if (fRet == FALSE)
       {
-        std::cout << GetName() << " ReadSync ReadFile() failed : " << GetLastError();
+        std::cout << GetName() << " ReadSync ReadFile() failed : " << GetLastError() << std::endl;
       }
     }
 
@@ -350,7 +350,7 @@ class FileDevice : public Subject<uint8_t, uint8_t>
 
       if (fRet == FALSE)
       {
-        std::cout << GetName() << " WriteSync WriteFile() failed : " << GetLastError();
+        std::cout << GetName() << " WriteSync WriteFile() failed : " << GetLastError() << std::endl;
       }
     }
 
