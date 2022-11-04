@@ -37,7 +37,7 @@
 
 #define CHKCOM(hr) if((hr != S_OK) && (hr != VSS_S_ASYNC_FINISHED)) \
   { \
-    printf("\n %s: failed line %d hr %x\n", __FUNCTION__, __LINE__, hr); \
+    LOG << __FUNCTION__ << " failed line " << __LINE__ << " hr " << std::to_string(hr); \
     goto _end; \
   }
 

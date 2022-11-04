@@ -2,6 +2,7 @@
 #define LOG_HPP
 
 #include <iostream>
+#include <sstream>
 #include <functional>
 #include <type_traits>
 
@@ -13,50 +14,57 @@ using TLogCallback = std::function<void (const T&)>;
 class Log
 {
   template<typename T>
-  friend const Log& operator <<(const Log& lhs, const T& rhs);
+  friend Log&& operator <<(Log&& lhs, const T& rhs);
 
-  inline static TLogCallback<std::string> g_sink_a = nullptr;
-  inline static TLogCallback<std::wstring> g_sink_w = nullptr;
+  inline static TLogCallback<std::string> a_sink = nullptr;
+  inline static TLogCallback<std::wstring> w_sink = nullptr;
  
+  std::stringstream a_ss;
+  std::wstringstream w_ss;
+
   public:
+
+  ~Log()
+  {
+    if (a_sink)
+    {
+      a_sink(a_ss.str());
+    }
+    if (w_sink)
+    {
+      w_sink(w_ss.str());
+    }
+  }
 
   template<typename T>
   static void SetLogSink(TLogCallback<T> cbk)
   {
     if constexpr(std::is_same<T, std::string>::value)
     {
-      g_sink_a = cbk;
+      a_sink = cbk;
     }
 
     if constexpr(std::is_same<T, std::wstring>::value)
     {
-      g_sink_w = cbk;
+      w_sink = cbk;
     }
   }
 };
 
 template<typename T>
-const Log& operator <<(const Log& lhs, const T& rhs)
+Log&& operator <<(Log&& lhs, const T& rhs)
 {
   if constexpr(std::is_convertible_v<T, const std::string&>)
   {
-    //std::cout << rhs << std::endl;
-    if (lhs.g_sink_a)
-    {
-      lhs.g_sink_a(rhs);
-    }
+    lhs.a_ss << rhs;
   }
 
   if constexpr(std::is_convertible_v<T, const std::wstring&>)
   {
-    //std::wcout << rhs << std::endl;
-    if (lhs.g_sink_w)
-    {
-      lhs.g_sink_w(rhs);
-    } 
+    lhs.w_ss << rhs;
   }
 
-  return lhs;
+  return std::move(lhs);
 }
 
 }
