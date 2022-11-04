@@ -58,6 +58,7 @@ ApplicationWindow {
           anchors.fill: parent
           anchors.leftMargin: 5
           clip: true
+          background: null
           font.pointSize: 9
           Connections {
             target: logger

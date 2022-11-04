@@ -58,8 +58,15 @@ Log&& operator <<(Log&& lhs, const T& rhs)
   {
     lhs.a_ss << rhs;
   }
-
-  if constexpr(std::is_convertible_v<T, const std::wstring&>)
+  else if constexpr(std::is_convertible_v<T, const std::wstring&>)
+  {
+    lhs.w_ss << rhs;
+  }
+  else if (lhs.a_ss.str().size())
+  {
+    lhs.a_ss << rhs;
+  }
+  else
   {
     lhs.w_ss << rhs;
   }
