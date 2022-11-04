@@ -115,7 +115,7 @@ class FileDevice : public Subject<uint8_t, uint8_t>
     if (iFD == INVALID_HANDLE_VALUE)
     {
       MarkConnected(false);
-      std::cout << file << ", iFD error : " << GetLastError();
+      LOG << file << ", iFD error : " << GetLastError();
     }
 
     iFDsync = CreateFileA(
@@ -130,7 +130,7 @@ class FileDevice : public Subject<uint8_t, uint8_t>
     if (iFDsync == INVALID_HANDLE_VALUE)
     {
       MarkConnected(false);
-      std::cout << file << ", iFDsync error : " << GetLastError();
+      LOG << file << ", iFDsync error : " << GetLastError();
     }
     #else
     int flags = 0|O_RDWR ;
@@ -145,7 +145,7 @@ class FileDevice : public Subject<uint8_t, uint8_t>
     if (iFD < 0)
     {
       MarkConnected(false);
-      std::cout << file << ", error : " << strerror(errno);
+      LOG << file << ", error : " << strerror(errno);
     }
     #endif
 
@@ -169,7 +169,7 @@ class FileDevice : public Subject<uint8_t, uint8_t>
     if (iFD == INVALID_HANDLE_VALUE)
     {
       MarkConnected(false);
-      std::wcout << L"Device() " << file << L", iFD error : " << GetLastError() << L"\n";
+      LOG << L"Device() " << file << L", iFD error : " << GetLastError();
     }
 
     iFDsync = CreateFileW(
@@ -184,7 +184,7 @@ class FileDevice : public Subject<uint8_t, uint8_t>
     if (iFDsync == INVALID_HANDLE_VALUE)
     {
       MarkConnected(false);
-      std::wcout << L"Device() " << file << L", iFDsync error : " << GetLastError() << L"\n";
+      LOG << L"Device() " << file << L", iFDsync error : " << GetLastError();
     }
 
     iDevicetype = EDeviceType::File;
@@ -214,7 +214,7 @@ class FileDevice : public Subject<uint8_t, uint8_t>
   {
     if (!IsConnected())
     {
-      std::cout << GetName() << " FileDevice::Read() not connected";
+      LOG << GetName() << " FileDevice::Read() not connected";
       return nullptr;
     }
 
@@ -243,7 +243,7 @@ class FileDevice : public Subject<uint8_t, uint8_t>
 
     if (!fRet && GetLastError() != ERROR_IO_PENDING)
     {
-      std::cout << GetName() << " ReadFile failed : " << GetLastError();
+      LOG << GetName() << " ReadFile failed : " << GetLastError();
     }
 
     return nullptr;
@@ -254,7 +254,7 @@ class FileDevice : public Subject<uint8_t, uint8_t>
 
     if ((int)ctx->n == -1)
     {
-      std::cout << GetName() << " read() failed, error : " << strerror(errno);
+      LOG << GetName() << " read() failed, error : " << strerror(errno);
 
       if (!b)
       {
@@ -273,7 +273,7 @@ class FileDevice : public Subject<uint8_t, uint8_t>
   {
     if (!IsConnected())
     {
-      std::cout << GetName() << " FileDevice::Write() not connected";
+      LOG << GetName() << " FileDevice::Write() not connected";
       return;
     }
 
@@ -298,7 +298,7 @@ class FileDevice : public Subject<uint8_t, uint8_t>
 
     if (!fRet && GetLastError() != ERROR_IO_PENDING)
     {
-      std::cout << GetName() << " WriteFile() failed : " << GetLastError();
+      LOG << GetName() << " WriteFile() failed : " << GetLastError();
     }
 
     #else
@@ -307,7 +307,7 @@ class FileDevice : public Subject<uint8_t, uint8_t>
 
     if (rc == -1)
     {
-      std::cout << GetName() << " write() failed : " << strerror(errno);
+      LOG << GetName() << " write() failed : " << strerror(errno);
       assert(false);
     }
 
@@ -329,7 +329,7 @@ class FileDevice : public Subject<uint8_t, uint8_t>
 
       if (fRet == FALSE)
       {
-        std::cout << GetName() << " ReadSync ReadFile() failed : " << GetLastError() << std::endl;
+        LOG << GetName() << " ReadSync ReadFile() failed : " << GetLastError();
       }
     }
 
@@ -350,7 +350,7 @@ class FileDevice : public Subject<uint8_t, uint8_t>
 
       if (fRet == FALSE)
       {
-        std::cout << GetName() << " WriteSync WriteFile() failed : " << GetLastError() << std::endl;
+        LOG << GetName() << " WriteSync WriteFile() failed : " << GetLastError();
       }
     }
 

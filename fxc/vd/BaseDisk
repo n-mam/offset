@@ -186,21 +186,21 @@ class CBaseDisk : public npl::Subject<uint8_t, uint8_t>
 
     virtual void DumpStructure(void)
     {
-      std::cout << std::endl;
-      std::cout << "Master Boot Record : \n\n";
+      LOG;
+      LOG << "Master Boot Record : ";
       
-      std::cout << "DiskID                       : ";
+      LOG << "DiskID                       : ";
       
       DumpBytes(iMBR.DiskID, 4, true);
 
       for (int i = 0; i < 4; i++)
       {
-        std::cout << "start_sector                 : " << iMBR.partitions[i].start_sector << " sector \n";
-        std::cout << "total_sectors                : " << iMBR.partitions[i].total_sectors << " sector \n";
-        std::cout << "------------------" << std::endl;
+        LOG << "start_sector                 : " << iMBR.partitions[i].start_sector << " sector ";
+        LOG << "total_sectors                : " << iMBR.partitions[i].total_sectors << " sector ";
+        LOG << "------------------";
       }
 
-      std::cout << "signature                    : " << iMBR.signature << std::endl; 
+      LOG << "signature                    : " << iMBR.signature; 
     }
     
   protected:

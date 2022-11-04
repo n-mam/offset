@@ -26,7 +26,7 @@ auto AsyncWait(IVssAsync **async) -> HRESULT
 
   if (hr != S_OK)
   {
-    std::cout << "Wait failed " << std::hex << hr << std::endl;
+    LOG << "Wait failed " << std::hex << hr;
     return hr;
   }
 
@@ -36,7 +36,7 @@ auto AsyncWait(IVssAsync **async) -> HRESULT
 
   if ((hr != S_OK) && (status != VSS_S_ASYNC_FINISHED))
   {
-    std::cout << "QueryStatus failed " << std::hex << hr << std::endl;
+    LOG << "QueryStatus failed " << std::hex << hr;
   }
 
   (*async)->Release(), (*async) = nullptr;
@@ -77,7 +77,7 @@ auto InitializeBackupComponent(IVssBackupComponents **bc, bool bForRestore = tru
 
   if (hr != S_OK)
   {
-    std::cout << "CreateVssBackupComponents failed " << std::hex << hr << std::endl;
+    LOG << "CreateVssBackupComponents failed " << std::hex << hr;
     goto end;
   }
 
@@ -92,7 +92,7 @@ auto InitializeBackupComponent(IVssBackupComponents **bc, bool bForRestore = tru
 
   if (hr != S_OK)
   {
-    std::cout << "InitializeFor" << (bForRestore ? "Restore" : "Backup") << " failed " << std::hex << hr << std::endl;
+    LOG << "InitializeFor" << (bForRestore ? "Restore" : "Backup") << " failed " << std::hex << hr;
   }
 
   end:
@@ -131,19 +131,19 @@ auto CreateSnapshot(const std::vector<std::wstring>& volumes, TSnapshotCBK cbk =
 
   fxc::InitializeCOM();
 
-  std::cout << "\n Creating backup component ...\n";
+  LOG << "\n Creating backup component ...";
 
   CHKCOM(hr = InitializeBackupComponent(&pBC, false, nullptr))
 
   CHKCOM(hr = pBC->SetBackupState(FALSE, TRUE, VSS_BT_FULL, FALSE))
 
-  std::cout << "\n Gather writer metadata ...\n";
+  LOG << "\n Gather writer metadata ...";
 
   CHKCOM(hr = pBC->GatherWriterMetadata(&pAS))
 
   CHKCOM(hr = AsyncWait(&pAS))
 
-  std::cout << "\n StartSnapshotSet ...\n";
+  LOG << "\n StartSnapshotSet ...";
 
   VSS_ID m_set;
 
@@ -157,13 +157,13 @@ auto CreateSnapshot(const std::vector<std::wstring>& volumes, TSnapshotCBK cbk =
         &m_snap[i]))
   }
 
-  std::cout << "\n PrepareForBackup ...\n";
+  LOG << "\n PrepareForBackup ...";
 
   CHKCOM(hr = pBC->PrepareForBackup(&pAS))
 
   CHKCOM(hr = AsyncWait(&pAS))
 
-  std::cout << "\n DoSnapshotSet ...\n";
+  LOG << "\n DoSnapshotSet ...";
 
   CHKCOM(hr = pBC->DoSnapshotSet(&pAS))
 
@@ -185,11 +185,11 @@ auto CreateSnapshot(const std::vector<std::wstring>& volumes, TSnapshotCBK cbk =
 
   if (cbk)
   {
-    std::cout << "\n TSnapshotCBK ...\n\n";
+    LOG << "\n TSnapshotCBK ...";
     cbk(ss);
   }
 
-  std::cout << "\n BackupComplete ...\n";
+  LOG << "\n BackupComplete ...";
 
   CHKCOM(hr = pBC->BackupComplete(&pAS))
 

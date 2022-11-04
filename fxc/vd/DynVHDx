@@ -137,7 +137,7 @@ class CDynamicVHDx : public CBaseDisk
 
         for(const auto& pl : parentLocators)
         {
-          std::wcout << pl << std::endl;
+          LOG << pl;
         }
       }
 
@@ -210,7 +210,7 @@ class CDynamicVHDx : public CBaseDisk
 
     virtual void DumpStructure(void) override
     {
-      std::cout << "\n Chunk Ratio : " << iChunkRatio << " iTotalBatEntries : " << iTotalBatEntries << std::endl;
+      LOG << "\n Chunk Ratio : " << iChunkRatio << " iTotalBatEntries : " << iTotalBatEntries;
 
       pVHDX_FILE_IDENTIFIER vhdx_ftype = (pVHDX_FILE_IDENTIFIER) iRawSectors.get(); 
 
@@ -471,7 +471,7 @@ class CDynamicVHDx : public CBaseDisk
 
       CBaseDisk::DumpStructure();
 
-      std::cout << "\n\n";
+      LOG << "";
     }
 
   protected:

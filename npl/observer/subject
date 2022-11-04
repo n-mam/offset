@@ -10,6 +10,8 @@
 #include <iostream>
 #include <algorithm>
 
+#include <osl/log>
+
 namespace npl {
 
 template <typename T1, typename T2>
@@ -46,7 +48,7 @@ class Subject : public std::enable_shared_from_this<Subject<T1, T2>>
   {
     std::lock_guard<std::mutex> lg(m_lock);
     RemoveAllEventListenersInternal();
-    std::cout << "~Subject : " << GetName() << std::endl;
+    LOG << "~Subject : " << GetName();
   }
 
   virtual std::string GetName(void)
@@ -262,7 +264,7 @@ class Subject : public std::enable_shared_from_this<Subject<T1, T2>>
     }
     catch(const std::exception& e)
     {
-      std::cout << e.what() << std::endl;
+      LOG << e.what();
     }
     
     return value;

@@ -16,7 +16,7 @@ auto make_virtual_disk(const std::wstring& path)
 
   if (!file)
   {
-    std::wcout << L"Failed to open file " << path << std::endl;
+    LOG << L"Failed to open file " << path;
     return disk;
   }
 
@@ -24,21 +24,21 @@ auto make_virtual_disk(const std::wstring& path)
 
   file.reset();
 
-  std::wcout << L"\n";
+  LOG << L"";
 
   if (memcmp(buf, "conectix", strlen("conectix")) == 0)
   {
-    std::wcout << L"Dynamic VHD detected\n";
+    LOG << L"Dynamic VHD detected";
     disk = std::make_shared<CDynamicVHD>(path);
   }
   else if (memcmp(buf, "vhdxfile", strlen("vhdxfile")) == 0)
   {
-    std::wcout << L"Dynamic VHDx detected\n";
+    LOG << L"Dynamic VHDx detected";
     disk = std::make_shared<CDynamicVHDx>(path);
   }
   else
   {
-    std::wcout << L"Unknown image file format\n";
+    LOG << L"Unknown image file format";
   }
 
   disk->Initialize();

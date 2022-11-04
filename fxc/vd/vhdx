@@ -17,7 +17,7 @@ void create_base_vhdx(const std::wstring& volume, const std::wstring& file, fxc:
 
   uint64_t length = osl::GetPartitionLength(source->iFDsync);
 
-  std::cout << "Source volume length " << length << std::endl;
+  LOG << "Source volume length " << length;
 
   auto disk = std::make_shared<CDynamicVHDx>(length, _4M);
 
@@ -106,15 +106,15 @@ void create_base_vhdx(const std::wstring& volume, const std::wstring& file, fxc:
     }
   }
 
-  std::cout << "BAT constructed with " << count << " block entries. Last index " << index << std::endl;
+  LOG << "BAT constructed with " << count << " block entries. Last index " << index;
 
   uint64_t totalClusterLength = nvdb.TotalClusters.QuadPart * nvdb.BytesPerCluster;
 
-  std::cout << "Source volume total cluster length " << totalClusterLength << std::endl;
+  LOG << "Source volume total cluster length " << totalClusterLength;
 
   uint64_t pendinglen = length - totalClusterLength;
 
-  std::cout << "Source volume pending length " << pendinglen << std::endl;
+  LOG << "Source volume pending length " << pendinglen;
 
   if (pendinglen)
   {
@@ -139,7 +139,7 @@ void create_base_vhdx(const std::wstring& volume, const std::wstring& file, fxc:
 
       if (VHDX_BAT_ENTRY_GET_STATE(batentry) == VHDX_BAT_ENTRY_PAYLOAD_BLOCK_NOT_PRESENT)
       {
-        std::cout << "BAT setting entry for pending len at " << batindex << std::endl;
+        LOG << "BAT setting entry for pending len at " << batindex;
         uint64_t blockFileOffsetMB = disk->FirstDataBlockOffsetMB() + ((count * bs) / _1M);
         VHDX_BAT_ENTRY entry = { VHDX_BAT_ENTRY_PAYLOAD_BLOCK_FULLY_PRESENT, 0, blockFileOffsetMB };
         bat[batindex] = *((uint64_t *) &entry);
@@ -210,7 +210,7 @@ void create_base_vhdx(const std::wstring& volume, const std::wstring& file, fxc:
     throw std::runtime_error("constructed bat does not match runtime bat");
   }
 
-  std::wcout << L" " << file << L" created\n";
+  LOG << L" " << file << L" created";
 }
 
 //create differencing child vhd using either RCT CBT ranges (disk level) or volume level CBT
@@ -284,7 +284,7 @@ bool create_child_vhdx(const std::wstring& source, const std::wstring& parent, c
 
     bat[batindex] = *((uint64_t *) &entry);
 
-    std::cout << "Bat construction : setting bat entry : " << kv.first << std::endl;
+    LOG << "Bat construction : setting bat entry : " << kv.first;
 
     blockCount++;
   }
@@ -295,7 +295,7 @@ bool create_child_vhdx(const std::wstring& source, const std::wstring& parent, c
 
   if (hvhd == INVALID_HANDLE_VALUE)
   {
-    std::cout << "create_child_vhdx failed to attach vhd\n";
+    LOG << "create_child_vhdx failed to attach vhd";
     return false; 
   }
 
@@ -303,7 +303,7 @@ bool create_child_vhdx(const std::wstring& source, const std::wstring& parent, c
 
   if (!phyDiskPath.size())
   {
-    std::cout << "create_child_vhdx failed to get physical disk object\n";
+    LOG << "create_child_vhdx failed to get physical disk object";
     return false; 
   }
 
@@ -316,7 +316,7 @@ bool create_child_vhdx(const std::wstring& source, const std::wstring& parent, c
 
   for (auto& kv : dbiomap)
   {
-    std::cout << "BAT index : " << kv.first << std::endl;
+    LOG << "BAT index : " << kv.first;
 
     auto fRet = phyDisk->ReadSync(_buf.get(), bs, bs * kv.first);
 
@@ -335,7 +335,7 @@ bool create_child_vhdx(const std::wstring& source, const std::wstring& parent, c
 
   if (pfnDetachVirtualDisk == NULL)
   {
-    std::cout << "Failed to get poinetr to DetachVirtualDisk " << GetLastError() << std::endl;
+    LOG << "Failed to get poinetr to DetachVirtualDisk " << GetLastError();
     return false;
   }
 

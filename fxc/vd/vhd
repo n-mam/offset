@@ -17,7 +17,7 @@ void create_base_vhd(const std::wstring& volume, const std::wstring& file, fxc::
 
   uint64_t length = osl::GetPartitionLength(source->iFDsync);
 
-  std::cout << "Source volume length " << length << std::endl;
+  LOG << "Source volume length " << length;
 
   auto disk = std::make_shared<CDynamicVHD>(length, _2M);
 
@@ -70,11 +70,11 @@ void create_base_vhd(const std::wstring& volume, const std::wstring& file, fxc::
 
   uint64_t totalClusterLength = nvdb.TotalClusters.QuadPart * nvdb.BytesPerCluster;
 
-  std::cout << "source volume total cluster length " << totalClusterLength << std::endl;
+  LOG << "source volume total cluster length " << totalClusterLength;
 
   uint64_t pendinglen = length - totalClusterLength;
 
-  std::cout << "source volume pending length " << pendinglen << std::endl;
+  LOG << "source volume pending length " << pendinglen;
 
   if (pendinglen)
   {
@@ -90,7 +90,7 @@ void create_base_vhd(const std::wstring& volume, const std::wstring& file, fxc::
 
       if (batentry == ~((uint32_t)0))
       {
-        std::cout << "setting BAT entry for pending len at " << batIndex << std::endl;
+        LOG << "setting BAT entry for pending len at " << batIndex;
         uint64_t blockFileOffset = disk->FirstDataBlockOffset() + (validBATEntryCount * (512 + bs));
         osl::LTOB32(blockFileOffset / 512, (unsigned char *) (bat.get() + batIndex));
         validBATEntryCount++;
@@ -98,8 +98,8 @@ void create_base_vhd(const std::wstring& volume, const std::wstring& file, fxc::
     }
   }
 
-  std::cout << "BAT constructed with " << validBATEntryCount
-     << " block entries, last BAT index " << batIndex << std::endl;
+  LOG << "BAT constructed with " << validBATEntryCount
+     << " block entries, last BAT index " << batIndex;
 
   uint64_t nTotalPayloadBlocks = validBATEntryCount;
 
@@ -156,7 +156,7 @@ void create_base_vhd(const std::wstring& volume, const std::wstring& file, fxc::
 
   if (stop)
   {
-    std::cout << "create_base_vhd stop true" << std::endl;
+    LOG << "create_base_vhd stop true";
     return;
   }
 
@@ -168,7 +168,7 @@ void create_base_vhd(const std::wstring& volume, const std::wstring& file, fxc::
   {
     //DumpData("cbat.bin", (uint8_t *) bat.get(), disk->iBATSize);
     //DumpData("rbat.bin", (uint8_t *) disk->iBAT.get(), disk->iBATSize);
-    std::cout << "constructed bat does not match runtime bat" << std::endl;
+    LOG << "constructed bat does not match runtime bat";
   }
 
   // footer
@@ -178,7 +178,7 @@ void create_base_vhd(const std::wstring& volume, const std::wstring& file, fxc::
     disk->FirstDataBlockOffset() + (disk->iBlockCount * (512 + bs))
   );
 
-  std::wcout << L" " << file << L" created\n";
+  LOG << L" " << file << L" created";
 }
 
 //create differencing child vhd using either RCT CBT ranges (disk level) or volume level CBT
@@ -235,7 +235,7 @@ bool create_child_vhd(const std::wstring& source, const std::wstring& parent, co
 
   if (hvhd == INVALID_HANDLE_VALUE)
   {
-    std::cout << "create_child_vhd failed to attach vhd\n";
+    LOG << "create_child_vhd failed to attach vhd";
     return false; 
   }
 
@@ -243,7 +243,7 @@ bool create_child_vhd(const std::wstring& source, const std::wstring& parent, co
 
   if (!phyDiskPath.size())
   {
-    std::cout << "create_child_vhd failed to get physical disk object\n";
+    LOG << "create_child_vhd failed to get physical disk object";
     return false; 
   }
 
@@ -256,13 +256,13 @@ bool create_child_vhd(const std::wstring& source, const std::wstring& parent, co
 
   for (auto& kv : dbiomap)
   {
-    std::cout << "BAT index : " << kv.first << std::endl;
+    LOG << "BAT index : " << kv.first;
 
     memset(_buf.get(), 0, 512 + bs);
 
     for (auto& dbio : kv.second)
     {
-      std::cout << "off : " << dbio.offset << " len : " << dbio.length << std::endl;
+      LOG << "off : " << dbio.offset << " len : " << dbio.length;
 
       auto blockoff = dbio.offset % bs;
 
@@ -286,7 +286,7 @@ bool create_child_vhd(const std::wstring& source, const std::wstring& parent, co
 
   if (pfnDetachVirtualDisk == NULL)
   {
-    std::cout << "Failed to get pointer to DetachVirtualDisk " << GetLastError() << std::endl;
+    LOG << "Failed to get pointer to DetachVirtualDisk " << GetLastError();
     return false;
   }
 

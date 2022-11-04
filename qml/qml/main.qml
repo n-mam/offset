@@ -26,7 +26,7 @@ ApplicationWindow {
       height: parent.height * 0.05
       color: Material.background
       CheckBox {
-        id: tcb
+        id: cb
         checkState: Qt.Unchecked
         text: "Log"
         anchors.verticalCenter: toolbar.verticalCenter
@@ -45,15 +45,15 @@ ApplicationWindow {
       anchors.left: parent.left
       anchors.right: parent.right
       anchors.margins: 10
-      height: (tcb.checkState === Qt.Checked) ? (mainColumn.height * 0.20) : 0
+      height: (cb.checkState === Qt.Checked) ? (mainColumn.height * 0.20) : 0
       color: Material.background
-      Text {
+      TextArea {
         id: logText
         color: "white"
-        visible: (tcb.checkState === Qt.Checked)
+        visible: (cb.checkState === Qt.Checked)
         anchors.fill: parent
-        anchors.margins: 5
-        text: "<b>Hello</b> <i>World!</i>"
+        anchors.leftMargin: 5
+        text: "Hello World!"
       }
     }
 

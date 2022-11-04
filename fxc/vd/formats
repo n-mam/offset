@@ -26,7 +26,7 @@ void PrintGuid(__GUID guid)
     guid.Data4[4], guid.Data4[5], guid.Data4[6], guid.Data4[7]
   );
   
-  std::cout << std::string(_buf);
+  LOG << std::string(_buf);
 }
 
 auto GuidToWString(__GUID guid)
@@ -52,18 +52,18 @@ void DumpBytes(const uint8_t *buf, int len, bool hex)
   {
     if (hex == true)
     {
-      std::cout << std::hex << std::uppercase << (int)buf[i] << " ";  
+      LOG << std::hex << std::uppercase << (int)buf[i] << " ";  
     }
     else 
     {   
       if (isascii(buf[i]))
       {
-        std::cout << buf[i] ;
+        LOG << buf[i] ;
       }
     }
   }
 
-  std::cout << std::endl;
+  LOG;
 }
 
 typedef struct PARTITION

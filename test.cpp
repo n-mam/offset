@@ -24,7 +24,7 @@ int wmain(int argc, wchar_t *argv[])
   }
   else
   {
-    std::cout << "unknown namespace" << std::endl;
+    LOG << "unknown namespace";
   }
 
   return 0;

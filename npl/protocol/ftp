@@ -245,7 +245,7 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
     auto l = msg->GetPayloadLength();
     auto b = msg->GetPayloadBuffer();
 
-    std::cout<< "Response : " << std::string(b, l);
+    LOG << "Response : " << std::string(b, l);
 
     for (int i = 0; i < sizeof(FSM) / sizeof(FSM[0]); i++)
     {
@@ -253,7 +253,7 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
 
       if ((t.iState == iCurrentState) && (t.iResponseCode ==  b[0]))
       {
-        std::cout << +t.iState << " -> " << +t.iNextState
+        LOG << +t.iState << " -> " << +t.iNextState
           << ", " << +t.iFlags << ", " << iCmdQ.size();
 
         iCurrentState = t.iNextState;
@@ -317,7 +317,7 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
   virtual void SendCommand(const std::string& c, const std::string& arg = "")
   {
     auto cmd = c + " " + arg + "\r\n";
-    std::cout<< "Command  : " << cmd;
+    LOG << "Command  : " << cmd;
     Write((uint8_t *)cmd.c_str(), cmd.size(), 0);
   }
 
@@ -407,7 +407,7 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
 
     if (fRet < 6)
     {
-      std::cout << "Faled to parse PASV response";
+      LOG << "Faled to parse PASV response";
     }
 
     auto host = std::to_string(h1) + "." +
@@ -632,7 +632,7 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
     if (!status)
     {
       iCmdQ.clear();
-      std::cout << "User login failed";
+      LOG << "User login failed";
     }
   }
 

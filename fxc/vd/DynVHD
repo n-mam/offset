@@ -191,41 +191,41 @@ class CDynamicVHD : public CBaseDisk
 
     virtual void DumpStructure(void) override
     {
-      std::cout << std::endl;
-      std::cout << "VHD Footer : \n\n";
+      LOG;
+      LOG << "VHD Footer : ";
 
-      std::cout << "Cookie                       : " << std::string((char *)iFooter.Cookie, 8) << std::endl;
-      std::cout << "DataOffset                   : " << osl::endian_reverse(*((uint64_t *)&iFooter.DataOffset)) << std::endl;   
-      std::cout << "Original Size                : " << osl::endian_reverse(*((uint64_t *)&iFooter.OriginalSize)) << std::endl;
-      std::cout << "Current Size                 : " << osl::endian_reverse(*((uint64_t *)&iFooter.CurrentSize)) << std::endl;
-      std::cout << "Creator Application          : " << std::string((char *)iFooter.CreatorApplication, 4) << std::endl;
+      LOG << "Cookie                       : " << std::string((char *)iFooter.Cookie, 8);
+      LOG << "DataOffset                   : " << osl::endian_reverse(*((uint64_t *)&iFooter.DataOffset));   
+      LOG << "Original Size                : " << osl::endian_reverse(*((uint64_t *)&iFooter.OriginalSize));
+      LOG << "Current Size                 : " << osl::endian_reverse(*((uint64_t *)&iFooter.CurrentSize));
+      LOG << "Creator Application          : " << std::string((char *)iFooter.CreatorApplication, 4);
 
-      std::cout << std::endl;
-      std::cout << "VHD Sparse Header : \n\n";
+      LOG;
+      LOG << "VHD Sparse Header : ";
       
-      std::cout << "Cookie                       : " << std::string((char *)iHeader.Cookie, 8) << std::endl;
-      std::cout << "DataOffset                   : " << osl::endian_reverse(*((uint64_t *)&iHeader.DataOffset)) << std::endl;
-      std::cout << "Table Offset                 : " << osl::endian_reverse(*((uint64_t *)&iHeader.TableOffset)) << std::endl;
-      std::cout << "Block Size                   : " << osl::endian_reverse(*((uint64_t *)&iHeader.BlockSize)) << std::endl;
+      LOG << "Cookie                       : " << std::string((char *)iHeader.Cookie, 8);
+      LOG << "DataOffset                   : " << osl::endian_reverse(*((uint64_t *)&iHeader.DataOffset));
+      LOG << "Table Offset                 : " << osl::endian_reverse(*((uint64_t *)&iHeader.TableOffset));
+      LOG << "Block Size                   : " << osl::endian_reverse(*((uint64_t *)&iHeader.BlockSize));
 
-      std::cout << "Parent UniqueId              : ";
+      LOG << "Parent UniqueId              : ";
       DumpBytes(iHeader.ParentUniqueId, 16, true);
 
-      std::cout << "Parent TimeStamp             : ";
+      LOG << "Parent TimeStamp             : ";
       DumpBytes(iHeader.ParentTimeStamp, 4, true);
 
-      std::wcout << L" Parent Name                  : " << (wchar_t *)(iHeader.ParentName + 1) << L"\n"; // skip bom
+      LOG << L" Parent Name                  : " << (wchar_t *)(iHeader.ParentName + 1); // skip bom
 
       auto parentLocators = GetParentLocators();
 
       for(const auto& pl : parentLocators)
       {
-        std::wcout << L" Parent Locator Table Entry   : " << pl << L"\n";
+        LOG << L" Parent Locator Table Entry   : " << pl;
       }
 
       auto mte = GetTotalBATEntries();
 
-      std::cout << "Max Table Entries            : " << mte << std::endl;
+      LOG << "Max Table Entries            : " << mte;
 
       uint32_t count = 0;
 
@@ -237,11 +237,11 @@ class CDynamicVHD : public CBaseDisk
         }
       }
 
-      std::cout << "Valid BAT count              : " << count << std::endl;
+      LOG << "Valid BAT count              : " << count;
 
       CBaseDisk::DumpStructure();
 
-      std::cout << "\n\n";
+      LOG << "";
     }
 
   protected:

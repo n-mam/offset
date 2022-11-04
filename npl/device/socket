@@ -81,7 +81,7 @@ class SocketDevice : public FileDevice
 
   ~SocketDevice()
   {
-    std::cout << "~SocketDevice() --> " << GetName();
+    LOG << "~SocketDevice() --> " << GetName();
     StopSocket();
     shutdown((SOCKET)iFD, 0); //sd_recv
     closesocket((SOCKET)iFD);
@@ -89,7 +89,7 @@ class SocketDevice : public FileDevice
     {
       SSL_free(ssl);
     }
-    std::cout << "~SocketDevice() <-- " << GetName() << " shutdown(sd_recv)";
+    LOG << "~SocketDevice() <-- " << GetName() << " shutdown(sd_recv)";
   }
 
   virtual void StopSocket(void)
@@ -103,7 +103,7 @@ class SocketDevice : public FileDevice
         if (!(flag & SSL_SENT_SHUTDOWN))
         {
           int rc = SSL_shutdown(ssl);
-          std::cout << GetName() << " : ssl_shutdown() rc : " << rc;
+          LOG << GetName() << " : ssl_shutdown() rc : " << rc;
           UpdateWBIO();
         }
       }
@@ -112,7 +112,7 @@ class SocketDevice : public FileDevice
 
       shutdown((SOCKET)iFD, 1); //sd_send
 
-      std::cout << GetName() << " : shutdown(sd_send)";
+      LOG << GetName() << " : shutdown(sd_send)";
     }
   }
 
@@ -168,7 +168,7 @@ class SocketDevice : public FileDevice
     }
     else
     {
-      std::cout << "ConnectEx failed : " << WSAGetLastError();
+      LOG << "ConnectEx failed : " << WSAGetLastError();
     }
 
     #else
@@ -206,7 +206,7 @@ class SocketDevice : public FileDevice
 
     if (fRet == -1)
     {
-      std::cout << "bind failed, error : " << strerror(errno);
+      LOG << "bind failed, error : " << strerror(errno);
     }
 
     assert(fRet == 0);
@@ -215,7 +215,7 @@ class SocketDevice : public FileDevice
 
     if (fRet == -1)
     {
-      std::cout << "listen failed, error : " << strerror(errno);
+      LOG << "listen failed, error : " << strerror(errno);
     }
 
     assert(fRet == 0);
@@ -348,7 +348,7 @@ class SocketDevice : public FileDevice
 
     if (flag & SSL_RECEIVED_SHUTDOWN)
     {
-      std::cout<< GetName() << " SSL_RECEIVED_SHUTDOWN, flags : " << flag;
+      LOG << GetName() << " SSL_RECEIVED_SHUTDOWN, flags : " << flag;
 
       if (!(flag & SSL_SENT_SHUTDOWN))
       {
@@ -423,7 +423,7 @@ class SocketDevice : public FileDevice
 
     if (iAS == -1)
     {
-      std::cout << "accept failed, error : " << strerror(errno) << " " << iSocketType;
+      LOG << "accept failed, error : " << strerror(errno) << " " << iSocketType;
       return;
     }
 
@@ -454,7 +454,7 @@ class SocketDevice : public FileDevice
   {
     assert(IsClientSocket());
 
-    std::cout<< GetName() << " OnConnect()";
+    LOG << GetName() << " OnConnect()";
 
     FileDevice::OnConnect();
 
@@ -467,7 +467,7 @@ class SocketDevice : public FileDevice
   virtual void OnDisconnect() override
   {
     if(ssl) 
-      std::cout << GetName() <<
+      LOG << GetName() <<
       " shutdown mode : " << SSL_get_shutdown(ssl);
     FileDevice::OnDisconnect();
   }
@@ -498,15 +498,15 @@ class SocketDevice : public FileDevice
 
           if (SSL_session_reused(ssl))
           {
-            std::cout << "TLS session reused";
+            LOG << "TLS session reused";
           }
           else
           {
-            std::cout << "New TLS session";
+            LOG << "New TLS session";
             iSession = SSL_get1_session(ssl);
           }
 
-          std::cout << GetName() << " handshake done";
+          LOG << GetName() << " handshake done";
 
           if (iOnHandShake)
           {
@@ -515,7 +515,7 @@ class SocketDevice : public FileDevice
         }
         else
         {
-          std::cout << GetName() << " handshake failed : " <<
+          LOG << GetName() << " handshake failed : " <<
                   rc << " " << SSL_get_error(ssl, rc);
         }
       }

@@ -1,0 +1,32 @@
+#ifndef LOG_HPP
+#define LOG_HPP
+
+namespace osl {
+
+class Log
+{
+  template<typename T>
+  friend const Log& operator <<(const Log& lhs, const T& rhs);
+};
+
+template<typename T>
+const Log& operator <<(const Log& lhs, const T& rhs)
+{
+  if constexpr(std::is_same<T, std::string>::value)
+  {
+    std::cout << rhs << std::endl;
+  }
+
+  if constexpr(std::is_same<T, std::wstring>::value)
+  {
+    std::wcout << rhs << std::endl;
+  }
+
+  return lhs;
+}
+
+}
+
+#define LOG osl::Log()
+
+#endif

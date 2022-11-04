@@ -91,7 +91,7 @@ class HTTPMessage : public Message
         }
         else
         {
-          std::cout<< iMessage;
+          LOG << iMessage;
           bodyReceived = chunksReceived = true;
         }
       }

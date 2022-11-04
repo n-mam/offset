@@ -8,7 +8,7 @@ void test_http_client(const std::string& host, int port)
     http->StartClient(
       [](auto p)
       {
-        std::cout << "client connected" << std::endl;
+        LOG << "client connected";
       }
     );
   }
@@ -20,7 +20,7 @@ void test_ws_server(const std::string& host, int port)
     host, port, npl::TLS::Yes, 
     [] (npl::SPProtocol c, const std::string& m) 
     {
-      std::cout<< "client : " << m;
+      LOG << "client : " << m;
 
       c->SendProtocolMessage(
         (uint8_t *)"server echo : hello", 
@@ -66,7 +66,7 @@ void test_ftp_client(const std::string& host, int port)
       }
       else
       {
-        std::cout<< list;
+        LOG << list;
       }
       return true;
     },
@@ -90,9 +90,9 @@ void test_ftp_client(const std::string& host, int port)
   // ftp->Download(
   //   [](const char *b, size_t n) {
   //     if (b)
-  //       std::cout<< std::string(b, n);
+  //       LOG << std::string(b, n);
   //     else
-  //       std::cout<< "Download complete";
+  //       LOG << "Download complete";
   //     return true;
   //   },
   //   "bootstrap-vcpkg.bat",
@@ -151,7 +151,7 @@ void test_file_copy(const std::string& source, const std::string& dest)
     nullptr,
     [wd, off = 0ULL](const uint8_t *b, size_t n) mutable
     {
-      std::cout<< "onread " << n << ", off " << off;
+      LOG << "onread " << n << ", off " << off;
 
       if (n)
       {
@@ -162,7 +162,7 @@ void test_file_copy(const std::string& source, const std::string& dest)
     },
     [rd, off = 0ULL, bufSize](const uint8_t *b, size_t n) mutable
     {
-      std::cout<< "onwrite " << n << ", off " << off;
+      LOG << "onwrite " << n << ", off " << off;
 
       if (n)
       {
