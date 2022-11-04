@@ -91,7 +91,6 @@ Loader {
         implicitHeight: size
         radius: 4
         border.color: cb.down ? "black" : "darkgrey"
-
         Rectangle {
           anchors.centerIn: parent
           width: parent.size/2
@@ -101,7 +100,6 @@ Loader {
           visible: cb.checked
         }
       }
-
       onClicked: {
         rowDelegate.updateItemSelection(model.display, (checkState !== Qt.Unchecked))
         rowDelegate.color = (checkState !== Qt.Unchecked) ? "#5A5A5A" : Material.background

@@ -13,6 +13,8 @@ void create_base_vhd(const std::wstring& volume, const std::wstring& file, fxc::
 {
   auto source = npl::make_file(volume, false);
 
+  assert(source);
+
   auto nvdb = osl::GetNTFSVolumeData(source->iFDsync);
 
   uint64_t length = osl::GetPartitionLength(source->iFDsync);

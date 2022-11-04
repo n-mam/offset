@@ -90,7 +90,8 @@ Rectangle {
       Connections {
         target: diskListModel
         function onProgress(device, percent) {
-          if (model.display.includes(device)) {
+          var guid = (model.display[1] !== undefined) ? model.display[1] : model.display[0]
+          if (guid.includes(device)) {
             progress.visible = true
             progress.value = percent
           }

@@ -208,6 +208,8 @@ auto ConvertPhysicalVolumesToVirtualImages(const std::vector<TBackupConfig>& con
     {
       auto target = folder + L"\\" + volume.substr(4, 44) + L"." + format;
 
+      volume.pop_back();
+
       futures1.push_back(std::async(std::launch::async, [=](){
         fxc::CreateBaseVirtualDisk(format, volume, target,
           [=](auto snapshot, auto percent){
