@@ -14,6 +14,7 @@ add_executable(
   main.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/model/BaseModel.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/model/DiskListModel.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/model/Logger.cpp
   ${QT_RESOURCES}
 )
 

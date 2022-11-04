@@ -210,7 +210,7 @@ class CDynamicVHDx : public CBaseDisk
 
     virtual void DumpStructure(void) override
     {
-      LOG << "\n Chunk Ratio : " << iChunkRatio << " iTotalBatEntries : " << iTotalBatEntries;
+      LOG << "Chunk Ratio : " << iChunkRatio << " iTotalBatEntries : " << iTotalBatEntries;
 
       pVHDX_FILE_IDENTIFIER vhdx_ftype = (pVHDX_FILE_IDENTIFIER) iRawSectors.get(); 
 

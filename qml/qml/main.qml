@@ -47,16 +47,30 @@ ApplicationWindow {
       anchors.margins: 10
       height: (cb.checkState === Qt.Checked) ? (mainColumn.height * 0.20) : 0
       color: Material.background
-      TextArea {
-        id: logText
-        color: "white"
-        visible: (cb.checkState === Qt.Checked)
+      Flickable {
+        id: flickable
         anchors.fill: parent
-        anchors.leftMargin: 5
-        text: "Hello World!"
+        flickableDirection: Flickable.VerticalFlick
+        TextArea.flickable: TextArea {
+          id: logText
+          color: "white"
+          visible: (cb.checkState === Qt.Checked)
+          anchors.fill: parent
+          anchors.leftMargin: 5
+          clip: true
+          font.pointSize: 9
+          Connections {
+            target: logger
+            function onAddLogLine(log) {
+              logText.append(log)
+              logText.cursorPosition = logText.length-1
+            }
+          }
+        }
+        ScrollBar.vertical: ScrollBar {}
       }
     }
-
+ 
     Rectangle {
       anchors.left: parent.left
       anchors.right: parent.right

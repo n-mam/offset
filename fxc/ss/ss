@@ -131,19 +131,19 @@ auto CreateSnapshot(const std::vector<std::wstring>& volumes, TSnapshotCBK cbk =
 
   fxc::InitializeCOM();
 
-  LOG << "\n Creating backup component ...";
+  LOG << "Creating backup component ...";
 
   CHKCOM(hr = InitializeBackupComponent(&pBC, false, nullptr))
 
   CHKCOM(hr = pBC->SetBackupState(FALSE, TRUE, VSS_BT_FULL, FALSE))
 
-  LOG << "\n Gather writer metadata ...";
+  LOG << "Gather writer metadata ...";
 
   CHKCOM(hr = pBC->GatherWriterMetadata(&pAS))
 
   CHKCOM(hr = AsyncWait(&pAS))
 
-  LOG << "\n StartSnapshotSet ...";
+  LOG << "StartSnapshotSet ...";
 
   VSS_ID m_set;
 
@@ -157,13 +157,13 @@ auto CreateSnapshot(const std::vector<std::wstring>& volumes, TSnapshotCBK cbk =
         &m_snap[i]))
   }
 
-  LOG << "\n PrepareForBackup ...";
+  LOG << "PrepareForBackup ...";
 
   CHKCOM(hr = pBC->PrepareForBackup(&pAS))
 
   CHKCOM(hr = AsyncWait(&pAS))
 
-  LOG << "\n DoSnapshotSet ...";
+  LOG << "DoSnapshotSet ...";
 
   CHKCOM(hr = pBC->DoSnapshotSet(&pAS))
 
@@ -185,11 +185,11 @@ auto CreateSnapshot(const std::vector<std::wstring>& volumes, TSnapshotCBK cbk =
 
   if (cbk)
   {
-    LOG << "\n TSnapshotCBK ...";
+    LOG << "TSnapshotCBK ...";
     cbk(ss);
   }
 
-  LOG << "\n BackupComplete ...";
+  LOG << "BackupComplete ...";
 
   CHKCOM(hr = pBC->BackupComplete(&pAS))
 

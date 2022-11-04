@@ -1,25 +1,59 @@
 #ifndef LOG_HPP
 #define LOG_HPP
 
+#include <iostream>
+#include <functional>
+#include <type_traits>
+
 namespace osl {
+
+template<typename T>
+using TLogCallback = std::function<void (const T&)>;
 
 class Log
 {
   template<typename T>
   friend const Log& operator <<(const Log& lhs, const T& rhs);
+
+  inline static TLogCallback<std::string> g_sink_a = nullptr;
+  inline static TLogCallback<std::wstring> g_sink_w = nullptr;
+ 
+  public:
+
+  template<typename T>
+  static void SetLogSink(TLogCallback<T> cbk)
+  {
+    if constexpr(std::is_same<T, std::string>::value)
+    {
+      g_sink_a = cbk;
+    }
+
+    if constexpr(std::is_same<T, std::wstring>::value)
+    {
+      g_sink_w = cbk;
+    }
+  }
 };
 
 template<typename T>
 const Log& operator <<(const Log& lhs, const T& rhs)
 {
-  if constexpr(std::is_same<T, std::string>::value)
+  if constexpr(std::is_convertible_v<T, const std::string&>)
   {
-    std::cout << rhs << std::endl;
+    //std::cout << rhs << std::endl;
+    if (lhs.g_sink_a)
+    {
+      lhs.g_sink_a(rhs);
+    }
   }
 
-  if constexpr(std::is_same<T, std::wstring>::value)
+  if constexpr(std::is_convertible_v<T, const std::wstring&>)
   {
-    std::wcout << rhs << std::endl;
+    //std::wcout << rhs << std::endl;
+    if (lhs.g_sink_w)
+    {
+      lhs.g_sink_w(rhs);
+    } 
   }
 
   return lhs;

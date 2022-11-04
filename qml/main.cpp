@@ -3,6 +3,7 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 
+#include <Logger.h>
 #include <DiskListModel.h>
 
 int main(int argc, char *argv[])
@@ -25,6 +26,7 @@ int main(int argc, char *argv[])
           QCoreApplication::exit(-1);
   }, Qt::QueuedConnection);
 
+  engine.rootContext()->setContextProperty("logger", new Logger());
   engine.rootContext()->setContextProperty("diskListModel", new DiskListModel());
 
   engine.load(url);
