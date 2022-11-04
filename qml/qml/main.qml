@@ -3,10 +3,10 @@ import QtQuick.Controls
 import Qt.labs.platform
 
 ApplicationWindow {
-  width: 475
-  height: 570
+  width: 500
+  height: 600
   visible: true
-  title: qsTr("FXC")
+  title: qsTr("Offset")
 
   Column {
     id: mainColumn
@@ -15,27 +15,7 @@ ApplicationWindow {
     width: parent.width
     height: parent.height
 
-    Rectangle {
-      id: toolbar
-      // radius: 5
-      // border.width: 1
-      // border.color: "#a7c497"
-      anchors.left: parent.left
-      anchors.right: parent.right
-      anchors.margins: 10
-      height: parent.height * 0.05
-      color: Material.background
-      CheckBox {
-        id: cb
-        checkState: Qt.Unchecked
-        text: "Log"
-        anchors.verticalCenter: toolbar.verticalCenter
-        onClicked: {
-          log.height = (checkState === Qt.Checked) ? (mainColumn.height * 0.20) : 0
-          mainColumn.forceLayout()
-        }
-      }
-    }
+    property var showlog: false
 
     Rectangle {
       id: log
@@ -45,7 +25,7 @@ ApplicationWindow {
       anchors.left: parent.left
       anchors.right: parent.right
       anchors.margins: 10
-      height: (cb.checkState === Qt.Checked) ? (mainColumn.height * 0.20) : 0
+      height: mainColumn.showlog ? (mainColumn.height * 0.25) : 0
       color: Material.background
       Flickable {
         id: flickable
@@ -54,7 +34,7 @@ ApplicationWindow {
         TextArea.flickable: TextArea {
           id: logText
           color: "white"
-          visible: (cb.checkState === Qt.Checked)
+          visible: mainColumn.showlog
           anchors.fill: parent
           anchors.leftMargin: 5
           clip: true
@@ -76,7 +56,7 @@ ApplicationWindow {
       anchors.left: parent.left
       anchors.right: parent.right
       anchors.margins: 10
-      height: parent.height * (log.height ? 0.50 : 0.70)
+      height: parent.height * (log.height ? 0.50 : 0.75)
       color: Material.background
       radius: 5
       border.width: 1
@@ -159,6 +139,15 @@ ApplicationWindow {
           diskListModel.stop = true;
         }
       }
+    }
+  }
+
+  Shortcut {
+    context: Qt.ApplicationShortcut
+    sequences: ["Ctrl+Z"]
+    onActivated: {
+      mainColumn.showlog = !mainColumn.showlog
+      mainColumn.forceLayout();
     }
   }
 
