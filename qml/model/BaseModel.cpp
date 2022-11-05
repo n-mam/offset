@@ -55,6 +55,16 @@ int BaseModel::columnCount(const QModelIndex& index) const
   return 0;
 }
 
+QHash<int, QByteArray> BaseModel::roleNames() const
+{
+  auto roles = QAbstractItemModel::roleNames();
+  roles.insert(EDepth, "depthRole"); 
+  roles.insert(ESelectable, "selectableRole");
+  roles.insert(EHasChildren, "hasChildrenRole");
+  roles.insert(Qt::ForegroundRole, "textColorRole");
+  return roles;
+}
+
 QVariant BaseModel::data(const QModelIndex &index, int role) const
 {
   if (!index.isValid())

@@ -20,8 +20,11 @@ struct BlockDevice : public BaseItem
     m_size = size;
     m_free = free;
   }
+  std::wstring m_fs;
   double m_size = 0;
   double m_free = 0;
+  std::wstring m_label;
+  unsigned long m_serial;
 };
 
 using SPBlockDevice = std::shared_ptr<BlockDevice>;

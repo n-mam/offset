@@ -38,6 +38,7 @@ class BaseModel : public QAbstractItemModel
   BaseModel();
   ~BaseModel();
 
+  QHash<int, QByteArray> roleNames() const override;
   QModelIndex index(int row, int column, const QModelIndex& parent = QModelIndex()) const override;
   QModelIndex parent(const QModelIndex& index) const override;
   int rowCount(const QModelIndex& index = QModelIndex()) const override;

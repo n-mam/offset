@@ -144,7 +144,7 @@ ApplicationWindow {
 
   Shortcut {
     context: Qt.ApplicationShortcut
-    sequences: ["Ctrl+Z"]
+    sequences: ["Ctrl+Q","Ctrl+W"]
     onActivated: {
       mainColumn.showlog = !mainColumn.showlog
       mainColumn.forceLayout();

@@ -34,6 +34,8 @@ DiskListModel::DiskListModel()
 
     if (!size || !free) continue;
 
+    auto [label, fs, serial] = osl::GetVolumeMetadata(names[0]);
+
     QVector<QString> qnames; 
 
     for (auto& name : names)
@@ -71,10 +73,6 @@ QHash<int, QByteArray> DiskListModel::roleNames() const
   QHash<int, QByteArray> roles = BaseModel::roleNames();
   roles.insert(ESize, "sizeRole");
   roles.insert(EFree, "freeRole");
-  roles.insert(EDepth, "depthRole");
-  roles.insert(ESelectable, "selectableRole");
-  roles.insert(EHasChildren, "hasChildrenRole");
-  roles.insert(Qt::ForegroundRole, "textColorRole");
   return roles;
 }
 
