@@ -1,5 +1,6 @@
 <RCC>
   <qresource prefix="/">
+      <file>Fxc.qml</file>
       <file>main.qml</file>
       <file>Tree.qml</file>
       <file>Element.qml</file>
