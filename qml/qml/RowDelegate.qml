@@ -60,6 +60,21 @@ Rectangle {
       font.bold: true
       text: model.display[0]
       color: model.textColorRole
+      MouseArea {
+        width: rowDelegate.width
+        height: rowDelegate.height
+        acceptedButtons: Qt.LeftButton | Qt.RightButton
+        onClicked: (mouse) => {
+          if (mouse.button == Qt.LeftButton)
+          {
+              console.log("Left")
+          }
+          else if (mouse.button == Qt.RightButton)
+          {
+              console.log(model.display)
+          }
+        }
+      }
     }
 
     Text {
@@ -96,10 +111,9 @@ Rectangle {
             progress.value = percent
           }
         }
-      }      
+      }
     }
   }
-  
 
   Component.onCompleted: {
   }

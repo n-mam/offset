@@ -44,7 +44,7 @@ ApplicationWindow {
             target: logger
             function onAddLogLine(log) {
               logText.append(log)
-              logText.cursorPosition = logText.length-1
+              logText.cursorPosition = logText.length - log.length - 1
             }
           }
         }
