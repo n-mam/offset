@@ -8,6 +8,8 @@ ApplicationWindow {
   visible: true
   title: qsTr("Offset")
 
+  property var borderColor: "#BCDCAA"
+
   Column {
     id: mainColumn
     spacing: 5
@@ -21,7 +23,7 @@ ApplicationWindow {
       id: log
       radius: 5
       border.width: 1
-      border.color: "#a7c497"
+      border.color: borderColor
       anchors.left: parent.left
       anchors.right: parent.right
       anchors.margins: 10
@@ -55,7 +57,6 @@ ApplicationWindow {
     Fxc {
       anchors.left: parent.left
       anchors.right: parent.right
-      width: parent.width
       height: mainColumn.height * (log.height ? 0.75 : 1.00)
     }
   }

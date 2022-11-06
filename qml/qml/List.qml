@@ -11,10 +11,9 @@ ListView {
     // radius: 5
     // border.width: 1
     // border.color: "grey"
-    color: Material.background
     width: listView.width
     implicitHeight: rd.height
-
+    color: Material.background
     RowDelegate {
       id: rd
       depth: model.depthRole

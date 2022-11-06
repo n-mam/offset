@@ -13,11 +13,13 @@ void create_base_vhdx(const std::wstring& volume, const std::wstring& file, fxc:
 {
   auto source = npl::make_file(volume, false);
 
+  assert(source);
+
   auto nvdb = osl::GetNTFSVolumeData(source->iFDsync);
 
   uint64_t length = osl::GetPartitionLength(source->iFDsync);
 
-  LOG << "Source volume length " << length;
+  LOG << "source volume length " << length;
 
   auto disk = std::make_shared<CDynamicVHDx>(length, _4M);
 
@@ -68,12 +70,12 @@ void create_base_vhdx(const std::wstring& volume, const std::wstring& file, fxc:
   auto bat = std::make_unique<uint64_t []>(disk->iBATSize / sizeof(uint64_t));
   memset(bat.get(), 0x00, disk->iBATSize);
 
-  // GPT block bat entry
+  // GPT block's BAT entry
   VHDX_BAT_ENTRY entry = { VHDX_BAT_ENTRY_PAYLOAD_BLOCK_FULLY_PRESENT, 0, disk->FirstDataBlockOffsetMB() };
   bat[0] = *((uint64_t *) &entry);
 
-  uint64_t index = 1;
-  uint64_t count = 1;
+  uint64_t batIndex = 1;
+  uint64_t validBATEntryCount = 1;
 
   auto blockInUse = false;
 
@@ -90,31 +92,29 @@ void create_base_vhdx(const std::wstring& volume, const std::wstring& file, fxc:
     {
       if (blockInUse)
       {
-        uint64_t blockFileOffsetMB = disk->FirstDataBlockOffsetMB() + ((count * bs) / _1M);
+        uint64_t blockFileOffsetMB = disk->FirstDataBlockOffsetMB() + ((validBATEntryCount * bs) / _1M);
         VHDX_BAT_ENTRY entry = { VHDX_BAT_ENTRY_PAYLOAD_BLOCK_FULLY_PRESENT, 0, blockFileOffsetMB };
-        bat[index] = *((uint64_t *) &entry);
+        bat[batIndex] = *((uint64_t *) &entry);
         blockInUse = false;
-        count++;
+        validBATEntryCount++;
       }
 
-      index++;
+      batIndex++;
 
-      if ((index + 1) % (disk->iChunkRatio + 1) == 0)
+      if ((batIndex + 1) % (disk->iChunkRatio + 1) == 0)
       {
-        index++;
+        batIndex++;
       }
     }
   }
 
-  LOG << "BAT constructed with " << count << " block entries. Last index " << index;
-
   uint64_t totalClusterLength = nvdb.TotalClusters.QuadPart * nvdb.BytesPerCluster;
 
-  LOG << "Source volume total cluster length " << totalClusterLength;
+  LOG << "source volume total cluster length " << totalClusterLength;
 
   uint64_t pendinglen = length - totalClusterLength;
 
-  LOG << "Source volume pending length " << pendinglen;
+  LOG << "source volume pending length " << pendinglen;
 
   if (pendinglen)
   {
@@ -140,13 +140,18 @@ void create_base_vhdx(const std::wstring& volume, const std::wstring& file, fxc:
       if (VHDX_BAT_ENTRY_GET_STATE(batentry) == VHDX_BAT_ENTRY_PAYLOAD_BLOCK_NOT_PRESENT)
       {
         LOG << "BAT setting entry for pending len at " << batindex;
-        uint64_t blockFileOffsetMB = disk->FirstDataBlockOffsetMB() + ((count * bs) / _1M);
+        uint64_t blockFileOffsetMB = disk->FirstDataBlockOffsetMB() + ((validBATEntryCount * bs) / _1M);
         VHDX_BAT_ENTRY entry = { VHDX_BAT_ENTRY_PAYLOAD_BLOCK_FULLY_PRESENT, 0, blockFileOffsetMB };
         bat[batindex] = *((uint64_t *) &entry);
-        count++;
+        validBATEntryCount++;
       }
     }
   }
+
+  LOG << "BAT constructed with " << validBATEntryCount
+     << " block entries, last BAT index " << batIndex;
+
+  uint64_t nTotalPayloadBlocks = validBATEntryCount;
 
   // bat
   target->WriteSync((uint8_t *) bat.get(), disk->iBATSize, _3M);
@@ -157,11 +162,13 @@ void create_base_vhdx(const std::wstring& volume, const std::wstring& file, fxc:
   // MBR block
   disk->WriteSync((uint8_t *) &(disk->iMBR), sizeof(MBR), 0);
 
-  count--;
+  nTotalPayloadBlocks--;
+
+  bool stop = false;
 
   // payload blocks
 
-  for (index = 1; index < disk->GetTotalBATEntries(); index++)
+  for (uint64_t index = 1; index < disk->GetTotalBATEntries() && !stop; index++)
   {
     if ((index + 1) % (disk->iChunkRatio + 1) == 0)
     {
@@ -195,11 +202,22 @@ void create_base_vhdx(const std::wstring& volume, const std::wstring& file, fxc:
 
       assert(bat[index] == disk->iBAT[index]);
 
-      count--;
+      nTotalPayloadBlocks--;
+
+      if (cbk)
+      {
+        stop = cbk(volume, (1.00 - ((float)nTotalPayloadBlocks/(float)validBATEntryCount)) * 100);
+      }
     }
   }
 
-  assert(count == 0);
+  if (stop)
+  {
+    LOG << "create_base_vhdx stop true";
+    return;
+  }
+
+  assert(nTotalPayloadBlocks == 0);
 
   // assert the fact that constructed bat matches the one 
   // which is dynamically maintained due to disk level writes
@@ -207,7 +225,7 @@ void create_base_vhdx(const std::wstring& volume, const std::wstring& file, fxc:
   {
     //DumpData("cbat.bin", (uint8_t *) bat.get(), disk->iBATSize);
     //DumpData("rbat.bin", (uint8_t *) disk->iBAT.get(), disk->iBATSize);
-    throw std::runtime_error("constructed bat does not match runtime bat");
+    LOG << "constructed bat does not match runtime bat";
   }
 
   LOG << L" " << file << L" created";

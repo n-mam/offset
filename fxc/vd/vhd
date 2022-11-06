@@ -19,7 +19,7 @@ void create_base_vhd(const std::wstring& volume, const std::wstring& file, fxc::
 
   uint64_t length = osl::GetPartitionLength(source->iFDsync);
 
-  LOG << "Source volume length " << length;
+  LOG << "source volume length " << length;
 
   auto disk = std::make_shared<CDynamicVHD>(length, _2M);
 
@@ -82,7 +82,7 @@ void create_base_vhd(const std::wstring& volume, const std::wstring& file, fxc::
   {
     uint64_t pendingoff = bs + totalClusterLength;
 
-    auto fragments = fxc::CBaseDisk::LogicalToDataBlock(pendingoff, pendinglen, bs);
+    auto fragments = CBaseDisk::LogicalToDataBlock(pendingoff, pendinglen, bs);
 
     for (auto& f : fragments)
     {

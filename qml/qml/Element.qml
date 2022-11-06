@@ -11,6 +11,7 @@ Loader {
 
   property string text
   property string color
+
   property var used
   property var free
   property var value
@@ -41,7 +42,7 @@ Loader {
     Rectangle {
       radius: 2
       border.width: 1
-      border.color: "#a7c497"
+      border.color: "white"
       color: Material.background
       Rectangle {
         id: used
@@ -49,7 +50,7 @@ Loader {
         radius: 2
         width: loader.width * (loader.used / (loader.used + loader.free))
         height: parent.height
-        color: "lightskyblue"
+        color: "#ADDEFC" //lightskyblue"
         anchors.left: parent.left
         Text {
           text: loader.used > 1 ? 
