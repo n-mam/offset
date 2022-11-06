@@ -107,7 +107,7 @@ Rectangle {
         id: typeRect
         radius: 3
         border.width: 2
-        border.color: "#ffffff"
+        border.color: "#EB5DFF"
         color: "transparent"
         width: 42
         height: usage.height
@@ -134,7 +134,7 @@ Rectangle {
         id: srcRect
         radius: 3
         border.width: 2
-        border.color: (rowDelegate.srcIndex % 2) ? "#FF0000" : "#00BFFF"
+        border.color: (rowDelegate.srcIndex % 2) ? "#FF6969" : "#00BFFF"
         color: "transparent"
         width: 42
         height: usage.height

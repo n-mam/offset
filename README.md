@@ -21,3 +21,9 @@ cd build
 cmake -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake ..
 cmake --build . --config Debug
 ```
+
+### QT6 app deploy
+
+```
+windeployqt --qmldir E:\offset\qml E:\offset\build\qml\Debug\offset.exe
+```
