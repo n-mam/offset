@@ -19,6 +19,7 @@ struct TBackupConfig
   std::wstring m_folder;
   std::wstring m_format;
   std::wstring m_exclude;
+  bool m_live;
 };
 
 auto usage(void)
@@ -198,9 +199,9 @@ auto ConvertPhysicalVolumesToVirtualImages(const std::vector<TBackupConfig>& con
 
   for (const auto& config : configuration)
   {
-    auto [volume, level, folder, format, exclude] = config;
+    auto [volume, level, folder, format, exclude, live] = config;
 
-    if (fxc::IsVolumeSupported(volume.c_str()))
+    if (fxc::IsVolumeSupported(volume.c_str()) && !live)
     {
       supported.push_back(volume);
     }

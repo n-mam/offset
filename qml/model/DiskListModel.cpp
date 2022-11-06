@@ -1,3 +1,5 @@
+#include <QJSEngine>
+
 #include <fxc/fxc>
 
 #include <DiskListModel.h>
@@ -143,19 +145,32 @@ void DiskListModel::ConvertSelectedItemsToVirtualDisks(QString folder)
 
   std::vector<fxc::TBackupConfig> configuration;
 
-  for (auto& device : selected)
+  for (auto& selection : selected)
   {
-    auto name = device;
+    auto names = ((qjsEngine(this))->toScriptValue(selection)).property(0);
+    auto type = ((qjsEngine(this))->toScriptValue(selection)).property(1).toString();
+    auto vss = ((qjsEngine(this))->toScriptValue(selection)).property(2).toString();
+
+    QString name;
+
+    if (names.property("length").toInt() == 1) 
+      name = names.property(0).toString();
+    else
+      name = names.property(1).toString();
+
+    LOG << name.toStdWString() << L", " << type.toStdWString() << L", " << vss.toStdWString();
+
     configuration.push_back({
-      device.toStdWString(), 
+      name.toStdWString(), 
       L"0",
       folder.toStdWString(),
-      L"vhd",
-      L""
+      type.toStdWString(),
+      L"",
+      (vss == "live")
     });
   }
 
-  futures.push_back(std::async(std::launch::async, 
+  m_futures.push_back(std::async(std::launch::async, 
     [this, configuration](){
       fxc::ConvertPhysicalVolumesToVirtualImages(configuration, 
         [this](auto device, auto percent){

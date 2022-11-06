@@ -24,7 +24,7 @@ struct BaseItem
   int m_depth = 0;
   int m_children = 0;
   bool m_selectable = false;
-  QColor m_textColor = QColor(156, 220, 254);
+  QColor m_textColor = QColor("#00bfff");
 };
 
 using SPBaseItem = std::shared_ptr<BaseItem>;
@@ -45,11 +45,11 @@ class BaseModel : public QAbstractItemModel
   int columnCount(const QModelIndex& index = QModelIndex()) const override;
   QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
 
-  Q_INVOKABLE void updateItemSelection(QVector<QString> names, bool selected);
-  Q_INVOKABLE QVector<QString> getSelectedItems(void);
+  Q_INVOKABLE void updateItemSelection(QVariant data, bool selected);
+  Q_INVOKABLE QVector<QVariant> getSelectedItems(void);
 
   std::vector<SPBaseItem> m_model;
-  QVector<QString> m_selected;
+  QVector<QVariant> m_selected;
 
   enum Roles
   {

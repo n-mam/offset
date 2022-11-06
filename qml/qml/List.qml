@@ -13,7 +13,7 @@ ListView {
     // border.color: "grey"
     color: Material.background
     width: listView.width
-    implicitHeight: rd.height //75
+    implicitHeight: rd.height
 
     RowDelegate {
       id: rd
@@ -21,9 +21,6 @@ ListView {
       selectable: model.selectableRole
       isTreeNode: model.hasChildrenRole
       hasChildren: model.hasChildrenRole
-      onUpdateItemSelection: (names, selected) => {
-        listView.model.updateItemSelection(names, selected);
-      }
     }
     TapHandler {
       onTapped: console.log("list row tapped")

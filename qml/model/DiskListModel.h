@@ -63,7 +63,7 @@ class DiskListModel : public BaseModel
 
   bool transfer = false;
   bool stop = false;
-  std::vector<std::future<void>> futures;
+  std::vector<std::future<void>> m_futures;
 
   signals:
 

@@ -1,6 +1,8 @@
-#include <BaseModel.h>
-
 #include <vector>
+
+#include <QJSEngine>
+
+#include <BaseModel.h>
 
 BaseModel::BaseModel()
 {
@@ -32,7 +34,7 @@ int BaseModel::rowCount(const QModelIndex& index) const
 {
   if (!index.isValid())
   {
-    return m_model.size();
+    return static_cast<int>(m_model.size());
   }
 
   return 0;
@@ -123,23 +125,28 @@ QVariant BaseModel::data(const QModelIndex &index, int role) const
   return QVariant();
 }
 
-void BaseModel::updateItemSelection(QVector<QString> names, bool selected)
+void BaseModel::updateItemSelection(QVariant data, bool selected)
 {
-  qDebug() << names << selected;
+  qDebug() << data << selected;
+
+  m_selected.erase(
+    std::remove_if(
+      m_selected.begin(), m_selected.end(),
+      [this, &data](const auto& e){
+        auto e1 = ((qjsEngine(this))->toScriptValue(data)).property(0).toVariant();
+        auto e2 = ((qjsEngine(this))->toScriptValue(e)).property(0).toVariant();
+        return e1 == e2;
+      }),
+    m_selected.end()
+  );
+
   if (selected)
   {
-    m_selected.push_back(names.size() > 1 ? names[1] : names[0]);
-  }
-  else
-  {
-    m_selected.erase(
-      std::remove(m_selected.begin(), m_selected.end(), names.size() > 1 ? names[1] : names[0]),
-      m_selected.end()
-    );
+    m_selected.push_back(data);
   }
 }
 
-QVector<QString> BaseModel::getSelectedItems(void)
+QVector<QVariant> BaseModel::getSelectedItems(void)
 {
   return m_selected;
 }

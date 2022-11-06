@@ -21,9 +21,21 @@ Rectangle {
   property bool isTreeNode
   property int hasChildren
   property bool selectable
+  property bool isSelected: false
   property TreeView treeView
 
+  property var typeOptions: ["vhd", "vhdx", "T2"]
+  property var srcOptions: ["vss", "live"]
+  property var typeIndex: 0;
+  property var srcIndex: 0;
+
   signal updateItemSelection(var name, bool selected)
+
+  onUpdateItemSelection: (names, selected) => {
+    listView.model.updateItemSelection(
+      [names, typeOptions[typeIndex % 3], srcOptions[srcIndex % 2]], selected);
+    console.log([names, typeOptions[typeIndex % 3], srcOptions[srcIndex % 2]])
+  }
 
   height: arrow.height + checkBox.height + details.height + 12
 
@@ -36,7 +48,6 @@ Rectangle {
     rotation: rowDelegate.expanded ? 90 : 0
     anchors.top: rowDelegate.top
     anchors.margins: 5
-
   }
 
   Element {
@@ -92,6 +103,60 @@ Rectangle {
       visible: usage.create
       width: 205
       height: usage.create ? 16 : 0
+      Rectangle {
+        id: typeRect
+        radius: 3
+        border.width: 2
+        border.color: "#ffffff"
+        color: "transparent"
+        width: 42
+        height: usage.height
+        x: usage.width + rowDelegate.padding
+        visible: rowDelegate.isSelected
+        anchors.verticalCenter: usage.verticalCenter
+        Text {
+          color: "white"
+          text: rowDelegate.typeOptions[rowDelegate.typeIndex % 3]
+          anchors.verticalCenter: typeRect.verticalCenter
+          anchors.horizontalCenter: typeRect.horizontalCenter
+        }
+        MouseArea {
+          hoverEnabled: true
+          anchors.fill: parent
+          cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
+          onClicked: { 
+            rowDelegate.typeIndex++
+            rowDelegate.updateItemSelection(model.display, rowDelegate.isSelected)
+          }
+        }
+      }
+      Rectangle {
+        id: srcRect
+        radius: 3
+        border.width: 2
+        border.color: (rowDelegate.srcIndex % 2) ? "#FF0000" : "#00BFFF"
+        color: "transparent"
+        width: 42
+        height: usage.height
+        x: typeRect.x + typeRect.width + rowDelegate.padding
+        visible: rowDelegate.isSelected
+        anchors.verticalCenter: usage.verticalCenter
+        Text {
+          color: "white"
+          text: rowDelegate.srcOptions[rowDelegate.srcIndex % 2]
+          anchors.verticalCenter: srcRect.verticalCenter
+          anchors.horizontalCenter: srcRect.horizontalCenter
+        }
+        MouseArea {
+          hoverEnabled: true
+          anchors.fill: parent
+          cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
+          onClicked: { 
+            rowDelegate.srcIndex++
+            rowDelegate.updateItemSelection(model.display, rowDelegate.isSelected)
+          }
+        }
+      }
     }
 
     Element {

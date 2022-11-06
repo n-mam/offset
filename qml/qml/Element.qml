@@ -69,7 +69,7 @@ Loader {
         color: "mintcream"
         anchors.right: parent.right
         Text {
-          text: loader.free > 1 ? 
+          text: loader.free > 1 ?
                   loader.free.toFixed(1) + "g":
                   (loader.free * 1024).toFixed(1) + "m"
           anchors.horizontalCenter: percent(loader.free, loader.used) < 10 ? undefined : remaining.horizontalCenter
@@ -101,8 +101,9 @@ Loader {
         }
       }
       onClicked: {
-        rowDelegate.updateItemSelection(model.display, (checkState !== Qt.Unchecked))
-        rowDelegate.color = (checkState !== Qt.Unchecked) ? "#5A5A5A" : Material.background
+        rowDelegate.updateItemSelection(model.display, (checkState === Qt.Checked))
+        rowDelegate.color = (checkState === Qt.Checked) ? Material.background : "#5A5A5A"
+        rowDelegate.isSelected = (checkState === Qt.Checked);
       }
     }
   }

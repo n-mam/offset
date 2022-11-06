@@ -45,7 +45,7 @@ Column {
       anchors.left: parent.left
       anchors.margins: 10
       placeholderText: "Destination"
-      text: folderDialog.currentFolder
+      text: folderDialog.folder
       anchors.verticalCenter: parent.verticalCenter
     }
     Button {
