@@ -75,7 +75,7 @@ class CDynamicVHD : public CBaseDisk
 
     virtual bool IsDifferencing() override
     {
-      return ((osl::endian_reverse(*((uint32_t *)&iFooter.DiskType)) == 4) ? true : false);
+      return (osl::endian_reverse(*((uint32_t *)&iFooter.DiskType)) == 4);
     }
 
     virtual std::vector<std::wstring> GetParentLocators(void) override

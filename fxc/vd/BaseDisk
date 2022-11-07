@@ -38,14 +38,6 @@ class CBaseDisk : public npl::Subject<uint8_t, uint8_t>
 
     using SPCBaseDisk = std::shared_ptr<CBaseDisk>;
 
-    virtual ~CBaseDisk()
-    {
-      if (iFile)
-      {
-        iFile->GetDispatcher()->RemoveEventListener(iFile);
-      }
-    }
-
     CBaseDisk() {}
 
     CBaseDisk(uint64_t size, uint32_t blocksize)
@@ -68,8 +60,16 @@ class CBaseDisk : public npl::Subject<uint8_t, uint8_t>
       iFile->ReadSync(iRawSectors.get(), len, 0);
     }
 
-    virtual bool IsDifferencing() = 0;
+    virtual ~CBaseDisk()
+    {
+      if (iFile)
+      {
+        iFile->GetDispatcher()->RemoveEventListener(iFile);
+      }
+    }
 
+    virtual bool IsDifferencing() = 0;
+ 
     virtual uint32_t GetBlockSize() = 0;
 
     virtual uint64_t GetLogicalDiskLength() = 0;

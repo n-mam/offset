@@ -103,7 +103,6 @@ Loader {
       }
       onClicked: {
         rowDelegate.updateItemSelection(model.display, (checkState === Qt.Checked))
-        rowDelegate.color = (checkState === Qt.Checked) ? Material.background : "#5A5A5A"
         rowDelegate.isSelected = (checkState === Qt.Checked);
       }
     }

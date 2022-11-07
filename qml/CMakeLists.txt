@@ -10,7 +10,8 @@ qt6_add_resources(QT_RESOURCES
 )
 
 add_executable(
-  offset 
+  offset
+  WIN32
   main.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/model/BaseModel.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/model/DiskListModel.cpp

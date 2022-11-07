@@ -61,9 +61,9 @@ Column {
 
   Rectangle {
     id: actionsRect
-    radius: 5
-    border.width: 1
-    border.color: borderColor
+    // radius: 5
+    // border.width: 1
+    // border.color: borderColor
     color: Material.background
     anchors.horizontalCenter: parent.horizontalCenter
     width: 75 + 75 + (3 * mainColumn.spacing)

@@ -6,8 +6,11 @@
 #include <Logger.h>
 #include <DiskListModel.h>
 
+void q_logger(QtMsgType, const QMessageLogContext&, const QString&);
+
 int main(int argc, char *argv[])
 {
+  qInstallMessageHandler(q_logger);
   qputenv("QT_QUICK_CONTROLS_STYLE", QByteArray("Material"));
   qputenv("QT_QUICK_CONTROLS_MATERIAL_THEME", QByteArray("Dark"));
 
@@ -32,4 +35,30 @@ int main(int argc, char *argv[])
   engine.load(url);
 
   return app.exec();
+}
+
+void q_logger(QtMsgType type, const QMessageLogContext &context, const QString &msg)
+{
+  char buffer[2048];
+  QByteArray localMsg = msg.toLocal8Bit();
+  switch (type)
+  {
+    case QtDebugMsg:
+      sprintf_s(buffer, "q_logger: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
+      break;
+    case QtInfoMsg:
+      sprintf_s(buffer, "q_logger Info: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
+      break;
+    case QtWarningMsg:
+      sprintf_s(buffer, "q_logger Warning: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
+      break;
+    case QtCriticalMsg:
+      sprintf_s(buffer, "q_logger Critical: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
+      break;
+    case QtFatalMsg:
+      sprintf_s(buffer, "q_logger Fatal: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
+      //OutputDebugStringA(buffer);
+      abort();
+  }
+  LOG << buffer;
 }

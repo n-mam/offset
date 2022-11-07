@@ -34,7 +34,7 @@ Rectangle {
   onUpdateItemSelection: (names, selected) => {
     listView.model.updateItemSelection(
       [names, typeOptions[typeIndex % 3], srcOptions[srcIndex % 2]], selected);
-    console.log([names, typeOptions[typeIndex % 3], srcOptions[srcIndex % 2]])
+    //console.log([names, typeOptions[typeIndex % 3], srcOptions[srcIndex % 2]])
   }
 
   height: arrow.height + checkBox.height + details.height + 12
