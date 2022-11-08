@@ -120,19 +120,9 @@ auto RecoverVolumeToVolume(const std::wstring& source, const std::wstring& targe
     goto _end;
   }
 
-  fRet = DeviceIoControl(
-            hSource,
-            FSCTL_ALLOW_EXTENDED_DASD_IO,
-            NULL,
-            0,
-            NULL,
-            0,
-            NULL,
-            NULL);
-
-  if (fRet == FALSE)
+  if (!osl::AllowExtendedDasdIO(hSource))
   {
-    LOG << "EXTENDED_DASD_IO failed on source, error : " << GetLastError();
+    LOG << "AllowExtendedDasdIO failed, error : " << GetLastError();
     goto _end;
   }
 

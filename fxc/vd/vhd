@@ -17,7 +17,7 @@ void create_base_vhd(const std::wstring& volume, const std::wstring& file, fxc::
 
   auto nvdb = osl::GetNTFSVolumeData(source->iFDsync);
 
-  uint64_t length = osl::GetPartitionLength(source->iFDsync);
+  uint64_t length = osl::GetBlockDeviceLength(source->iFDsync);
 
   LOG << "source volume length " << length;
 
@@ -303,6 +303,76 @@ bool create_child_vhd(const std::wstring& source, const std::wstring& parent, co
 
   return true;
 }
+
+//image copy from device(voume/disk) to file
+bool create_raw_image(const std::wstring& device, const std::wstring& file, TProgressCallback cbk, uint64_t o = 0)
+{
+  auto source = npl::make_file(device, false);
+
+  auto target = npl::make_file(file, true);
+
+  if (!osl::AllowExtendedDasdIO(source->iFDsync))
+  {
+    LOG << "AllowExtendedDasdIO failed, error : " << GetLastError();
+  }
+
+  auto length = osl::GetBlockDeviceLength(source->iFDsync);
+
+  LOG << "Total length " << length;
+
+  DWORD dwBytesRead = 0;
+  DWORD dwBytesWritten = 0;
+  uint64_t totalBytesRead = 0;
+  uint64_t totalBytesWritten = 0;
+
+  bool stop = false;
+
+  LARGE_INTEGER offset;
+  offset.QuadPart = o;
+
+  uint64_t pendingBytes = length, toRead = 0;
+
+  auto buffer = std::make_unique<char []>(_2M);
+
+  while (!stop && pendingBytes)
+  {
+    if (pendingBytes >= _2M)
+    {
+      toRead = _2M;
+    }
+    else
+    {
+      toRead = (DWORD)(pendingBytes + ((pendingBytes % 512) ? (512 - (pendingBytes % 512)) : 0));
+    }
+
+    // read the source device
+    dwBytesRead = source->ReadSync((uint8_t *) buffer.get(), toRead, offset.QuadPart);
+
+    // write to the target file
+    dwBytesWritten = target->WriteSync((uint8_t *) buffer.get(), dwBytesRead, offset.QuadPart);
+
+    assert(dwBytesWritten == dwBytesRead);
+
+    totalBytesRead += dwBytesRead;
+
+    totalBytesWritten += dwBytesWritten;
+
+    pendingBytes -= dwBytesRead;
+
+    offset.QuadPart += _2M;
+
+    if (cbk)
+    {
+      stop = cbk(device, static_cast<int>(((double)totalBytesRead/(double)length) * 100));
+    }
+  }
+
+  LOG << "Read " << totalBytesRead << " bytes";
+  LOG << "Wrote " << totalBytesWritten << " bytes";
+
+  return true;
 }
+
+} //namespace fxc
 
 #endif

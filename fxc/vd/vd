@@ -60,6 +60,10 @@ void CreateBaseVirtualDisk(
   {
     fxc::create_base_vhdx(source, target, cbk);
   }
+  else if (format == L"raw")
+  {
+    fxc::create_raw_image(source, target, cbk);
+  }
 }
 
 void CreateIncrementalVirtualDisk(

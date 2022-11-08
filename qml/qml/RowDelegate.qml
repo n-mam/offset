@@ -24,7 +24,7 @@ Rectangle {
   property bool isSelected: false
   property TreeView treeView
 
-  property var typeOptions: ["vhd", "vhdx", "T2"]
+  property var typeOptions: ["vhd", "vhdx", "raw"]
   property var srcOptions: ["vss", "live"]
   property var typeIndex: 0;
   property var srcIndex: 0;
