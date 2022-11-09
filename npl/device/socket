@@ -122,7 +122,7 @@ class SocketDevice : public FileDevice
 
     iSocketType = ESocketType::EClientSocket;
 
-    #ifdef WIN32
+      #ifdef _WIN32
 
     struct sockaddr_in addr;
     ZeroMemory(&addr, sizeof(addr));
@@ -157,7 +157,7 @@ class SocketDevice : public FileDevice
 
     if (fRet)
     {
-      #ifdef WIN32
+        #ifdef _WIN32
       setsockopt((SOCKET)iFD, SOL_SOCKET, SO_UPDATE_CONNECT_CONTEXT, NULL, 0 );
       #endif          
       OnConnect();
@@ -227,12 +227,12 @@ class SocketDevice : public FileDevice
 
     iSocketType = ESocketType::EListeningSocket;
 
-    #ifdef WIN32
+      #ifdef _WIN32
     AcceptNewConnection();
     #endif
   }
 
-  #ifdef WIN32
+    #ifdef _WIN32
   virtual void AcceptNewConnection(void)
   {
     auto AcceptEx = GetExtentionPfn(WSAID_ACCEPTEX, iFD);
@@ -443,7 +443,7 @@ class SocketDevice : public FileDevice
 
     FileDevice::OnAccept();
 
-    #ifdef WIN32
+      #ifdef _WIN32
     iConnectedClient->Read();
     setsockopt((SOCKET)iAS, SOL_SOCKET, SO_UPDATE_ACCEPT_CONTEXT, (char*)&(iFD), sizeof(iFD));
     AcceptNewConnection();
@@ -458,7 +458,7 @@ class SocketDevice : public FileDevice
 
     FileDevice::OnConnect();
 
-    #ifdef WIN32
+      #ifdef _WIN32
     FileDevice::Read();
     setsockopt((SOCKET)iFD, SOL_SOCKET, SO_UPDATE_CONNECT_CONTEXT, NULL, 0 );
     #endif
@@ -474,7 +474,7 @@ class SocketDevice : public FileDevice
 
   virtual void OnRead(const uint8_t *b, size_t n) override
   {
-    #ifdef WIN32
+      #ifdef _WIN32
     FileDevice::Read();
     #endif
 
@@ -588,7 +588,7 @@ class SocketDevice : public FileDevice
   
   protected:
 
-  #ifdef WIN32
+    #ifdef _WIN32
   void * GetExtentionPfn(GUID guid, FD fd)
   {
     void *pfn;
@@ -654,7 +654,7 @@ using WPDeviceSocket = std::weak_ptr<SocketDevice>;
 
 } // namespace npl
 
-#ifdef WIN32
+  #ifdef _WIN32
 WSADATA wsaData;
 int winsockinit = WSAStartup(MAKEWORD(2, 2), &wsaData);
 void * GetExtentionPfn(GUID guid, FD fd); 

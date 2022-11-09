@@ -5,7 +5,7 @@
 
 #include <observer/subject>
 
-#ifdef WIN32
+  #ifdef _WIN32
   #include <winsock2.h>
   #include <MSWSock.h>
   #include <Ws2tcpip.h>
@@ -47,7 +47,7 @@ enum EIOType : uint8_t
 
 struct Context
 {
-  #ifdef WIN32
+    #ifdef _WIN32
   OVERLAPPED      ol;
   #else
 
@@ -102,7 +102,7 @@ class FileDevice : public Subject<uint8_t, uint8_t>
   {
     MarkConnected(true);
 
-    #ifdef WIN32
+      #ifdef _WIN32
     iFD = CreateFileA(
       file.c_str(),
       GENERIC_READ|GENERIC_WRITE,
@@ -152,7 +152,7 @@ class FileDevice : public Subject<uint8_t, uint8_t>
     iDevicetype = EDeviceType::File;
   }
 
-  #ifdef WIN32
+    #ifdef _WIN32
   FileDevice(const std::wstring& file, bool bCreateNew)
   {
     MarkConnected(true);
@@ -195,7 +195,7 @@ class FileDevice : public Subject<uint8_t, uint8_t>
   {
     if (iDevicetype == EDeviceType::File)
     {
-      #ifdef WIN32
+        #ifdef _WIN32
       CloseHandle(iFD);
       CloseHandle(iFDsync);
       #else
@@ -234,7 +234,7 @@ class FileDevice : public Subject<uint8_t, uint8_t>
       l = DEVICE_BUFFER_SIZE;
     }
 
-    #ifdef WIN32
+      #ifdef _WIN32
 
     (ctx->ol).Offset = o & 0x00000000FFFFFFFF;
     (ctx->ol).OffsetHigh = (o & 0xFFFFFFFF00000000) >> 32;
@@ -279,7 +279,7 @@ class FileDevice : public Subject<uint8_t, uint8_t>
 
     assert(b && l);
 
-    #ifdef WIN32
+      #ifdef _WIN32
 
     Context *ctx = (Context *) calloc(1, sizeof(Context));
 
@@ -314,7 +314,7 @@ class FileDevice : public Subject<uint8_t, uint8_t>
     #endif
   }
 
-  #ifdef WIN32
+  #ifdef _WIN32
   virtual int32_t ReadSync(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override
   {
     DWORD nBytesRead = -1;

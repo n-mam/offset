@@ -3,7 +3,7 @@
 
 #include <string>
 #include <iostream>
-#include <inttypes.h>
+#include <cinttypes>
 
 #pragma pack(1)
 

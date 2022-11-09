@@ -116,7 +116,7 @@ auto ResilientChangeTrackingToDataBlockIO(const std::wstring& source, const std:
     auto off = ranges[i].ByteOffset;
     auto len = ranges[i].ByteLength;
 
-    auto fragments = fxc::CBaseDisk::LogicalToDataBlock(off, len, bs);
+    auto fragments = fxc::BaseDisk::LogicalToDataBlock(off, len, bs);
 
     for (auto& fragmet : fragments)
     {

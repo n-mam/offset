@@ -24,7 +24,7 @@ Rectangle {
   property bool isSelected: false
   property TreeView treeView
 
-  property var typeOptions: ["vhd", "vhdx", "raw"]
+  property var typeOptions: ["vhd-d", "vhdx-d", "vhd-f"]
   property var srcOptions: ["vss", "live"]
   property var typeIndex: 0;
   property var srcIndex: 0;
@@ -109,7 +109,7 @@ Rectangle {
         border.width: 2
         border.color: "#EB5DFF"
         color: "transparent"
-        width: 42
+        width: 52
         height: usage.height
         x: usage.width + rowDelegate.padding
         visible: rowDelegate.isSelected
@@ -136,7 +136,7 @@ Rectangle {
         border.width: 2
         border.color: (rowDelegate.srcIndex % 2) ? "#FF6969" : "#00BFFF"
         color: "transparent"
-        width: 42
+        width: 52
         height: usage.height
         x: typeRect.x + typeRect.width + rowDelegate.padding
         visible: rowDelegate.isSelected
