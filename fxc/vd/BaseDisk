@@ -231,15 +231,16 @@ class BaseDisk : public npl::Subject<uint8_t, uint8_t>
     r_offset.QuadPart = 0;
     w_offset.QuadPart = o;
 
+    uint64_t bs = target->GetBlockSize();
     uint64_t pendingBytes = length, toRead = 0;
 
-    auto buffer = std::make_unique<char []>(_2M);
+    auto buffer = std::make_unique<char []>(bs);
 
     while (!stop && pendingBytes)
     {
-      if (pendingBytes >= _2M)
+      if (pendingBytes >= bs)
       {
-        toRead = _2M;
+        toRead = bs;
       }
       else
       {
@@ -264,8 +265,8 @@ class BaseDisk : public npl::Subject<uint8_t, uint8_t>
 
       pendingBytes -= dwBytesRead;
 
-      r_offset.QuadPart += _2M;
-      w_offset.QuadPart += _2M;
+      r_offset.QuadPart += bs;
+      w_offset.QuadPart += bs;
 
       dwBytesRead = dwBytesWritten = 0;
 
