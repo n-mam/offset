@@ -20,10 +20,10 @@ struct BlockDevice : public BaseItem
     m_size = size;
     m_free = free;
   }
-  std::wstring m_fs;
+  QString m_fs;
   double m_size = 0;
   double m_free = 0;
-  std::wstring m_label;
+  QString m_label;
   unsigned long m_serial;
 };
 
@@ -49,7 +49,8 @@ class DiskListModel : public BaseModel
   enum Roles
   {
     ESize = BaseModel::ELastRole + 1,
-    EFree
+    EFree,
+    EMetaData
   };
 
   public slots:

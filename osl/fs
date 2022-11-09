@@ -205,11 +205,14 @@ PVOLUME_BITMAP_BUFFER GetVolumeInUseBitmap(HANDLE hvolume)
 auto GetVolumeMetadata(const std::wstring& volume)
 {
   DWORD d1,d2,d3;
-
+  std::wstring name = volume;
   wchar_t b1[128] = {L'\0'};
   wchar_t b2[128] = {L'\0'};
 
-  GetVolumeInformationW(volume.c_str(), b1, 128, &d1, &d2, &d3, b2, 128);
+  GetVolumeInformationW(
+    (name.back() == L'\\') ? 
+        name.c_str() : (name + L"\\").c_str(),
+    b1, 128, &d1, &d2, &d3, b2, 128);
 
   return std::make_tuple(std::wstring(b1), std::wstring(b2), d1);
 }

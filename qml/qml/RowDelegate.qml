@@ -89,24 +89,23 @@ Rectangle {
     }
 
     Text {
-      id: seconLabel
+      id: secondLabel
       text: model.display[1] !== undefined ? model.display[1] : ""
-      color: "#FF4EBC7C"
+      color: model.textColorRole
     }
 
-    Element {
-      id: usage
-      type: "usage"
-      create: rowDelegate.selectable && model.sizeRole > 0
-      used: model.sizeRole - model.freeRole
-      free: model.freeRole
-      visible: usage.create
-      width: 205
-      height: usage.create ? 16 : 0
+    Row {
+      spacing: rowDelegate.padding
+      bottomPadding: 2
+      Text {
+        id: thirdLabel
+        text: (model.metaDataRole[0] + " " + model.metaDataRole[1] + " " +  model.metaDataRole[2]).replace(/ +(?= )/g,'').trim()
+        color: "#5EECD9"
+      }
       Rectangle {
         id: typeRect
         radius: 3
-        border.width: 2
+        border.width: 1
         border.color: "#EB5DFF"
         color: "transparent"
         width: 52
@@ -133,7 +132,7 @@ Rectangle {
       Rectangle {
         id: srcRect
         radius: 3
-        border.width: 2
+        border.width: 1
         border.color: (rowDelegate.srcIndex % 2) ? "#FF6969" : "#00BFFF"
         color: "transparent"
         width: 52
@@ -157,6 +156,17 @@ Rectangle {
           }
         }
       }
+    }
+
+    Element {
+      id: usage
+      type: "usage"
+      create: rowDelegate.selectable && model.sizeRole > 0
+      used: model.sizeRole - model.freeRole
+      free: model.freeRole
+      visible: usage.create
+      width: (secondLabel.width ? secondLabel.width : label.width)
+      height: usage.create ? 16 : 0
     }
 
     Element {

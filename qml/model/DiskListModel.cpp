@@ -45,13 +45,23 @@ DiskListModel::DiskListModel()
       qnames.prepend(QString::fromStdWString(name));
     }
 
-    m_model.push_back(std::make_shared<BlockDevice>(qnames, 0, children.size(), true, size, free));
+    auto item = std::make_shared<BlockDevice>(qnames, 0, children.size(), true, size, free);
+
+    item->m_fs = QString::fromStdWString(fs);
+    item->m_label = QString::fromStdWString(label);
+    item->m_serial = serial;
+
+    m_model.push_back(item);
 
     for (const auto& child : children)
     {
       auto [size, free] = osl::GetTotalAndFree(child.toStdWString().c_str());
       auto c = std::make_shared<BlockDevice>(QVector<QString>(child), 1, 0, true, size, free);
       c->m_textColor = QColor(220, 220, 170);
+      auto [label, fs, serial] = osl::GetVolumeMetadata(child.toStdWString());
+      c->m_fs = QString::fromStdWString(fs);
+      c->m_label = QString::fromStdWString(label);
+      c->m_serial = serial;
       m_model.push_back(c);
     }
   }
@@ -75,6 +85,7 @@ QHash<int, QByteArray> DiskListModel::roleNames() const
   QHash<int, QByteArray> roles = BaseModel::roleNames();
   roles.insert(ESize, "sizeRole");
   roles.insert(EFree, "freeRole");
+  roles.insert(EMetaData, "metaDataRole");
   return roles;
 }
 
@@ -102,6 +113,19 @@ QVariant DiskListModel::data(const QModelIndex &index, int role) const
       if (column == 0 && !index.parent().isValid())
       {
         return std::static_pointer_cast<BlockDevice>(m_model[row])->m_free;
+      }
+      break;
+    }
+
+    case EMetaData:
+    {
+      if (column == 0 && !index.parent().isValid())
+      {
+        return QVector<QString>({
+          std::static_pointer_cast<BlockDevice>(m_model[row])->m_fs,
+          std::static_pointer_cast<BlockDevice>(m_model[row])->m_label,
+          QString::number(std::static_pointer_cast<BlockDevice>(m_model[row])->m_serial),
+        });
       }
       break;
     }
