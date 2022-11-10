@@ -88,7 +88,7 @@ QVariant BaseModel::data(const QModelIndex &index, int role) const
     
     case Qt::ForegroundRole:
     {
-      return QColor(m_model[row]->m_textColor);
+      return QColor(m_colors[m_model[row]->m_depth]);
     }
 
     case EHasChildren:

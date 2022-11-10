@@ -23,7 +23,6 @@ struct BaseItem
   int m_children = 0;
   QVector<QString> m_names;
   bool m_selected = false;
-  QColor m_textColor = QColor("#00bfff");
 };
 
 using SPBaseItem = std::shared_ptr<BaseItem>;
@@ -58,6 +57,10 @@ class BaseModel : public QAbstractItemModel
   public slots:
 
   virtual void RefreshModel() {};
+
+  private:
+
+  QString m_colors[3] = {"#EAEDED", "#00bfff", "#F9E79F"};
 };
 
 #endif // BASEMODEL_H

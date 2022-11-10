@@ -14,7 +14,6 @@ Rectangle {
   readonly property real columnRowHeight: 16
 
   anchors.fill: parent
-  anchors.margins: 2
 
   property int depth
   property bool expanded
@@ -31,17 +30,16 @@ Rectangle {
     model.selected = checked;
   }
 
-  height: arrow.height + checkBox.height + details.height + 12
+  height: Math.max(arrow.height, checkBox.height, details.height) + 10
 
   Image {
     id: arrow
     source: "qrc:/arrow.png"
-    width: 12; height: 12
+    width: 8; height: 12
     visible: rowDelegate.hasChildren
     x: rowDelegate.padding + (3 * rowDelegate.depth * rowDelegate.indent)
     rotation: rowDelegate.expanded ? 90 : 0
     anchors.top: rowDelegate.top
-    anchors.margins: 5
   }
 
   Element {
@@ -50,14 +48,12 @@ Rectangle {
     create: true
     x: arrow.x + arrow.width + rowDelegate.padding
     anchors.top: rowDelegate.top
-    anchors.margins: 5
   }
 
   Column {
     id: details
     spacing: 1
     anchors.top: rowDelegate.top
-    anchors.margins: 3
     x: checkBox.x + checkBox.width + (2 * rowDelegate.padding)
 
     Text {
@@ -99,12 +95,12 @@ Rectangle {
       Text {
         id: metadata2
         text: model.metaDataRole[1].trim().length ? model.metaDataRole[1].trim() : ""
-        color: "#5EECD9"
+        color: "#FF96D4"
       }
       Text {
         id: metadata3
         text: (model.metaDataRole[2] && model.metaDataRole[2].trim() !== "0") ? model.metaDataRole[2].trim() : ""
-        color: "#5EECD9"
+        color: "#B5C2DF"
       }
       Rectangle {
         id: typeRect

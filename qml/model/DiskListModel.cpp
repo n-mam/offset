@@ -60,7 +60,7 @@ QVariant DiskListModel::data(const QModelIndex &index, int role) const
         auto bd = std::static_pointer_cast<BlockDevice>(m_model[row]);
 
         if (bd->isDisk)
-          return QVector<QString>({"MBR", "Basic"});
+          return QVector<QString>({"MBR", ""});
         else
           return QVector<QString>({bd->m_fs, bd->m_label, QString::number(bd->m_serial)});
       }
@@ -249,7 +249,6 @@ void DiskListModel::RefreshModel()
     {
       auto [size, free] = osl::GetTotalAndFree(child.toStdWString().c_str());
       auto c = std::make_shared<BlockDevice>(QVector<QString>(child), 2, 0, size, free);
-      c->m_textColor = QColor(220, 220, 170);
       auto [label, fs, serial] = osl::GetVolumeMetadata(child.toStdWString());
       c->m_fs = QString::fromStdWString(fs);
       c->m_label = QString::fromStdWString(label);

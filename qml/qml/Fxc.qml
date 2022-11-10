@@ -7,17 +7,16 @@ Column {
 
   Rectangle {
     id: listRect
-    anchors.left: parent.left
-    anchors.right: parent.right
-    anchors.margins: 10
-    height: parent.height * 0.75
-    color: Material.background
     radius: 5
     border.width: 1
     border.color: borderColor
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: parent.height * 0.75
+    color: Material.background
     List {
       anchors.fill: parent
-      anchors.margins: 2
+      anchors.margins: 10
       model: diskListModel
       Connections {
         target: diskListModel
@@ -32,8 +31,6 @@ Column {
     id: destinationRect
     anchors.left: parent.left
     anchors.right: parent.right
-    anchors.rightMargin: 10
-    anchors.leftMargin: 10
     height: parent.height * 0.09
     color: Material.background
     radius: 5

@@ -55,6 +55,7 @@ ApplicationWindow {
     }
 
     Fxc {
+      anchors.margins: 10
       anchors.left: parent.left
       anchors.right: parent.right
       height: mainColumn.height * (log.height ? 0.75 : 1.00)
