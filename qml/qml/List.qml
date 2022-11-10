@@ -6,6 +6,31 @@ ListView {
   id: listView
   clip: true
   currentIndex: -1
+  Rectangle {
+    width: 18
+    height: 18
+    color: "transparent"
+    anchors.top: parent.top
+    anchors.right: parent.right
+    anchors.margins: 4
+    radius: 3
+    border.width: 1
+    border.color: "grey"
+    Text {
+      text: "R"
+      color: "white"
+      anchors.verticalCenter: parent.verticalCenter
+      anchors.horizontalCenter: parent.horizontalCenter
+    }
+    MouseArea {
+      hoverEnabled: true
+      anchors.fill: parent
+      cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
+      onClicked: { 
+        model.RefreshModel()
+      }
+    }
+  }
   delegate: Rectangle {
     id: listDelegate
     // radius: 5

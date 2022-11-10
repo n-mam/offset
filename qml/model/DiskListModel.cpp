@@ -7,89 +7,7 @@
 DiskListModel::DiskListModel()
 {
   npl::make_dispatcher();
-
-  auto volumes = osl::EnumerateVolumes();
-
-  auto snapshots = fxc::EnumerateSnapshots();
-
-  for (auto& names : volumes)
-  {
-    QVector<QString> children; 
-
-    for (const auto& ss : snapshots)
-    {
-      if (std::get<1>(ss) == names.front())
-      {
-        auto tokens = osl::wsplit(std::get<0>(ss), L"GLOBALROOT\\Device\\");
-        auto childlabel = QString::fromWCharArray((tokens[0] + tokens[1]).c_str());
-        children.push_back(childlabel);
-      }
-    }
-
-    auto [size, free] = osl::GetTotalAndFree(names[0]);
-
-    if (!size || !free) continue;
-
-    auto [label, fs, serial] = osl::GetVolumeMetadata(names[0]);
-
-    auto disks = osl::GetVolumeDiskExtents(names[0]);
-
-    if (disks.size() > 1) continue;
-
-    auto diskName = QString("PhysicalDrive") + QString::number(disks[0]);
-
-    auto parentDisk = std::find_if(m_model.begin(), m_model.end(), 
-          [diskName](const auto& e) -> bool {
-            return std::static_pointer_cast<BlockDevice>(e)->m_names[0] == diskName;
-          });
-
-    if (parentDisk == std::end(m_model))
-    {
-      auto item = std::make_shared<BlockDevice>(QVector<QString>(diskName), 0, 1, true);
-      item->m_disk = disks[0];
-      item->isDisk = true;
-      m_model.push_back(item);
-    }
-    else
-    {
-      (*parentDisk)->m_children++;
-    }
-
-    QVector<QString> qnames;
-    for (auto& name : names)
-    {
-      qnames.prepend(QString::fromStdWString(name));
-    }
-
-    auto item = std::make_shared<BlockDevice>(qnames, 1, children.size(), true, size, free);
-
-    item->m_fs = QString::fromStdWString(fs);
-    item->m_label = QString::fromStdWString(label);
-    item->m_serial = serial;
-    item->m_disk = disks[0];
-
-    m_model.push_back(item);
-
-    for (const auto& child : children)
-    {
-      auto [size, free] = osl::GetTotalAndFree(child.toStdWString().c_str());
-      auto c = std::make_shared<BlockDevice>(QVector<QString>(child), 2, 0, true, size, free);
-      c->m_textColor = QColor(220, 220, 170);
-      auto [label, fs, serial] = osl::GetVolumeMetadata(child.toStdWString());
-      c->m_fs = QString::fromStdWString(fs);
-      c->m_label = QString::fromStdWString(label);
-      c->m_serial = serial;
-      c->m_disk = disks[0];
-      m_model.push_back(c);
-    }
-  }
-
-  std::sort(m_model.begin(), m_model.end(),
-    [](const auto& x, const auto& y) -> bool {
-      return (std::static_pointer_cast<BlockDevice>(x))->m_disk <
-                (std::static_pointer_cast<BlockDevice>(y))->m_disk;
-    }
-  );
+  RefreshModel();
 }
 
 DiskListModel::~DiskListModel()
@@ -225,3 +143,94 @@ void DiskListModel::ConvertSelectedItemsToVirtualDisks(QString folder)
   ));
 }
 
+void DiskListModel::RefreshModel()
+{
+  beginResetModel();
+  
+  m_model.clear();
+
+  auto volumes = osl::EnumerateVolumes();
+
+  auto snapshots = fxc::EnumerateSnapshots();
+
+  for (auto& names : volumes)
+  {
+    QVector<QString> children; 
+
+    for (const auto& ss : snapshots)
+    {
+      if (std::get<1>(ss) == names.front())
+      {
+        auto tokens = osl::wsplit(std::get<0>(ss), L"GLOBALROOT\\Device\\");
+        auto childlabel = QString::fromWCharArray((tokens[0] + tokens[1]).c_str());
+        children.push_back(childlabel);
+      }
+    }
+
+    auto [size, free] = osl::GetTotalAndFree(names[0]);
+
+    if (!size || !free) continue;
+
+    auto [label, fs, serial] = osl::GetVolumeMetadata(names[0]);
+
+    auto disks = osl::GetVolumeDiskExtents(names[0]);
+
+    if (disks.size() > 1) continue;
+
+    auto diskName = QString("PhysicalDrive") + QString::number(disks[0]);
+
+    auto parentDisk = std::find_if(m_model.begin(), m_model.end(), 
+          [diskName](const auto& e) -> bool {
+            return std::static_pointer_cast<BlockDevice>(e)->m_names[0] == diskName;
+          });
+
+    if (parentDisk == std::end(m_model))
+    {
+      auto item = std::make_shared<BlockDevice>(QVector<QString>(diskName), 0, 1, true);
+      item->m_disk = disks[0];
+      item->isDisk = true;
+      m_model.push_back(item);
+    }
+    else
+    {
+      (*parentDisk)->m_children++;
+    }
+
+    QVector<QString> qnames;
+    for (auto& name : names)
+    {
+      qnames.prepend(QString::fromStdWString(name));
+    }
+
+    auto item = std::make_shared<BlockDevice>(qnames, 1, children.size(), true, size, free);
+
+    item->m_fs = QString::fromStdWString(fs);
+    item->m_label = QString::fromStdWString(label);
+    item->m_serial = serial;
+    item->m_disk = disks[0];
+
+    m_model.push_back(item);
+
+    for (const auto& child : children)
+    {
+      auto [size, free] = osl::GetTotalAndFree(child.toStdWString().c_str());
+      auto c = std::make_shared<BlockDevice>(QVector<QString>(child), 2, 0, true, size, free);
+      c->m_textColor = QColor(220, 220, 170);
+      auto [label, fs, serial] = osl::GetVolumeMetadata(child.toStdWString());
+      c->m_fs = QString::fromStdWString(fs);
+      c->m_label = QString::fromStdWString(label);
+      c->m_serial = serial;
+      c->m_disk = disks[0];
+      m_model.push_back(c);
+    }
+  }
+
+  std::sort(m_model.begin(), m_model.end(),
+    [](const auto& x, const auto& y) -> bool {
+      return (std::static_pointer_cast<BlockDevice>(x))->m_disk <
+                (std::static_pointer_cast<BlockDevice>(y))->m_disk;
+    }
+  );
+
+  endResetModel();
+}

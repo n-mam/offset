@@ -61,6 +61,7 @@ class DiskListModel : public BaseModel
   void setTransfer(bool);
   bool getStop() const;
   void setStop(bool);
+  void RefreshModel() override;
 
   private:
 

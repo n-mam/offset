@@ -58,7 +58,11 @@ class BaseModel : public QAbstractItemModel
     EHasChildren,
     ELastRole
   };
+  
+  public slots:
 
+  virtual void RefreshModel() {};
+  
 };
 
 #endif // BASEMODEL_H
