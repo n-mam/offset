@@ -11,11 +11,11 @@ Rectangle {
 
   readonly property real indent: 8
   readonly property real padding: 5
+  readonly property real columnRowHeight: 16
 
   anchors.fill: parent
-  anchors.margins: 2
+  anchors.margins: 3
 
-  // TreeView
   property int depth
   property bool expanded
   property bool isTreeNode
@@ -78,11 +78,11 @@ Rectangle {
         onClicked: (mouse) => {
           if (mouse.button == Qt.LeftButton)
           {
-              console.log("Left")
+            console.log("Left")
           }
           else if (mouse.button == Qt.RightButton)
           {
-              console.log(model.display)
+            console.log(model.display)
           }
         }
       }
@@ -98,8 +98,18 @@ Rectangle {
       spacing: rowDelegate.padding
       bottomPadding: 2
       Text {
-        id: thirdLabel
-        text: (model.metaDataRole[0] + " " + model.metaDataRole[1] + " " +  model.metaDataRole[2]).replace(/ +(?= )/g,'').trim()
+        id: metadata1
+        text: model.metaDataRole[0].trim()
+        color: "#5EECD9"
+      }
+      Text {
+        id: metadata2
+        text: model.metaDataRole[1].trim().length ? model.metaDataRole[1].trim() : ""
+        color: "#5EECD9"
+      }
+      Text {
+        id: metadata3
+        text: model.metaDataRole[2].trim() !== "0" ? model.metaDataRole[2].trim() : ""
         color: "#5EECD9"
       }
       Rectangle {
@@ -109,10 +119,9 @@ Rectangle {
         border.color: "#EB5DFF"
         color: "transparent"
         width: 52
-        height: usage.height
+        height: rowDelegate.columnRowHeight
         x: usage.width + rowDelegate.padding
         visible: rowDelegate.isSelected
-        anchors.verticalCenter: usage.verticalCenter
         Text {
           color: "white"
           text: rowDelegate.typeOptions[rowDelegate.typeIndex % 3]
@@ -136,10 +145,9 @@ Rectangle {
         border.color: (rowDelegate.srcIndex % 2) ? "#FF6969" : "#00BFFF"
         color: "transparent"
         width: 52
-        height: usage.height
+        height: rowDelegate.columnRowHeight
         x: typeRect.x + typeRect.width + rowDelegate.padding
         visible: rowDelegate.isSelected
-        anchors.verticalCenter: usage.verticalCenter
         Text {
           color: "white"
           text: rowDelegate.srcOptions[rowDelegate.srcIndex % 2]
@@ -161,12 +169,12 @@ Rectangle {
     Element {
       id: usage
       type: "usage"
-      create: rowDelegate.selectable && model.sizeRole > 0
+      create: rowDelegate.selectable && (model.sizeRole > 0)
       used: model.sizeRole - model.freeRole
       free: model.freeRole
       visible: usage.create
       width: (secondLabel.width ? secondLabel.width : label.width)
-      height: usage.create ? 16 : 0
+      height: usage.create ? rowDelegate.columnRowHeight : 0
     }
 
     Element {
@@ -175,7 +183,7 @@ Rectangle {
       create: rowDelegate.selectable && (model.sizeRole > 0)
       visible: false
       value: 0
-      width: usage.width
+      width: rowDelegate.columnRowHeight
       height: progress.create ? 2 : 0
       Connections {
         target: diskListModel

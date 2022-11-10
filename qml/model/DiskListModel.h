@@ -20,11 +20,13 @@ struct BlockDevice : public BaseItem
     m_size = size;
     m_free = free;
   }
+  bool isDisk = false;
+  int m_disk = -1;
   QString m_fs;
   double m_size = 0;
   double m_free = 0;
   QString m_label;
-  unsigned long m_serial;
+  unsigned long m_serial = 0;
 };
 
 using SPBlockDevice = std::shared_ptr<BlockDevice>;

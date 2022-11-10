@@ -336,7 +336,7 @@ auto GetVolumeDiskExtents(const std::wstring& volume)
 {
   std::vector<int> disks;
 
-  HANDLE hSource = GetFileHandle(volume);
+  HANDLE hSource = GetVolumeHandle(volume);
 
   if (hSource == INVALID_HANDLE_VALUE)
   {
