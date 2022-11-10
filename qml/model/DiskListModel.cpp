@@ -19,6 +19,8 @@ QHash<int, QByteArray> DiskListModel::roleNames() const
   QHash<int, QByteArray> roles = BaseModel::roleNames();
   roles.insert(ESize, "sizeRole");
   roles.insert(EFree, "freeRole");
+  roles.insert(EVSS, "vss");
+  roles.insert(EType, "type");
   roles.insert(EMetaData, "metaDataRole");
   return roles;
 }
@@ -56,6 +58,7 @@ QVariant DiskListModel::data(const QModelIndex &index, int role) const
       if (column == 0 && !index.parent().isValid())
       {
         auto bd = std::static_pointer_cast<BlockDevice>(m_model[row]);
+
         if (bd->isDisk)
           return QVector<QString>({"MBR", "Basic"});
         else
@@ -69,6 +72,40 @@ QVariant DiskListModel::data(const QModelIndex &index, int role) const
   }
 
   return QVariant();
+}
+
+bool DiskListModel::setData(const QModelIndex &index, const QVariant &value, int role)
+{
+  auto fRet = BaseModel::setData(index, value, role);
+
+  if (!fRet)
+  {
+    fRet = true;
+    
+    auto bd = std::static_pointer_cast<BlockDevice>(m_model[index.row()]);
+
+    switch (role)
+    {
+      case EVSS:
+        bd->m_vss = value.toBool();
+      break;
+
+      case EType:
+        bd->m_type = value.toString();
+      break;
+
+      default:
+        fRet = false;
+        break;
+    }
+
+    if (fRet)
+    {
+      emit dataChanged(index, index, {role});
+    }
+  }
+
+  return fRet;
 }
 
 bool DiskListModel::getTransfer() const
@@ -99,24 +136,21 @@ void DiskListModel::ConvertSelectedItemsToVirtualDisks(QString folder)
 {
   setTransfer(true);
 
-  auto selected = getSelectedItems();
-
   std::vector<fxc::TBackupConfig> configuration;
 
-  for (auto& selection : selected)
+  for (auto& item : m_model)
   {
-    auto names = ((qjsEngine(this))->toScriptValue(selection)).property(0);
-    auto type = ((qjsEngine(this))->toScriptValue(selection)).property(1).toString();
-    auto vss = ((qjsEngine(this))->toScriptValue(selection)).property(2).toString();
+    if (!item->m_selected) continue;
 
-    QString name;
+    auto blockdevice = std::static_pointer_cast<BlockDevice>(item);
 
-    if (names.property("length").toInt() == 1) 
-      name = names.property(0).toString();
-    else
-      name = names.property(1).toString();
+    auto names = blockdevice->m_names;
+    auto type = blockdevice->m_type;
+    auto vss = blockdevice->m_vss;
 
-    LOG << name.toStdWString() << L", " << type.toStdWString() << L", " << vss.toStdWString();
+    QString name = names.size() == 1 ? names[0] : names[1];
+
+    LOG << name.toStdWString() << L", " << type.toStdWString() << L", " << vss;
 
     configuration.push_back({
       name.toStdWString(), 
@@ -124,7 +158,7 @@ void DiskListModel::ConvertSelectedItemsToVirtualDisks(QString folder)
       folder.toStdWString(),
       type.toStdWString(),
       L"",
-      (vss == "live")
+      !vss
     });
   }
 
@@ -146,7 +180,7 @@ void DiskListModel::ConvertSelectedItemsToVirtualDisks(QString folder)
 void DiskListModel::RefreshModel()
 {
   beginResetModel();
-  
+
   m_model.clear();
 
   auto volumes = osl::EnumerateVolumes();
@@ -186,7 +220,7 @@ void DiskListModel::RefreshModel()
 
     if (parentDisk == std::end(m_model))
     {
-      auto item = std::make_shared<BlockDevice>(QVector<QString>(diskName), 0, 1, true);
+      auto item = std::make_shared<BlockDevice>(QVector<QString>(diskName), 0, 1);
       item->m_disk = disks[0];
       item->isDisk = true;
       m_model.push_back(item);
@@ -202,7 +236,7 @@ void DiskListModel::RefreshModel()
       qnames.prepend(QString::fromStdWString(name));
     }
 
-    auto item = std::make_shared<BlockDevice>(qnames, 1, children.size(), true, size, free);
+    auto item = std::make_shared<BlockDevice>(qnames, 1, children.size(), size, free);
 
     item->m_fs = QString::fromStdWString(fs);
     item->m_label = QString::fromStdWString(label);
@@ -214,7 +248,7 @@ void DiskListModel::RefreshModel()
     for (const auto& child : children)
     {
       auto [size, free] = osl::GetTotalAndFree(child.toStdWString().c_str());
-      auto c = std::make_shared<BlockDevice>(QVector<QString>(child), 2, 0, true, size, free);
+      auto c = std::make_shared<BlockDevice>(QVector<QString>(child), 2, 0, size, free);
       c->m_textColor = QColor(220, 220, 170);
       auto [label, fs, serial] = osl::GetVolumeMetadata(child.toStdWString());
       c->m_fs = QString::fromStdWString(fs);

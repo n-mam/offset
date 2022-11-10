@@ -18,12 +18,11 @@ struct BaseItem
     m_names = names;
     m_depth = depth;
     m_children = children;
-    m_selectable = selectable;
   }
   int m_depth = 0;
   int m_children = 0;
   QVector<QString> m_names;
-  bool m_selectable = false;
+  bool m_selected = false;
   QColor m_textColor = QColor("#00bfff");
 };
 
@@ -44,25 +43,21 @@ class BaseModel : public QAbstractItemModel
   int rowCount(const QModelIndex& index = QModelIndex()) const override;
   int columnCount(const QModelIndex& index = QModelIndex()) const override;
   QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
-
-  Q_INVOKABLE void updateItemSelection(QVariant data, bool selected);
-  Q_INVOKABLE QVector<QVariant> getSelectedItems(void);
+  bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole) override;
 
   std::vector<SPBaseItem> m_model;
-  QVector<QVariant> m_selected;
 
   enum Roles
   {
     EDepth = Qt::UserRole,
-    ESelectable,
+    ESelected,
     EHasChildren,
     ELastRole
   };
-  
+
   public slots:
 
   virtual void RefreshModel() {};
-  
 };
 
 #endif // BASEMODEL_H

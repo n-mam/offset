@@ -102,9 +102,7 @@ Loader {
         }
       }
       onClicked: {
-        console.log(index)
-        rowDelegate.updateItemSelection(model.display, (checkState === Qt.Checked))
-        rowDelegate.isSelected = (checkState === Qt.Checked);
+        rowDelegate.selectionChanged(checkState === Qt.Checked)
       }
     }
   }

@@ -61,7 +61,7 @@ QHash<int, QByteArray> BaseModel::roleNames() const
 {
   auto roles = QAbstractItemModel::roleNames();
   roles.insert(EDepth, "depthRole"); 
-  roles.insert(ESelectable, "selectableRole");
+  roles.insert(ESelected, "selected");
   roles.insert(EHasChildren, "hasChildrenRole");
   roles.insert(Qt::ForegroundRole, "textColorRole");
   return roles;
@@ -109,11 +109,11 @@ QVariant BaseModel::data(const QModelIndex &index, int role) const
       break;
     }
 
-    case ESelectable:
+    case ESelected:
     {
       if (column == 0 && !index.parent().isValid())
       {
-        return m_model[row]->m_selectable;
+        return m_model[row]->m_selected;
       }
       break;
     }
@@ -125,28 +125,25 @@ QVariant BaseModel::data(const QModelIndex &index, int role) const
   return QVariant();
 }
 
-void BaseModel::updateItemSelection(QVariant data, bool selected)
+bool BaseModel::setData(const QModelIndex &index, const QVariant &value, int role)
 {
-  qDebug() << data << selected;
+  bool fRet = true;
 
-  m_selected.erase(
-    std::remove_if(
-      m_selected.begin(), m_selected.end(),
-      [this, &data](const auto& e){
-        auto e1 = ((qjsEngine(this))->toScriptValue(data)).property(0).toVariant();
-        auto e2 = ((qjsEngine(this))->toScriptValue(e)).property(0).toVariant();
-        return e1 == e2;
-      }),
-    m_selected.end()
-  );
-
-  if (selected)
+  switch (role)
   {
-    m_selected.push_back(data);
-  }
-}
+    case ESelected:
+      m_model[index.row()]->m_selected = value.toBool();
+    break;
 
-QVector<QVariant> BaseModel::getSelectedItems(void)
-{
-  return m_selected;
+    default:
+      fRet = false;
+      break;
+  }
+
+  if (fRet)
+  {
+    emit dataChanged(index, index, {role});
+  }
+
+  return fRet;
 }

@@ -42,7 +42,6 @@ ListView {
     RowDelegate {
       id: rd
       depth: model.depthRole
-      selectable: model.selectableRole
       hasChildren: model.hasChildrenRole
     }
     TapHandler {

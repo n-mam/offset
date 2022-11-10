@@ -14,26 +14,21 @@ Rectangle {
   readonly property real columnRowHeight: 16
 
   anchors.fill: parent
-  anchors.margins: 3
+  anchors.margins: 2
 
   property int depth
   property bool expanded
   property int hasChildren
-  property bool selectable
-  property bool isSelected: false
-  property TreeView treeView
 
   property var typeOptions: ["vhd-d", "vhdx-d", "vhd-f"]
   property var srcOptions: ["vss", "live"]
   property var typeIndex: 0;
   property var srcIndex: 0;
 
-  signal updateItemSelection(var name, bool selected)
+  signal selectionChanged(bool checked)
 
-  onUpdateItemSelection: (names, selected) => {
-    listView.model.updateItemSelection(
-      [names, typeOptions[typeIndex % 3], srcOptions[srcIndex % 2]], selected);
-    //console.log([names, typeOptions[typeIndex % 3], srcOptions[srcIndex % 2]])
+  onSelectionChanged: (checked) => {
+    model.selected = checked;
   }
 
   height: arrow.height + checkBox.height + details.height + 12
@@ -52,7 +47,7 @@ Rectangle {
   Element {
     id: checkBox
     type: "checkBox"
-    create: rowDelegate.selectable
+    create: true
     x: arrow.x + arrow.width + rowDelegate.padding
     anchors.top: rowDelegate.top
     anchors.margins: 5
@@ -120,7 +115,7 @@ Rectangle {
         width: 52
         height: rowDelegate.columnRowHeight
         x: usage.width + rowDelegate.padding
-        visible: rowDelegate.isSelected
+        visible: model.selected
         Text {
           color: "white"
           text: rowDelegate.typeOptions[rowDelegate.typeIndex % 3]
@@ -131,9 +126,9 @@ Rectangle {
           hoverEnabled: true
           anchors.fill: parent
           cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
-          onClicked: { 
+          onClicked: {
             rowDelegate.typeIndex++
-            rowDelegate.updateItemSelection(model.display, rowDelegate.isSelected)
+            model.type = rowDelegate.typeOptions[rowDelegate.typeIndex % 3];
           }
         }
       }
@@ -146,7 +141,7 @@ Rectangle {
         width: 52
         height: rowDelegate.columnRowHeight
         x: typeRect.x + typeRect.width + rowDelegate.padding
-        visible: rowDelegate.isSelected
+        visible: model.selected
         Text {
           color: "white"
           text: rowDelegate.srcOptions[rowDelegate.srcIndex % 2]
@@ -159,7 +154,7 @@ Rectangle {
           cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
           onClicked: { 
             rowDelegate.srcIndex++
-            rowDelegate.updateItemSelection(model.display, rowDelegate.isSelected)
+            model.vss = rowDelegate.srcOptions[rowDelegate.srcIndex % 2] == vss
           }
         }
       }
@@ -168,7 +163,7 @@ Rectangle {
     Element {
       id: usage
       type: "usage"
-      create: rowDelegate.selectable && (model.sizeRole > 0)
+      create: model.sizeRole > 0
       used: model.sizeRole - model.freeRole
       free: model.freeRole
       visible: usage.create
@@ -179,15 +174,15 @@ Rectangle {
     Element {
       id: progress
       type: "progress"
-      create: rowDelegate.selectable && (model.sizeRole > 0)
+      create: model.sizeRole > 0
       visible: false
       value: 0
-      width: rowDelegate.columnRowHeight
+      width: (secondLabel.width ? secondLabel.width : label.width)
       height: progress.create ? 2 : 0
       Connections {
         target: diskListModel
         function onProgress(device, percent) {
-          var guid = (model.display[1] !== undefined) ? model.display[1] : model.display[0]
+          var guid = model.display[1] ? model.display[1] : model.display[0]
           if (guid.includes(device)) {
             progress.visible = true
             progress.value = percent
