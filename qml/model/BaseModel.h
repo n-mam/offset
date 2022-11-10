@@ -20,9 +20,9 @@ struct BaseItem
     m_children = children;
     m_selectable = selectable;
   }
-  QVector<QString> m_names;
   int m_depth = 0;
   int m_children = 0;
+  QVector<QString> m_names;
   bool m_selectable = false;
   QColor m_textColor = QColor("#00bfff");
 };

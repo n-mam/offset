@@ -18,7 +18,6 @@ Rectangle {
 
   property int depth
   property bool expanded
-  property bool isTreeNode
   property int hasChildren
   property bool selectable
   property bool isSelected: false
@@ -43,7 +42,7 @@ Rectangle {
     id: arrow
     source: "qrc:/arrow.png"
     width: 12; height: 12
-    visible: rowDelegate.isTreeNode && rowDelegate.hasChildren
+    visible: rowDelegate.hasChildren
     x: rowDelegate.padding + (3 * rowDelegate.depth * rowDelegate.indent)
     rotation: rowDelegate.expanded ? 90 : 0
     anchors.top: rowDelegate.top
@@ -96,7 +95,7 @@ Rectangle {
 
     Row {
       spacing: rowDelegate.padding
-      bottomPadding: 2
+      bottomPadding: usage.height ? 2 : 0
       Text {
         id: metadata1
         text: model.metaDataRole[0].trim()
@@ -109,7 +108,7 @@ Rectangle {
       }
       Text {
         id: metadata3
-        text: model.metaDataRole[2].trim() !== "0" ? model.metaDataRole[2].trim() : ""
+        text: (model.metaDataRole[2] && model.metaDataRole[2].trim() !== "0") ? model.metaDataRole[2].trim() : ""
         color: "#5EECD9"
       }
       Rectangle {

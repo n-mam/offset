@@ -84,7 +84,7 @@ DiskListModel::DiskListModel()
     }
   }
 
-  std::sort(m_model.begin(), m_model.end(), 
+  std::sort(m_model.begin(), m_model.end(),
     [](const auto& x, const auto& y) -> bool {
       return (std::static_pointer_cast<BlockDevice>(x))->m_disk <
                 (std::static_pointer_cast<BlockDevice>(y))->m_disk;
@@ -212,7 +212,7 @@ void DiskListModel::ConvertSelectedItemsToVirtualDisks(QString folder)
 
   m_futures.push_back(std::async(std::launch::async, 
     [this, configuration](){
-      fxc::ConvertPhysicalVolumesToVirtualImages(configuration, 
+      fxc::ConvertBlockDeviceToVirtualImages(configuration, 
         [this](auto device, auto percent){
           QMetaObject::invokeMethod(this, [this, device, percent](){
             emit this->progress(QString::fromStdWString(device), percent);

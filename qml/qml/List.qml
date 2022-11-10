@@ -18,7 +18,6 @@ ListView {
       id: rd
       depth: model.depthRole
       selectable: model.selectableRole
-      isTreeNode: model.hasChildrenRole
       hasChildren: model.hasChildrenRole
     }
     TapHandler {

@@ -181,7 +181,7 @@ auto RecoverVolumeToVolume(const std::wstring& source, const std::wstring& targe
   return fRet;
 }
 
-auto ConvertPhysicalVolumesToVirtualImages(const std::vector<TBackupConfig>& configuration, TProgressCallback cbk)
+auto ConvertBlockDeviceToVirtualImages(const std::vector<TBackupConfig>& configuration, TProgressCallback cbk)
 {
   std::vector<std::wstring> supported;
 
