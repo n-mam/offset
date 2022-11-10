@@ -23,6 +23,7 @@ struct BaseItem
   int m_children = 0;
   QVector<QString> m_names;
   bool m_selected = false;
+  bool m_visible = true;
 };
 
 using SPBaseItem = std::shared_ptr<BaseItem>;
@@ -49,6 +50,7 @@ class BaseModel : public QAbstractItemModel
   enum Roles
   {
     EDepth = Qt::UserRole,
+    EVisible,
     ESelected,
     EHasChildren,
     ELastRole

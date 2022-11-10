@@ -6,7 +6,7 @@ Rectangle {
   // radius: 5
   // border.width: 1
   // border.color: "#00bfff"
-
+  visible: model.visible
   color: parent.color
 
   readonly property real indent: 8
@@ -30,7 +30,7 @@ Rectangle {
     model.selected = checked;
   }
 
-  height: Math.max(arrow.height, checkBox.height, details.height) + 10
+  height: model.visible ? Math.max(arrow.height, checkBox.height, details.height) + 10 : 0
 
   Image {
     id: arrow

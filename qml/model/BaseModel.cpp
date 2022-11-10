@@ -60,7 +60,8 @@ int BaseModel::columnCount(const QModelIndex& index) const
 QHash<int, QByteArray> BaseModel::roleNames() const
 {
   auto roles = QAbstractItemModel::roleNames();
-  roles.insert(EDepth, "depthRole"); 
+  roles.insert(EDepth, "depthRole");
+  roles.insert(EVisible, "visible");
   roles.insert(ESelected, "selected");
   roles.insert(EHasChildren, "hasChildrenRole");
   roles.insert(Qt::ForegroundRole, "textColorRole");
@@ -109,6 +110,15 @@ QVariant BaseModel::data(const QModelIndex &index, int role) const
       break;
     }
 
+    case EVisible:
+    {
+      if (column == 0 && !index.parent().isValid())
+      {
+        return m_model[row]->m_visible;
+      }
+      break;
+    }
+
     case ESelected:
     {
       if (column == 0 && !index.parent().isValid())
@@ -133,6 +143,10 @@ bool BaseModel::setData(const QModelIndex &index, const QVariant &value, int rol
   {
     case ESelected:
       m_model[index.row()]->m_selected = value.toBool();
+    break;
+
+    case EVisible:
+      m_model[index.row()]->m_visible = value.toBool();
     break;
 
     default:
