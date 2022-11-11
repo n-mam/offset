@@ -14,6 +14,32 @@ Column {
     anchors.right: parent.right
     height: parent.height * 0.75
     color: Material.background
+    Rectangle {
+      width: 18
+      height: 18
+      z: 2
+      color: "transparent"
+      anchors.top: parent.top
+      anchors.right: parent.right
+      anchors.margins: 5
+      radius: 3
+      border.width: 1
+      border.color: "#E8E8E8"
+      Text {
+        text: "R"
+        color: "white"
+        anchors.verticalCenter: parent.verticalCenter
+        anchors.horizontalCenter: parent.horizontalCenter
+      }
+      MouseArea {
+        hoverEnabled: true
+        anchors.fill: parent
+        cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
+        onClicked: { 
+          diskListModel.RefreshModel()
+        }
+      }
+    }
     List {
       anchors.fill: parent
       anchors.margins: 10
