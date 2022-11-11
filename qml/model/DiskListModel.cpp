@@ -20,7 +20,7 @@ QHash<int, QByteArray> DiskListModel::roleNames() const
   roles.insert(ESize, "sizeRole");
   roles.insert(EFree, "freeRole");
   roles.insert(EVSS, "vss");
-  roles.insert(EType, "type");
+  roles.insert(EFormat, "format");
   roles.insert(EMetaData, "metaDataRole");
   return roles;
 }
@@ -90,8 +90,8 @@ bool DiskListModel::setData(const QModelIndex &index, const QVariant &value, int
         bd->m_vss = value.toBool();
       break;
 
-      case EType:
-        bd->m_type = value.toString();
+      case EFormat:
+        bd->m_format = value.toString();
       break;
 
       default:
@@ -144,19 +144,19 @@ void DiskListModel::ConvertSelectedItemsToVirtualDisks(QString folder)
 
     auto blockdevice = std::static_pointer_cast<BlockDevice>(item);
 
-    auto names = blockdevice->m_names;
-    auto type = blockdevice->m_type;
     auto vss = blockdevice->m_vss;
+    auto names = blockdevice->m_names;
+    auto format = blockdevice->m_format;
 
     QString name = names.size() == 1 ? names[0] : names[1];
 
-    LOG << name.toStdWString() << L", " << type.toStdWString() << L", " << vss;
+    LOG << name.toStdWString() << L", " << format.toStdWString() << L", " << vss;
 
     configuration.push_back({
-      name.toStdWString(), 
+      name.toStdWString(),
       L"0",
       folder.toStdWString(),
-      type.toStdWString(),
+      format.toStdWString(),
       L"",
       !vss
     });

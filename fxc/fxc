@@ -197,7 +197,11 @@ auto ConvertBlockDeviceToVirtualImages(const std::vector<TBackupConfig>& configu
     }
     else
     {
-      auto target = folder + L"\\" + volume.substr(4, 44) + L"." + format;
+      auto ext = format;
+
+      std::replace(ext.begin(), ext.end(), L'-', L'.');
+
+      auto target = folder + L"\\" + volume.substr(4, 44) + L"." + ext;
 
       volume.pop_back();
 

@@ -18,7 +18,7 @@ Rectangle {
   property int hasChildren
   property bool expanded: true
 
-  property var typeOptions: ["vhd-d", "vhdx-d", "vhd-f"]
+  property var typeOptions: ["d-vhd", "d-vhdx", "f-vhd"]
   property var srcOptions: ["vss", "live"]
   property var typeIndex: 0;
   property var srcIndex: 0;
@@ -133,7 +133,7 @@ Rectangle {
           cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
           onClicked: {
             rowDelegate.typeIndex++
-            model.type = rowDelegate.typeOptions[rowDelegate.typeIndex % 3];
+            model.format = rowDelegate.typeOptions[rowDelegate.typeIndex % 3];
           }
         }
       }

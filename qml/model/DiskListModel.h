@@ -27,7 +27,7 @@ struct BlockDevice : public BaseItem
   QString m_label;
   unsigned long m_serial = 0;
   bool m_vss = true;
-  QString m_type = "vhd-d";
+  QString m_format = "d-vhd";
 };
 
 using SPBlockDevice = std::shared_ptr<BlockDevice>;
@@ -55,7 +55,7 @@ class DiskListModel : public BaseModel
     ESize = BaseModel::ELastRole + 1,
     EFree,
     EVSS,
-    EType,
+    EFormat,
     EMetaData
   };
 

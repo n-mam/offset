@@ -179,6 +179,10 @@ auto create_base_vhd(const std::wstring& volume, const std::wstring& file, fxc::
     disk->FirstDataBlockOffset() + (disk->iBlockCount * (512 + bs))
   );
 
+  npl::D->RemoveEventListener(target);
+
+  target.reset();
+
   LOG << L" " << file << L" created";
 }
 
@@ -303,6 +307,10 @@ auto create_child_vhd(const std::wstring& source, const std::wstring& parent, co
     diff->FirstDataBlockOffset() + (blockCount * (512 + bs))
   );
 
+  npl::D->RemoveEventListener(target);
+
+  target.reset();
+
   return true;
 }
 
@@ -333,6 +341,10 @@ auto create_fixed_vhd(const std::wstring& device, const std::wstring& file, fxc:
     (uint8_t *) &(disk->iFooter),
     sizeof(VHD_DISK_FOOTER),
     _2M + length);
+
+  npl::D->RemoveEventListener(target);
+
+  target.reset();
 
   LOG << L" " << file << L" created";
 }
@@ -557,6 +569,10 @@ void create_base_vhdx(const std::wstring& volume, const std::wstring& file, fxc:
     LOG << "constructed bat does not match runtime bat";
   }
 
+  npl::D->RemoveEventListener(target);
+
+  target.reset();
+
   LOG << L" " << file << L" created";
 }
 
@@ -688,6 +704,10 @@ bool create_child_vhdx(const std::wstring& source, const std::wstring& parent, c
 
   pfnDetachVirtualDisk(hvhd, DETACH_VIRTUAL_DISK_FLAG_NONE, 0);
 
+  npl::D->RemoveEventListener(target);
+
+  target.reset();
+
   return true;
 }
 
@@ -707,6 +727,8 @@ auto make_virtual_disk(const std::wstring& path)
   }
 
   file->ReadSync(buf, sizeof(buf), 0);
+
+  npl::D->RemoveEventListener(file);
 
   file.reset();
 
@@ -738,15 +760,15 @@ void CreateBaseVirtualDisk(
   const std::wstring& target,
   fxc::TProgressCallback cbk)
 {
-  if (format == L"vhd-d")
+  if (format == L"d-vhd")
   {
     fxc::create_base_vhd(source, target, cbk);
   }
-  else if (format == L"vhdx-d")
+  else if (format == L"d-vhdx")
   {
     fxc::create_base_vhdx(source, target, cbk);
   }
-  else if (format == L"vhd-f")
+  else if (format == L"f-vhd")
   {
     fxc::create_fixed_vhd(source, target, cbk);
   }
