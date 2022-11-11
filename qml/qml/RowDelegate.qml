@@ -6,7 +6,6 @@ Rectangle {
   // radius: 5
   // border.width: 1
   // border.color: "#00bfff"
-  visible: model.visible
   color: parent.color
 
   readonly property real indent: 8
@@ -16,21 +15,22 @@ Rectangle {
   anchors.fill: parent
 
   property int depth
-  property bool expanded
   property int hasChildren
+  property bool expanded: true
 
   property var typeOptions: ["vhd-d", "vhdx-d", "vhd-f"]
   property var srcOptions: ["vss", "live"]
   property var typeIndex: 0;
   property var srcIndex: 0;
 
-  signal selectionChanged(bool checked)
+  signal selectionChanged(var checked)
+  signal toggleTreeNode(var index, var expanded)
 
   onSelectionChanged: (checked) => {
     model.selected = checked;
   }
 
-  height: model.visible ? Math.max(arrow.height, checkBox.height, details.height) + 10 : 0
+  height: Math.max(arrow.height, checkBox.height, details.height) + 10
 
   Image {
     id: arrow
@@ -40,13 +40,22 @@ Rectangle {
     x: rowDelegate.padding + (3 * rowDelegate.depth * rowDelegate.indent)
     rotation: rowDelegate.expanded ? 90 : 0
     anchors.top: rowDelegate.top
+    MouseArea {
+      hoverEnabled: true
+      anchors.fill: parent
+      cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
+      onClicked: {
+        expanded = !expanded
+        toggleTreeNode(index, expanded)
+      }
+    }
   }
 
   Element {
     id: checkBox
     type: "checkBox"
     create: true
-    x: arrow.x + arrow.width + rowDelegate.padding
+    x: arrow.x + arrow.width + rowDelegate.padding + 3
     anchors.top: rowDelegate.top
   }
 
@@ -54,7 +63,7 @@ Rectangle {
     id: details
     spacing: 1
     anchors.top: rowDelegate.top
-    x: checkBox.x + checkBox.width + (2 * rowDelegate.padding)
+    x: checkBox.x + checkBox.width + rowDelegate.padding + 3
 
     Text {
       id: label

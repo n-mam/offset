@@ -39,13 +39,30 @@ ListView {
     width: listView.width
     implicitHeight: rd.height
     color: Material.background
+    visible: model.visible
+    enabled: model.visible
+
+    property var originalHeight;
+
     RowDelegate {
       id: rd
       depth: model.depthRole
       hasChildren: model.hasChildrenRole
+      onToggleTreeNode: (index, expanded) => {
+        listView.model.ToggleTreeAtIndex(index, expanded)
+      }
     }
     TapHandler {
-      onTapped: console.log("list row tapped")
+      //onTapped: console.log("list row tapped")
+    }
+    Connections {
+      target: diskListModel
+      function onDataChanged() {
+        listDelegate.height = model.visible ? listDelegate.originalHeight : 0
+      }
+    }
+    Component.onCompleted: {
+      originalHeight = listDelegate.height
     }
   }
 }

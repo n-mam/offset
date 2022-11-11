@@ -1,7 +1,6 @@
 #include <vector>
 
-#include <QJSEngine>
-
+#include <osl/log>
 #include <BaseModel.h>
 
 BaseModel::BaseModel()
@@ -160,4 +159,28 @@ bool BaseModel::setData(const QModelIndex &index, const QVariant &value, int rol
   }
 
   return fRet;
+}
+
+int BaseModel::ToggleTreeAtIndex(int row, bool isExpanded, bool isRoot)
+{
+  int totalChildren = 0;
+
+  if (m_model[row]->m_children)
+  {
+    for (int i = 1; i <= m_model[row]->m_children; i++)
+      totalChildren += ToggleTreeAtIndex(row + i + totalChildren, isExpanded, false);
+  }
+
+  if (isRoot)
+  {
+    emit dataChanged(
+      createIndex(row, 0, 999),
+      createIndex(row + m_model[row]->m_children + totalChildren, 0, 999));
+  }
+  else
+  {
+    m_model[row]->m_visible = isExpanded;
+  }
+
+  return m_model[row]->m_children;
 }

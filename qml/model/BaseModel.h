@@ -45,6 +45,8 @@ class BaseModel : public QAbstractItemModel
   QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
   bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole) override;
 
+  Q_INVOKABLE int ToggleTreeAtIndex(int index, bool expanded, bool isRoot = true);
+
   std::vector<SPBaseItem> m_model;
 
   enum Roles
