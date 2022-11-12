@@ -317,7 +317,8 @@ class FileDevice : public Subject<uint8_t, uint8_t>
   #ifdef _WIN32
   virtual int32_t ReadSync(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override
   {
-    DWORD nBytesRead = -1;
+    DWORD nBytesRead = 0;
+
     LARGE_INTEGER offset;
     offset.QuadPart = o;
 
@@ -338,7 +339,8 @@ class FileDevice : public Subject<uint8_t, uint8_t>
 
   virtual int32_t WriteSync(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override
   {
-    DWORD nBytesWritten;
+    DWORD nBytesWritten = 0;
+
     LARGE_INTEGER offset;
     offset.QuadPart = o;
 

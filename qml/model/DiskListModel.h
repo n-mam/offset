@@ -28,6 +28,8 @@ struct BlockDevice : public BaseItem
   bool m_vss = true;
   bool m_isDisk = false;
   unsigned long m_serial = 0;
+  QString m_diskPartition;
+  uint64_t m_diskLength = 0;
   QString m_format = "d-vhd";
 };
 

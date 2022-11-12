@@ -24,7 +24,7 @@ Column {
       anchors.margins: 5
       radius: 3
       border.width: 1
-      border.color: "#E8E8E8"
+      border.color: "#FA8072"
       Text {
         text: "R"
         color: "white"

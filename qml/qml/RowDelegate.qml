@@ -100,17 +100,17 @@ Rectangle {
       Text {
         id: metadata1
         text: model.metaDataRole[0].trim()
-        color: "#5EECD9"
+        color: "#00ECD9"
       }
       Text {
         id: metadata2
         text: model.metaDataRole[1].trim().length ? model.metaDataRole[1].trim() : ""
-        color: "#FF96D4"
+        color: "#00ECD9"
       }
       Text {
         id: metadata3
         text: (model.metaDataRole[2] && model.metaDataRole[2].trim() !== "0") ? model.metaDataRole[2].trim() : ""
-        color: "#B5C2DF"
+        color: "#00ECD9"
       }
       Rectangle {
         id: typeRect
