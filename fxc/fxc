@@ -31,6 +31,20 @@ auto usage(void)
   LOG;
 }
 
+auto GetExtentionForFormat(const std::wstring& format)
+{
+  if (format == L"d-vhd")
+    return L"d.vhd";
+  else if (format == L"f-vhd")
+    return L"f.vhd";
+  else if (format == L"d-vhdx")
+    return L"d.vhdx";
+  else if (format == L"f-vhdx")
+    return L"f.vhdx";
+  else
+    return L"raw.img";
+}
+
 auto RecoverVirtualImageToPhysicalVolume(const std::wstring& source, const std::wstring& target)
 {
   auto disk = fxc::make_virtual_disk(source);
@@ -197,11 +211,7 @@ auto ConvertBlockDeviceToVirtualImages(const std::vector<TBackupConfig>& configu
     }
     else
     {
-      auto ext = format;
-
-      std::replace(ext.begin(), ext.end(), L'-', L'.');
-
-      auto target = folder + L"\\" + volume.substr(4, 44) + L"." + ext;
+      auto target = folder + L"\\" + volume.substr(4, 44) + L"." + GetExtentionForFormat(format);
 
       volume.pop_back();
 

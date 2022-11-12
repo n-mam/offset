@@ -265,6 +265,31 @@ auto GetNTFSVolumeData(HANDLE hDevice)
   return nvdb;
 }
 
+auto GetPartitionInformation(const std::wstring& disk)
+{
+  DWORD nReturned;
+  PARTITION_INFORMATION_EX  pie = { 0 };
+
+  auto h = GetFileHandle(disk);
+
+  if (!DeviceIoControl(
+          h,
+          IOCTL_DISK_GET_PARTITION_INFO_EX,
+          NULL,
+          0,
+          &pie,
+          sizeof (PARTITION_INFORMATION_EX),
+          &nReturned,
+          NULL)) 
+  {
+    LOG << "IOCTL_DISK_GET_PARTITION_INFO_EX failed, error : " << GetLastError();
+  }
+
+  CloseHandle(h);
+
+  return pie;
+}
+
 auto GetBlockDeviceLength(HANDLE hVolume)
 {
   DWORD nReturned;

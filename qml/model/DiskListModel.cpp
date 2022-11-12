@@ -59,11 +59,7 @@ QVariant DiskListModel::data(const QModelIndex &index, int role) const
       if (column == 0 && !index.parent().isValid())
       {
         auto bd = std::static_pointer_cast<BlockDevice>(m_model[row]);
-
-        if (bd->m_isDisk)
-          return QVector<QString>({"Fake-MBR", ""});
-        else
-          return QVector<QString>({bd->m_fs, bd->m_label, QString::number(bd->m_serial)});
+        return QVector<QString>({bd->m_fs, bd->m_label, QString::number(bd->m_serial)});
       }
       break;
     }
@@ -221,7 +217,7 @@ void DiskListModel::refreshModel()
     if (!disks.size() || disks.size() > 1) continue;
 
     auto diskName = QString("PhysicalDrive") + QString::number(disks[0]);
-    
+
     int depth = 0;
 
     auto parentDisk = std::find_if(m_model.begin(), m_model.end(), 
@@ -235,6 +231,15 @@ void DiskListModel::refreshModel()
       item->m_disk = disks[0];
       item->m_isDisk = true;
       item->m_enabled = false;
+      auto pi = osl::GetPartitionInformation(
+         std::wstring(L"\\\\.\\PhysicalDrive") + std::to_wstring(disks[0]));
+      if (pi.PartitionStyle == PARTITION_STYLE_MBR)
+        item->m_label = "MBR";
+      else if (pi.PartitionStyle == PARTITION_STYLE_GPT)
+        item->m_label = "GPT";
+      else if (pi.PartitionStyle == PARTITION_STYLE_RAW)
+        item->m_label = "RAW";
+      item->m_label += " " + QString::number(pi.PartitionLength.QuadPart/(1024ull*1024*1024)) + "g";
       m_model.push_back(item);
     }
     else
