@@ -21,10 +21,13 @@ ListView {
 
     RowDelegate {
       id: rd
-      depth: model.depthRole
-      hasChildren: model.hasChildrenRole
+      depth: model.depth
+      hasChildren: model.hasChildren
       onToggleTreeNode: (index, expanded) => {
-        listView.model.ToggleTreeAtIndex(index, expanded)
+        listView.model.ToggleTreeExpandedAtIndex(index, expanded)
+      }
+      onToggleChildSelection: (index, selected) => {
+        listView.model.ToogleChildSelectionAtindex(index, selected)
       }
     }
     TapHandler {

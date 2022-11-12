@@ -11,6 +11,21 @@ BaseModel::~BaseModel()
 {
 }
 
+QHash<int, QByteArray> BaseModel::roleNames() const
+{
+  auto roles = QAbstractItemModel::roleNames();
+
+  roles.insert(EDepth, "depth");
+  roles.insert(EVisible, "visible");
+  roles.insert(EEnabled, "enabled");
+  roles.insert(ESelected, "selected");
+  roles.insert(EExpanded, "expanded");
+  roles.insert(EHasChildren, "hasChildren");
+  roles.insert(Qt::ForegroundRole, "textColor");
+
+  return roles;
+}
+
 QModelIndex BaseModel::index(int row, int column, const QModelIndex& parent) const
 {
   if (!parent.isValid())
@@ -54,17 +69,6 @@ int BaseModel::columnCount(const QModelIndex& index) const
   }
 
   return 0;
-}
-
-QHash<int, QByteArray> BaseModel::roleNames() const
-{
-  auto roles = QAbstractItemModel::roleNames();
-  roles.insert(EDepth, "depthRole");
-  roles.insert(EVisible, "visible");
-  roles.insert(ESelected, "selected");
-  roles.insert(EHasChildren, "hasChildrenRole");
-  roles.insert(Qt::ForegroundRole, "textColorRole");
-  return roles;
 }
 
 QVariant BaseModel::data(const QModelIndex &index, int role) const
@@ -118,6 +122,24 @@ QVariant BaseModel::data(const QModelIndex &index, int role) const
       break;
     }
 
+    case EExpanded:
+    {
+      if (column == 0 && !index.parent().isValid())
+      {
+        return m_model[row]->m_expanded;
+      }
+      break;
+    }
+
+    case EEnabled:
+    {
+      if (column == 0 && !index.parent().isValid())
+      {
+        return m_model[row]->m_enabled;
+      }
+      break;
+    }
+
     case ESelected:
     {
       if (column == 0 && !index.parent().isValid())
@@ -148,6 +170,10 @@ bool BaseModel::setData(const QModelIndex &index, const QVariant &value, int rol
       m_model[index.row()]->m_visible = value.toBool();
     break;
 
+    case EExpanded:
+      m_model[index.row()]->m_expanded = value.toBool();
+    break;
+
     default:
       fRet = false;
       break;
@@ -161,14 +187,38 @@ bool BaseModel::setData(const QModelIndex &index, const QVariant &value, int rol
   return fRet;
 }
 
-int BaseModel::ToggleTreeAtIndex(int row, bool isExpanded, bool isRoot)
+int BaseModel::ToogleChildSelectionAtindex(int row, bool selected, bool isRoot)
 {
   int totalChildren = 0;
 
   if (m_model[row]->m_children)
   {
     for (int i = 1; i <= m_model[row]->m_children; i++)
-      totalChildren += ToggleTreeAtIndex(row + i + totalChildren, isExpanded, false);
+      totalChildren += ToogleChildSelectionAtindex(row + i + totalChildren, selected, false);
+  }
+
+  if (isRoot)
+  {
+    emit dataChanged(
+      createIndex(row, 0, 999),
+      createIndex(row + m_model[row]->m_children + totalChildren, 0, 999));
+  }
+  else
+  {
+    m_model[row]->m_selected = selected;
+  }
+
+  return m_model[row]->m_children;
+}
+
+int BaseModel::ToggleTreeExpandedAtIndex(int row, bool isExpanded, bool isRoot)
+{
+  int totalChildren = 0;
+
+  if (m_model[row]->m_children)
+  {
+    for (int i = 1; i <= m_model[row]->m_children; i++)
+      totalChildren += ToggleTreeExpandedAtIndex(row + i + totalChildren, isExpanded, false);
   }
 
   if (isRoot)
@@ -181,6 +231,8 @@ int BaseModel::ToggleTreeAtIndex(int row, bool isExpanded, bool isRoot)
   {
     m_model[row]->m_visible = isExpanded;
   }
+
+  m_model[row]->m_expanded = isExpanded;
 
   return m_model[row]->m_children;
 }

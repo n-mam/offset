@@ -10,9 +10,9 @@
 struct BaseItem
 {
   BaseItem(
-    QVector<QString> names, 
-    int depth = 0, 
-    int children = 0, 
+    QVector<QString> names,
+    int depth = 0,
+    int children = 0,
     int selectable = false)
   {
     m_names = names;
@@ -21,9 +21,11 @@ struct BaseItem
   }
   int m_depth = 0;
   int m_children = 0;
-  QVector<QString> m_names;
-  bool m_selected = false;
   bool m_visible = true;
+  bool m_enabled = true;
+  bool m_selected = false;
+  bool m_expanded = true;
+  QVector<QString> m_names;
 };
 
 using SPBaseItem = std::shared_ptr<BaseItem>;
@@ -45,7 +47,8 @@ class BaseModel : public QAbstractItemModel
   QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
   bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole) override;
 
-  Q_INVOKABLE int ToggleTreeAtIndex(int index, bool expanded, bool isRoot = true);
+  Q_INVOKABLE int ToogleChildSelectionAtindex(int row, bool selected, bool isRoot = true);
+  Q_INVOKABLE int ToggleTreeExpandedAtIndex(int index, bool expanded, bool isRoot = true);
 
   std::vector<SPBaseItem> m_model;
 
@@ -53,14 +56,16 @@ class BaseModel : public QAbstractItemModel
   {
     EDepth = Qt::UserRole,
     EVisible,
+    EEnabled,
     ESelected,
+    EExpanded,
     EHasChildren,
     ELastRole
   };
 
   public slots:
 
-  virtual void RefreshModel() {};
+  virtual void refreshModel() {};
 
   private:
 

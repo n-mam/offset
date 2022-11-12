@@ -36,7 +36,7 @@ Column {
         anchors.fill: parent
         cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
         onClicked: { 
-          diskListModel.RefreshModel()
+          diskListModel.refreshModel()
         }
       }
     }
@@ -101,7 +101,7 @@ Column {
       anchors.margins: mainColumn.spacing
       anchors.verticalCenter: actionsRect.verticalCenter
       onClicked: {
-        diskListModel.ConvertSelectedItemsToVirtualDisks(destination.text.length ? destination.text : ".\\")
+        diskListModel.convertSelectedItemsToVirtualDisks(destination.text.length ? destination.text : ".\\")
       }
     }
     Button {

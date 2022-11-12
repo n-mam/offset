@@ -19,14 +19,15 @@ struct BlockDevice : public BaseItem
     m_size = size;
     m_free = free;
   }
-  bool isDisk = false;
-  int m_disk = -1;
+
   QString m_fs;
+  int m_disk = -1;
+  QString m_label;
   double m_size = 0;
   double m_free = 0;
-  QString m_label;
-  unsigned long m_serial = 0;
   bool m_vss = true;
+  bool m_isDisk = false;
+  unsigned long m_serial = 0;
   QString m_format = "d-vhd";
 };
 
@@ -45,7 +46,7 @@ class DiskListModel : public BaseModel
   QVariant data(const QModelIndex &index, int role) const override;
   bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole) override;
   
-  Q_INVOKABLE void ConvertSelectedItemsToVirtualDisks(QString folder);
+  Q_INVOKABLE void convertSelectedItemsToVirtualDisks(QString folder);
 
   Q_PROPERTY(bool stop READ getStop WRITE setStop);
   Q_PROPERTY(bool transfer READ getTransfer WRITE setTransfer NOTIFY transferChanged);
@@ -55,6 +56,7 @@ class DiskListModel : public BaseModel
     ESize = BaseModel::ELastRole + 1,
     EFree,
     EVSS,
+    EIsDisk,
     EFormat,
     EMetaData
   };
@@ -65,7 +67,7 @@ class DiskListModel : public BaseModel
   void setTransfer(bool);
   bool getStop() const;
   void setStop(bool);
-  void RefreshModel() override;
+  void refreshModel() override;
 
   private:
 

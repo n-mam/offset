@@ -15,6 +15,7 @@ Loader {
   property var used
   property var free
   property var value
+  property var checked
 
   function percent(one, two) {
     return (one/(one + two)) * 100
@@ -85,6 +86,7 @@ Loader {
     id: checkBoxComponent
     CheckBox {
       id: cb
+      checked: loader.checked
       implicitWidth: indicator.width
       indicator: Rectangle {
         readonly property int size: 12

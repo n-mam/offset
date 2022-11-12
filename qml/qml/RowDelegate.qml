@@ -16,7 +16,6 @@ Rectangle {
 
   property int depth
   property int hasChildren
-  property bool expanded: true
 
   property var typeOptions: ["d-vhd", "d-vhdx", "f-vhd"]
   property var srcOptions: ["vss", "live"]
@@ -25,6 +24,7 @@ Rectangle {
 
   signal selectionChanged(var checked)
   signal toggleTreeNode(var index, var expanded)
+  signal toggleChildSelection(var index, var selected)
 
   onSelectionChanged: (checked) => {
     model.selected = checked;
@@ -38,15 +38,15 @@ Rectangle {
     width: 8; height: 12
     visible: rowDelegate.hasChildren
     x: rowDelegate.padding + (3 * rowDelegate.depth * rowDelegate.indent)
-    rotation: rowDelegate.expanded ? 90 : 0
+    rotation: model.expanded ? 90 : 0
     anchors.top: rowDelegate.top
     MouseArea {
       hoverEnabled: true
       anchors.fill: parent
       cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
       onClicked: {
-        expanded = !expanded
-        toggleTreeNode(index, expanded)
+        model.expanded = !model.expanded
+        toggleTreeNode(index, model.expanded)
       }
     }
   }
@@ -54,7 +54,8 @@ Rectangle {
   Element {
     id: checkBox
     type: "checkBox"
-    create: true
+    create: model.enabled
+    checked: model.selected
     x: arrow.x + arrow.width + rowDelegate.padding + 3
     anchors.top: rowDelegate.top
   }
@@ -69,7 +70,7 @@ Rectangle {
       id: label
       font.bold: true
       text: model.display[0]
-      color: model.textColorRole
+      color: model.textColor
       MouseArea {
         width: rowDelegate.width
         height: rowDelegate.height
@@ -90,7 +91,7 @@ Rectangle {
     Text {
       id: secondLabel
       text: model.display[1] !== undefined ? model.display[1] : ""
-      color: model.textColorRole
+      color: model.textColor
     }
 
     Row {

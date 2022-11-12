@@ -1,5 +1,3 @@
-#include <QJSEngine>
-
 #include <fxc/fxc>
 
 #include <DiskListModel.h>
@@ -7,7 +5,7 @@
 DiskListModel::DiskListModel()
 {
   npl::make_dispatcher();
-  RefreshModel();
+  refreshModel();
 }
 
 DiskListModel::~DiskListModel()
@@ -17,11 +15,14 @@ DiskListModel::~DiskListModel()
 QHash<int, QByteArray> DiskListModel::roleNames() const
 {
   QHash<int, QByteArray> roles = BaseModel::roleNames();
+
+  roles.insert(EVSS, "vss");
   roles.insert(ESize, "sizeRole");
   roles.insert(EFree, "freeRole");
-  roles.insert(EVSS, "vss");
+  roles.insert(EIsDisk, "isDisk");
   roles.insert(EFormat, "format");
   roles.insert(EMetaData, "metaDataRole");
+
   return roles;
 }
 
@@ -59,10 +60,19 @@ QVariant DiskListModel::data(const QModelIndex &index, int role) const
       {
         auto bd = std::static_pointer_cast<BlockDevice>(m_model[row]);
 
-        if (bd->isDisk)
-          return QVector<QString>({"MBR", ""});
+        if (bd->m_isDisk)
+          return QVector<QString>({"Fake-MBR", ""});
         else
           return QVector<QString>({bd->m_fs, bd->m_label, QString::number(bd->m_serial)});
+      }
+      break;
+    }
+
+    case EIsDisk:
+    {
+      if (column == 0 && !index.parent().isValid())
+      {
+        return std::static_pointer_cast<BlockDevice>(m_model[row])->m_isDisk;
       }
       break;
     }
@@ -132,7 +142,7 @@ void DiskListModel::setStop(bool stop)
   this->stop = stop;
 }
 
-void DiskListModel::ConvertSelectedItemsToVirtualDisks(QString folder)
+void DiskListModel::convertSelectedItemsToVirtualDisks(QString folder)
 {
   setTransfer(true);
 
@@ -177,7 +187,7 @@ void DiskListModel::ConvertSelectedItemsToVirtualDisks(QString folder)
   ));
 }
 
-void DiskListModel::RefreshModel()
+void DiskListModel::refreshModel()
 {
   beginResetModel();
 
@@ -203,15 +213,16 @@ void DiskListModel::RefreshModel()
 
     auto [size, free] = osl::GetTotalAndFree(names[0]);
 
-    if (!size || !free) continue;
-
     auto [label, fs, serial] = osl::GetVolumeMetadata(names[0]);
 
     auto disks = osl::GetVolumeDiskExtents(names[0]);
 
-    if (disks.size() > 1) continue;
+    //this(also) fails for dvd but is successful for RAW volumes
+    if (!disks.size() || disks.size() > 1) continue;
 
     auto diskName = QString("PhysicalDrive") + QString::number(disks[0]);
+    
+    int depth = 0;
 
     auto parentDisk = std::find_if(m_model.begin(), m_model.end(), 
           [diskName](const auto& e) -> bool {
@@ -220,15 +231,18 @@ void DiskListModel::RefreshModel()
 
     if (parentDisk == std::end(m_model))
     {
-      auto item = std::make_shared<BlockDevice>(QVector<QString>(diskName), 0, 1);
+      auto item = std::make_shared<BlockDevice>(QVector<QString>(diskName), depth++, 1);
       item->m_disk = disks[0];
-      item->isDisk = true;
+      item->m_isDisk = true;
+      item->m_enabled = false;
       m_model.push_back(item);
     }
     else
     {
+      depth++;
       (*parentDisk)->m_children++;
     }
+
 
     QVector<QString> qnames;
     for (auto& name : names)
@@ -236,7 +250,7 @@ void DiskListModel::RefreshModel()
       qnames.prepend(QString::fromStdWString(name));
     }
 
-    auto item = std::make_shared<BlockDevice>(qnames, 1, children.size(), size, free);
+    auto item = std::make_shared<BlockDevice>(qnames, depth++, children.size(), size, free);
 
     item->m_fs = QString::fromStdWString(fs);
     item->m_label = QString::fromStdWString(label);
@@ -248,7 +262,7 @@ void DiskListModel::RefreshModel()
     for (const auto& child : children)
     {
       auto [size, free] = osl::GetTotalAndFree(child.toStdWString().c_str());
-      auto c = std::make_shared<BlockDevice>(QVector<QString>(child), 2, 0, size, free);
+      auto c = std::make_shared<BlockDevice>(QVector<QString>(child), depth, 0, size, free);
       auto [label, fs, serial] = osl::GetVolumeMetadata(child.toStdWString());
       c->m_fs = QString::fromStdWString(fs);
       c->m_label = QString::fromStdWString(label);
@@ -256,6 +270,8 @@ void DiskListModel::RefreshModel()
       c->m_disk = disks[0];
       m_model.push_back(c);
     }
+
+    depth++;
   }
 
   std::sort(m_model.begin(), m_model.end(),
