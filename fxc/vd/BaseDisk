@@ -11,6 +11,8 @@
 
 #include <fxc/vd/formats>
 
+#include <zlib.h>
+
 namespace fxc {
 
 struct DataBlockIO
@@ -20,6 +22,12 @@ struct DataBlockIO
   size_t length = 0;
 };
 
+enum EPartitionType
+{
+  EMBR,
+  EGPT
+};
+
 using TProgressCallback = std::function<bool (std::wstring, int)>;
 
 class BaseDisk : public npl::Subject<uint8_t, uint8_t>
@@ -27,6 +35,12 @@ class BaseDisk : public npl::Subject<uint8_t, uint8_t>
   public:
 
   MBR iMBR = { 0 };
+
+  GptHdrRev1 alignas(512) iGptHdr = { 0 };
+
+  GPE alignas(512) iPartitions[4] = { 0 };
+
+  EPartitionType iPartitionType;
 
   std::filesystem::path iPath;
 
@@ -41,13 +55,22 @@ class BaseDisk : public npl::Subject<uint8_t, uint8_t>
   BaseDisk() {}
 
   // new virtual disk abstraction
-  BaseDisk(uint64_t size, uint32_t blocksize)
+  BaseDisk(uint64_t size, uint32_t blocksize, EPartitionType partitionType = EPartitionType::EMBR)
   {
-    if (size < _2T)
+    if (size >= _2T)
+    {
+      iPartitionType = EPartitionType::EGPT;
+    }
+    else
+    {
+      iPartitionType = partitionType;
+    }
+
+    if (partitionType == EPartitionType::EMBR)
     {
       InitializeMBR(size, blocksize / 512);
     }
-    else
+    else if (partitionType == EPartitionType::EGPT)
     {
       InitializeGPT(size, blocksize / 512);
     }
@@ -78,8 +101,6 @@ class BaseDisk : public npl::Subject<uint8_t, uint8_t>
 
   virtual uint32_t GetBlockSize() = 0;
 
-  virtual uint64_t GetLogicalDiskLength() = 0;
-
   virtual std::vector<std::wstring> GetParentLocators(void) = 0;
 
   virtual SPBaseDisk GetBaseParent(void)
@@ -94,14 +115,63 @@ class BaseDisk : public npl::Subject<uint8_t, uint8_t>
     return base;
   }
 
-  virtual uint64_t GetPartitionStartOffset(int n)
-  {
-    return iMBR.partitions[n].start_sector * 512;
-  }
-
   virtual uint64_t GetPartitionLength(int n)
   {
-    return iMBR.partitions[n].total_sectors * 512ULL;
+    uint64_t length = 0;
+
+    if (iPartitionType == EPartitionType::EGPT)
+    {
+      length = (iPartitions[n].end_lba - iPartitions[n].start_lba) * 512ULL;
+    }
+    else if (iPartitionType == EPartitionType::EMBR)
+    {
+      length = iMBR.partitions[n].total_sectors * 512ULL;
+    }
+
+    return length;
+  }
+
+  virtual uint64_t GetLogicalDiskLength() = 0;
+
+  virtual uint64_t GetPartitionStartOffset(int n)
+  {
+    uint64_t offset = 0;
+
+    if (iPartitionType == EPartitionType::EGPT)
+    {
+      offset = (iPartitions[n].start_lba) * 512ULL;
+    }
+    else if (iPartitionType == EPartitionType::EMBR)
+    {
+      offset = iMBR.partitions[n].start_sector * 512ULL;
+    }
+
+    return offset;
+  }
+
+  /**
+   *   0       1          2            3              4
+   * [MBR] [GPT-Hdr] [Partitions] [GPT-Hdr(B)] [Partitions(B)]
+   */
+  void CommitPartitionTable()
+  {
+    WriteSync((uint8_t *) &iMBR, sizeof(MBR), 0);
+
+    if (iPartitionType == EPartitionType::EGPT)
+    {
+      WriteSync((uint8_t *) &iGptHdr, sizeof(GptHdrRev1), 512);
+      WriteSync((uint8_t *) iPartitions, 4 * sizeof(GPE), 512 + 512);
+      //reverse all relevant extries for the backup GPT header
+      iGptHdr.u64LbaCurrent = (uint64_t) 3;
+      iGptHdr.u64LbaBackup = 1;
+      iGptHdr.u64LbaFirstPartitionEntry = (uint64_t) 4;
+      unsigned long  crc = crc32(0L, Z_NULL, 0);
+      crc = crc32(crc, (const unsigned char*)&iGptHdr, sizeof(GptHdrRev1));
+      iGptHdr.u32Crc = crc;
+      //write the backup GPT header and partitions
+      WriteSync((uint8_t *) &iGptHdr, sizeof(GptHdrRev1), 512 * 3);
+      WriteSync((uint8_t *) iPartitions, 4 * sizeof(GPE), 512 * 4);
+    }
   }
 
   virtual int32_t ReadSync(const uint8_t *b, size_t l, uint64_t o) override
@@ -313,11 +383,91 @@ class BaseDisk : public npl::Subject<uint8_t, uint8_t>
     iMBR.partitions[0].total_sectors = static_cast<uint32_t>(size / 512);
   }
 
-  void InitializeGPT(uint64_t size, uint32_t blocksize)
+  void InitializeGPT(uint64_t size, uint32_t startSector)
   {
-    //todo
-  }
+    // MBR
+    iMBR.signature = 0xAA55;
 
+    /* diskid = current epoch */
+    uint32_t epoch = static_cast<uint32_t>(std::time(nullptr));
+    memmove(&(iMBR.DiskID), &epoch, 4);
+  
+    /* GPT */
+    iMBR.partitions[0].type = 0xEE;
+
+    /* LBA 1 */
+    iMBR.partitions[0].start_sector = (uint32_t) 1;
+
+    /* total sectors in the partition(volume) */
+    iMBR.partitions[0].total_sectors = 0xFFFFFFFF;
+
+    // Header
+    memmove(&iGptHdr.abSignature, "EFI PART", strlen("EFI PART"));
+
+    iGptHdr.u32Revision = 0x00010000;
+
+    iGptHdr.cbHeader = sizeof (GptHdrRev1);
+    /**
+     *   0       1          2            3              4
+     * [MBR] [GPT-Hdr] [Partitions] [GPT-Hdr(B)] [Partitions(B)]
+     */
+    iGptHdr.u64LbaCurrent = (uint64_t) 1;
+
+    iGptHdr.u64LbaBackup = 3;
+
+    iGptHdr.u64FirstUsableLbaForPartitions = (uint64_t) startSector;
+
+    iGptHdr.u64LastUsableLbaForPartitions = ((uint64_t) startSector + (size / 512));
+
+    GUID guid;
+    CoCreateGuid(&guid);
+    memmove(&iGptHdr.DiskUuid, &guid, sizeof(GUID));
+
+    iGptHdr.u64LbaFirstPartitionEntry = (uint64_t) 2;
+
+    iGptHdr.cPartitionEntries = (uint64_t) 4;
+
+    iGptHdr.cbPartitionEntry = (uint64_t) sizeof(GPE);
+
+    // partition entry
+    // Basic data partition EBD0A0A2-B9E5-4433-87C0-68B6B72699C7
+    iPartitions[0].type_guid[0] = 0xA2;
+    iPartitions[0].type_guid[1] = 0xA0;
+    iPartitions[0].type_guid[2] = 0xD0;
+    iPartitions[0].type_guid[3] = 0xEB;
+
+    iPartitions[0].type_guid[4] = 0xE5;
+    iPartitions[0].type_guid[5] = 0xB9;
+
+    iPartitions[0].type_guid[6] = 0x33;
+    iPartitions[0].type_guid[7] = 0x44;
+
+    iPartitions[0].type_guid[8] = 0x87;
+    iPartitions[0].type_guid[9] = 0xC0;
+
+    iPartitions[0].type_guid[10] = 0x68;
+    iPartitions[0].type_guid[11] = 0xB6;
+    iPartitions[0].type_guid[12] = 0xB7;
+    iPartitions[0].type_guid[13] = 0x26;
+    iPartitions[0].type_guid[14] = 0x99;
+    iPartitions[0].type_guid[15] = 0xC7;
+
+    GUID guid1;
+    CoCreateGuid(&guid1);
+    memmove(&iPartitions[0].guid, &guid1, sizeof(GUID));
+
+    iPartitions[0].start_lba = (uint64_t) startSector;
+
+    iPartitions[0].end_lba = ((uint64_t) startSector + (size / 512));
+
+    unsigned long  crc = crc32(0L, Z_NULL, 0);
+    crc = crc32(crc, (const unsigned char*)iPartitions, sizeof(GPE) * 4);
+    iGptHdr.u32CrcPartitionEntries = crc;
+
+    crc = crc32(0L, Z_NULL, 0);
+    crc = crc32(crc, (const unsigned char*)&iGptHdr, sizeof(GptHdrRev1));
+    iGptHdr.u32Crc = crc;
+  }
 };
 
 using SPBaseDisk = std::shared_ptr<BaseDisk>;

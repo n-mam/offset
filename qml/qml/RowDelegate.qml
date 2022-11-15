@@ -95,8 +95,10 @@ Rectangle {
     }
 
     Row {
+      id: metadata
       spacing: rowDelegate.padding
       bottomPadding: usage.height ? 2 : 0
+      width: metadata1.width + metadata2.width + metadata3.width + typeRect.width + srcRect.width
       Text {
         id: metadata1
         text: model.metaDataRole[0].trim()
@@ -173,7 +175,7 @@ Rectangle {
       used: model.sizeRole - model.freeRole
       free: model.freeRole
       visible: usage.create
-      width: (secondLabel.width ? secondLabel.width : label.width)
+      width: Math.max(label.width, secondLabel.width, metadata.width)
       height: usage.create ? rowDelegate.columnRowHeight : 0
     }
 

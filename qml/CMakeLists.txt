@@ -2,6 +2,7 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
+find_package(ZLIB REQUIRED)
 find_package(Qt6 REQUIRED COMPONENTS Quick QuickControls2 Gui)
 
 qt6_add_resources(QT_RESOURCES 
@@ -30,6 +31,7 @@ target_link_libraries(
   Qt6::QuickControls2
   Qt6::Gui
   rapidjson
+  ZLIB::ZLIB
   OpenSSL::SSL
   OpenSSL::Crypto
   Crc32c::crc32c

@@ -4,6 +4,7 @@ project(offset)
 
 #SET(CMAKE_VERBOSE_MAKEFILE ON)
 
+find_package(ZLIB REQUIRED)
 find_package(OpenSSL REQUIRED)
 find_package(RapidJSON CONFIG REQUIRED)
 find_package(Crc32c CONFIG REQUIRED)
@@ -24,6 +25,7 @@ set_property(TARGET Test PROPERTY CXX_STANDARD 17)
 target_link_libraries(
   Test
   rapidjson
+  ZLIB::ZLIB
   OpenSSL::SSL
   OpenSSL::Crypto
   Crc32c::crc32c

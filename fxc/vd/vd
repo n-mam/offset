@@ -110,8 +110,7 @@ auto create_base_vhd(const std::wstring& volume, const std::wstring& file, fxc::
   // set target for io operations on disk 
   target->AddEventListener(disk);
 
-  // MBR block
-  disk->WriteSync((uint8_t *) &(disk->iMBR), sizeof(MBR), 0);
+  disk->CommitPartitionTable();
 
   nTotalPayloadBlocks--;
 
@@ -331,8 +330,7 @@ auto create_fixed_vhd(const std::wstring& device, const std::wstring& file, fxc:
   // set target for io operations on disk 
   target->AddEventListener(disk);
 
-  // MBR block
-  disk->WriteSync((uint8_t *) &(disk->iMBR), sizeof(MBR), 0);
+  disk->CommitPartitionTable();
 
   disk->image_copy_from(source, disk, disk->GetPartitionStartOffset(0), cbk);
 
@@ -500,8 +498,7 @@ void create_base_vhdx(const std::wstring& volume, const std::wstring& file, fxc:
   // set target for io operations on disk 
   target->AddEventListener(disk);
 
-  // MBR block
-  disk->WriteSync((uint8_t *) &(disk->iMBR), sizeof(MBR), 0);
+  disk->CommitPartitionTable();
 
   nTotalPayloadBlocks--;
 

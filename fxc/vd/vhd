@@ -36,7 +36,8 @@ class VirtualHardDisk : public BaseDisk
     uint64_t size,
     uint32_t blocksize,
     EVHDType type,
-    VirtualHardDisk *parent = nullptr) : BaseDisk(size, blocksize)
+    VirtualHardDisk *parent = nullptr)
+  : BaseDisk(size, blocksize, EPartitionType::EMBR)
   {
     InitializeFooter(blocksize + size, type);
     InitializeSparseHeader(blocksize, parent);
@@ -203,7 +204,6 @@ class VirtualHardDisk : public BaseDisk
 
   virtual void DumpStructure(void) override
   {
-    LOG;
     LOG << "VHD Footer : ";
 
     LOG << "Cookie                       : " << std::string((char *)iFooter.Cookie, 8);
@@ -212,7 +212,6 @@ class VirtualHardDisk : public BaseDisk
     LOG << "Current Size                 : " << osl::endian_reverse(*((uint64_t *)&iFooter.CurrentSize));
     LOG << "Creator Application          : " << std::string((char *)iFooter.CreatorApplication, 4);
 
-    LOG;
     LOG << "VHD Sparse Header : ";
     
     LOG << "Cookie                       : " << std::string((char *)iHeader.Cookie, 8);

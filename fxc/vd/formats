@@ -62,22 +62,20 @@ void DumpBytes(const uint8_t *buf, int len, bool hex)
       }
     }
   }
-
-  LOG;
 }
 
 typedef struct PARTITION
 {
-  uint8_t  boot;             /* 0x80 - active */
-  uint8_t  head;             /* starting head */
-  uint8_t  sector;           /* starting sector */
-  uint8_t  cyl;              /* starting cylinder */
-  uint8_t  type;             /* What partition type */
-  uint8_t  end_head;         /* end head */
-  uint8_t  end_sector;       /* end sector */
-  uint8_t  end_cyl;          /* end cylinder */
-  uint32_t start_sector;     /* starting sector counting from 0 */
-  uint32_t total_sectors;    /* number of sectors in partition */
+  uint8_t  boot;               /* 0x80 - active */
+  uint8_t  starting_head;      /* starting head */
+  uint8_t  starting_sector;    /* starting sector */
+  uint8_t  starting_cylinder;  /* starting cylinder */
+  uint8_t  type;               /* What partition type */
+  uint8_t  end_head;           /* end head */
+  uint8_t  end_sector;         /* end sector */
+  uint8_t  end_cyl;            /* end cylinder */
+  uint32_t start_sector;       /* starting sector counting from 0 */
+  uint32_t total_sectors;      /* number of sectors in partition */
 } Partition, *pPartition;
 
 typedef struct MBR
@@ -91,17 +89,10 @@ typedef struct MBR
   uint16_t     signature;
 } MBR, *pMBR;
 
-typedef struct _GPT_LBA_ONE
-{
-  char           signature[8];
-  uint32_t       revision;
-  uint32_t       hdr_size;
-  uint32_t       hdr_crc;
-  uint32_t       reserved;
-  //todo
-} LBA_ONE, *pLBA_ONE;
-
-typedef struct GptHdr
+/*
+ * Complete GPT table header for revision 1.0.
+ */
+typedef struct GptHdrRev1
 {
   /* Signature ("EFI PART"). */
   char abSignature[8];
@@ -111,15 +102,6 @@ typedef struct GptHdr
   uint32_t cbHeader;
   /* CRC of header. */
   uint32_t u32Crc;
-} GptHdr;
-
-/*
- * Complete GPT table header for revision 1.0.
- */
-typedef struct GptHdrRev1
-{
-  /* Header. */
-  GptHdr   Hdr;
   /* Reserved. */
   uint32_t u32Reserved;
   /* Current LBA. */
@@ -127,13 +109,13 @@ typedef struct GptHdrRev1
   /* Backup LBA. */
   uint64_t u64LbaBackup;
   /* First usable LBA for partitions. */
-  uint64_t u64LbaFirstPartition;
+  uint64_t u64FirstUsableLbaForPartitions;
   /* Last usable LBA for partitions. */
-  uint64_t u64LbaLastPartition;
+  uint64_t u64LastUsableLbaForPartitions;
   /* Disk UUID. */
   __GUID   DiskUuid;
   /* LBA of first partition entry. */
-  uint64_t u64LbaPartitionEntries;
+  uint64_t u64LbaFirstPartitionEntry;
   /* Number of partition entries. */
   uint32_t cPartitionEntries;
   /* Partition entry size. */

@@ -24,11 +24,9 @@ struct TBackupConfig
 
 auto usage(void)
 {
-  LOG;
   LOG << " fxc -d[ump] <file>";
   LOG << " fxc -f[ull] <vhd[x]> <source> <file>";
   LOG << " fxc -i[ncr] <vhd[x]> <source> <parent-path> <target-file> <rctid>";
-  LOG;
 }
 
 auto GetExtentionForFormat(const std::wstring& format)
