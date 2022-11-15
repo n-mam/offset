@@ -38,7 +38,8 @@ class VirtualHardDisk2 : public BaseDisk
     virtual ~VirtualHardDisk2() {}
 
     // New base VHDx contstructor
-    VirtualHardDisk2(uint64_t size, uint32_t blocksize) : BaseDisk(size, blocksize)
+    VirtualHardDisk2(uint64_t size, uint32_t blocksize) 
+      : BaseDisk(size, blocksize, EPartitionType::EMBR)
     {
       InitializeFileIdentifier();
       InitializeHeader();
@@ -548,7 +549,7 @@ class VirtualHardDisk2 : public BaseDisk
       }
       else if (state == VHDX_BAT_ENTRY_PAYLOAD_BLOCK_FULLY_PRESENT)
       {
-        assert(false);
+        assert(false); //we should not hit this for streaming
       }
 
       return f.length;

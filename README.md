@@ -8,7 +8,7 @@ C++ base components library
 git clone https://github.com/microsoft/vcpkg.git
 cd vcpkg
 bootstrap-vcpkg.bat
-vcpkg.exe install openssl:x64-windows crc32c:x64-windows rapidjson:x64-windows
+vcpkg.exe install openssl:x64-windows crc32c:x64-windows rapidjson:x64-windows zlib:x64-windows
 vcpkg.exe integrate install
 QT6 can be installed via vcpkg also in which case the supplied vcpkg.cmake toolchain during cmake configure should pick QT6 dependencies as well. I typically use full source builds for QT
 ```

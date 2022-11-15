@@ -155,23 +155,31 @@ class BaseDisk : public npl::Subject<uint8_t, uint8_t>
    */
   void CommitPartitionTable()
   {
-    WriteSync((uint8_t *) &iMBR, sizeof(MBR), 0);
+    uint8_t buf[512*5];
+    //we are streaming
+
+    memmove(buf, &iMBR, sizeof(MBR));
 
     if (iPartitionType == EPartitionType::EGPT)
     {
-      WriteSync((uint8_t *) &iGptHdr, sizeof(GptHdrRev1), 512);
-      WriteSync((uint8_t *) iPartitions, 4 * sizeof(GPE), 512 + 512);
-      //reverse all relevant extries for the backup GPT header
-      iGptHdr.u64LbaCurrent = (uint64_t) 3;
-      iGptHdr.u64LbaBackup = 1;
-      iGptHdr.u64LbaFirstPartitionEntry = (uint64_t) 4;
+      memmove(buf + (512 * 1), &iGptHdr, sizeof(GptHdrRev1));
+      memmove(buf + (512 * 2), iPartitions, 4 * sizeof(GPE));
+      memmove(buf + (512 * 3), &iGptHdr, sizeof(GptHdrRev1));
+      memmove(buf + (512 * 4), iPartitions, 4 * sizeof(GPE));
+
+      // update relevant extries for backup GPT header
+      ((GptHdrRev1 *)(buf + (512 * 3)))->u64LbaCurrent = (uint64_t) 3;
+      ((GptHdrRev1 *)(buf + (512 * 3)))->u64LbaBackup = 1;
+      ((GptHdrRev1 *)(buf + (512 * 3)))->u64LbaFirstPartitionEntry = (uint64_t) 4;
+
+      // recompute crc32 for backup header
       unsigned long  crc = crc32(0L, Z_NULL, 0);
       crc = crc32(crc, (const unsigned char*)&iGptHdr, sizeof(GptHdrRev1));
-      iGptHdr.u32Crc = crc;
-      //write the backup GPT header and partitions
-      WriteSync((uint8_t *) &iGptHdr, sizeof(GptHdrRev1), 512 * 3);
-      WriteSync((uint8_t *) iPartitions, 4 * sizeof(GPE), 512 * 4);
+
+      ((GptHdrRev1 *)(buf + (512 * 3)))->u32Crc = crc;
     }
+
+    WriteSync(buf, sizeof(buf), 0);
   }
 
   virtual int32_t ReadSync(const uint8_t *b, size_t l, uint64_t o) override
