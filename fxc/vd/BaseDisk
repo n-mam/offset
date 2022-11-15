@@ -66,11 +66,11 @@ class BaseDisk : public npl::Subject<uint8_t, uint8_t>
       iPartitionType = partitionType;
     }
 
-    if (partitionType == EPartitionType::EMBR)
+    if (iPartitionType == EPartitionType::EMBR)
     {
       InitializeMBR(size, blocksize / 512);
     }
-    else if (partitionType == EPartitionType::EGPT)
+    else if (iPartitionType == EPartitionType::EGPT)
     {
       InitializeGPT(size, blocksize / 512);
     }
