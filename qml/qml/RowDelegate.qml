@@ -130,7 +130,7 @@ Rectangle {
           anchors.fill: parent
           cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
           onClicked: {
-            model.formatIndex = (++model.formatIndex) % model.formatOptions.length
+            model.formatIndex = (model.formatIndex + 1) % model.formatOptions.length
           }
         }
       }
@@ -156,7 +156,7 @@ Rectangle {
           anchors.fill: parent
           cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
           onClicked: {
-            model.sourceIndex = (++model.sourceIndex) % model.sourceOptions.length
+            model.sourceIndex = (model.sourceIndex + 1) % model.sourceOptions.length
           }
         }
       }
@@ -180,7 +180,7 @@ Rectangle {
       visible: false
       value: 0
       width: (secondLabel.width ? secondLabel.width : label.width)
-      height: progress.create ? 2 : 0
+      height: progress.create ? 3 : 0
       Connections {
         target: diskListModel
         function onProgress(device, percent) {

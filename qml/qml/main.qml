@@ -57,10 +57,10 @@ ApplicationWindow {
     }
 
     Fxc {
-      anchors.margins: 10
       anchors.left: parent.left
       anchors.right: parent.right
-      height: mainColumn.height * (mainColumn.showlog ? 0.68 : 0.93)
+      anchors.margins: 10
+      height: mainColumn.height * (mainColumn.showlog ? 0.68 : 0.94)
     }
 
     Rectangle {
@@ -68,14 +68,15 @@ ApplicationWindow {
       // radius: 5
       // border.width: 1
       // border.color: borderColor
-      anchors.margins: 10
       anchors.left: parent.left
       anchors.right: parent.right
+      anchors.margins: 10
       color: Material.background
       height: mainColumn.height * (mainColumn.showlog ? 0.02 : 0.03)
       Label {
         id: statusLabel
         text: "Ready"
+        font.pixelSize: 12
       }
     }
   }
@@ -85,7 +86,6 @@ ApplicationWindow {
     sequences: ["Ctrl+Q","Ctrl+W"]
     onActivated: {
       mainColumn.showlog = !mainColumn.showlog
-      mainColumn.forceLayout();
     }
   }
 }
