@@ -17,9 +17,6 @@ Rectangle {
   property int depth
   property int hasChildren
 
-  property var srcOptions: ["vss", "live"]
-  property var srcIndex: 0;
-
   signal selectionChanged(var checked)
   signal toggleTreeNode(var index, var expanded)
   signal toggleChildSelection(var index, var selected)
@@ -96,7 +93,7 @@ Rectangle {
       id: metadata
       spacing: rowDelegate.padding
       bottomPadding: usage.height ? 2 : 0
-      width: metadata1.width + metadata2.width + metadata3.width + formatRect.width + srcRect.width
+      width: metadata1.width + metadata2.width + metadata3.width + formatRect.width + sourceRect.width
       Text {
         id: metadata1
         text: model.metaDataRole[0].trim()
@@ -124,7 +121,7 @@ Rectangle {
         visible: model.selected
         Text {
           color: "white"
-          text: model.formatOptions[model.formatIndex % model.formatOptions.length];
+          text: model.formatOptions[model.formatIndex];
           anchors.verticalCenter: formatRect.verticalCenter
           anchors.horizontalCenter: formatRect.horizontalCenter
         }
@@ -133,33 +130,33 @@ Rectangle {
           anchors.fill: parent
           cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
           onClicked: {
-            model.formatIndex++
+            model.formatIndex = (++model.formatIndex) % model.formatOptions.length
           }
         }
       }
       Rectangle {
-        id: srcRect
+        id: sourceRect
         radius: 3
         border.width: 1
-        border.color: (rowDelegate.srcIndex % 2) ? "#FF6969" : "#00BFFF"
+        border.color: (sourceText.text === "live") ? "#FF6969" : "#00BFFF"
         color: "transparent"
         width: 52
         height: rowDelegate.columnRowHeight
         x: formatRect.x + formatRect.width + rowDelegate.padding
         visible: model.selected
         Text {
+          id: sourceText
           color: "white"
-          text: rowDelegate.srcOptions[rowDelegate.srcIndex % 2]
-          anchors.verticalCenter: srcRect.verticalCenter
-          anchors.horizontalCenter: srcRect.horizontalCenter
+          text: model.sourceOptions[model.sourceIndex]
+          anchors.verticalCenter: sourceRect.verticalCenter
+          anchors.horizontalCenter: sourceRect.horizontalCenter
         }
         MouseArea {
           hoverEnabled: true
           anchors.fill: parent
           cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
-          onClicked: { 
-            rowDelegate.srcIndex++
-            model.vss = rowDelegate.srcOptions[rowDelegate.srcIndex % 2] == vss
+          onClicked: {
+            model.sourceIndex = (++model.sourceIndex) % model.sourceOptions.length
           }
         }
       }

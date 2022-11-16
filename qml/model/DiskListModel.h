@@ -25,12 +25,13 @@ struct BlockDevice : public BaseItem
   QString m_label;
   double m_size = 0;
   double m_free = 0;
-  bool m_vss = true;
   bool m_isDisk = false;
   unsigned long m_serial = 0;
   QString m_diskPartition;
   uint64_t m_diskLength = 0;
+  QVector<QString> m_sourceOptions;
   QVector<QString> m_formatOptions;
+  int m_sourceIndex;
   int m_formatIndex;
 };
 
@@ -58,8 +59,9 @@ class DiskListModel : public BaseModel
   {
     ESize = BaseModel::ELastRole + 1,
     EFree,
-    EVSS,
     EIsDisk,
+    ESourceOptions,
+    ESourceIndex,
     EFormatOptions,
     EFormatIndex,
     EMetaData

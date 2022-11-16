@@ -16,10 +16,11 @@ QHash<int, QByteArray> DiskListModel::roleNames() const
 {
   QHash<int, QByteArray> roles = BaseModel::roleNames();
 
-  roles.insert(EVSS, "vss");
   roles.insert(ESize, "sizeRole");
   roles.insert(EFree, "freeRole");
   roles.insert(EIsDisk, "isDisk");
+  roles.insert(ESourceOptions, "sourceOptions");
+  roles.insert(ESourceIndex, "sourceIndex");
   roles.insert(EFormatOptions, "formatOptions");
   roles.insert(EFormatIndex, "formatIndex");
   roles.insert(EMetaData, "metaDataRole");
@@ -60,6 +61,7 @@ QVariant DiskListModel::data(const QModelIndex &index, int role) const
       if (column == 0 && !index.parent().isValid())
       {
         auto bd = std::static_pointer_cast<BlockDevice>(m_model[row]);
+
         if (bd->m_isDisk)
         {
           return QVector<QString>({bd->m_diskPartition, QString::number(bd->m_diskLength) + "g"});
@@ -100,6 +102,24 @@ QVariant DiskListModel::data(const QModelIndex &index, int role) const
       break;
     }
 
+    case ESourceOptions:
+    {
+      if (column == 0 && !index.parent().isValid())
+      {
+        return std::static_pointer_cast<BlockDevice>(m_model[row])->m_sourceOptions;
+      }
+      break;
+    }
+
+    case ESourceIndex:
+    {
+      if (column == 0 && !index.parent().isValid())
+      {
+        return std::static_pointer_cast<BlockDevice>(m_model[row])->m_sourceIndex;
+      }
+      break;
+    }
+
     default:
       return BaseModel::data(index, role);
   }
@@ -119,12 +139,12 @@ bool DiskListModel::setData(const QModelIndex &index, const QVariant &value, int
 
     switch (role)
     {
-      case EVSS:
-        bd->m_vss = value.toBool();
-      break;
-
       case EFormatIndex:
         bd->m_formatIndex = value.toInt();
+      break;
+
+      case ESourceIndex:
+        bd->m_sourceIndex = value.toInt();
       break;
 
       default:
@@ -177,13 +197,13 @@ void DiskListModel::convertSelectedItemsToVirtualDisks(QString folder)
 
     auto blockdevice = std::static_pointer_cast<BlockDevice>(item);
 
-    auto vss = blockdevice->m_vss;
     auto names = blockdevice->m_names;
     auto format = blockdevice->m_formatOptions[blockdevice->m_formatIndex];
+    auto live = blockdevice->m_sourceOptions[blockdevice->m_sourceIndex] == "live";
 
     QString name = names.size() == 1 ? names[0] : names[1];
 
-    LOG << name.toStdWString() << L", " << format.toStdWString() << L", " << vss;
+    LOG << name.toStdWString() << L", " << format.toStdWString() << L", " << live;
 
     configuration.push_back({
       name.toStdWString(),
@@ -191,7 +211,7 @@ void DiskListModel::convertSelectedItemsToVirtualDisks(QString folder)
       folder.toStdWString(),
       format.toStdWString(),
       L"",
-      !vss
+      live
     });
   }
 
@@ -237,6 +257,8 @@ void DiskListModel::refreshModel()
     auto [size, free] = osl::GetTotalAndFree(names[0]);
 
     auto [label, fs, serial] = osl::GetVolumeMetadata(names[0]);
+
+    auto isSnapshotable = fxc::IsVolumeSupported(names[0]);
 
     auto disks = osl::GetVolumeDiskExtents(names[0]);
 
@@ -284,6 +306,18 @@ void DiskListModel::refreshModel()
 
     auto item = std::make_shared<BlockDevice>(qnames, depth++, children.size(), size, free);
 
+    item->m_sourceOptions << "live";
+
+    if (isSnapshotable) 
+    {
+      item->m_sourceOptions << "vss";
+      item->m_sourceIndex = item->m_sourceOptions.indexOf("vss");
+    }
+    else
+    {
+      item->m_sourceIndex = item->m_sourceOptions.indexOf("live");
+    }
+
     item->m_formatOptions << "d-vhdx";
 
     if (size < _2T)
@@ -307,6 +341,9 @@ void DiskListModel::refreshModel()
     {
       auto [size, free] = osl::GetTotalAndFree(child.toStdWString().c_str());
       auto c = std::make_shared<BlockDevice>(QVector<QString>(child), depth, 0, size, free);
+
+      c->m_sourceOptions << "live";
+      c->m_sourceIndex = c->m_sourceOptions.indexOf("live");
 
       c->m_formatOptions << "d-vhdx";
 

@@ -5,12 +5,14 @@
 
 #include <Logger.h>
 #include <DiskListModel.h>
+//#include <Windows.h>
 
 void q_logger(QtMsgType, const QMessageLogContext&, const QString&);
 
 int main(int argc, char *argv[])
 {
   qInstallMessageHandler(q_logger);
+
   qputenv("QT_QUICK_CONTROLS_STYLE", QByteArray("Material"));
   qputenv("QT_QUICK_CONTROLS_MATERIAL_THEME", QByteArray("Dark"));
 
@@ -60,5 +62,6 @@ void q_logger(QtMsgType type, const QMessageLogContext &context, const QString &
       //OutputDebugStringA(buffer);
       abort();
   }
+  //OutputDebugStringA(buffer);
   LOG << buffer;
 }

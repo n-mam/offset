@@ -246,7 +246,7 @@ auto ConvertBlockDeviceToVirtualImages(const std::vector<TBackupConfig>& configu
             }
           }
 
-          auto target = folder + L"\\" + originalVolume.substr(4, 44) + L"." + format;
+          auto target = folder + L"\\" + originalVolume.substr(4, 44) + L"." + GetExtentionForFormat(format);
 
           futures2.push_back(std::async(std::launch::async, [=](){
             fxc::CreateBaseVirtualDisk(format, snapshotDevice, target,
