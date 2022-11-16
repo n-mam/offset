@@ -18,23 +18,41 @@ class Log
 
   inline static TLogCallback<std::string> a_sink = nullptr;
   inline static TLogCallback<std::wstring> w_sink = nullptr;
- 
+
+  int m_level = Info;
   std::stringstream a_ss;
   std::wstringstream w_ss;
 
   public:
 
+  Log()
+  {
+  }
+
+  Log(int level)
+  {
+    m_level = level;
+  }
+
   ~Log()
   {
-    if (a_sink)
+    if (a_sink && a_ss.str().size())
     {
-      a_sink(a_ss.str());
+      a_sink(std::to_string(m_level) + " " + a_ss.str());
     }
-    if (w_sink)
+    if (w_sink && w_ss.str().size())
     {
-      w_sink(w_ss.str());
+      w_sink(std::to_wstring(m_level) + L" " + w_ss.str());
     }
   }
+
+  enum {
+    Info,
+    Debug,
+    Error,
+    Status,
+    Warning
+  };
 
   template<typename T>
   static void SetLogSink(TLogCallback<T> cbk)
@@ -77,5 +95,9 @@ Log&& operator <<(Log&& lhs, const T& rhs)
 }
 
 #define LOG osl::Log()
+
+#define ERROR osl::Log(osl::Log::Error)
+
+#define STATUS osl::Log(osl::Log::Status)
 
 #endif

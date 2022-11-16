@@ -27,7 +27,7 @@ ApplicationWindow {
       anchors.left: parent.left
       anchors.right: parent.right
       anchors.margins: 10
-      height: mainColumn.showlog ? (mainColumn.height * 0.25) : 0
+      height: mainColumn.height * (mainColumn.showlog ? 0.25 : 0)
       color: Material.background
       Flickable {
         id: flickable
@@ -45,8 +45,10 @@ ApplicationWindow {
           Connections {
             target: logger
             function onAddLogLine(log) {
-              logText.append(log)
+              logText.append(log.substring(2))
               logText.cursorPosition = logText.length - log.length
+              if (log.startsWith("3 "))
+                statusLabel.text = log.substring(2)
             }
           }
         }
@@ -58,7 +60,23 @@ ApplicationWindow {
       anchors.margins: 10
       anchors.left: parent.left
       anchors.right: parent.right
-      height: mainColumn.height * (log.height ? 0.75 : 1.00)
+      height: mainColumn.height * (mainColumn.showlog ? 0.68 : 0.93)
+    }
+
+    Rectangle {
+      id: status
+      // radius: 5
+      // border.width: 1
+      // border.color: borderColor
+      anchors.margins: 10
+      anchors.left: parent.left
+      anchors.right: parent.right
+      color: Material.background
+      height: mainColumn.height * (mainColumn.showlog ? 0.02 : 0.03)
+      Label {
+        id: statusLabel
+        text: "Ready"
+      }
     }
   }
 

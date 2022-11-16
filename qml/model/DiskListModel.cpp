@@ -226,6 +226,7 @@ void DiskListModel::convertSelectedItemsToVirtualDisks(QString folder)
         });
       this->setTransfer(false);
       this->setStop(false);
+      STATUS << "Transfer finished";
     }
   ));
 }
@@ -289,6 +290,9 @@ void DiskListModel::refreshModel()
       else if (pi.PartitionStyle == PARTITION_STYLE_RAW)
         item->m_diskPartition = "RAW";
       item->m_diskLength = pi.PartitionLength.QuadPart/(1024ull*1024*1024);
+      item->m_sourceOptions << "vss" << "live";
+      item->m_formatOptions << "d-vhd" << "f-vhd" << "d-vhdx";
+      item->m_sourceIndex = item->m_formatIndex = 0;
       m_model.push_back(item);
     }
     else
