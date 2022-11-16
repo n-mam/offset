@@ -1,6 +1,6 @@
 ### offset
 
-C++ base components library
+![ui](https://github.com/n-mam/offset/blob/master/qml/icons/ui.png?raw=true)
 
 #### Dependencies
 
