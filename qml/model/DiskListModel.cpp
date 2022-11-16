@@ -290,9 +290,9 @@ void DiskListModel::refreshModel()
       else if (pi.PartitionStyle == PARTITION_STYLE_RAW)
         item->m_diskPartition = "RAW";
       item->m_diskLength = pi.PartitionLength.QuadPart/(1024ull*1024*1024);
-      item->m_sourceOptions << "vss" << "live";
-      item->m_formatOptions << "d-vhd" << "f-vhd" << "d-vhdx";
-      item->m_sourceIndex = item->m_formatIndex = 0;
+      item->m_sourceOptions << "vss" << "live"; //todo
+      item->m_formatOptions << "d-vhd" << "f-vhd" << "d-vhdx"; //todo
+      item->m_sourceIndex = item->m_formatIndex = 0; //todo
       m_model.push_back(item);
     }
     else
@@ -322,7 +322,7 @@ void DiskListModel::refreshModel()
       item->m_sourceIndex = item->m_sourceOptions.indexOf("live");
     }
 
-    item->m_formatOptions << "d-vhdx";
+    item->m_formatOptions << "raw" << "d-vhdx";
 
     if (size < _2T)
     {
@@ -349,7 +349,7 @@ void DiskListModel::refreshModel()
       c->m_sourceOptions << "live";
       c->m_sourceIndex = c->m_sourceOptions.indexOf("live");
 
-      c->m_formatOptions << "d-vhdx";
+      c->m_formatOptions << "raw" << "d-vhdx";
 
       if (size < _2T)
       {

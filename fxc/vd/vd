@@ -7,6 +7,78 @@
 
 namespace fxc {
 
+//create a raw image from source at ofset o and write to target
+auto image_copy_from(npl::SPFileDevice source, npl::SPSubject<uint8_t, uint8_t> target, TProgressCallback cbk =nullptr)
+{
+  if (!osl::AllowExtendedDasdIO(source->iFDsync))
+  {
+    LOG << "AllowExtendedDasdIO failed, error : " << GetLastError();
+  }
+
+  auto length = osl::GetBlockDeviceLength(source->iFDsync);
+
+  LOG << "Total length " << length;
+
+  DWORD dwBytesRead = 0;
+  DWORD dwBytesWritten = 0;
+  uint64_t totalBytesRead = 0;
+  uint64_t totalBytesWritten = 0;
+
+  bool stop = false;
+
+  LARGE_INTEGER r_offset, w_offset;
+  r_offset.QuadPart = 0;
+  w_offset.QuadPart = 0;
+
+  uint64_t bs = _2M;
+  uint64_t pendingBytes = length, toRead = 0;
+
+  auto buffer = std::make_unique<char []>(bs);
+
+  while (!stop && pendingBytes)
+  {
+    if (pendingBytes >= bs)
+    {
+      toRead = bs;
+    }
+    else
+    {
+      toRead = (DWORD)(pendingBytes + ((pendingBytes % 512) ? (512 - (pendingBytes % 512)) : 0));
+    }
+
+    // read the source device
+    dwBytesRead = source->ReadSync((uint8_t *) buffer.get(), toRead, r_offset.QuadPart);
+    
+    if (dwBytesRead == 0)
+    {
+      LOG << "break";
+    }
+    // write to the target disk
+    dwBytesWritten = target->WriteSync((uint8_t *) buffer.get(), dwBytesRead, w_offset.QuadPart);
+
+    assert(dwBytesWritten == dwBytesRead);
+
+    totalBytesRead += dwBytesRead;
+
+    totalBytesWritten += dwBytesWritten;
+
+    pendingBytes -= dwBytesRead;
+
+    r_offset.QuadPart += bs;
+    w_offset.QuadPart += bs;
+
+    dwBytesRead = dwBytesWritten = 0;
+
+    if (cbk)
+    {
+      stop = cbk(L"", static_cast<int>(((double)totalBytesRead/(double)length) * 100));
+    }
+  }
+
+  LOG << "Read " << totalBytesRead << " bytes";
+  LOG << "Wrote " << totalBytesWritten << " bytes";
+}
+
 //create base parent vhd from a volume/snapshot block device 
 auto create_base_vhd(const std::wstring& volume, const std::wstring& file, fxc::TProgressCallback cbk)
 {
@@ -323,16 +395,16 @@ auto create_fixed_vhd(const std::wstring& device, const std::wstring& file, fxc:
 
   LOG << "source device length " << length;
 
-  auto disk = std::make_shared<VirtualHardDisk>(length, _2M, VirtualHardDisk::EVHDType::Fixed);
-
   auto target = npl::make_file(file, true);
+
+  auto disk = std::make_shared<VirtualHardDisk>(length, _2M, VirtualHardDisk::EVHDType::Fixed);
 
   // set target for io operations on disk 
   target->AddEventListener(disk);
 
   disk->CommitPartitionTable();
 
-  disk->image_copy_from(source, disk, disk->GetPartitionStartOffset(0), cbk);
+  image_copy_from(source, disk, cbk);
 
   // append footer
   target->WriteSync(
@@ -341,6 +413,25 @@ auto create_fixed_vhd(const std::wstring& device, const std::wstring& file, fxc:
     _2M + length);
 
   npl::D->RemoveEventListener(target);
+
+  target.reset();
+
+  LOG << L" " << file << L" created";
+}
+
+auto create_raw_image(const std::wstring& device, const std::wstring& file, fxc::TProgressCallback cbk)
+{
+  auto source = npl::make_file(device, false);
+
+  assert(source);
+
+  uint64_t length = osl::GetBlockDeviceLength(source->iFDsync);
+
+  LOG << "source device length " << length;
+
+  auto target = npl::make_file(file, true);
+
+  image_copy_from(source, target, cbk);
 
   target.reset();
 
@@ -768,6 +859,10 @@ void CreateBaseVirtualDisk(
   else if (format == L"f-vhd")
   {
     fxc::create_fixed_vhd(source, target, cbk);
+  }
+  else if (format == L"raw")
+  {
+    fxc::create_raw_image(source, target, cbk);
   }
 }
 
