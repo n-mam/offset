@@ -1,6 +1,8 @@
 ### offset
 
-<img src="https://github.com/n-mam/offset/blob/master/qml/icons/ui.png?raw=true" width=50%>
+<p align="center">
+ <img src="https://github.com/n-mam/offset/blob/master/qml/icons/ui.png?raw=true" width=50%>
+</p>
 
 #### Dependencies
 
