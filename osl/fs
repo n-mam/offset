@@ -411,8 +411,8 @@ auto GetTotalAndFree(const T& volume)
 
   CloseHandle(h);
 
-  double size = (double)(nvdb.TotalClusters.QuadPart * nvdb.BytesPerCluster) / (1ULL*1024*1024*1024);
-  double free = (double)(nvdb.FreeClusters.QuadPart * nvdb.BytesPerCluster) / (1ULL*1024*1024*1024);
+  uint64_t size = nvdb.TotalClusters.QuadPart * nvdb.BytesPerCluster;
+  uint64_t free = nvdb.FreeClusters.QuadPart * nvdb.BytesPerCluster;
 
   return std::make_pair(size, free);
 }

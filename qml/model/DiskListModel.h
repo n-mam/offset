@@ -12,12 +12,12 @@ struct BlockDevice : public BaseItem
     QVector<QString> names,
     int depth = 0,
     int children = 0,
-    double size = 0,
-    double free = 0) :
+    uint64_t size = 0,
+    uint64_t free = 0) :
   BaseItem(names, depth, children)
   {
-    m_size = size;
-    m_free = free;
+    m_size = (double)size / (1ULL*1024*1024*1024);
+    m_free = (double)free / (1ULL*1024*1024*1024);
   }
 
   QString m_fs;
@@ -30,7 +30,8 @@ struct BlockDevice : public BaseItem
   unsigned long m_serial = 0;
   QString m_diskPartition;
   uint64_t m_diskLength = 0;
-  QString m_format = "d-vhd";
+  QVector<QString> m_formatOptions;
+  int m_formatIndex;
 };
 
 using SPBlockDevice = std::shared_ptr<BlockDevice>;
@@ -59,7 +60,8 @@ class DiskListModel : public BaseModel
     EFree,
     EVSS,
     EIsDisk,
-    EFormat,
+    EFormatOptions,
+    EFormatIndex,
     EMetaData
   };
 

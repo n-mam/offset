@@ -20,7 +20,8 @@ QHash<int, QByteArray> DiskListModel::roleNames() const
   roles.insert(ESize, "sizeRole");
   roles.insert(EFree, "freeRole");
   roles.insert(EIsDisk, "isDisk");
-  roles.insert(EFormat, "format");
+  roles.insert(EFormatOptions, "formatOptions");
+  roles.insert(EFormatIndex, "formatIndex");
   roles.insert(EMetaData, "metaDataRole");
 
   return roles;
@@ -81,6 +82,24 @@ QVariant DiskListModel::data(const QModelIndex &index, int role) const
       break;
     }
 
+    case EFormatOptions:
+    {
+      if (column == 0 && !index.parent().isValid())
+      {
+        return std::static_pointer_cast<BlockDevice>(m_model[row])->m_formatOptions;
+      }
+      break;
+    }
+
+    case EFormatIndex:
+    {
+      if (column == 0 && !index.parent().isValid())
+      {
+        return std::static_pointer_cast<BlockDevice>(m_model[row])->m_formatIndex;
+      }
+      break;
+    }
+
     default:
       return BaseModel::data(index, role);
   }
@@ -104,8 +123,8 @@ bool DiskListModel::setData(const QModelIndex &index, const QVariant &value, int
         bd->m_vss = value.toBool();
       break;
 
-      case EFormat:
-        bd->m_format = value.toString();
+      case EFormatIndex:
+        bd->m_formatIndex = value.toInt();
       break;
 
       default:
@@ -160,7 +179,7 @@ void DiskListModel::convertSelectedItemsToVirtualDisks(QString folder)
 
     auto vss = blockdevice->m_vss;
     auto names = blockdevice->m_names;
-    auto format = blockdevice->m_format;
+    auto format = blockdevice->m_formatOptions[blockdevice->m_formatIndex];
 
     QString name = names.size() == 1 ? names[0] : names[1];
 
@@ -265,6 +284,18 @@ void DiskListModel::refreshModel()
 
     auto item = std::make_shared<BlockDevice>(qnames, depth++, children.size(), size, free);
 
+    item->m_formatOptions << "d-vhdx";
+
+    if (size < _2T)
+    {
+      item->m_formatOptions << "d-vhd" << "f-vhd";
+      item->m_formatIndex = item->m_formatOptions.indexOf("d-vhd");
+    }
+    else
+    {
+      item->m_formatIndex = item->m_formatOptions.indexOf("d-vhdx");
+    }
+
     item->m_fs = QString::fromStdWString(fs);
     item->m_label = QString::fromStdWString(label);
     item->m_serial = serial;
@@ -276,6 +307,19 @@ void DiskListModel::refreshModel()
     {
       auto [size, free] = osl::GetTotalAndFree(child.toStdWString().c_str());
       auto c = std::make_shared<BlockDevice>(QVector<QString>(child), depth, 0, size, free);
+
+      c->m_formatOptions << "d-vhdx";
+
+      if (size < _2T)
+      {
+        c->m_formatOptions << "d-vhd" << "f-vhd";
+        c->m_formatIndex = c->m_formatOptions.indexOf("d-vhd");
+      }
+      else
+      {
+        c->m_formatIndex = c->m_formatOptions.indexOf("d-vhdx");
+      }
+
       auto [label, fs, serial] = osl::GetVolumeMetadata(child.toStdWString());
       c->m_fs = QString::fromStdWString(fs);
       c->m_label = QString::fromStdWString(label);

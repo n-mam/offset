@@ -17,9 +17,7 @@ Rectangle {
   property int depth
   property int hasChildren
 
-  property var typeOptions: ["d-vhd", "d-vhdx", "f-vhd"]
   property var srcOptions: ["vss", "live"]
-  property var typeIndex: 0;
   property var srcIndex: 0;
 
   signal selectionChanged(var checked)
@@ -98,7 +96,7 @@ Rectangle {
       id: metadata
       spacing: rowDelegate.padding
       bottomPadding: usage.height ? 2 : 0
-      width: metadata1.width + metadata2.width + metadata3.width + typeRect.width + srcRect.width
+      width: metadata1.width + metadata2.width + metadata3.width + formatRect.width + srcRect.width
       Text {
         id: metadata1
         text: model.metaDataRole[0].trim()
@@ -115,7 +113,7 @@ Rectangle {
         color: "#00ECD9"
       }
       Rectangle {
-        id: typeRect
+        id: formatRect
         radius: 3
         border.width: 1
         border.color: "#EB5DFF"
@@ -126,17 +124,16 @@ Rectangle {
         visible: model.selected
         Text {
           color: "white"
-          text: rowDelegate.typeOptions[rowDelegate.typeIndex % 3]
-          anchors.verticalCenter: typeRect.verticalCenter
-          anchors.horizontalCenter: typeRect.horizontalCenter
+          text: model.formatOptions[model.formatIndex % model.formatOptions.length];
+          anchors.verticalCenter: formatRect.verticalCenter
+          anchors.horizontalCenter: formatRect.horizontalCenter
         }
         MouseArea {
           hoverEnabled: true
           anchors.fill: parent
           cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
           onClicked: {
-            rowDelegate.typeIndex++
-            model.format = rowDelegate.typeOptions[rowDelegate.typeIndex % 3];
+            model.formatIndex++
           }
         }
       }
@@ -148,7 +145,7 @@ Rectangle {
         color: "transparent"
         width: 52
         height: rowDelegate.columnRowHeight
-        x: typeRect.x + typeRect.width + rowDelegate.padding
+        x: formatRect.x + formatRect.width + rowDelegate.padding
         visible: model.selected
         Text {
           color: "white"
