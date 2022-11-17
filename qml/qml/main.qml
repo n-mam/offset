@@ -44,11 +44,12 @@ ApplicationWindow {
           font.pointSize: 9
           Connections {
             target: logger
-            function onAddLogLine(log) {
-              logText.append(log.substring(2))
+            function onAddLogLine(sev, log) {
+              logText.append(log)
               logText.cursorPosition = logText.length - log.length
-              if (log.startsWith("3 "))
-                statusLabel.text = log.substring(2)
+              if (sev === 3){
+                statusLabel.text = log
+              }
             }
           }
         }

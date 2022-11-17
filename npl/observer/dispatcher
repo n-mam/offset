@@ -199,7 +199,7 @@ class Dispatcher : public Subject<uint8_t, uint8_t>
 
       if (!fRet)
       {
-        LOG << "GQCS failed : " << GetLastError() << " " << 
+        DBG << "GQCS failed : " << GetLastError() << " " << 
                 ((Subject<uint8_t, uint8_t> *) k)->GetName();
       }
 
@@ -218,7 +218,7 @@ class Dispatcher : public Subject<uint8_t, uint8_t>
 
       if (fRet < 0)
       {
-        LOG << "epoll_wait failed : " << strerror(errno) << " " <<
+        DBG << "epoll_wait failed : " << strerror(errno) << " " <<
                 ((Subject<uint8_t, uint8_t> *) k)->GetName();
 
         if (errno == EINTR)
@@ -245,7 +245,7 @@ class Dispatcher : public Subject<uint8_t, uint8_t>
 
       if (fRet < 0)
       {
-        LOG << "kevent failed : " << strerror(errno) << " " <<
+        DBG << "kevent failed : " << strerror(errno) << " " <<
                 ((Subject<uint8_t, uint8_t> *) k)->GetName();
         break;
       }
@@ -285,14 +285,14 @@ class Dispatcher : public Subject<uint8_t, uint8_t>
       ProcessListenersMarkedForRemoval();
     }
 
-    LOG << "Dispatcher thread returning, observers : " << m_observers.size();
+    DBG << "Dispatcher thread returning, observers : " << m_observers.size();
   }
 
   void ProcessContext(void *key, Context *ctx)
   {
     auto k = (Subject<uint8_t, uint8_t> *) key;
 
-    LOG << k->GetName() << " " << (uint64_t)k << " "
+    DBG << k->GetName() << " " << (uint64_t)k << " "
             <<  npl::EIOToString(ctx->type) << ", n " << ctx->n;
 
     if (ctx->type == EIOType::READ)
@@ -388,7 +388,7 @@ class Dispatcher : public Subject<uint8_t, uint8_t>
     #ifdef linux
     else if (e.IsError() || e.IsHangUp())
     {
-      LOG << "Event::IsHangUp : " << strerror(errno);
+      DBG << "Event::IsHangUp : " << strerror(errno);
       auto ctx = (Context *) calloc(1, sizeof(Context));
       ctx->type = EIOType::READ;
       ctx->k = dev.get();
@@ -400,7 +400,7 @@ class Dispatcher : public Subject<uint8_t, uint8_t>
     #if __has_include(<sys/event.h>)
     else if (e.IsEOF())
     {
-      LOG << "Event::IsEOF : " << strerror(errno);
+      DBG << "Event::IsEOF : " << strerror(errno);
     }
     #endif
 
@@ -420,7 +420,7 @@ class Dispatcher : public Subject<uint8_t, uint8_t>
 
     if (rc == -1)
     {
-      LOG << "epoll_ctl failed, error : " << strerror(errno);
+      DBG << "epoll_ctl failed, error : " << strerror(errno);
     }
 
     assert(rc == 0);

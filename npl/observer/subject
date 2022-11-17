@@ -48,7 +48,7 @@ class Subject : public std::enable_shared_from_this<Subject<T1, T2>>
   {
     std::lock_guard<std::mutex> lg(m_lock);
     RemoveAllEventListenersInternal();
-    LOG << "~Subject : " << GetName();
+    DBG << "~Subject : " << GetName();
   }
 
   virtual std::string GetName(void)
@@ -264,7 +264,7 @@ class Subject : public std::enable_shared_from_this<Subject<T1, T2>>
     }
     catch(const std::exception& e)
     {
-      LOG << e.what();
+      DBG << e.what();
     }
     
     return value;

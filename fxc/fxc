@@ -22,13 +22,6 @@ struct TBackupConfig
   bool m_live;
 };
 
-auto usage(void)
-{
-  LOG << " fxc -d[ump] <file>";
-  LOG << " fxc -f[ull] <vhd[x]> <source> <file>";
-  LOG << " fxc -i[ncr] <vhd[x]> <source> <parent-path> <target-file> <rctid>";
-}
-
 auto GetExtentionForFormat(const std::wstring& format)
 {
   if (format == L"d-vhd")
@@ -300,6 +293,13 @@ auto TestSnapshot(std::vector<std::wstring> volumes)
         LOG << " " << volume << " " << snapshotDevice << " " << volumeDevice;
       }
     });
+}
+
+auto usage(void)
+{
+  LOG << " fxc -d[ump] <file>";
+  LOG << " fxc -f[ull] <vhd[x]> <source> <file>";
+  LOG << " fxc -i[ncr] <vhd[x]> <source> <parent-path> <target-file> <rctid>";
 }
 
 auto entry(std::vector<std::wstring> arguments)

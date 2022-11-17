@@ -12,6 +12,15 @@ int wmain(int argc, wchar_t *argv[])
     return 0;
   }
 
+  osl::Log::SetLogSink<std::string>(
+    [](auto level, auto log){
+      if (level == 0) {
+        std::cout << log << std::endl;
+      }
+    });
+
+  npl::make_dispatcher();
+
   auto ns = arguments[0];
 
   if (ns == L"fxc")
@@ -20,7 +29,7 @@ int wmain(int argc, wchar_t *argv[])
   }
   else if (ns == L"npl")
   {
-
+    npl::entry(arguments);
   }
   else
   {

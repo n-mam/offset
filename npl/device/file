@@ -115,7 +115,7 @@ class FileDevice : public Subject<uint8_t, uint8_t>
     if (iFD == INVALID_HANDLE_VALUE)
     {
       MarkConnected(false);
-      LOG << file << ", iFD error : " << GetLastError();
+      ERR << file << ", iFD CreateFile failed : " << GetLastError();
     }
 
     iFDsync = CreateFileA(
@@ -130,7 +130,7 @@ class FileDevice : public Subject<uint8_t, uint8_t>
     if (iFDsync == INVALID_HANDLE_VALUE)
     {
       MarkConnected(false);
-      LOG << file << ", iFDsync error : " << GetLastError();
+      ERR << file << ", iFDsync CreateFile failed : " << GetLastError();
     }
     #else
     int flags = 0|O_RDWR ;
@@ -145,7 +145,7 @@ class FileDevice : public Subject<uint8_t, uint8_t>
     if (iFD < 0)
     {
       MarkConnected(false);
-      LOG << file << ", error : " << strerror(errno);
+      ERR << file << ", error : " << strerror(errno);
     }
     #endif
 
@@ -169,7 +169,7 @@ class FileDevice : public Subject<uint8_t, uint8_t>
     if (iFD == INVALID_HANDLE_VALUE)
     {
       MarkConnected(false);
-      LOG << L"Device() " << file << L", iFD error : " << GetLastError();
+      ERR << L"Device() " << file << L", iFD error : " << GetLastError();
     }
 
     iFDsync = CreateFileW(
@@ -184,7 +184,7 @@ class FileDevice : public Subject<uint8_t, uint8_t>
     if (iFDsync == INVALID_HANDLE_VALUE)
     {
       MarkConnected(false);
-      LOG << L"Device() " << file << L", iFDsync error : " << GetLastError();
+      ERR << L"Device() " << file << L", iFDsync CreateFile failed : " << GetLastError();
     }
 
     iDevicetype = EDeviceType::File;
@@ -330,7 +330,7 @@ class FileDevice : public Subject<uint8_t, uint8_t>
 
       if (fRet == FALSE)
       {
-        LOG << GetName() << " ReadSync ReadFile() failed : " << GetLastError();
+        ERR << GetName() << " ReadSync ReadFile failed : " << GetLastError();
       }
     }
 
@@ -352,7 +352,7 @@ class FileDevice : public Subject<uint8_t, uint8_t>
 
       if (fRet == FALSE)
       {
-        LOG << GetName() << " WriteSync WriteFile() failed : " << GetLastError();
+        ERR << GetName() << " WriteSync WriteFile failed : " << GetLastError();
       }
     }
 

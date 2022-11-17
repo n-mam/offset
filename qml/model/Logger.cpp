@@ -5,18 +5,18 @@
 Logger::Logger()
 {
   osl::Log::SetLogSink<std::wstring>(
-    [this](const std::wstring& log){
+    [this](int sev, const std::wstring& log){
       if (log.size()) {
-        QMetaObject::invokeMethod(this, [this, log](){
-          emit this->addLogLine(QString::fromStdWString(log).trimmed());
+        QMetaObject::invokeMethod(this, [this, sev, log](){
+          emit this->addLogLine(sev, QString::fromStdWString(log).trimmed());
         }, Qt::QueuedConnection);
       }
     });
   osl::Log::SetLogSink<std::string>(
-    [this](const std::string& log){
+    [this](int sev, const std::string& log){
       if (log.size()) {
-        QMetaObject::invokeMethod(this, [this, log](){
-          emit this->addLogLine(QString::fromStdString(log).trimmed());
+        QMetaObject::invokeMethod(this, [this, sev, log](){
+          emit this->addLogLine(sev, QString::fromStdString(log).trimmed());
         }, Qt::QueuedConnection);
       }
     });

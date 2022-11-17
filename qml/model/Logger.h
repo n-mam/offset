@@ -16,7 +16,7 @@ class Logger : public QObject
 
   signals:
 
-  void addLogLine(QVariant);
+  void addLogLine(int, QVariant);
 };
 
 #endif

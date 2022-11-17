@@ -3,6 +3,8 @@
 
 #include <string>
 #include <vector>
+#include <locale>
+#include <codecvt>
 #include <sstream>
 
 namespace osl {
@@ -55,6 +57,22 @@ std::vector<std::wstring> wsplit(std::wstring s, std::wstring delim)
     res.push_back (s.substr (pos_start));
 
     return res;
+}
+
+std::wstring s2ws(const std::string& str)
+{
+    using convert_typeX = std::codecvt_utf8<wchar_t>;
+    std::wstring_convert<convert_typeX, wchar_t> converterX;
+
+    return converterX.from_bytes(str);
+}
+
+std::string ws2s(const std::wstring& wstr)
+{
+    using convert_typeX = std::codecvt_utf8<wchar_t>;
+    std::wstring_convert<convert_typeX, wchar_t> converterX;
+
+    return converterX.to_bytes(wstr);
 }
 
 std::string& ltrim(std::string& str, const std::string& chars)

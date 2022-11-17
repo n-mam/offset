@@ -76,7 +76,170 @@ auto make_file(const T& file, bool create = false)
   return device;
 }
 
-void TEST_DISPATCHER()
+void test_http_client(const std::string& host, int port)
+{
+  for (int i = 0; i < 1; i++)
+  {
+    auto http = npl::make_http_client(host, port);
+
+    http->StartClient(
+      [](auto p)
+      {
+        LOG << "client connected";
+      }
+    );
+  }
+}
+
+void test_ws_server(const std::string& host, int port)
+{
+  auto ws = npl::make_ws_server(
+    host, port, npl::TLS::Yes, 
+    [] (npl::SPProtocol c, const std::string& m) 
+    {
+      LOG << "client : " << m;
+
+      c->SendProtocolMessage(
+        (uint8_t *)"server echo : hello", 
+        strlen("server echo : hello")
+      );
+    }
+  );
+
+  ws->StartServer();
+
+  getchar();
+}
+
+void test_ftp_client(const std::string& host, int port)
+{
+  auto ftp = npl::make_ftp(host, port, npl::TLS::Yes);
+
+  ftp->SetCredentials("nmam", "welcome123");
+
+  /**
+   * asynchronous connect and login sequence
+   */
+  ftp->StartClient();
+
+  /**
+   * Directory listing. The lambda argument is an output callback 
+   * which is invoked multiple times with chunks of directory list
+   * data. A null "b" (buffer) pointer indicates that there's no 
+   * more data. Returning false at any point terminates the transfer.
+   */
+  ftp->ListDirectory(
+    "",
+    [list = std::string()] (const char *b, size_t n) mutable {
+      if (b)
+      {
+        list.append(std::string(b, n));
+      }
+      else
+      {
+        LOG << list;
+      }
+      return true;
+    },
+    npl::TLS::Yes
+  );
+
+  ftp->SetCurrentDirectory("a b c");
+
+  /**
+   * File download. Similar to the "List" API. 
+   * The lambda argument is an output callback which is invoked multiple 
+   * times with chunks of file data. A null "b" (buffer) pointer indicates 
+   * that there's no more file data to download. Returning false at any point
+   * terminates the transfer. local file arg is optional; if not specified then 
+   * downloaded data can only be accesed via the callback.
+   */
+  ftp->Download(
+    "bootstrap-vcpkg.bat",
+    "./download.bat",
+    [](const char *b, size_t n) {
+      if (b)
+        LOG << std::string(b, n);
+      else
+        LOG << "Download complete";
+      return true;
+    },
+    npl::TLS::Yes
+  );
+
+  /**
+   * File upload. The lambda argument is an output callback which is invoked
+   * multiple times with chunks of file data as they are uploaded. A null "b"
+   * (buffer) pointer indicates that there's no more file data to be uploaded.
+   * Returning false from this callback closes the transfer. Data channel 
+   * protection is clear for the upload implying a granular PROT levels on a 
+   * per transfer basis.
+   */
+  ftp->Upload(
+    "README.txt",
+    "../README.md",
+    [](const char *b, size_t n) {
+      return true;
+    },
+    npl::TLS::No
+  );
+
+  ftp->GetCurrentDirectory([](const std::string& resp) {
+    /**
+     * "resp" holds the response of PWD command
+     */
+  });
+
+  ftp->SetCurrentDirectory("/");
+
+  ftp->Quit();
+
+  getchar();  
+}
+
+void test_file_copy(const std::string& source, const std::string& dest)
+{
+  auto rd = npl::make_file(source);
+
+  auto wd = npl::make_file(dest, true);
+
+  constexpr int bufSize = (1 * 1024 * 1024);
+
+  uint8_t *buf = (uint8_t *) calloc(bufSize, 1);
+
+  auto obv = std::make_shared<npl::Listener>(
+    nullptr,
+    [wd, off = 0ULL](const uint8_t *b, size_t n) mutable
+    {
+      LOG << "onread " << n << ", off " << off;
+
+      if (n)
+      {
+        wd->Write(b, n, off);
+      }
+
+      off += n;
+    },
+    [rd, off = 0ULL, bufSize](const uint8_t *b, size_t n) mutable
+    {
+      LOG << "onwrite " << n << ", off " << off;
+
+      if (n)
+      {
+        rd->Read(b, bufSize, off += n);
+      }
+    }
+  );
+
+  rd->AddEventListener(obv);
+  wd->AddEventListener(obv);
+
+  rd->Read(buf, bufSize, 0);
+
+  getchar();
+}
+
+void tests_dispatcher()
 {
   for (int i = 0; i < 100; i++)
   {
@@ -97,6 +260,36 @@ void TEST_DISPATCHER()
 
   auto D1 = std::make_unique<Dispatcher>();
   auto D2 = std::make_unique<Dispatcher>();
+}
+
+auto usage(void)
+{
+  LOG << " npl -h[ttp] ";
+  LOG << " npl -f[tp] <host> <port> <file>";
+  LOG << " npl -w[s] ";
+}
+
+void entry(std::vector<std::wstring> arguments)
+{
+  if (arguments.size() == 1)
+  {
+    usage();
+    return;
+  }
+
+  auto cmd = arguments[1];
+
+  arguments.erase(arguments.begin());
+  arguments.erase(arguments.begin());
+
+  if (cmd == L"-f")
+  {
+    npl::test_ftp_client(osl::ws2s(arguments[0]), std::stoi(osl::ws2s(arguments[1])));
+  }
+  else
+  {
+    usage();
+  }  
 }
 
 } //namespace npl

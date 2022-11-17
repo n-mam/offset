@@ -51,7 +51,7 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
 
   virtual ~ProtocolFTP() {}
 
-  virtual void Upload(TTransferCbk cbk, const std::string& fRemote, const std::string& fLocal, TLS P = TLS::No)
+  virtual void Upload(const std::string& fLocal, const std::string& fRemote, TTransferCbk cbk, TLS P = TLS::No)
   {
     std::lock_guard<std::mutex> lg(iQLock);
 
@@ -67,7 +67,7 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
     CheckQueue(bQWasEmpty);
   }
 
-  virtual void Download(TTransferCbk cbk, const std::string& fRemote, const std::string& fLocal, TLS P = TLS::No)
+  virtual void Download(const std::string& fLocal, const std::string& fRemote, TTransferCbk cbk, TLS P = TLS::No)
   {
     std::lock_guard<std::mutex> lg(iQLock);
 
@@ -83,7 +83,7 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
     CheckQueue(bQWasEmpty);
   }
 
-  virtual void ListDirectory(TTransferCbk cbk, const std::string& fRemote = "", TLS P = TLS::No)
+  virtual void ListDirectory(const std::string& fRemote, TTransferCbk cbk, TLS P = TLS::No)
   {
     std::lock_guard<std::mutex> lg(iQLock);
 
@@ -100,7 +100,7 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
     CheckQueue(bQWasEmpty);
   }
 
-  virtual void GetCurrentDir(TResponseCbk cbk = nullptr)
+  virtual void GetCurrentDirectory(TResponseCbk cbk = nullptr)
   {
     std::lock_guard<std::mutex> lg(iQLock);
     bool bQWasEmpty = iCmdQ.empty();
@@ -108,7 +108,7 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
     CheckQueue(bQWasEmpty);
   }
 
-  virtual void SetCurrentDir(const std::string& dir, TResponseCbk cbk = nullptr)
+  virtual void SetCurrentDirectory(const std::string& dir, TResponseCbk cbk = nullptr)
   {
     std::lock_guard<std::mutex> lg(iQLock);
     bool bQWasEmpty = iCmdQ.empty();
@@ -116,7 +116,7 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
     CheckQueue(bQWasEmpty);
   }
 
-  virtual void CreateDir(const std::string& dir, TResponseCbk cbk)
+  virtual void CreateDirectory(const std::string& dir, TResponseCbk cbk)
   {
     std::lock_guard<std::mutex> lg(iQLock);
     bool bQWasEmpty = iCmdQ.empty();
@@ -124,7 +124,7 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
     CheckQueue(bQWasEmpty);
   }
 
-  virtual void RemoveDir(const std::string& dir, TResponseCbk cbk)
+  virtual void RemoveDirectory(const std::string& dir, TResponseCbk cbk)
   {
     std::lock_guard<std::mutex> lg(iQLock);
     bool bQWasEmpty = iCmdQ.empty();
@@ -253,7 +253,7 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
 
       if ((t.iState == iCurrentState) && (t.iResponseCode ==  b[0]))
       {
-        LOG << +t.iState << " -> " << +t.iNextState
+        DBG << +t.iState << " -> " << +t.iNextState
           << ", " << +t.iFlags << ", " << iCmdQ.size();
 
         iCurrentState = t.iNextState;
@@ -443,8 +443,6 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
     auto dc = std::dynamic_pointer_cast<SocketDevice>(iDataChannel);
 
     auto cc = GetTargetSocketDevice();
-
-    dc->iSession = cc->iSession;
 
     dc->SetHostAndPort(host, port);
 

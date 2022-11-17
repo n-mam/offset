@@ -13,8 +13,6 @@
 
 namespace npl {
 
-using TOnHandshake = std::function<void (void)>;
-
 enum TLS : uint8_t
 {
   No = 0,
@@ -29,6 +27,10 @@ enum ESocketType : uint8_t
   EListeningSocket,
   EAcceptedSocket,
 };
+
+std::vector<SSL_SESSION *> ssl_sessions;
+
+using TOnHandshake = std::function<void (void)>;
 
 class SocketDevice : public FileDevice
 {
@@ -63,8 +65,6 @@ class SocketDevice : public FileDevice
 
   public:
 
-  SSL_SESSION *iSession = nullptr;
-
   SPSocketDevice iConnectedClient = nullptr;
 
   SocketDevice(const std::string& name) : FileDevice(name)
@@ -81,7 +81,7 @@ class SocketDevice : public FileDevice
 
   ~SocketDevice()
   {
-    LOG << "~SocketDevice() --> " << GetName();
+    DBG << "~SocketDevice() --> " << GetName();
     StopSocket();
     shutdown((SOCKET)iFD, 0); //sd_recv
     closesocket((SOCKET)iFD);
@@ -89,7 +89,7 @@ class SocketDevice : public FileDevice
     {
       SSL_free(ssl);
     }
-    LOG << "~SocketDevice() <-- " << GetName() << " shutdown(sd_recv)";
+    DBG << "~SocketDevice() <-- " << GetName() << " shutdown(sd_recv)";
   }
 
   virtual void StopSocket(void)
@@ -103,7 +103,7 @@ class SocketDevice : public FileDevice
         if (!(flag & SSL_SENT_SHUTDOWN))
         {
           int rc = SSL_shutdown(ssl);
-          LOG << GetName() << " : ssl_shutdown() rc : " << rc;
+          DBG << GetName() << " : ssl_shutdown() rc : " << rc;
           UpdateWBIO();
         }
       }
@@ -112,7 +112,7 @@ class SocketDevice : public FileDevice
 
       shutdown((SOCKET)iFD, 1); //sd_send
 
-      LOG << GetName() << " : shutdown(sd_send)";
+      DBG << GetName() << " : shutdown(sd_send)";
     }
   }
 
@@ -168,7 +168,7 @@ class SocketDevice : public FileDevice
     }
     else
     {
-      LOG << "ConnectEx failed : " << WSAGetLastError();
+      DBG << "ConnectEx failed : " << WSAGetLastError();
     }
 
     #else
@@ -206,7 +206,7 @@ class SocketDevice : public FileDevice
 
     if (fRet == -1)
     {
-      LOG << "bind failed, error : " << strerror(errno);
+      DBG << "bind failed, error : " << strerror(errno);
     }
 
     assert(fRet == 0);
@@ -215,7 +215,7 @@ class SocketDevice : public FileDevice
 
     if (fRet == -1)
     {
-      LOG << "listen failed, error : " << strerror(errno);
+      DBG << "listen failed, error : " << strerror(errno);
     }
 
     assert(fRet == 0);
@@ -246,14 +246,14 @@ class SocketDevice : public FileDevice
     DWORD bytesReceived;
 
     bool rc = ((LPFN_ACCEPTEX)AcceptEx)(
-      (SOCKET)iFD,
-      (SOCKET)iAS,
-      b + sizeof(Context),
-      0,
-      sizeof(SOCKADDR_STORAGE) + 16,
-      sizeof(SOCKADDR_STORAGE) + 16,
-      &bytesReceived,
-      (LPOVERLAPPED)b);
+                    (SOCKET)iFD,
+                    (SOCKET)iAS,
+                    b + sizeof(Context),
+                    0,
+                    sizeof(SOCKADDR_STORAGE) + 16,
+                    sizeof(SOCKADDR_STORAGE) + 16,
+                    &bytesReceived,
+                    (LPOVERLAPPED)b);
   }
   #endif
 
@@ -348,7 +348,7 @@ class SocketDevice : public FileDevice
 
     if (flag & SSL_RECEIVED_SHUTDOWN)
     {
-      LOG << GetName() << " SSL_RECEIVED_SHUTDOWN, flags : " << flag;
+      DBG << GetName() << " SSL_RECEIVED_SHUTDOWN, flags : " << flag;
 
       if (!(flag & SSL_SENT_SHUTDOWN))
       {
@@ -382,13 +382,32 @@ class SocketDevice : public FileDevice
     iOnHandShake = cbk;
 
     ctx = SSL_CTX_new(TLS_client_method());
+
     SSL_CTX_set_verify(ctx, SSL_VERIFY_NONE, NULL);
+
+    SSL_CTX_set_session_cache_mode(ctx, SSL_SESS_CACHE_CLIENT);
+    /**
+     * In TLSv1.3, sessions are established after the main handshake has completed. 
+     * The server decides when to send the client the session information and this 
+     * may occur some time after the end of the handshake (or not at all). This means 
+     * that applications should expect the new_session_cb() function to be invoked 
+     * during the handshake (for <= TLSv1.2) or after the handshake (for TLSv1.3). 
+     * It is also possible in TLSv1.3 for multiple sessions to be established with a 
+     * single connection. In these case the new_session_cb() function will be invoked 
+     * multiple times.
+     */
+    SSL_CTX_sess_set_new_cb(ctx,
+      [](SSL *ssl, SSL_SESSION *session) { 
+        ssl_sessions.push_back(session);
+        DBG << "new session callback " << ssl_sessions.size();
+        return 0;
+      });
 
     ssl = SSL_new(ctx);
 
-    if (iSession)
+    if (ssl_sessions.size())
     {
-      SSL_set_session(ssl, iSession);
+      SSL_set_session(ssl, ssl_sessions.back());
     }
 
     rbio = BIO_new(BIO_s_mem());
@@ -423,7 +442,7 @@ class SocketDevice : public FileDevice
 
     if (iAS == -1)
     {
-      LOG << "accept failed, error : " << strerror(errno) << " " << iSocketType;
+      DBG << "accept failed, error : " << strerror(errno) << " " << iSocketType;
       return;
     }
 
@@ -454,7 +473,7 @@ class SocketDevice : public FileDevice
   {
     assert(IsClientSocket());
 
-    LOG << GetName() << " OnConnect()";
+    DBG << GetName() << " OnConnect()";
 
     FileDevice::OnConnect();
 
@@ -467,7 +486,7 @@ class SocketDevice : public FileDevice
   virtual void OnDisconnect() override
   {
     if(ssl) 
-      LOG << GetName() <<
+      DBG << GetName() <<
       " shutdown mode : " << SSL_get_shutdown(ssl);
     FileDevice::OnDisconnect();
   }
@@ -496,17 +515,9 @@ class SocketDevice : public FileDevice
         {
           iHandshakeDone = true;
 
-          if (SSL_session_reused(ssl))
-          {
-            LOG << "TLS session reused";
-          }
-          else
-          {
-            LOG << "New TLS session";
-            iSession = SSL_get1_session(ssl);
-          }
+          LOG << "TLS session reused : " << SSL_session_reused(ssl);
 
-          LOG << GetName() << " handshake done";
+          DBG << GetName() << " handshake done";
 
           if (iOnHandShake)
           {
@@ -515,7 +526,7 @@ class SocketDevice : public FileDevice
         }
         else
         {
-          LOG << GetName() << " handshake failed : " <<
+          DBG << GetName() << " handshake failed : " <<
                   rc << " " << SSL_get_error(ssl, rc);
         }
       }

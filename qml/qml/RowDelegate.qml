@@ -117,7 +117,7 @@ Rectangle {
         color: "transparent"
         width: 52
         height: rowDelegate.columnRowHeight
-        x: usage.width + rowDelegate.padding
+        x: metadata1.width + metadata2.width + metadata3.width + rowDelegate.padding
         visible: model.selected
         Text {
           color: "white"
