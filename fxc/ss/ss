@@ -5,15 +5,18 @@
 #include <vswriter.h>
 #include <vsbackup.h>
 
+#include <map>
 #include <tuple>
 #include <string>
 #include <iostream>
 #include <functional>
+#include <filesystem>
 
 namespace fxc {
 
 bool bCoInitializedSecurity = false;
 thread_local bool bCoInitialized = false;
+HANDLE g_writerQuitEvent = INVALID_HANDLE_VALUE;
 
 using TSnapshotSet = std::vector<
   std::tuple<std::wstring, std::wstring, std::wstring>>;
@@ -48,7 +51,7 @@ auto InitializeCOM(void) -> HRESULT
 { 
   if (bCoInitialized) return S_OK;
 
-  HRESULT hr = CoInitialize(NULL);
+  HRESULT hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
 
   if (!bCoInitializedSecurity) {
     CHKCOM(hr = CoInitializeSecurity(
@@ -59,7 +62,7 @@ auto InitializeCOM(void) -> HRESULT
         RPC_C_AUTHN_LEVEL_PKT_PRIVACY,
         RPC_C_IMP_LEVEL_IMPERSONATE,
         NULL,
-        EOAC_DYNAMIC_CLOAKING,
+        EOAC_NONE,
         NULL))
     bCoInitializedSecurity = true;
   }
@@ -185,7 +188,6 @@ auto CreateSnapshot(const std::vector<std::wstring>& volumes, TSnapshotCBK cbk =
 
   if (cbk)
   {
-    LOG << "TSnapshotCBK ...";
     cbk(ss);
   }
 
@@ -249,6 +251,239 @@ auto EnumerateSnapshots()
   _end:
 
   return ss;
+}
+
+// {E9B8079B-248F-454F-ADE0-38A51E568335}
+static const GUID FxcWriterId =
+{ 0xe9b8079b, 0x248f, 0x454f, { 0xad, 0xe0, 0x38, 0xa5, 0x1e, 0x56, 0x83, 0x35 } };
+
+static const wchar_t* const FxcWriterName = L"FXCWriter";
+
+std::map<std::wstring, std::vector<std::wstring>> g_excludeList;
+
+class FxcWriter : public CVssWriter
+{
+  public:
+
+  FxcWriter() {}
+
+  virtual ~FxcWriter()
+  {
+    Uninitialize();
+  }
+
+  HRESULT STDMETHODCALLTYPE Initialize()
+  {
+    HRESULT hr = CVssWriter::Initialize(
+                    FxcWriterId, 		 // WriterID
+                    FxcWriterName, 	 // wszWriterName
+                    VSS_UT_USERDATA, // ut
+                    VSS_ST_OTHER);   // st
+
+    if (FAILED(hr))
+    {
+      LOG << L"CVssWriter::Initialize failed";	
+      return hr;
+    }
+
+    hr = Subscribe();
+
+    if (FAILED(hr))
+    {
+      LOG << L"CVssWriter::Subscribe failed";	
+    }
+
+    return hr;
+  }
+
+  HRESULT STDMETHODCALLTYPE Uninitialize()
+  {
+    return Unsubscribe();
+  }
+
+  // OnIdentify is called as a result of the requestor calling GatherWriterMetadata
+  bool STDMETHODCALLTYPE OnIdentify(IN IVssCreateWriterMetadata *pMetadata)
+  {
+    LOG << "OnIdentify";
+    return true;
+  }
+
+  // This function is called as a result of the requestor calling PrepareForBackup
+  // this indicates to the writer that a backup sequence is being initiated
+  bool STDMETHODCALLTYPE OnPrepareBackup(_In_ IVssWriterComponents*)
+  {
+    LOG << "writer OnPrepareBackup";
+    return true;
+  }
+
+  // This function is called after a requestor calls DoSnapshotSet
+  // time-consuming actions related to Freeze can be performed here
+  bool STDMETHODCALLTYPE OnPrepareSnapshot()
+  {
+    LOG << "writer OnPrepareSnapshot";
+    return true;
+  }
+
+  // This function is called after a requestor calls DoSnapshotSet
+  // here the writer is expected to freeze its store
+  bool STDMETHODCALLTYPE OnFreeze()
+  {
+    LOG << "Writer OnFreeze";
+    return true;	
+  }	
+
+  // This function is called after a requestor calls DoSnapshotSet
+  // here the writer is expected to thaw its store
+  bool STDMETHODCALLTYPE OnThaw()
+  {
+    LOG << "writer OnThaw";
+    return true;	
+  }
+
+  // This function is called after a requestor calls DoSnapshotSet
+  bool STDMETHODCALLTYPE OnPostSnapshot(_In_ IVssWriterComponents*)
+  {
+    LOG << "writer OnPostSnapshot";
+
+    auto originalVolumeNames = CVssWriter::GetCurrentVolumeArray();
+
+    auto nVolumesInSnapshotSet = CVssWriter::GetCurrentVolumeCount();
+
+    for (uint32_t i = 0; i < nVolumesInSnapshotSet; i++)
+    {
+      LPCWSTR pwszSnapshotDevice = nullptr;
+      auto originalVolume = originalVolumeNames[i];
+
+      auto hr = CVssWriter::GetSnapshotDeviceName(originalVolume, &pwszSnapshotDevice);
+
+      if (hr == S_OK)
+      {
+        LOG << L"OnPostSnapshot " << originalVolume << L" " << pwszSnapshotDevice;
+
+        auto excludeList = g_excludeList[originalVolume];
+
+        auto tokens = osl::wsplit(pwszSnapshotDevice, L"GLOBALROOT\\Device\\");
+
+        auto snapshotRoot = tokens[0] + tokens[1];
+
+        for (const auto& file : excludeList)
+        {
+          std::filesystem::path originalPath = file;
+
+          auto snapshotFilePath = snapshotRoot + L"\\" + originalPath.relative_path().wstring();
+
+          LOG << L"OnPostSnapshot " <<  file << L" -> " << snapshotFilePath;
+
+          auto rc = DeleteFileW(snapshotFilePath.c_str());
+
+          if (rc)
+          {
+            STATUS << "OnPostSnapshot successfully deleted file " << snapshotFilePath;
+          }
+          else
+          {
+            STATUS << "OnPostSnapshot failed to delete file " << snapshotFilePath << GetLastError();
+          }
+        }
+      }
+    }
+
+    g_excludeList.clear();
+
+    return true;
+  }
+
+  // This function is called to abort the writer's backup sequence.
+  // This should only be called between OnPrepareBackup and OnPostSnapshot
+  bool STDMETHODCALLTYPE OnAbort()
+  {
+    LOG << "OnAbort";
+    return true;
+  }
+
+  // This function is called as a result of the requestor calling BackupComplete
+  bool STDMETHODCALLTYPE OnBackupComplete(_In_ IVssWriterComponents*)
+  {
+    LOG << "OnBackupComplete";
+    return true;	
+  }	
+
+  // This function is called at the end of the backup process.  This may happen as a result
+  // of the requestor shutting down, or it may happen as a result of abnormal termination 
+  // of the requestor.
+  bool STDMETHODCALLTYPE OnBackupShutdown(_In_ VSS_ID)
+  {
+    LOG << "OnBackupShutdown";
+    return true;
+  }
+
+  // This function is called as a result of the requestor calling PreRestore
+  // This will be called immediately before files are restored
+  bool STDMETHODCALLTYPE OnPreRestore(_In_ IVssWriterComponents *)
+  {
+    LOG << "OnPreRestore";
+    return true;
+  }
+
+  // This function is called as a result of the requestor calling PreRestore
+  // This will be called immediately after files are restored
+  bool STDMETHODCALLTYPE OnPostRestore(_In_ IVssWriterComponents*)
+  {
+    LOG << "OnPostRestore";
+    return true;
+  }
+
+};
+
+auto excludeListWriterThread(void)
+{
+  fxc::InitializeCOM();
+
+  FxcWriter writer;
+
+  auto hr = writer.Initialize();
+
+  if (FAILED(hr))
+  {
+    ERR << L"writer.Initialize failed" << hr;
+    return;
+  }
+  
+  g_writerQuitEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+
+  auto rc = WaitForSingleObject(g_writerQuitEvent, INFINITE);
+
+  if(rc != WAIT_OBJECT_0)
+  {
+    LOG << L"WaitForSingleObject failed " << GetLastError();
+    return;
+  }
+
+  LOG << "Writer exiting";
+
+  CloseHandle(g_writerQuitEvent);
+
+  g_writerQuitEvent = INVALID_HANDLE_VALUE;
+
+  writer.Uninitialize();
+}
+
+auto startExcludeListWriterThread(void)
+{
+  std::thread(excludeListWriterThread).detach();
+}
+
+auto stopExcludeListWriterThread(void)
+{
+  if (g_writerQuitEvent != INVALID_HANDLE_VALUE)
+  {
+    SetEvent(g_writerQuitEvent);
+  }
+}
+
+auto updateVolumeExludePathsForSnapshot(const std::wstring volume, const std::vector<std::wstring>& excludeList)
+{
+  g_excludeList[volume] = excludeList;
 }
 
 } //namespace fxc

@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls
+import Qt.labs.platform
 
 Rectangle {
   id: rowDelegate
@@ -138,7 +139,7 @@ Rectangle {
         id: sourceRect
         radius: 3
         border.width: 1
-        border.color: (sourceText.text === "live") ? "#FF6969" : "#00BFFF"
+        border.color: (sourceText.text === "live") ? "#FF5D00" : "#00FFFC"
         color: "transparent"
         width: 52
         height: rowDelegate.columnRowHeight
@@ -157,6 +158,31 @@ Rectangle {
           cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
           onClicked: {
             model.sourceIndex = (model.sourceIndex + 1) % model.sourceOptions.length
+          }
+        }
+      }
+      Rectangle {
+        id: excludeRect
+        radius: 3
+        border.width: 1
+        border.color: "#56E71F"
+        color: "transparent"
+        width: 52
+        height: rowDelegate.columnRowHeight
+        x: sourceRect.x + sourceRect.width + rowDelegate.padding
+        visible: model.selected && (model.sourceOptions[model.sourceIndex] == "vss")
+        Text {
+          color: "white"
+          text: "exl"
+          anchors.verticalCenter: excludeRect.verticalCenter
+          anchors.horizontalCenter: excludeRect.horizontalCenter
+        }
+        MouseArea {
+          hoverEnabled: true
+          anchors.fill: parent
+          cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
+          onClicked: {
+            multiFileDialog.open()
           }
         }
       }
@@ -194,6 +220,20 @@ Rectangle {
     }
   }
 
-  Component.onCompleted: {
+  FileDialog {
+    id: multiFileDialog
+    fileMode: FileDialog.OpenFiles
+    onAccepted: function() {
+      var normalized = []
+      for (var i = 0; i < files.length; i++) {
+        var file = files[i].toString();
+        var path = file.replace(/^(file:\/{3})|(qrc:\/{2})|(http:\/{2})/,"");
+        normalized.push(decodeURIComponent(path).replace(/\//g, "\\"))
+      }
+      //console.log(normalized)
+      model.excludeList = normalized
+    }
   }
+
+  Component.onCompleted: {}
 }

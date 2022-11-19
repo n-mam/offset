@@ -4,12 +4,14 @@
 
 DiskListModel::DiskListModel()
 {
-  npl::make_dispatcher();
   refreshModel();
+  npl::make_dispatcher();
+  fxc::startExcludeListWriterThread();
 }
 
 DiskListModel::~DiskListModel()
 {
+  fxc::stopExcludeListWriterThread();
 }
 
 QHash<int, QByteArray> DiskListModel::roleNames() const
@@ -19,8 +21,9 @@ QHash<int, QByteArray> DiskListModel::roleNames() const
   roles.insert(ESize, "sizeRole");
   roles.insert(EFree, "freeRole");
   roles.insert(EIsDisk, "isDisk");
-  roles.insert(ESourceOptions, "sourceOptions");
   roles.insert(ESourceIndex, "sourceIndex");
+  roles.insert(EExcludeList, "excludeList");
+  roles.insert(ESourceOptions, "sourceOptions");
   roles.insert(EFormatOptions, "formatOptions");
   roles.insert(EFormatIndex, "formatIndex");
   roles.insert(EMetaData, "metaDataRole");
@@ -120,6 +123,15 @@ QVariant DiskListModel::data(const QModelIndex &index, int role) const
       break;
     }
 
+    case EExcludeList:
+    {
+      if (column == 0 && !index.parent().isValid())
+      {
+        return std::static_pointer_cast<BlockDevice>(m_model[row])->m_excludeList;
+      }
+      break;
+    }
+
     default:
       return BaseModel::data(index, role);
   }
@@ -145,6 +157,10 @@ bool DiskListModel::setData(const QModelIndex &index, const QVariant &value, int
 
       case ESourceIndex:
         bd->m_sourceIndex = value.toInt();
+      break;
+
+      case EExcludeList:
+        bd->m_excludeList += value.toList();
       break;
 
       default:
@@ -201,6 +217,13 @@ void DiskListModel::convertSelectedItemsToVirtualDisks(QString folder)
     auto format = blockdevice->m_formatOptions[blockdevice->m_formatIndex];
     auto live = blockdevice->m_sourceOptions[blockdevice->m_sourceIndex] == "live";
 
+    std::vector<std::wstring> exclude;
+
+    foreach(const auto& item, blockdevice->m_excludeList)
+    {
+      exclude.push_back(item.toString().toStdWString());
+    }
+
     QString name = names.size() == 1 ? names[0] : names[1];
 
     LOG << name.toStdWString() << L", " << format.toStdWString() << L", " << live;
@@ -210,7 +233,7 @@ void DiskListModel::convertSelectedItemsToVirtualDisks(QString folder)
       L"0",
       folder.toStdWString(),
       format.toStdWString(),
-      L"",
+      exclude,
       live
     });
   }

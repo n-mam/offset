@@ -26,13 +26,14 @@ struct BlockDevice : public BaseItem
   double m_size = 0;
   double m_free = 0;
   bool m_isDisk = false;
-  unsigned long m_serial = 0;
   QString m_diskPartition;
   uint64_t m_diskLength = 0;
-  QVector<QString> m_sourceOptions;
-  QVector<QString> m_formatOptions;
+  unsigned long m_serial = 0;
   int m_sourceIndex;
   int m_formatIndex;
+  QVector<QString> m_sourceOptions;
+  QVector<QString> m_formatOptions;
+  QList<QVariant> m_excludeList;
 };
 
 using SPBlockDevice = std::shared_ptr<BlockDevice>;
@@ -60,11 +61,12 @@ class DiskListModel : public BaseModel
     ESize = BaseModel::ELastRole + 1,
     EFree,
     EIsDisk,
-    ESourceOptions,
+    EMetaData,
+    EExcludeList,
     ESourceIndex,
-    EFormatOptions,
     EFormatIndex,
-    EMetaData
+    ESourceOptions,
+    EFormatOptions
   };
 
   public slots:
