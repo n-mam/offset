@@ -230,8 +230,9 @@ Rectangle {
         var path = file.replace(/^(file:\/{3})|(qrc:\/{2})|(http:\/{2})/,"");
         normalized.push(decodeURIComponent(path).replace(/\//g, "\\"))
       }
-      //console.log(normalized)
-      model.excludeList = normalized
+      if (normalized.length) {
+        model.excludeList = normalized
+      }
     }
   }
 

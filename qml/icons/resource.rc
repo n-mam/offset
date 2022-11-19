@@ -1,0 +1,11 @@
+// this minimal resource file is all what is needed for most of the wxWidgets
+// samples
+
+// note that the icon used by the Explorer (i.e. the programs icon) is the
+// first icon in the executable and the icons are sorted both by their order
+// and alphabetically (!), so put this icon first and give it a name
+// starting with "a"
+aaaaaaaa ICON "app.ico"
+
+// this icon is used with wxFrame::SetIcon()
+sample ICON "app.ico"

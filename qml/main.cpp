@@ -1,4 +1,5 @@
 #include <QFont>
+#include <QIcon>
 #include <QQmlContext>
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
@@ -17,6 +18,8 @@ int main(int argc, char *argv[])
   qputenv("QT_QUICK_CONTROLS_MATERIAL_THEME", QByteArray("Dark"));
 
   QGuiApplication app(argc, argv);
+
+  app.setWindowIcon(QIcon(":app.ico"));
 
   QFont font("Consolas", 10);
   app.setFont(font);
