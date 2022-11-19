@@ -1,8 +1,19 @@
 [Download](https://github.com/n-mam/offset/releases/download/1.2/Offset-1.2.zip)
 
 <p align="center">
- <img src="https://github.com/n-mam/offset/blob/master/qml/icons/ui.png?raw=true" width=40%>
+ <img src="https://github.com/n-mam/offset/blob/master/qml/icons/ui.png?raw=true" width="45%">
 </p>
+
+#### Features
+
+- Creates volume level images using either VSS snapshots or from live volume.
+- Creates Volume level images of already existing VSS snapshots on the system.
+- Ability to exclude files (only for VSS backups) by deleting them from the source snapshot.
+- Supported virtual disk formats :
+  - Dynamic vhd (d-vhd)
+  - Fixed vhd (f-vhd)
+  - Dynamic vhdx (d-vhdx)
+  - Raw volume image(raw)
 
 #### Dependencies
 

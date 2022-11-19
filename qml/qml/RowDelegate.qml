@@ -123,6 +123,7 @@ Rectangle {
         Text {
           color: "white"
           text: model.formatOptions[model.formatIndex];
+          font.pointSize: font.pointSize - 1.8
           anchors.verticalCenter: formatRect.verticalCenter
           anchors.horizontalCenter: formatRect.horizontalCenter
         }
@@ -149,6 +150,7 @@ Rectangle {
           id: sourceText
           color: "white"
           text: model.sourceOptions[model.sourceIndex]
+          font.pointSize: font.pointSize - 1.8
           anchors.verticalCenter: sourceRect.verticalCenter
           anchors.horizontalCenter: sourceRect.horizontalCenter
         }
@@ -171,18 +173,58 @@ Rectangle {
         height: rowDelegate.columnRowHeight
         x: sourceRect.x + sourceRect.width + rowDelegate.padding
         visible: model.selected && (model.sourceOptions[model.sourceIndex] == "vss")
-        Text {
-          color: "white"
-          text: "exl"
-          anchors.verticalCenter: excludeRect.verticalCenter
-          anchors.horizontalCenter: excludeRect.horizontalCenter
+        Rectangle{
+          id: excludeRectText
+          width: excludeRect.width * 0.67
+          height: rowDelegate.columnRowHeight
+          anchors.left: parent.left
+          color: "transparent"
+          Text {
+            color: "white"
+            text: "exl+"
+            font.pointSize: font.pointSize - 1.8
+            anchors.verticalCenter: excludeRectText.verticalCenter
+            anchors.horizontalCenter: excludeRectText.horizontalCenter
+          }
+          MouseArea {
+            hoverEnabled: true
+            anchors.fill: parent
+            cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
+            onClicked: {
+              multiFileDialog.open()
+            }
+          }
         }
-        MouseArea {
-          hoverEnabled: true
-          anchors.fill: parent
-          cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
-          onClicked: {
-            multiFileDialog.open()
+        Rectangle {
+          id: spacer
+          width: 1
+          height: rowDelegate.columnRowHeight
+          radius: 3
+          border.width: 1
+          border.color: "#56E71F"
+          color: "transparent"
+          anchors.left: excludeRectText.right
+        }
+        Rectangle {
+          id: excludeCount
+          width: excludeRect.width * 0.33
+          height: rowDelegate.columnRowHeight
+          anchors.left: spacer.right
+          color: "transparent"
+          Text {
+            color: "white"
+            text: model.excludeList.length
+            font.pointSize: font.pointSize - 1.8
+            anchors.verticalCenter: excludeCount.verticalCenter
+            anchors.horizontalCenter: excludeCount.horizontalCenter
+          }
+          MouseArea {
+            hoverEnabled: true
+            anchors.fill: parent
+            cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
+            onClicked: {
+
+            }
           }
         }
       }
