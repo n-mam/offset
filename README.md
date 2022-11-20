@@ -7,8 +7,9 @@
 #### Features
 
 - Creates volume level images using either VSS snapshots or from live volume.
-- Creates Volume level images of already existing VSS snapshots on the system.
+- Creates volume level images of already existing persistent VSS snapshots on the system.
 - Ability to exclude files (only for VSS backups) by deleting them from the source snapshot.
+- Support for MBR and GPT partitions. Volumes > 2TB are by default saved as VHDX with GPT partitioning
 - Supported virtual disk formats :
   - Dynamic vhd (d-vhd)
   - Fixed vhd (f-vhd)

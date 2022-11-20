@@ -160,7 +160,18 @@ bool DiskListModel::setData(const QModelIndex &index, const QVariant &value, int
       break;
 
       case EExcludeList:
-        bd->m_excludeList += value.toList();
+      {
+        auto list = value.toList();
+
+        if (list.isEmpty())
+        {
+          bd->m_excludeList.clear();
+        }
+        else
+        {
+          bd->m_excludeList += list;
+        }
+      }
       break;
 
       default:

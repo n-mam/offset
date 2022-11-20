@@ -41,13 +41,13 @@ ApplicationWindow {
           anchors.fill: parent
           anchors.leftMargin: 5
           background: null
-          font.pointSize: 9
+          Component.onCompleted: font.pointSize = font.pointSize - 1.8
           Connections {
             target: logger
-            function onAddLogLine(sev, log) {
+            function onAddLogLine(severity, log) {
               logText.append(log)
               logText.cursorPosition = logText.length - log.length
-              if (sev === 3){
+              if (severity === 3) {
                 statusLabel.text = log
               }
             }

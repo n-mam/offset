@@ -96,10 +96,10 @@ Column {
       width: 75
       text: "START"
       enabled: !diskListModel.transfer
-      height: actionsRect.height * 0.80
-      anchors.left: actionsRect.left
+      height: parent.height * 0.80
+      anchors.left: parent.left
       anchors.margins: mainColumn.spacing
-      anchors.verticalCenter: actionsRect.verticalCenter
+      anchors.verticalCenter: parent.verticalCenter
       onClicked: {
         diskListModel.convertSelectedItemsToVirtualDisks(destination.text.length ? destination.text : ".\\")
       }
@@ -109,10 +109,10 @@ Column {
       width: 75
       text: "CANCEL"
       enabled: diskListModel.transfer
-      height: actionsRect.height * 0.80
+      height: parent.height * 0.80
       anchors.left: startButton.right
       anchors.margins: mainColumn.spacing
-      anchors.verticalCenter: actionsRect.verticalCenter
+      anchors.verticalCenter: parent.verticalCenter
       onClicked: {
         diskListModel.stop = true;
       }
