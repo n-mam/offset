@@ -57,8 +57,8 @@ SET PATH=%PATH%;D:\QT-6.4.0\INSTALL\bin
 cmake -DCMAKE_TOOLCHAIN_FILE=D:/vcpkg/scripts/buildsystems/vcpkg.cmake ..
 cmake --build . --config Release
 
-Run as admin: 
-qml\Debug\offset.exe
+Run as admin:
+qml\Release\offset.exe
 ```
 
 #### Deploy:

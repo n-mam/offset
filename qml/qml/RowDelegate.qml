@@ -32,7 +32,7 @@ Rectangle {
   Image {
     id: arrow
     source: "qrc:/arrow.png"
-    width: 8; height: 12
+    width: 12; height: 12
     visible: rowDelegate.hasChildren
     x: rowDelegate.padding + (3 * rowDelegate.depth * rowDelegate.indent)
     rotation: model.expanded ? 90 : 0
@@ -98,21 +98,21 @@ Rectangle {
       width: metadata1.width + metadata2.width + metadata3.width + formatRect.width + sourceRect.width + excludeRect.width
       Text {
         id: metadata1
-        color: "#00ECD9"        
+        color: "#C5FFC5"        
         text: model.metaDataRole[0].trim()
         anchors.verticalCenter: parent.verticalCenter
         Component.onCompleted: font.pointSize = font.pointSize - 1
       }
       Text {
         id: metadata2
-        color: "#00ECD9"        
+        color: "#C5FFC5"        
         text: model.metaDataRole[1].trim().length ? model.metaDataRole[1].trim() : ""
         anchors.verticalCenter: parent.verticalCenter
         Component.onCompleted: font.pointSize = font.pointSize - 1
       }
       Text {
         id: metadata3
-        color: "#00ECD9"
+        color: "#C5FFC5"
         text: (model.metaDataRole[2] && model.metaDataRole[2].trim() !== "0") ? model.metaDataRole[2].trim() : ""
         anchors.verticalCenter: parent.verticalCenter
         Component.onCompleted: font.pointSize = font.pointSize - 1
