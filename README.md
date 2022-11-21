@@ -1,4 +1,4 @@
-[Download](https://github.com/n-mam/offset/releases/download/1.2/Offset-1.2.zip)
+[Download](https://github.com/n-mam/offset/releases/download/1.3/Offset-1.3.zip)
 
 <p align="center">
  <img src="https://github.com/n-mam/offset/blob/master/qml/icons/ui.png?raw=true" width="45%">
@@ -49,17 +49,21 @@ Qt will be installed into 'D:/QT-6.4.0/INSTALL'
 #### Build
 
 ```sh
-git clone https://github.com/n-mam/cpp-npl.git
-cd cpp-npl
+git clone https://github.com/n-mam/offset.git
+cd offset
 mkdir build
 cd build
 SET PATH=%PATH%;D:\QT-6.4.0\INSTALL\bin
 cmake -DCMAKE_TOOLCHAIN_FILE=D:/vcpkg/scripts/buildsystems/vcpkg.cmake ..
-cmake --build . --config Debug
+cmake --build . --config Release
 
 Run as admin: 
 qml\Debug\offset.exe
-
-Deploy: 
-windeployqt --qmldir E:\offset\qml E:\offset\build\qml\Debug\offset.exe
 ```
+
+#### Deploy:
+
+```sh
+windeployqt --qmldir E:\offset\qml E:\offset\build\qml\Release\offset.exe
+```
+vc redist is bundled with package zip; in case your system does not have that installed already
