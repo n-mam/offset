@@ -188,12 +188,12 @@ bool DiskListModel::setData(const QModelIndex &index, const QVariant &value, int
   return fRet;
 }
 
-bool DiskListModel::getTransfer() const
+int DiskListModel::getTransfer() const
 {
   return transfer;
 }
 
-void DiskListModel::setTransfer(bool current)
+void DiskListModel::setTransfer(int current)
 {
   if (transfer != current)
   {
@@ -214,8 +214,6 @@ void DiskListModel::setStop(bool stop)
 
 void DiskListModel::convertSelectedItemsToVirtualDisks(QString folder)
 {
-  setTransfer(true);
-
   std::vector<fxc::TBackupConfig> configuration;
 
   for (auto& item : m_model)
@@ -249,18 +247,24 @@ void DiskListModel::convertSelectedItemsToVirtualDisks(QString folder)
     });
   }
 
+  setTransfer(configuration.size());
+
   m_futures.push_back(std::async(std::launch::async, 
     [this, configuration](){
       fxc::ConvertBlockDeviceToVirtualImages(configuration, 
         [this](auto device, auto percent){
           QMetaObject::invokeMethod(this, [this, device, percent](){
             emit this->progress(QString::fromStdWString(device), percent);
+            if (percent >= 100) this->setTransfer(this->getTransfer() - 1);
+            STATUS << "Transfer in progress(" << this->getTransfer() << ")";
           }, Qt::QueuedConnection);
           return this->stop;
         });
-      this->setTransfer(false);
-      this->setStop(false);
-      STATUS << "Transfer finished";
+      QMetaObject::invokeMethod(this, [this](){
+        this->setTransfer(0);
+        this->setStop(false);
+        STATUS << "Transfer finished";
+      });
     }
   ));
 }

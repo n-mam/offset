@@ -48,7 +48,7 @@ ApplicationWindow {
               logText.append(log)
               logText.cursorPosition = logText.length - log.length
               if (severity === 3) {
-                statusLabel.text = log
+                statusText.text = log
               }
             }
           }
@@ -74,11 +74,12 @@ ApplicationWindow {
       anchors.margins: 10
       color: Material.background
       height: mainColumn.height * (mainColumn.showlog ? 0.02 : 0.03)
-      Label {
-        id: statusLabel
+      Text {
+        id: statusText
         text: "Ready"
-        font.pixelSize: 12
+        color: "white"
       }
+      Component.onCompleted: statusText.pointSize = statusText.pointSize - 1.8
     }
   }
 

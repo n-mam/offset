@@ -207,12 +207,10 @@ auto ConvertBlockDeviceToVirtualImages(const std::vector<TBackupConfig>& configu
 
       volume.pop_back();
 
-      STATUS << "Transfer in progress..";
-
       futures1.push_back(std::async(std::launch::async, [=](){
         fxc::CreateBaseVirtualDisk(format, volume, target,
           [=](auto snapshot, auto percent){
-              return cbk(volume, percent);
+            return cbk(volume, percent);
           });
       }));
     }
@@ -244,12 +242,10 @@ auto ConvertBlockDeviceToVirtualImages(const std::vector<TBackupConfig>& configu
 
           auto target = folder + L"\\" + originalVolume.substr(4, 44) + L"." + GetExtentionForFormat(format);
 
-          STATUS << "Transfer in progress...";
-
           futures2.push_back(std::async(std::launch::async, [=](){
             fxc::CreateBaseVirtualDisk(format, snapshotDevice, target,
               [=](auto snapshot, auto percent){
-                  return cbk(inputVolume, percent);
+                return cbk(inputVolume, percent);
               });
           }));
         }

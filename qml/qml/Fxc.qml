@@ -95,7 +95,7 @@ Column {
       id: startButton
       width: 75
       text: "START"
-      enabled: !diskListModel.transfer
+      enabled: (diskListModel.transfer === 0)
       height: parent.height * 0.80
       anchors.left: parent.left
       anchors.margins: mainColumn.spacing
@@ -108,7 +108,7 @@ Column {
       id: cancelbutton
       width: 75
       text: "CANCEL"
-      enabled: diskListModel.transfer
+      enabled: (diskListModel.transfer !== 0)
       height: parent.height * 0.80
       anchors.left: startButton.right
       anchors.margins: mainColumn.spacing
