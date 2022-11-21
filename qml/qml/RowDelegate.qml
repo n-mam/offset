@@ -12,6 +12,7 @@ Rectangle {
   readonly property real indent: 8
   readonly property real padding: 5
   readonly property real columnRowHeight: 16
+  readonly property real optionsWidth: 52
 
   anchors.fill: parent
 
@@ -58,13 +59,12 @@ Rectangle {
 
   Column {
     id: details
-    spacing: 1
+    spacing: 2
     anchors.top: rowDelegate.top
     x: checkBox.x + checkBox.width + rowDelegate.padding + 3
 
     Text {
       id: label
-      font.bold: true
       text: model.display[0]
       color: model.textColor
       MouseArea {
@@ -82,33 +82,40 @@ Rectangle {
           }
         }
       }
+      Component.onCompleted: font.pointSize = font.pointSize - 0.8
     }
 
     Text {
       id: secondLabel
+      color: model.textColor      
       text: model.display[1] !== undefined ? model.display[1] : ""
-      color: model.textColor
+      Component.onCompleted: font.pointSize = font.pointSize - 0.8
     }
 
     Row {
       id: metadata
       spacing: rowDelegate.padding
-      bottomPadding: usage.height ? 2 : 0
-      width: metadata1.width + metadata2.width + metadata3.width + formatRect.width + sourceRect.width
+      width: metadata1.width + metadata2.width + metadata3.width + formatRect.width + sourceRect.width + excludeRect.width
       Text {
         id: metadata1
+        color: "#00ECD9"        
         text: model.metaDataRole[0].trim()
-        color: "#00ECD9"
+        anchors.verticalCenter: parent.verticalCenter
+        Component.onCompleted: font.pointSize = font.pointSize - 1
       }
       Text {
         id: metadata2
+        color: "#00ECD9"        
         text: model.metaDataRole[1].trim().length ? model.metaDataRole[1].trim() : ""
-        color: "#00ECD9"
+        anchors.verticalCenter: parent.verticalCenter
+        Component.onCompleted: font.pointSize = font.pointSize - 1
       }
       Text {
         id: metadata3
-        text: (model.metaDataRole[2] && model.metaDataRole[2].trim() !== "0") ? model.metaDataRole[2].trim() : ""
         color: "#00ECD9"
+        text: (model.metaDataRole[2] && model.metaDataRole[2].trim() !== "0") ? model.metaDataRole[2].trim() : ""
+        anchors.verticalCenter: parent.verticalCenter
+        Component.onCompleted: font.pointSize = font.pointSize - 1
       }
       Rectangle {
         id: formatRect
@@ -116,15 +123,16 @@ Rectangle {
         border.width: 1
         border.color: "#EB5DFF"
         color: "transparent"
-        width: 52
-        height: rowDelegate.columnRowHeight
+        width: optionsWidth
+        height: rowDelegate.columnRowHeight * 0.92
         x: metadata1.width + metadata2.width + metadata3.width + rowDelegate.padding
         visible: model.selected
         Text {
           color: "white"
+          height: parent.height
           text: model.formatOptions[model.formatIndex];
-          anchors.verticalCenter: formatRect.verticalCenter
-          anchors.horizontalCenter: formatRect.horizontalCenter
+          anchors.verticalCenter: parent.verticalCenter
+          anchors.horizontalCenter: parent.horizontalCenter
           Component.onCompleted: font.pointSize = font.pointSize - 1.8
         }
         MouseArea {
@@ -142,16 +150,17 @@ Rectangle {
         border.width: 1
         border.color: (sourceText.text === "live") ? "#FF5D00" : "#00FFFC"
         color: "transparent"
-        width: 52
-        height: rowDelegate.columnRowHeight
+        width: optionsWidth * 0.65
+        height: rowDelegate.columnRowHeight * 0.92
         x: formatRect.x + formatRect.width + rowDelegate.padding
         visible: model.selected
         Text {
           id: sourceText
           color: "white"
+          height: parent.height
           text: model.sourceOptions[model.sourceIndex]
-          anchors.verticalCenter: sourceRect.verticalCenter
-          anchors.horizontalCenter: sourceRect.horizontalCenter
+          anchors.verticalCenter: parent.verticalCenter
+          anchors.horizontalCenter: parent.horizontalCenter
           Component.onCompleted: font.pointSize = font.pointSize - 1.8
         }
         MouseArea {
@@ -169,28 +178,28 @@ Rectangle {
         border.width: 1
         border.color: "#56E71F"
         color: "transparent"
-        width: 52
-        height: rowDelegate.columnRowHeight
+        width: optionsWidth
+        height: rowDelegate.columnRowHeight * 0.92
         x: sourceRect.x + sourceRect.width + rowDelegate.padding
         visible: model.selected && (model.sourceOptions[model.sourceIndex] == "vss")
         Rectangle{
           id: excludeRectText
-          width: excludeRect.width * 0.67
-          height: rowDelegate.columnRowHeight
+          width: parent.width * 0.67
+          height: parent.height
           anchors.left: parent.left
           color: "transparent"
           Text {
             color: "white"
             text: "exl+"
-            anchors.verticalCenter: excludeRectText.verticalCenter
-            anchors.horizontalCenter: excludeRectText.horizontalCenter
+            anchors.verticalCenter: parent.verticalCenter
+            anchors.horizontalCenter: parent.horizontalCenter
             Component.onCompleted: font.pointSize = font.pointSize - 1.8
           }
         }
         Rectangle {
           id: spacer
           width: 1
-          height: rowDelegate.columnRowHeight
+          height: parent.height
           radius: 3
           border.width: 1
           border.color: "#56E71F"
@@ -200,14 +209,14 @@ Rectangle {
         Rectangle {
           id: excludeCount
           width: excludeRect.width * 0.33
-          height: rowDelegate.columnRowHeight
+          height: parent.height
           anchors.left: spacer.right
           color: "transparent"
           Text {
             color: "white"
             text: model.excludeList.length
-            anchors.verticalCenter: excludeCount.verticalCenter
-            anchors.horizontalCenter: excludeCount.horizontalCenter
+            anchors.verticalCenter: parent.verticalCenter
+            anchors.horizontalCenter: parent.horizontalCenter
             Component.onCompleted: font.pointSize = font.pointSize - 1.8
           }
         }
@@ -255,7 +264,7 @@ Rectangle {
                   id: excludeListTextArea
                   background: null
                   textMargin: 4               
-                  Component.onCompleted: font.pointSize = font.pointSize - 1.8
+                  Component.onCompleted: font.pointSize = font.pointSize - 1.5
                 }
               }
             }
@@ -310,7 +319,7 @@ Rectangle {
       free: model.freeRole
       visible: usage.create
       width: Math.max(label.width, secondLabel.width, metadata.width)
-      height: usage.create ? rowDelegate.columnRowHeight : 0
+      height: usage.create ? (rowDelegate.columnRowHeight * 0.88) : 0
     }
 
     Element {

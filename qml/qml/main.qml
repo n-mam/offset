@@ -41,7 +41,7 @@ ApplicationWindow {
           anchors.fill: parent
           anchors.leftMargin: 5
           background: null
-          Component.onCompleted: font.pointSize = font.pointSize - 1.8
+          Component.onCompleted: font.pointSize = font.pointSize - 3
           Connections {
             target: logger
             function onAddLogLine(severity, log) {
