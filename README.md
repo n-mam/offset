@@ -14,7 +14,7 @@
   - Dynamic vhd (d-vhd)
   - Fixed vhd (f-vhd)
   - Dynamic vhdx (d-vhdx)
-  - Raw volume image(raw)
+  - Raw volume image (raw)
 
 #### Dependencies
 

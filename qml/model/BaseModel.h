@@ -69,7 +69,7 @@ class BaseModel : public QAbstractItemModel
 
   private:
 
-  QString m_colors[3] = {"#FFFFFF", "#29FFFF", "#FFFF8E"};
+  QString m_colors[3] = {"#FFFFFF", "#42FFFF", "#FFFF8E"};
 };
 
 #endif // BASEMODEL_H

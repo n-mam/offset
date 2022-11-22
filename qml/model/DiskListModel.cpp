@@ -247,7 +247,7 @@ void DiskListModel::convertSelectedItemsToVirtualDisks(QString folder)
     });
   }
 
-  setTransfer(configuration.size());
+  setTransfer(static_cast<int>(configuration.size()));
 
   m_futures.push_back(std::async(std::launch::async, 
     [this, configuration](){
