@@ -130,10 +130,6 @@ void test_ftp_client(const std::string& host, int port)
         list.append(std::string(b, n));
       } else {
         LOG << list;
-        for (int i = 0; i < list.size(); i++) {
-          printf(" %.2x ", (BYTE)list.c_str()[i]);
-          if (((i+1)%16) == 0) std::cout << std::endl;
-        }
       }
       return true;
     },
@@ -150,10 +146,6 @@ void test_ftp_client(const std::string& host, int port)
         if (b) {
           file->Write((uint8_t *)b, n, offset);
           offset += n;
-          for (int i = 0; i < n; i++) {
-            printf(" %.2x ", (BYTE)b[i]);
-            if (((i+1)%16) == 0) std::cout << std::endl;
-          }
         } else {
           LOG << "Download complete";
         }

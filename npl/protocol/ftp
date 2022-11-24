@@ -373,6 +373,50 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
     }
   }
 
+  virtual void ProcessDataCmdResponse(char code)
+  {
+    if (IsPositivePreliminaryReply(code))
+    {
+      if (iDCProt == TLS::Yes)
+      {
+        std::dynamic_pointer_cast<SocketDevice>
+          (iDataChannel)->InitializeSSL(
+            [this] () {
+              AttachDataChannelObserver();
+              TriggerDataTransfer();
+            });
+      }
+      else
+      {
+        AttachDataChannelObserver();
+        TriggerDataTransfer();
+      }
+    }
+    else if (IsPositiveCompletionReply(code))
+    {
+      if (!iDataChannel)
+      {
+        iCmdQ.pop_front();
+        iCurrentState = EStateREADY;
+        TriggerNextCommand();
+      }
+    }
+    else
+    {
+      if (iDataChannel)
+      {
+        ResetSubject(iDataChannel);
+      }
+
+      if (iCurrentState == EStateXYZ)
+      {
+        iCmdQ.pop_front();
+        iCurrentState = EStateREADY;
+        TriggerNextCommand();
+      }
+    }
+  }
+
   virtual void ProcessPasvResponse(void)
   {
     auto& m = iMessages.back();
@@ -421,11 +465,11 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
       },
       [this](const uint8_t *b, size_t n) {
         LOG << "observer OnDataChannelIoCompletion read";
-        OnDataChannelIoCompletion(b, n);
+        OnDataChannelIoCompletion(b, n, EDirection::Download);
       },
       [this](const uint8_t *b, size_t n) {
         LOG << "observer OnDataChannelIoCompletion write";
-        OnDataChannelIoCompletion(b, n);
+        OnDataChannelIoCompletion(b, n, EDirection::Upload);
       },
       [this](){
         OnDataChannelDisconnect();
@@ -434,65 +478,38 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
     iDataChannel->AddEventListener(observer);
   }
 
-  virtual void ProcessDataCmdResponse(char code)
+  EDirection GetTransferDirection(const std::string& cmd)
   {
-    if (IsPositivePreliminaryReply(code))
-    {
-      if (iDCProt == TLS::Yes)
-      {
-        std::dynamic_pointer_cast<SocketDevice>
-          (iDataChannel)->InitializeSSL(
-            [this] () {
-              AttachDataChannelObserver();
-              TriggerDataTransfer();
-            });
-      }
-      else
-      {
-        AttachDataChannelObserver();
-        TriggerDataTransfer();
-      }
+    if (cmd == "LIST") {
+      return EDirection::Download;
+    } else if (cmd == "RETR") {
+      return EDirection::Download;
+    } else if (cmd == "STOR") {
+      return EDirection::Upload;
     }
-    else if (IsPositiveCompletionReply(code))
-    {
-      if (!iDataChannel)
-      {
-        iCmdQ.pop_front();
-        iCurrentState = EStateREADY;
-        TriggerNextCommand();
-      }
-    }
-    else
-    {
-      if (iDataChannel)
-      {
-        ResetSubject(iDataChannel);
-      }
-
-      if (iCurrentState == EStateXYZ)
-      {
-        iCmdQ.pop_front();
-        iCurrentState = EStateREADY;
-        TriggerNextCommand();
-      }
-    }
+    assert(false);
   }
 
   virtual void OnDataChannelConnect(void)
   {
   }
 
-  virtual void OnDataChannelIoCompletion(const uint8_t *b, size_t n)
+  virtual void OnDataChannelIoCompletion(const uint8_t *b, size_t n, EDirection direction)
   {
+    auto cmd = iCmdQ.front().m_name;
+
     auto& transferCallback = iCmdQ.front().m_tcbk;
 
     assert(transferCallback);
 
-    auto continueTransfer = transferCallback((const char *)b, n);
-
-    if (!continueTransfer)
+    if (direction == GetTransferDirection(cmd))
     {
-      std::dynamic_pointer_cast<SocketDevice>(iDataChannel)->StopSocket();
+      auto continueTransfer = transferCallback((const char *)b, n);
+
+      if (!continueTransfer)
+      {
+        std::dynamic_pointer_cast<SocketDevice>(iDataChannel)->StopSocket();
+      }
     }
   }
 
