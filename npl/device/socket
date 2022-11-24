@@ -59,6 +59,8 @@ class SocketDevice : public FileDevice
 
   bool iHandshakeDone = false;
 
+  std::string iTlsVersion;
+
   TOnHandshake iOnHandShake = nullptr;
 
   uint32_t iSocketType = ESocketType::EInvalidSocket;
@@ -104,7 +106,7 @@ class SocketDevice : public FileDevice
         {
           int rc = SSL_shutdown(ssl);
           DBG << GetName() << " : ssl_shutdown() rc : " << rc;
-          UpdateWBIO();
+          UpdateWriteBIO();
         }
       }
 
@@ -357,7 +359,7 @@ class SocketDevice : public FileDevice
     }
   }
 
-  virtual void UpdateWBIO()
+  virtual void UpdateWriteBIO()
   {
     CheckPeerSSLShutdown();
 
@@ -397,9 +399,9 @@ class SocketDevice : public FileDevice
      * multiple times.
      */
     SSL_CTX_sess_set_new_cb(ctx,
-      [](SSL *ssl, SSL_SESSION *session) { 
+      [](SSL *ssl, SSL_SESSION *session) {
         ssl_sessions.push_back(session);
-        DBG << "new session callback " << ssl_sessions.size();
+        DBG << "new session callback " << SSL_get_version(ssl);
         return 0;
       });
 
@@ -421,7 +423,7 @@ class SocketDevice : public FileDevice
 
       SSL_do_handshake(ssl);
 
-      UpdateWBIO();
+      UpdateWriteBIO();
     }
     else
     {
@@ -515,9 +517,9 @@ class SocketDevice : public FileDevice
         {
           iHandshakeDone = true;
 
-          LOG << "TLS session reused : " << SSL_session_reused(ssl);
+          iTlsVersion = SSL_get_version(ssl);
 
-          DBG << GetName() << " handshake done";
+          LOG << GetName() << " " << iTlsVersion << " handshake done, session reused : " << SSL_session_reused(ssl);
 
           if (iOnHandShake)
           {
@@ -526,8 +528,7 @@ class SocketDevice : public FileDevice
         }
         else
         {
-          DBG << GetName() << " handshake failed : " <<
-                  rc << " " << SSL_get_error(ssl, rc);
+          DBG << GetName() << " SSL_do_handshake : " << rc << " " << SSL_get_error(ssl, rc);
         }
       }
 
@@ -539,7 +540,7 @@ class SocketDevice : public FileDevice
 
           rc = SSL_read(ssl, buf, DEVICE_BUFFER_SIZE);
 
-          if (rc > 0) 
+          if (rc > 0)
           {
             msg.append(buf, rc);
           }
@@ -550,7 +551,7 @@ class SocketDevice : public FileDevice
         }
       }
 
-      UpdateWBIO();
+      UpdateWriteBIO();
 
       if (msg.size())
       {
@@ -589,7 +590,7 @@ class SocketDevice : public FileDevice
     if (ssl)
     {
       SSL_write(ssl, b, static_cast<int>(l));
-      UpdateWBIO();
+      UpdateWriteBIO();
     }
     else
     {

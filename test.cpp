@@ -14,7 +14,7 @@ int wmain(int argc, wchar_t *argv[])
 
   osl::Log::SetLogSink<std::string>(
     [](auto level, auto log){
-      if (level == 0) {
+      if (level >= 0) {
         std::cout << log << std::endl;
       }
     });

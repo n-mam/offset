@@ -47,55 +47,40 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
     EStateGEN
   };
 
+  enum EDirection
+  {
+    List,
+    Upload,
+    Download
+  };
+
   ProtocolFTP(const std::string& name) : Protocol(name) {}
 
   virtual ~ProtocolFTP() {}
 
-  virtual void Upload(const std::string& fLocal, const std::string& fRemote, TTransferCbk cbk, TLS P = TLS::No)
+  virtual void Transfer(EDirection direction, const std::string& remote, TTransferCbk cbk, TLS P = TLS::No)
   {
     std::lock_guard<std::mutex> lg(iQLock);
 
-    if (!fRemote.size() || !fLocal.size()) assert(false);
+    if (!remote.size() || !cbk) assert(false);
 
     bool bQWasEmpty = iCmdQ.empty();
 
     SetDCProtLevel(P);
 
-    iCmdQ.push_back({"PASV"});
-    iCmdQ.push_back({"STOR", fRemote, fLocal, nullptr, cbk});
+    std::string command;
 
-    CheckQueue(bQWasEmpty);
-  }
-
-  virtual void Download(const std::string& fLocal, const std::string& fRemote, TTransferCbk cbk, TLS P = TLS::No)
-  {
-    std::lock_guard<std::mutex> lg(iQLock);
-
-    if (!fRemote.size() || (!cbk && !fLocal.size())) assert(false);
-
-    bool bQWasEmpty = iCmdQ.empty();
-
-    SetDCProtLevel(P);
-
-    iCmdQ.push_back({"PASV"});
-    iCmdQ.push_back({"RETR", fRemote, fLocal, nullptr, cbk});
-
-    CheckQueue(bQWasEmpty);
-  }
-
-  virtual void ListDirectory(const std::string& fRemote, TTransferCbk cbk, TLS P = TLS::No)
-  {
-    std::lock_guard<std::mutex> lg(iQLock);
-
-    if (!cbk) assert(false);
-
-    bool bQWasEmpty = iCmdQ.empty();
-
-    SetDCProtLevel(P);
+    if (direction == EDirection::List) {
+      command = "LIST";
+    } else if (direction == EDirection::Upload) {
+      command = "STOR";
+    } else if (direction == EDirection::Download) {
+      command = "RETR";
+    }
 
     iCmdQ.push_back({"TYPE", "I"});
     iCmdQ.push_back({"PASV"});
-    iCmdQ.push_back({"LIST", fRemote, "", nullptr, cbk});
+    iCmdQ.push_back({command.c_str(), remote, nullptr, cbk});
 
     CheckQueue(bQWasEmpty);
   }
@@ -104,7 +89,7 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
   {
     std::lock_guard<std::mutex> lg(iQLock);
     bool bQWasEmpty = iCmdQ.empty();
-    iCmdQ.push_back({"PWD", "", "", cbk, nullptr});
+    iCmdQ.push_back({"PWD", "", cbk, nullptr});
     CheckQueue(bQWasEmpty);
   }
 
@@ -112,7 +97,7 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
   {
     std::lock_guard<std::mutex> lg(iQLock);
     bool bQWasEmpty = iCmdQ.empty();
-    iCmdQ.push_back({"CWD", dir, "", cbk, nullptr});
+    iCmdQ.push_back({"CWD", dir, cbk, nullptr});
     CheckQueue(bQWasEmpty);
   }
 
@@ -120,7 +105,7 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
   {
     std::lock_guard<std::mutex> lg(iQLock);
     bool bQWasEmpty = iCmdQ.empty();
-    iCmdQ.push_back({"MKD", dir, "", cbk, nullptr});
+    iCmdQ.push_back({"MKD", dir, cbk, nullptr});
     CheckQueue(bQWasEmpty);
   }
 
@@ -128,7 +113,7 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
   {
     std::lock_guard<std::mutex> lg(iQLock);
     bool bQWasEmpty = iCmdQ.empty();
-    iCmdQ.push_back({"RMD", dir, "", cbk, nullptr});
+    iCmdQ.push_back({"RMD", dir, cbk, nullptr});
     CheckQueue(bQWasEmpty);
   }
 
@@ -136,7 +121,7 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
   {
     std::lock_guard<std::mutex> lg(iQLock);
     bool bQWasEmpty = iCmdQ.empty();
-    iCmdQ.push_back({"DELE", file, "", cbk, nullptr});
+    iCmdQ.push_back({"DELE", file, cbk, nullptr});
     CheckQueue(bQWasEmpty);
   }
 
@@ -144,7 +129,7 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
   {
     std::lock_guard<std::mutex> lg(iQLock);
     bool bQWasEmpty = iCmdQ.empty();
-    iCmdQ.push_back({"QUIT", "", "", cbk, nullptr});
+    iCmdQ.push_back({"QUIT", "", cbk, nullptr});
     CheckQueue(bQWasEmpty);
   }
 
@@ -165,11 +150,7 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
 
   TLS iDCProt = TLS::No;
 
-  bool iContinueTransfer = false;
-
   uint64_t iCurrentFileOffset = 0;
-
-  SPSubject iFileDevice = nullptr;
 
   SPSubject iDataChannel = nullptr;
 
@@ -177,7 +158,6 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
   {
     std::string m_name;
     std::string m_remote = "";
-    std::string m_local = "";
     TResponseCbk m_rcbk = nullptr;
     TTransferCbk m_tcbk = nullptr;
   };
@@ -331,7 +311,7 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
 
       auto level = (P == TLS::No) ? "C" : "P";
 
-      iCmdQ.push_back({"PROT", level, "",
+      iCmdQ.push_back({"PROT", level,
         [this, P](const std::string& res){
           if (res[0] == '2')
           {
@@ -422,49 +402,54 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
 
   virtual void OpenDataChannel(const std::string& host, int port)
   {
-    iDataChannel = std::make_shared<SocketDevice>("ftp-dc");
+    iDataChannel = std::make_shared<SocketDevice>("sock-dc");
 
-    auto observer = std::make_shared<Listener>(
-      [this]() {
-        OnDataChannelConnect();
-      },
-      [this](const uint8_t *b, size_t n) {
-        OnDataChannelRead(b, n);
-      },
-      [this](const uint8_t *b, size_t n) {
-        OnDataChannelWrite(b, n);
-      },
-      [this](){
-        OnDataChannelDisconnect();
-      });
-
-    GetDispatcher()->AddEventListener(iDataChannel)->AddEventListener(observer);
+    GetDispatcher()->AddEventListener(iDataChannel);
 
     auto dc = std::dynamic_pointer_cast<SocketDevice>(iDataChannel);
-
-    auto cc = GetTargetSocketDevice();
 
     dc->SetHostAndPort(host, port);
 
     dc->StartSocketClient();
   }
 
+  virtual void AttachDataChannelObserver(void)
+  {
+    auto observer = std::make_shared<Listener>(
+      [this]() {
+        OnDataChannelConnect();
+      },
+      [this](const uint8_t *b, size_t n) {
+        LOG << "observer OnDataChannelIoCompletion read";
+        OnDataChannelIoCompletion(b, n);
+      },
+      [this](const uint8_t *b, size_t n) {
+        LOG << "observer OnDataChannelIoCompletion write";
+        OnDataChannelIoCompletion(b, n);
+      },
+      [this](){
+        OnDataChannelDisconnect();
+      });
+
+    iDataChannel->AddEventListener(observer);
+  }
+
   virtual void ProcessDataCmdResponse(char code)
   {
     if (IsPositivePreliminaryReply(code))
     {
-      InitializeFileDevice();
-
       if (iDCProt == TLS::Yes)
       {
         std::dynamic_pointer_cast<SocketDevice>
           (iDataChannel)->InitializeSSL(
             [this] () {
+              AttachDataChannelObserver();
               TriggerDataTransfer();
             });
       }
       else
       {
+        AttachDataChannelObserver();
         TriggerDataTransfer();
       }
     }
@@ -484,11 +469,6 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
         ResetSubject(iDataChannel);
       }
 
-      if (iFileDevice)
-      {
-        ResetSubject(iFileDevice);
-      }
-
       if (iCurrentState == EStateXYZ)
       {
         iCmdQ.pop_front();
@@ -498,71 +478,22 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
     }
   }
 
-  virtual void InitializeFileDevice(void)
-  {
-    auto& [cmd, fRemote, fLocal, rcbk, tcbk] = iCmdQ.front();      
-
-    if (fLocal.size())
-    {
-      assert(!iFileDevice);
-
-      if (cmd == "LIST") assert(!fLocal.size());
-
-      iFileDevice = std::make_shared<FileDevice>(
-        fLocal.c_str(),
-        cmd == "RETR" ? true : false);
-
-      iCurrentFileOffset = 0;
-
-      auto observer = std::make_shared<Listener>(
-        nullptr,
-        [this] (const uint8_t *b, size_t n) {
-          OnFileRead(b, n);
-        },
-        [this] (const uint8_t *b, size_t n) {
-          OnFileWrite(b, n);
-        },
-        [this] () {
-          OnFileDisconnect();
-        }
-      );
-
-      GetDispatcher()->AddEventListener(iFileDevice)->AddEventListener(observer);
-    }
-
-    iContinueTransfer = true;
-  }
-
   virtual void OnDataChannelConnect(void)
   {
   }
 
-  virtual void OnDataChannelRead(const uint8_t *b, size_t n)
+  virtual void OnDataChannelIoCompletion(const uint8_t *b, size_t n)
   {
-    auto& tcbk = iCmdQ.front().m_tcbk;
+    auto& transferCallback = iCmdQ.front().m_tcbk;
 
-    if (tcbk)
+    assert(transferCallback);
+
+    auto continueTransfer = transferCallback((const char *)b, n);
+
+    if (!continueTransfer)
     {
-      if (iContinueTransfer)
-      {
-        iContinueTransfer = tcbk((const char *)b, n);
-      }
-      else
-      {
-        std::dynamic_pointer_cast<SocketDevice>(iDataChannel)->StopSocket();
-        return;
-      }
+      std::dynamic_pointer_cast<SocketDevice>(iDataChannel)->StopSocket();
     }
-
-    if (iFileDevice)
-    {
-      iFileDevice->Write(b, n, iCurrentFileOffset);
-      iCurrentFileOffset += n;
-    }
-  }
-
-  virtual void OnDataChannelWrite(const uint8_t *b, size_t n)
-  {
   }
 
   virtual void OnDataChannelDisconnect(void)
@@ -577,51 +508,11 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
     ProcessDataCmdResponse('0');
   }
 
-  virtual void OnFileRead(const uint8_t *b, size_t n)
-  {
-    auto& tcbk = iCmdQ.front().m_tcbk;
-
-    if (tcbk)
-    {
-      if (iContinueTransfer)
-      {
-        iContinueTransfer = tcbk((const char *)b, n);
-      }
-      else
-      {
-        std::dynamic_pointer_cast<SocketDevice>(iDataChannel)->StopSocket();
-        return;
-      }
-    }
-
-    iDataChannel->Write(b, n);
-
-    iCurrentFileOffset += n;
-
-    auto ctx = iFileDevice->Read(nullptr, 0, iCurrentFileOffset);
-
-    #ifndef WIN32
-    QueuePendingContext(iFileDevice, ctx);
-    #endif
-  }
-
-  virtual void OnFileWrite(const uint8_t *b, size_t n)
-  {
-  }
-
-  virtual void OnFileDisconnect(void)
-  {
-    std::dynamic_pointer_cast<SocketDevice>(iDataChannel)->StopSocket();
-  }
-
   virtual void TriggerDataTransfer(void)
   {
     if (iCmdQ.front().m_name == "STOR")
     {
-      auto ctx = iFileDevice->Read(nullptr, 0, iCurrentFileOffset);
-      #ifndef WIN32
-      QueuePendingContext(iFileDevice, ctx);
-      #endif
+
     }
   }
 

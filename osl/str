@@ -104,7 +104,7 @@ bool StartsWith(std::wstring& str, std::wstring prefix)
   return fRet;
 }
 
-void RemoveDuplicates(std::string& str, const char& ch)
+void removeDuplicates(std::string& str, const char& ch)
 {
   auto new_end = std::unique(str.begin(), str.end(), 
     [ch](char lhs, char rhs) {
@@ -115,7 +115,7 @@ void RemoveDuplicates(std::string& str, const char& ch)
 }
 
 //Replace part of a string with another string
-auto Replace(const std::string& str, const std::string& from, const std::string& to)
+auto replace(const std::string& str, const std::string& from, const std::string& to)
 {
   std::string result = str;
   size_t start_pos = result.find(from);
