@@ -49,6 +49,7 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
 
   enum EDirection
   {
+    None,
     List,
     Upload,
     Download
@@ -57,6 +58,35 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
   ProtocolFTP(const std::string& name) : Protocol(name) {}
 
   virtual ~ProtocolFTP() {}
+
+  std::mutex mux;
+  std::condition_variable cv;
+  bool uploadChannelReady = false;
+
+  virtual bool Stream(uint8_t *b, size_t l = 0)
+  {
+    bool fRet = false;
+
+    std::unique_lock<std::mutex> ul(mux);
+    cv.wait(ul, [&](){ return uploadChannelReady; });
+
+    if (iDataChannel)
+    {
+      uploadChannelReady = false;
+
+      if (b && l)
+      {
+        iDataChannel->Write(b, l), fRet = true;
+      }
+      else
+      {
+        std::dynamic_pointer_cast<SocketDevice>(iDataChannel)->StopSocket();
+        iDataChannel.reset();
+      }
+    }
+
+    return fRet;
+  }
 
   virtual void Transfer(EDirection direction, const std::string& remote, TTransferCbk cbk, TLS P = TLS::No)
   {
@@ -149,8 +179,6 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
   protected:
 
   TLS iDCProt = TLS::No;
-
-  uint64_t iCurrentFileOffset = 0;
 
   SPSubject iDataChannel = nullptr;
 
@@ -373,6 +401,19 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
     }
   }
 
+  auto GetTransferDirection(const std::string& cmd)
+  {
+    if (cmd == "LIST") {
+      return EDirection::Download;
+    } else if (cmd == "RETR") {
+      return EDirection::Download;
+    } else if (cmd == "STOR") {
+      return EDirection::Upload;
+    } else {
+      return EDirection::None;
+    }
+  }
+
   virtual void ProcessDataCmdResponse(char code)
   {
     if (IsPositivePreliminaryReply(code))
@@ -382,13 +423,11 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
         std::dynamic_pointer_cast<SocketDevice>
           (iDataChannel)->InitializeSSL(
             [this] () {
-              AttachDataChannelObserver();
               TriggerDataTransfer();
             });
       }
       else
       {
-        AttachDataChannelObserver();
         TriggerDataTransfer();
       }
     }
@@ -405,7 +444,17 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
     {
       if (iDataChannel)
       {
-        ResetSubject(iDataChannel);
+        std::dynamic_pointer_cast<SocketDevice>(iDataChannel)->StopSocket();
+        iDataChannel.reset();
+      }
+
+      auto cmd = iCmdQ.front().m_name;
+
+      if (GetTransferDirection(cmd) == EDirection::Upload)
+      {
+        std::lock_guard<std::mutex> lg(mux);          
+        uploadChannelReady = true;
+        cv.notify_all();
       }
 
       if (iCurrentState == EStateXYZ)
@@ -464,11 +513,9 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
         OnDataChannelConnect();
       },
       [this](const uint8_t *b, size_t n) {
-        LOG << "observer OnDataChannelIoCompletion read";
         OnDataChannelIoCompletion(b, n, EDirection::Download);
       },
       [this](const uint8_t *b, size_t n) {
-        LOG << "observer OnDataChannelIoCompletion write";
         OnDataChannelIoCompletion(b, n, EDirection::Upload);
       },
       [this](){
@@ -476,18 +523,6 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
       });
 
     iDataChannel->AddEventListener(observer);
-  }
-
-  EDirection GetTransferDirection(const std::string& cmd)
-  {
-    if (cmd == "LIST") {
-      return EDirection::Download;
-    } else if (cmd == "RETR") {
-      return EDirection::Download;
-    } else if (cmd == "STOR") {
-      return EDirection::Upload;
-    }
-    assert(false);
   }
 
   virtual void OnDataChannelConnect(void)
@@ -498,28 +533,37 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
   {
     auto cmd = iCmdQ.front().m_name;
 
-    auto& transferCallback = iCmdQ.front().m_tcbk;
-
-    assert(transferCallback);
-
     if (direction == GetTransferDirection(cmd))
     {
-      auto continueTransfer = transferCallback((const char *)b, n);
+      auto& transferCallback = iCmdQ.front().m_tcbk;
 
-      if (!continueTransfer)
+      if (transferCallback)
       {
-        std::dynamic_pointer_cast<SocketDevice>(iDataChannel)->StopSocket();
+        auto continueTransfer = transferCallback((const char *)b, n);
+
+        if (!continueTransfer)
+        {
+          std::dynamic_pointer_cast<SocketDevice>(iDataChannel)->StopSocket();
+          iDataChannel.reset();
+        }
+
+        if (direction == EDirection::Upload)
+        {
+          std::lock_guard<std::mutex> lg(mux);          
+          uploadChannelReady = true;
+          cv.notify_all();      
+        }
       }
     }
   }
 
   virtual void OnDataChannelDisconnect(void)
   {
-    auto& tcbk = iCmdQ.front().m_tcbk;
-  
-    if (tcbk)
+    auto& transferCallback = iCmdQ.front().m_tcbk;
+
+    if (transferCallback)
     {
-      tcbk(nullptr, 0);
+      transferCallback(nullptr, 0);
     }
 
     ProcessDataCmdResponse('0');
@@ -527,7 +571,11 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
 
   virtual void TriggerDataTransfer(void)
   {
-    if (iCmdQ.front().m_name == "STOR")
+    AttachDataChannelObserver();
+
+    auto cmd = iCmdQ.front().m_name;
+
+    if (GetTransferDirection(cmd) == EDirection::Upload)
     {
 
     }

@@ -19,8 +19,9 @@ auto make_dispatcher(void)
 
 auto make_ftp(const std::string& host, int port, TLS ftps = TLS::No)
 {
+  auto ftp = std::make_shared<ProtocolFTP>("prot-ftp");    
+
   auto cc = std::make_shared<SocketDevice>("sock-cc");
-  auto ftp = std::make_shared<ProtocolFTP>("protocol-ftp");    
 
   cc->SetHostAndPort(host, port);
 
@@ -117,9 +118,6 @@ void test_ftp_client(const std::string& host, int port)
 
   ftp->SetCredentials("nmam", "welcome123");
 
-  /**
-   * asynchronous connect and login sequence
-   */
   ftp->StartClient();
 
   ftp->Transfer(
@@ -138,8 +136,7 @@ void test_ftp_client(const std::string& host, int port)
 
   ftp->SetCurrentDirectory("/");
 
-  auto file = std::make_shared<FileDevice>(
-    "./xx.txt", true);
+  auto file = std::make_shared<FileDevice>("./xx.txt", true);
 
   ftp->Transfer(ProtocolFTP::EDirection::Download, "x.txt",
       [file, offset = 0](const char *b, size_t n) mutable {
@@ -155,22 +152,25 @@ void test_ftp_client(const std::string& host, int port)
 
   file.reset();
 
-  // file = std::make_shared<FileDevice>("./x.txt", true);
+  ftp->Transfer(ProtocolFTP::EDirection::Upload, "y.txt",
+      [&](const char *b, size_t n) mutable {
+        return true;
+      },
+      npl::TLS::No);
 
-  // ftp->Transfer(ProtocolFTP::EDirection::Upload,
-  //       "y.txt",
-  //       [file, offset = 0](const char *b, size_t n) {
-  //         return true;
-  //       },
-  //       npl::TLS::No);
+  ftp->Stream((uint8_t *)"hello ", strlen("hello "));
 
-  // ftp->GetCurrentDirectory([](const std::string& resp) {
-  //   /**
-  //    * "resp" holds the response of PWD command
-  //    */
-  // });
+  ftp->Stream((uint8_t *)"world ", strlen("world "));
 
-  // ftp->SetCurrentDirectory("/");
+  ftp->Stream(nullptr);
+
+  ftp->GetCurrentDirectory([](const std::string& resp) {
+    /**
+     * "resp" holds the response of PWD command
+     */
+  });
+
+  ftp->SetCurrentDirectory("/");
 
   ftp->Quit();
 
