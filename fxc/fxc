@@ -16,8 +16,8 @@ struct TBackupConfig
 {
   std::wstring m_volume;
   std::wstring m_level;
-  std::wstring m_folder;
   std::wstring m_format;
+  std::wstring m_destination;
   std::vector<std::wstring> m_exclude;
   bool m_live;
 };
@@ -194,7 +194,7 @@ auto ConvertBlockDeviceToVirtualImages(const std::vector<TBackupConfig>& configu
 
   for (const auto& config : configuration)
   {
-    auto [volume, level, folder, format, exclude, live] = config;
+    auto [volume, level, format, destination, exclude, live] = config;
 
     if (fxc::IsVolumeSupported(volume.c_str()) && !live)
     {
@@ -203,7 +203,7 @@ auto ConvertBlockDeviceToVirtualImages(const std::vector<TBackupConfig>& configu
     }
     else
     {
-      auto target = folder + L"\\" + volume.substr(4, 44) + L"." + GetExtentionForFormat(format);
+      auto target = destination + L"\\" + volume.substr(4, 44) + L"." + GetExtentionForFormat(format);
 
       volume.pop_back();
 
@@ -235,7 +235,7 @@ auto ConvertBlockDeviceToVirtualImages(const std::vector<TBackupConfig>& configu
           {
             if (c.m_volume == inputVolume)
             {
-              folder = c.m_folder;
+              folder = c.m_destination;
               format = c.m_format;
             }
           }
@@ -244,7 +244,7 @@ auto ConvertBlockDeviceToVirtualImages(const std::vector<TBackupConfig>& configu
 
           futures2.push_back(std::async(std::launch::async, [=](){
             fxc::CreateBaseVirtualDisk(format, snapshotDevice, target,
-              [=](auto snapshot, auto percent){
+              [=](auto snapshot, auto percent) {
                 return cbk(inputVolume, percent);
               });
           }));

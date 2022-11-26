@@ -72,13 +72,11 @@ Rectangle {
         height: rowDelegate.height
         acceptedButtons: Qt.LeftButton | Qt.RightButton
         onClicked: (mouse) => {
-          if (mouse.button == Qt.LeftButton)
-          {
-            console.log("Left")
+          if (mouse.button == Qt.LeftButton) {
+
           }
-          else if (mouse.button == Qt.RightButton)
-          {
-            console.log(model.display)
+          else if (mouse.button == Qt.RightButton){
+
           }
         }
       }

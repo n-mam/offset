@@ -45,10 +45,11 @@ ApplicationWindow {
           Connections {
             target: logger
             function onAddLogLine(severity, log) {
-              logText.append(log)
-              logText.cursorPosition = logText.length - log.length
               if (severity === 3) {
                 statusText.text = log
+              } else {
+                logText.append(log)
+                logText.cursorPosition = logText.length - log.length
               }
             }
           }
@@ -79,7 +80,7 @@ ApplicationWindow {
         text: "Ready"
         color: "white"
       }
-      Component.onCompleted: statusText.pointSize = statusText.pointSize - 1.8
+      Component.onCompleted: statusText.font.pointSize = statusText.font.pointSize - 1.8
     }
   }
 

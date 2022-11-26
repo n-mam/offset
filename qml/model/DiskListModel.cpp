@@ -212,7 +212,7 @@ void DiskListModel::setStop(bool stop)
   this->stop = stop;
 }
 
-void DiskListModel::convertSelectedItemsToVirtualDisks(QString folder)
+void DiskListModel::convertSelectedItemsToVirtualDisks(QString destination)
 {
   std::vector<fxc::TBackupConfig> configuration;
 
@@ -240,8 +240,8 @@ void DiskListModel::convertSelectedItemsToVirtualDisks(QString folder)
     configuration.push_back({
       name.toStdWString(),
       L"0",
-      folder.toStdWString(),
       format.toStdWString(),
+      destination.toStdWString(),
       exclude,
       live
     });
@@ -256,7 +256,7 @@ void DiskListModel::convertSelectedItemsToVirtualDisks(QString folder)
           QMetaObject::invokeMethod(this, [this, device, percent](){
             emit this->progress(QString::fromStdWString(device), percent);
             if (percent >= 100) this->setTransfer(this->getTransfer() - 1);
-            STATUS << "Transfer in progress(" << this->getTransfer() << ")";
+            STATUS << "Transfer in progress - " << this->getTransfer();
           }, Qt::QueuedConnection);
           return this->stop;
         });

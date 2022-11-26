@@ -47,7 +47,7 @@ Column {
       Connections {
         target: diskListModel
         function onTransferChanged(transfer) {
-          console.log(transfer)
+
         }
       }
     }
