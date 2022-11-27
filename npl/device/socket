@@ -359,24 +359,31 @@ class SocketDevice : public FileDevice
     }
   }
 
-  virtual void UpdateWriteBIO()
+  virtual bool UpdateWriteBIO(void)
   {
     CheckPeerSSLShutdown();
 
     int pending = BIO_pending(wbio);
 
-    constexpr int BioRBufSize = 32;
+    uint8_t buf[DEVICE_BUFFER_SIZE];
 
-    uint8_t buf[BioRBufSize];
+    int rc = 0;
 
     while (pending)
     {
-      int rc = BIO_read(wbio, buf, BioRBufSize);
+      rc = BIO_read(wbio, buf, DEVICE_BUFFER_SIZE);
 
-      FileDevice::Write(buf, rc);
+      if (rc > 0)
+      {
+        rc = FileDevice::Write(buf, rc);
+      }
 
       pending = BIO_pending(wbio);
+
+      if (rc <= 0) break;
     }
+
+    return rc;
   }
 
   virtual void InitializeSSL(TOnHandshake cbk = nullptr)
@@ -568,13 +575,10 @@ class SocketDevice : public FileDevice
 
   virtual void OnWrite(const uint8_t *b, size_t n) override
   {
-    if (ssl)
+    if (ssl && !iHandshakeDone)
     {
-      if (!iHandshakeDone)
-      {
-        SSL_do_handshake(ssl);
-        return;
-      }
+      SSL_do_handshake(ssl);
+      return;
     }
 
     FileDevice::OnWrite(b, n);
@@ -585,17 +589,23 @@ class SocketDevice : public FileDevice
     return FileDevice::Read(b, l, o);
   }
 
-  virtual void Write(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override
+  virtual bool Write(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override
   {
     if (ssl)
     {
-      SSL_write(ssl, b, static_cast<int>(l));
-      UpdateWriteBIO();
+      auto rc = SSL_write(ssl, b, static_cast<int>(l));
+
+      if (rc)
+      {
+        return UpdateWriteBIO();
+      }
     }
     else
     {
-      FileDevice::Write(b, l);
+      return FileDevice::Write(b, l);
     }
+
+    return false;
   }
   
   protected:

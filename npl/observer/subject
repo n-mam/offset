@@ -86,7 +86,7 @@ class Subject : public std::enable_shared_from_this<Subject<T1, T2>>
     return nullptr;
   }
 
-  virtual void Write(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0)
+  virtual bool Write(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0)
   {
     std::lock_guard<std::mutex> lg(m_lock);
 
@@ -94,8 +94,10 @@ class Subject : public std::enable_shared_from_this<Subject<T1, T2>>
 
     if (target)
     {
-      target->Write(b, l, o);
+      return target->Write(b, l, o);
     }
+
+    return false;
   }
 
   virtual int32_t ReadSync(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0)

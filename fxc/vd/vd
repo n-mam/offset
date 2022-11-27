@@ -75,12 +75,14 @@ auto image_copy_from(npl::SPFileDevice source, npl::SPSubject<uint8_t, uint8_t> 
     }
   }
 
+  target->WriteSync();
+
   LOG << "Read " << totalBytesRead << " bytes";
   LOG << "Wrote " << totalBytesWritten << " bytes";
 }
 
 //create base parent vhd from a volume/snapshot block device 
-auto create_base_vhd(const std::wstring& volume, const std::wstring& file, fxc::TProgressCallback cbk)
+auto create_base_vhd(const std::wstring& volume, npl::SPSubject<uint8_t, uint8_t> target, fxc::TProgressCallback cbk)
 {
   auto source = npl::make_file(volume, false);
 
@@ -97,8 +99,6 @@ auto create_base_vhd(const std::wstring& volume, const std::wstring& file, fxc::
   auto bs = disk->GetBlockSize();
 
   auto _buf = std::make_unique<uint8_t []>(bs);
-
-  auto target = npl::make_file(file, true);
 
   // footer
   target->WriteSync((uint8_t *) &(disk->iFooter), sizeof(VHD_DISK_FOOTER), 0);
@@ -250,15 +250,15 @@ auto create_base_vhd(const std::wstring& volume, const std::wstring& file, fxc::
     disk->FirstDataBlockOffset() + (disk->iBlockCount * (512 + bs))
   );
 
+  target->WriteSync();
+
   npl::D->RemoveEventListener(target);
 
   target.reset();
-
-  LOG << L" " << file << L" created";
 }
 
 //create differencing child vhd using either RCT CBT ranges (disk level) or volume level CBT
-auto create_child_vhd(const std::wstring& source, const std::wstring& parent, const std::wstring& child, const std::wstring rctid)
+auto create_child_vhd(const std::wstring& source, const std::wstring& parent, npl::SPSubject<uint8_t, uint8_t> target, const std::wstring rctid)
 {
   auto base = std::make_shared<VirtualHardDisk>(parent);
 
@@ -267,7 +267,7 @@ auto create_child_vhd(const std::wstring& source, const std::wstring& parent, co
                   base->GetBlockSize(),
                   VirtualHardDisk::EVHDType::Differencing);
 
-  auto target = npl::make_file(child, true);
+  //auto target = npl::make_file(child, true);
 
   auto fsBasePath = base->iPath;
 
@@ -378,6 +378,8 @@ auto create_child_vhd(const std::wstring& source, const std::wstring& parent, co
     diff->FirstDataBlockOffset() + (blockCount * (512 + bs))
   );
 
+  target->WriteSync();
+
   npl::D->RemoveEventListener(target);
 
   target.reset();
@@ -385,7 +387,7 @@ auto create_child_vhd(const std::wstring& source, const std::wstring& parent, co
   return true;
 }
 
-auto create_fixed_vhd(const std::wstring& device, const std::wstring& file, fxc::TProgressCallback cbk)
+auto create_fixed_vhd(const std::wstring& device, npl::SPSubject<uint8_t, uint8_t> target, fxc::TProgressCallback cbk)
 {
   auto source = npl::make_file(device, false);
 
@@ -394,8 +396,6 @@ auto create_fixed_vhd(const std::wstring& device, const std::wstring& file, fxc:
   uint64_t length = osl::GetBlockDeviceLength(source->iFDsync);
 
   LOG << "source device length " << length;
-
-  auto target = npl::make_file(file, true);
 
   auto disk = std::make_shared<VirtualHardDisk>(length, _2M, VirtualHardDisk::EVHDType::Fixed);
 
@@ -412,14 +412,14 @@ auto create_fixed_vhd(const std::wstring& device, const std::wstring& file, fxc:
     sizeof(VHD_DISK_FOOTER),
     _2M + length);
 
+  target->WriteSync();
+
   npl::D->RemoveEventListener(target);
 
   target.reset();
-
-  LOG << L" " << file << L" created";
 }
 
-auto create_raw_image(const std::wstring& device, const std::wstring& file, fxc::TProgressCallback cbk)
+auto create_raw_image(const std::wstring& device, npl::SPSubject<uint8_t, uint8_t> target, fxc::TProgressCallback cbk)
 {
   auto source = npl::make_file(device, false);
 
@@ -429,17 +429,15 @@ auto create_raw_image(const std::wstring& device, const std::wstring& file, fxc:
 
   LOG << "source device length " << length;
 
-  auto target = npl::make_file(file, true);
-
   image_copy_from(source, target, cbk);
 
-  target.reset();
+  target->WriteSync();
 
-  LOG << L" " << file << L" created";
+  target.reset();
 }
 
 //create base parent vhdx from a volume/snapshot block device 
-void create_base_vhdx(const std::wstring& volume, const std::wstring& file, fxc::TProgressCallback cbk)
+void create_base_vhdx(const std::wstring& volume, npl::SPSubject<uint8_t, uint8_t> target, fxc::TProgressCallback cbk)
 {
   auto source = npl::make_file(volume, false);
 
@@ -456,8 +454,6 @@ void create_base_vhdx(const std::wstring& volume, const std::wstring& file, fxc:
   auto bs = disk->GetBlockSize();
 
   auto _buf = std::make_unique<uint8_t []>(bs);
-
-  auto target = npl::make_file(file, true);
 
   memset(_buf.get(), 0, _1M);
 
@@ -657,21 +653,19 @@ void create_base_vhdx(const std::wstring& volume, const std::wstring& file, fxc:
     LOG << "constructed bat does not match runtime bat";
   }
 
+  target->WriteSync();
+
   npl::D->RemoveEventListener(target);
 
   target.reset();
-
-  LOG << L" " << file << L" created";
 }
 
 //create differencing child vhd using either RCT CBT ranges (disk level) or volume level CBT
-bool create_child_vhdx(const std::wstring& source, const std::wstring& parent, const std::wstring& child, const std::wstring rctid)
+bool create_child_vhdx(const std::wstring& source, const std::wstring& parent, npl::SPSubject<uint8_t, uint8_t> target, const std::wstring rctid)
 {
   auto base = std::make_shared<VirtualHardDisk2>(parent);
 
   auto diff = std::make_shared<VirtualHardDisk2>(base.get());
-
-  auto target = npl::make_file(child, true);
 
   base.reset();
 
@@ -792,6 +786,8 @@ bool create_child_vhdx(const std::wstring& source, const std::wstring& parent, c
 
   pfnDetachVirtualDisk(hvhd, DETACH_VIRTUAL_DISK_FLAG_NONE, 0);
 
+  target->WriteSync();
+
   npl::D->RemoveEventListener(target);
 
   target.reset();
@@ -845,7 +841,7 @@ auto make_virtual_disk(const std::wstring& path)
 void CreateBaseVirtualDisk(
   const std::wstring& format,
   const std::wstring& source,
-  const std::wstring& target,
+  npl::SPSubject<uint8_t, uint8_t> target,
   fxc::TProgressCallback cbk)
 {
   if (format == L"d-vhd")
@@ -870,7 +866,7 @@ void CreateIncrementalVirtualDisk(
   const std::wstring& format,
   const std::wstring& source,
   const std::wstring& parent,
-  const std::wstring& target,
+  npl::SPSubject<uint8_t, uint8_t> target,
   const std::wstring& rctid)
 {
   if (format == L"vhd")

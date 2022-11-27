@@ -63,10 +63,8 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
   std::condition_variable cv;
   bool uploadChannelReady = false;
 
-  virtual bool Stream(uint8_t *b, size_t l = 0)
+  virtual int32_t WriteSync(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override
   {
-    bool fRet = false;
-
     std::unique_lock<std::mutex> ul(mux);
     cv.wait(ul, [&](){ return uploadChannelReady; });
 
@@ -76,7 +74,7 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
 
       if (b && l)
       {
-        iDataChannel->Write(b, l), fRet = true;
+        iDataChannel->Write(b, l);
       }
       else
       {
@@ -85,7 +83,7 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
       }
     }
 
-    return fRet;
+    return l;
   }
 
   virtual void Transfer(EDirection direction, const std::string& remote, TTransferCbk cbk, TLS P = TLS::No)
@@ -261,8 +259,8 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
 
       if ((t.iState == iCurrentState) && (t.iResponseCode ==  b[0]))
       {
-        DBG << +t.iState << " -> " << +t.iNextState
-          << ", " << +t.iFlags << ", " << iCmdQ.size();
+        // DBG << +t.iState << " -> " << +t.iNextState
+        //   << ", " << +t.iFlags << ", " << iCmdQ.size();
 
         iCurrentState = t.iNextState;
 
@@ -325,8 +323,15 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
   virtual void SendCommand(const std::string& c, const std::string& arg = "")
   {
     auto cmd = c + " " + arg + "\r\n";
+
     LOG << "Command  : " << cmd;
-    Write((uint8_t *)cmd.c_str(), cmd.size(), 0);
+
+    auto target = m_target.lock();
+
+    if (target)
+    {
+      target->Write((uint8_t *)cmd.c_str(), cmd.size(), 0);
+    }
   }
 
   virtual void SetDCProtLevel(TLS P)

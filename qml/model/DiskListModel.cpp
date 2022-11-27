@@ -256,7 +256,7 @@ void DiskListModel::convertSelectedItemsToVirtualDisks(QString destination)
           QMetaObject::invokeMethod(this, [this, device, percent](){
             emit this->progress(QString::fromStdWString(device), percent);
             if (percent >= 100) this->setTransfer(this->getTransfer() - 1);
-            STATUS << "Transfer in progress - " << this->getTransfer();
+            STATUS << "Transfer in progress : " << this->getTransfer();
           }, Qt::QueuedConnection);
           return this->stop;
         });

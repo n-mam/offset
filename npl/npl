@@ -158,16 +158,14 @@ void test_ftp_client(const std::string& host, int port)
       },
       npl::TLS::No);
 
-  ftp->Stream((uint8_t *)"hello ", strlen("hello "));
+  ftp->WriteSync((uint8_t *)"hello ", strlen("hello "));
 
-  ftp->Stream((uint8_t *)"world ", strlen("world "));
+  ftp->WriteSync((uint8_t *)"world ", strlen("world "));
 
-  ftp->Stream(nullptr);
+  ftp->WriteSync(nullptr);
 
   ftp->GetCurrentDirectory([](const std::string& resp) {
-    /**
-     * "resp" holds the response of PWD command
-     */
+    //"resp" holds the response of PWD command
   });
 
   ftp->SetCurrentDirectory("/");
@@ -191,7 +189,7 @@ void test_file_copy(const std::string& source, const std::string& dest)
     nullptr,
     [wd, off = 0ULL](const uint8_t *b, size_t n) mutable
     {
-      LOG << "onread " << n << ", off " << off;
+      DBG << "onRead " << n << ", off " << off;
 
       if (n)
       {
@@ -202,7 +200,7 @@ void test_file_copy(const std::string& source, const std::string& dest)
     },
     [rd, off = 0ULL, bufSize](const uint8_t *b, size_t n) mutable
     {
-      LOG << "onwrite " << n << ", off " << off;
+      DBG << "onWrite " << n << ", off " << off;
 
       if (n)
       {
