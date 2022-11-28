@@ -112,7 +112,7 @@ auto create_base_vhd(const std::wstring& volume, npl::SPSubject<uint8_t, uint8_t
   memset(bat.get(), 0xFF, disk->iBATSize);
 
   // MBR block's BAT entry
-  osl::LTOB32(disk->FirstDataBlockOffset() / 512, (unsigned char *) (bat.get() + 0));
+  bat[0] = osl::endian_reverse((uint32_t)(disk->FirstDataBlockOffset() / 512));
 
   uint64_t batIndex = 1;
   uint64_t validBATEntryCount = 1;
@@ -133,7 +133,7 @@ auto create_base_vhd(const std::wstring& volume, npl::SPSubject<uint8_t, uint8_t
       if (blockInUse)
       {
         uint64_t blockFileOffset = disk->FirstDataBlockOffset() + (validBATEntryCount * (512 + bs));
-        osl::LTOB32(blockFileOffset / 512, (unsigned char *) (bat.get() + batIndex));
+        bat[batIndex] = osl::endian_reverse((uint32_t)(blockFileOffset / 512));
         blockInUse = false;
         validBATEntryCount++;
       }
@@ -165,7 +165,7 @@ auto create_base_vhd(const std::wstring& volume, npl::SPSubject<uint8_t, uint8_t
       {
         LOG << "setting BAT entry for pending len at " << batIndex;
         uint64_t blockFileOffset = disk->FirstDataBlockOffset() + (validBATEntryCount * (512 + bs));
-        osl::LTOB32(blockFileOffset / 512, (unsigned char *) (bat.get() + batIndex));
+        bat[batIndex] = osl::endian_reverse((uint32_t)(blockFileOffset / 512));
         validBATEntryCount++;
       }
     }
@@ -303,7 +303,7 @@ auto create_child_vhd(const std::wstring& source, const std::wstring& parent, np
   for (auto& kv : dbiomap)
   {
     uint64_t fileoff = diff->FirstDataBlockOffset() + (blockCount * (512 + bs));
-    osl::LTOB32(fileoff / 512, (unsigned char *) (bat.get() + kv.first));
+    bat[kv.first] = osl::endian_reverse((uint32_t)(fileoff / 512));
     blockCount++;
   }
 
@@ -465,7 +465,7 @@ void create_base_vhdx(const std::wstring& volume, npl::SPSubject<uint8_t, uint8_
 
   // vhdx Header 2
   disk->iHeader.SequenceNumber++;
-  memset((void *) &disk->iHeader.Checksum, 0, 4);
+  disk->iHeader.Checksum = 0;
   disk->iHeader.Checksum = crc32c_value((uint8_t *) &disk->iHeader, _4K);
   memmove(_buf.get() + _64K + _64K, (void *) &disk->iHeader, sizeof(VHDX_HEADER));
 
@@ -681,7 +681,7 @@ bool create_child_vhdx(const std::wstring& source, const std::wstring& parent, n
 
   // vhdx Header 2
   diff->iHeader.SequenceNumber++;
-  memset((void *) &diff->iHeader.Checksum, 0, 4);
+  diff->iHeader.Checksum = 0;
   diff->iHeader.Checksum = crc32c_value((uint8_t *) &diff->iHeader, _4K);
   memmove(_buf.get() + _64K + _64K, (void *) &diff->iHeader, sizeof(VHDX_HEADER));
 

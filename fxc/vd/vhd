@@ -57,18 +57,17 @@ class VirtualHardDisk : public BaseDisk
     iFile->ReadSync(
       (uint8_t *) iBAT.get(),
       iBATSize,
-      osl::endian_reverse(*((uint64_t *)&iHeader.TableOffset))
-    );
+      osl::endian_reverse(iHeader.TableOffset));
   }
 
   virtual uint32_t GetBlockSize() override
   {
-    return osl::endian_reverse(*((uint32_t *)&iHeader.BlockSize));
+    return osl::endian_reverse(iHeader.BlockSize);
   }
 
   virtual uint64_t GetTotalBATEntries(void)
   {
-    return osl::endian_reverse(*((uint32_t *)&iHeader.MaxTableEntries));
+    return osl::endian_reverse(iHeader.MaxTableEntries);
   }
 
   virtual uint64_t GetLogicalDiskLength() override
@@ -207,7 +206,7 @@ class VirtualHardDisk : public BaseDisk
     LOG << "VHD Footer : ";
 
     LOG << "Cookie                       : " << std::string((char *)iFooter.Cookie, 8);
-    LOG << "DataOffset                   : " << osl::endian_reverse(*((uint64_t *)&iFooter.DataOffset));   
+    LOG << "DataOffset                   : " << osl::endian_reverse(iFooter.DataOffset);   
     LOG << "Original Size                : " << osl::endian_reverse(*((uint64_t *)&iFooter.OriginalSize));
     LOG << "Current Size                 : " << osl::endian_reverse(*((uint64_t *)&iFooter.CurrentSize));
     LOG << "Creator Application          : " << std::string((char *)iFooter.CreatorApplication, 4);
@@ -215,9 +214,9 @@ class VirtualHardDisk : public BaseDisk
     LOG << "VHD Sparse Header : ";
     
     LOG << "Cookie                       : " << std::string((char *)iHeader.Cookie, 8);
-    LOG << "DataOffset                   : " << osl::endian_reverse(*((uint64_t *)&iHeader.DataOffset));
-    LOG << "Table Offset                 : " << osl::endian_reverse(*((uint64_t *)&iHeader.TableOffset));
-    LOG << "Block Size                   : " << osl::endian_reverse(*((uint64_t *)&iHeader.BlockSize));
+    LOG << "DataOffset                   : " << osl::endian_reverse(iHeader.DataOffset);
+    LOG << "Table Offset                 : " << osl::endian_reverse(iHeader.TableOffset);
+    LOG << "Block Size                   : " << osl::endian_reverse(iHeader.BlockSize);
 
     LOG << "Parent UniqueId              : ";
     DumpBytes(iHeader.ParentUniqueId, 16, true);
@@ -318,7 +317,7 @@ class VirtualHardDisk : public BaseDisk
 
         // new block entry
         uint64_t fileoffset = FirstDataBlockOffset() + (iBlockCount * (512 + GetBlockSize()));
-        osl::LTOB(fileoffset / 512, (unsigned char *) (iBAT.get() + batindex), 4);
+        iBAT[batindex] = osl::endian_reverse((uint32_t)(fileoffset / 512));
 
         // write the new payload block
         auto fRet = Subject::WriteSync(iPayloadBlock.get(), 512 + GetBlockSize(), fileoffset);
@@ -377,11 +376,11 @@ class VirtualHardDisk : public BaseDisk
 
     if (type == EVHDType::Fixed)
     {
-      memset(&iFooter.DataOffset, 0xFF, 8);
+      iFooter.DataOffset = ~((uint64_t)0);
     }
     else
     {
-      *((uint64_t *) &iFooter.DataOffset) = osl::endian_reverse(sizeof(VHD_DISK_FOOTER));
+      iFooter.DataOffset = osl::endian_reverse((uint64_t)sizeof(VHD_DISK_FOOTER));
     }
 
     *((uint32_t *) &iFooter.TimeStamp) = osl::endian_reverse(uint32_t((std::time(nullptr) - 946684800)));
@@ -398,7 +397,7 @@ class VirtualHardDisk : public BaseDisk
 
     *((uint32_t *) &iFooter.DiskType) = osl::endian_reverse(type);
 
-    memset(&iFooter.Checksum, 0, 4);
+    iFooter.Checksum = 0;
 
     iFooter.SavedState = 0;
 
@@ -411,22 +410,22 @@ class VirtualHardDisk : public BaseDisk
       checksum += ((uint8_t *)&iFooter)[i];
     }
 
-    *((uint32_t *) &iFooter.Checksum) = osl::endian_reverse(uint32_t(~checksum));
+    iFooter.Checksum = osl::endian_reverse(uint32_t(~checksum));
   }
 
   void InitializeSparseHeader(uint32_t blocksize, VirtualHardDisk *parent = nullptr)
   {
     memmove(&iHeader, "cxsparse", strlen("cxsparse"));
 
-    memset(&(iHeader.DataOffset), 0xFF, 8);
+    iHeader.DataOffset = ~((uint64_t)0);
 
     uint64_t tableOffset = sizeof(VHD_FOOTER_HEADER) + (IsDifferencing() ? (2 * PLDataSpaceSize) : 0);
-    osl::LTOB(tableOffset, (unsigned char *) &(iHeader.TableOffset), 8);
+    iHeader.TableOffset = osl::endian_reverse(tableOffset);
 
     memset(&(iHeader.HeaderVersion), 0, 4);
     iHeader.HeaderVersion[1] = 0x01;
 
-    osl::LTOB32(blocksize, (unsigned char *) &(iHeader.BlockSize));
+    iHeader.BlockSize = osl::endian_reverse(blocksize);
 
     uint64_t maxTableEntries = GetLogicalDiskLength() / GetBlockSize();
 
@@ -435,7 +434,7 @@ class VirtualHardDisk : public BaseDisk
       maxTableEntries += 1;
     }
 
-    osl::LTOB32(maxTableEntries, (unsigned char *) &(iHeader.MaxTableEntries));
+    iHeader.MaxTableEntries = osl::endian_reverse((uint32_t)maxTableEntries);
 
     if (IsDifferencing())
     {
@@ -460,7 +459,7 @@ class VirtualHardDisk : public BaseDisk
       osl::LTOB64(sizeof(VHD_FOOTER_HEADER) + PLDataSpaceSize, iHeader.ParentLocatorTable[1].PlatformDataOffset);        
     }
 
-    memset(&(iHeader.Checksum), 0, 4);
+    iHeader.Checksum = 0;
 
     uint64_t checksum = 0;
 
@@ -469,24 +468,24 @@ class VirtualHardDisk : public BaseDisk
       checksum += ((uint8_t *) &iHeader)[i];
     }
 
-    osl::LTOB32(~checksum, (unsigned char *) &(iHeader.Checksum));
+    iHeader.Checksum = osl::endian_reverse((uint32_t)(~checksum));
   }
 
   void InitializeBAT()
+  {
+    uint64_t n = osl::endian_reverse(iHeader.MaxTableEntries);
+
+    iBATSize = n * sizeof(uint32_t);
+
+    if (iBATSize % 512)
     {
-      uint64_t n = osl::endian_reverse(*((uint32_t *)&iHeader.MaxTableEntries));
-
-      iBATSize = n * sizeof(uint32_t);
-
-      if (iBATSize % 512)
-      {
-        iBATSize += 512 - (iBATSize % 512);
-      }
-
-      iBAT = std::make_unique<uint32_t []>(iBATSize / sizeof(uint32_t));
-
-      memset(iBAT.get(), 0xFF, iBATSize);
+      iBATSize += 512 - (iBATSize % 512);
     }
+
+    iBAT = std::make_unique<uint32_t []>(iBATSize / sizeof(uint32_t));
+
+    memset(iBAT.get(), 0xFF, iBATSize);
+  }
 };
 
 using SPVirtualHardDisk = std::shared_ptr<VirtualHardDisk>;

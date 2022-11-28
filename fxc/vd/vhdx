@@ -578,7 +578,7 @@ class VirtualHardDisk2 : public BaseDisk
       iHeader.LogLength = _1M;
       iHeader.LogOffset = _1M;
 
-      memset((void *) &iHeader.Checksum, 0, 4);
+      iHeader.Checksum = 0;
       iHeader.Checksum = crc32c_value((uint8_t *) &iHeader, _4K);
     }
 
@@ -601,7 +601,7 @@ class VirtualHardDisk2 : public BaseDisk
       
       iRegionTable.Header.EntryCount = 2;
       
-      memset((void *) &iRegionTable.Header.Checksum, 0, 4);
+      iRegionTable.Header.Checksum = 0;
 
       uint8_t _buf[_64K] = { 0 };
       memmove(_buf, &iRegionTable, sizeof(VHDX_REGION_TABLE));

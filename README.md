@@ -15,9 +15,9 @@
   - Fixed vhd (f-vhd)
   - Dynamic vhdx (d-vhdx)
   - Raw volume image (raw)
-- For all of the above, volume images can either be generated locally or streamed to an FTPS server as an upload.
-- Streaming supports TLS1.3 with FTPS
-- Format for streaming to FTP:
+- Volume images can either be generated locally or streamed to an FTPS server.
+- FTPS streaming supports TLS1.3
+- URI format for streaming to FTP:
   - ftps://username:password@hostname:port/a/b/c
 
 #### Dependencies

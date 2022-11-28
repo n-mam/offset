@@ -519,7 +519,7 @@ typedef struct VHD_DISK_FOOTER
     uint8_t       Cookie[8];
     uint8_t       Features[4];
     uint8_t       FileFormatVersion[4];
-    uint8_t       DataOffset[8];
+    uint64_t      DataOffset;
     uint8_t       TimeStamp[4];
     uint8_t       CreatorApplication[4];
     uint8_t       CreatorVersion[4];
@@ -528,7 +528,7 @@ typedef struct VHD_DISK_FOOTER
     uint8_t       CurrentSize[8];
     uint8_t       Geometry[4];
     uint8_t       DiskType[4];
-    uint8_t       Checksum[4];
+    uint32_t      Checksum;
     uint8_t       UniqueId[16];
     uint8_t       SavedState;
     uint8_t       Reserved[427];
@@ -548,12 +548,12 @@ typedef struct PARENT_LOCATER_ENTRY
 typedef struct VHD_SPARSE_HEADER
 {
     uint8_t       Cookie[8];
-    uint8_t       DataOffset[8];
-    uint8_t       TableOffset[8];
+    uint64_t      DataOffset;
+    uint64_t      TableOffset;
     uint8_t       HeaderVersion[4];
-    uint8_t       MaxTableEntries[4];
-    uint8_t       BlockSize[4];
-    uint8_t       Checksum[4];
+    uint32_t      MaxTableEntries;
+    uint32_t      BlockSize;
+    uint32_t      Checksum;
     uint8_t       ParentUniqueId[16];
     uint8_t       ParentTimeStamp[4];
     uint8_t       Reserved[4];
