@@ -1,4 +1,4 @@
-[Download](https://github.com/n-mam/offset/releases/download/1.3/Offset-1.3.zip)
+[Download](https://github.com/n-mam/offset/releases/download/1.4/Offset-1.4.zip)
 
 <p align="center">
  <img src="https://github.com/n-mam/offset/blob/master/qml/icons/ui.png?raw=true" width="45%">
@@ -9,12 +9,16 @@
 - Creates volume level images using either VSS snapshots or from live volume.
 - Creates volume level images of already existing persistent VSS snapshots on the system.
 - Ability to exclude files (only for VSS backups) by deleting them from the source snapshot.
-- Support for MBR and GPT partitions. Volumes > 2TB are by default saved as VHDX with GPT partitioning
+- Support for MBR and GPT partitions. Volumes > 2TB are by default saved as VHDX with GPT partitioning.
 - Supported virtual disk formats :
   - Dynamic vhd (d-vhd)
   - Fixed vhd (f-vhd)
   - Dynamic vhdx (d-vhdx)
   - Raw volume image (raw)
+- For all of the above, volume images can either be generated locally or streamed to an FTPS server as an upload.
+- Streaming supports TLS1.3 with FTPS
+- Format for streaming to FTP:
+  - ftps://username:password@hostname:port/a/b/c
 
 #### Dependencies
 
