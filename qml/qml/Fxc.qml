@@ -70,6 +70,7 @@ Column {
       placeholderText: "Destination"
       text: folderDialog.folder
       anchors.verticalCenter: parent.verticalCenter
+      Component.onCompleted: font.pointSize = font.pointSize - 1.5
     }
     Button {
       text: "Select"

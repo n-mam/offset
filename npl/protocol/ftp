@@ -85,7 +85,7 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
       }
     }
 
-    return fRet ? l : 0;
+    return fRet ? (int32_t)l : 0;
   }
 
   virtual void Transfer(EDirection direction, const std::string& remote, TTransferCbk cbk, TLS P = TLS::No)

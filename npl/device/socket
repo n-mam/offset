@@ -361,21 +361,21 @@ class SocketDevice : public FileDevice
 
   virtual bool UpdateWriteBIO(void)
   {
+    bool fRet = true;
+
     CheckPeerSSLShutdown();
 
     int pending = BIO_pending(wbio);
 
     uint8_t buf[DEVICE_BUFFER_SIZE];
 
-    int rc = 0;
-
     while (pending)
     {
-      rc = BIO_read(wbio, buf, DEVICE_BUFFER_SIZE);
+      auto rc = BIO_read(wbio, buf, DEVICE_BUFFER_SIZE);
 
       if (rc > 0)
       {
-        rc = FileDevice::Write(buf, rc);
+        fRet = FileDevice::Write(buf, rc);
       }
 
       pending = BIO_pending(wbio);
@@ -383,7 +383,7 @@ class SocketDevice : public FileDevice
       if (rc <= 0) break;
     }
 
-    return rc;
+    return fRet;
   }
 
   virtual void InitializeSSL(TOnHandshake cbk = nullptr)

@@ -139,7 +139,7 @@ void test_ftp_client(const std::string& host, int port)
   auto file = std::make_shared<FileDevice>("./xx.txt", true);
 
   ftp->Transfer(ProtocolFTP::EDirection::Download, "x.txt",
-      [file, offset = 0](const char *b, size_t n) mutable {
+      [file, offset = 0ULL](const char *b, size_t n) mutable {
         if (b) {
           file->Write((uint8_t *)b, n, offset);
           offset += n;

@@ -132,7 +132,7 @@ auto GetDirectoryList(std::string& dir)
 
   for (auto& e : std::filesystem::directory_iterator(dir))
   {
-    e.path().filename().string();
+    //e.path().filename().string();
 
     if (std::filesystem::is_symlink(e))
     {
@@ -249,8 +249,8 @@ auto endian_reverse(T x)
 
 auto DumpBufferToFile(const std::string& path, const uint8_t *b, uint64_t l)
 {
-  FILE *file;
-  file = fopen(path.c_str(), "wb");
+  FILE *file = nullptr;
+  fopen_s(&file, path.c_str(), "wb");
   fwrite(b, 1, l, file);
   fclose(file);
 }
