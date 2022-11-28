@@ -49,16 +49,20 @@ auto GetTargetForDestination(const std::wstring& destination, const std::wstring
   }
   else
   {
-    auto ftp = npl::make_ftp("127.0.0.1", 21, npl::TLS::Yes);
+    auto [protocol, username, password, host, port, directory] = osl::parseUrl(osl::ws2s(destination));
 
-    ftp->SetCredentials("nmam", "welcome123");
+    auto protect = (protocol == "ftps") ? npl::TLS::Yes : npl::TLS::No;
+
+    auto ftp = npl::make_ftp(host, port, protect);
+
+    ftp->SetCredentials(username, password);
 
     ftp->StartClient();
 
-    ftp->SetCurrentDirectory("/");
+    ftp->SetCurrentDirectory("/" + directory);
 
     ftp->Transfer(npl::ProtocolFTP::EDirection::Upload, 
-        "volume.vhd", 
+        osl::ws2s(name + L"." + GetExtentionForFormat(format)),
         [&](const char *b, size_t n) { return true; }, 
         npl::TLS::Yes);
 

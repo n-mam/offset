@@ -124,6 +124,29 @@ auto replace(const std::string& str, const std::string& from, const std::string&
   return result;
 }
 
+
+auto parseUrl(const std::string& url)
+{
+  char port[32] = { '\0' };
+  char hostname[256] = { '\0' };
+  char username[128] = { '\0' };
+  char password[128] = { '\0' };
+  char protocol[32] = { '\0' };
+  char directory[256] = { '\0' };
+
+  // ftps://nmam:welcome123@127.0.0.1:21/a/b/c
+  sscanf_s(url.c_str(), "%32[^:]://%128[^:]:%128[^@]@%256[^:]:%32[^/]/%256[^\n]",
+      protocol, 32, username, 128, password, 128, hostname, 256, port, 32, directory, 256);
+
+  return std::make_tuple(
+    std::string(protocol),
+    std::string(username),
+    std::string(password),
+    std::string(hostname),
+    std::atoi(port),
+    std::string(directory));
+}
+
 } // namespace
 
 #endif

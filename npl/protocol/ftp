@@ -68,13 +68,15 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
     std::unique_lock<std::mutex> ul(mux);
     cv.wait(ul, [&](){ return uploadChannelReady; });
 
+    bool fRet = false;
+ 
     if (iDataChannel)
     {
       uploadChannelReady = false;
 
       if (b && l)
       {
-        iDataChannel->Write(b, l);
+        fRet = iDataChannel->Write(b, l);
       }
       else
       {
@@ -83,7 +85,7 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
       }
     }
 
-    return l;
+    return fRet ? l : 0;
   }
 
   virtual void Transfer(EDirection direction, const std::string& remote, TTransferCbk cbk, TLS P = TLS::No)
@@ -481,7 +483,7 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
 
     uint32_t h1, h2, h3, h4, p1, p2;
 
-    int fRet = sscanf(spec.c_str(), "(%d,%d,%d,%d,%d,%d)", &h1, &h2, &h3, &h4, &p1, &p2);
+    int fRet = sscanf_s(spec.c_str(), "(%d,%d,%d,%d,%d,%d)", &h1, &h2, &h3, &h4, &p1, &p2);
 
     if (fRet < 6)
     {
