@@ -1,4 +1,4 @@
-[Download](https://github.com/n-mam/offset/releases/download/1.4/Offset-1.4.zip)
+[Download](https://github.com/n-mam/offset/releases/download/1.5/Offset-1.5.zip)
 
 <p align="center">
  <img src="https://github.com/n-mam/offset/blob/master/qml/icons/ui.png?raw=true" width="45%">
