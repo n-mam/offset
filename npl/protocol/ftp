@@ -427,8 +427,11 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
     {
       if (iDCProt == TLS::Yes)
       {
+        auto cc = std::dynamic_pointer_cast<SocketDevice>(m_target.lock());
+
         std::dynamic_pointer_cast<SocketDevice>
           (iDataChannel)->InitializeSSL(
+            cc->ssl,
             [this] () {
               TriggerDataTransfer();
             });
@@ -459,9 +462,7 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
 
       if (GetTransferDirection(cmd) == EDirection::Upload)
       {
-        std::lock_guard<std::mutex> lg(mux);          
-        uploadChannelReady = true;
-        cv.notify_all();
+        NotifyUploadChannelReady();
       }
 
       if (iCurrentState == EStateXYZ)
@@ -556,9 +557,7 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
 
         if (direction == EDirection::Upload)
         {
-          std::lock_guard<std::mutex> lg(mux);          
-          uploadChannelReady = true;
-          cv.notify_all();      
+          NotifyUploadChannelReady();
         }
       }
     }
@@ -588,12 +587,20 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
     }
   }
 
-  virtual void ProcessLoginEvent(bool status)
+  virtual void NotifyUploadChannelReady()
   {
-    if (!status)
+    std::lock_guard<std::mutex> lg(mux);          
+    uploadChannelReady = true;
+    cv.notify_all();
+  }
+
+  virtual void ProcessLoginEvent(bool success)
+  {
+    if (!success)
     {
       iCmdQ.clear();
       LOG << "User login failed";
+      NotifyUploadChannelReady();
     }
   }
 
@@ -633,6 +640,7 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
     if (sock)
     {
       sock->InitializeSSL(
+        nullptr,
         [this]() {
           auto tls = GetChannelTLS(m_target.lock()); 
           if (tls == TLS::Yes)

@@ -27,7 +27,7 @@
 
 namespace npl {
 
-constexpr uint32_t DEVICE_BUFFER_SIZE = 8192;
+constexpr uint32_t DEVICE_BUFFER_SIZE = 65536;
 
 enum EDeviceType : uint8_t
 {
@@ -283,6 +283,8 @@ class FileDevice : public Subject<uint8_t, uint8_t>
       return false;
     }
 
+    bool fRet = true;
+
     #ifdef _WIN32
 
     Context *ctx = (Context *) calloc(1, sizeof(Context));
@@ -298,16 +300,23 @@ class FileDevice : public Subject<uint8_t, uint8_t>
     (ctx->ol).Offset = o & 0x00000000FFFFFFFF;
     (ctx->ol).OffsetHigh = (o & 0xFFFFFFFF00000000) >> 32;
 
-    auto fRet = WriteFile(iFD, (LPVOID) ctx->b, static_cast<DWORD>(l), NULL, &ctx->ol);
+    auto rc = WriteFile(iFD, (LPVOID) ctx->b, static_cast<DWORD>(l), NULL, &ctx->ol);
 
-    if (!fRet && GetLastError() != ERROR_IO_PENDING)
+    if (!rc)
     {
-      LOG << GetName() << " WriteFile() failed : " << GetLastError();
+      if ((GetLastError() == ERROR_IO_PENDING))
+      {
+        fRet = true;
+      }
+      else
+      { 
+        LOG << GetName() << " WriteFile() failed : " << GetLastError();
+      }
     }
 
     #else
 
-    int rc = write(iFD, b, l);
+    auto rc = write(iFD, b, l);
 
     if (rc == -1)
     {

@@ -6,6 +6,9 @@
 #include <functional>
 #include <type_traits>
 
+// #define _AMD64_
+// #include <debugapi.h>
+
 namespace osl {
 
 template<typename T>
@@ -39,10 +42,12 @@ class Log
     if (a_sink && a_ss.str().size())
     {
       a_sink(m_level, a_ss.str());
+      //OutputDebugStringA(a_ss.str().c_str());
     }
     if (w_sink && w_ss.str().size())
     {
       w_sink(m_level, w_ss.str());
+      //OutputDebugStringW(w_ss.str().c_str());
     }
   }
 

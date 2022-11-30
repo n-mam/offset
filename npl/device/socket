@@ -28,7 +28,7 @@ enum ESocketType : uint8_t
   EAcceptedSocket,
 };
 
-std::vector<SSL_SESSION *> ssl_sessions;
+std::map<SSL *, std::vector<SSL_SESSION *>> ssl_session_map;
 
 using TOnHandshake = std::function<void (void)>;
 
@@ -43,15 +43,13 @@ class SocketDevice : public FileDevice
 
   int iPort = 0;
 
-  std::string iHost = "";
+  std::string iHost;
 
   bool iStopped = false;
 
   TLS iTLS = TLS::No;
 
   SSL_CTX *ctx = nullptr;
-
-  SSL *ssl = nullptr;
 
   BIO *rbio = nullptr;
 
@@ -66,6 +64,8 @@ class SocketDevice : public FileDevice
   uint32_t iSocketType = ESocketType::EInvalidSocket;
 
   public:
+
+  SSL *ssl = nullptr;
 
   SPSocketDevice iConnectedClient = nullptr;
 
@@ -386,7 +386,7 @@ class SocketDevice : public FileDevice
     return fRet;
   }
 
-  virtual void InitializeSSL(TOnHandshake cbk = nullptr)
+  virtual void InitializeSSL(SSL *cc_ssl, TOnHandshake cbk = nullptr)
   {
     iOnHandShake = cbk;
 
@@ -407,16 +407,16 @@ class SocketDevice : public FileDevice
      */
     SSL_CTX_sess_set_new_cb(ctx,
       [](SSL *ssl, SSL_SESSION *session) {
-        ssl_sessions.push_back(session);
+        ssl_session_map[ssl].push_back(session);
         DBG << "new session callback " << SSL_get_version(ssl);
         return 0;
       });
 
     ssl = SSL_new(ctx);
 
-    if (ssl_sessions.size())
+    if (ssl_session_map[cc_ssl ? cc_ssl : ssl].size())
     {
-      SSL_set_session(ssl, ssl_sessions.back());
+      SSL_set_session(ssl, ssl_session_map[cc_ssl].back());
     }
 
     rbio = BIO_new(BIO_s_mem());
