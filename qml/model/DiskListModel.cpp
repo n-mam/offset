@@ -71,7 +71,7 @@ QVariant DiskListModel::data(const QModelIndex &index, int role) const
         }
         else
         {
-          return QVector<QString>({bd->m_fs, bd->m_label, QString::number(bd->m_serial)});
+          return QVector<QString>({bd->m_fs, bd->m_label, bd->m_serial.toUpper()});
         }
         
       }
@@ -378,7 +378,7 @@ void DiskListModel::refreshModel()
 
     item->m_fs = QString::fromStdWString(fs);
     item->m_label = QString::fromStdWString(label);
-    item->m_serial = serial;
+    item->m_serial.setNum(serial, 16);
     item->m_disk = disks[0];
 
     m_model.push_back(item);
@@ -406,7 +406,7 @@ void DiskListModel::refreshModel()
       auto [label, fs, serial] = osl::GetVolumeMetadata(child.toStdWString());
       c->m_fs = QString::fromStdWString(fs);
       c->m_label = QString::fromStdWString(label);
-      c->m_serial = serial;
+      c->m_serial.setNum(serial, 16);
       c->m_disk = disks[0];
       m_model.push_back(c);
     }

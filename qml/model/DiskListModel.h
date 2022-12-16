@@ -28,7 +28,7 @@ struct BlockDevice : public BaseItem
   bool m_isDisk = false;
   QString m_diskPartition;
   uint64_t m_diskLength = 0;
-  unsigned long m_serial = 0;
+  QString m_serial;
   int m_sourceIndex;
   int m_formatIndex;
   QVector<QString> m_sourceOptions;
