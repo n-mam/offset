@@ -102,7 +102,7 @@ Column {
       anchors.margins: mainColumn.spacing
       anchors.verticalCenter: parent.verticalCenter
       onClicked: {
-        diskListModel.convertSelectedItemsToVirtualDisks(destination.text.length ? destination.text : ".\\")
+        diskListModel.convertSelectedItemsToVirtualDisks(destination.text)
       }
     }
     Button {

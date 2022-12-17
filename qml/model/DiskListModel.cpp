@@ -212,9 +212,15 @@ void DiskListModel::setStop(bool stop)
   this->stop = stop;
 }
 
-void DiskListModel::convertSelectedItemsToVirtualDisks(QString destination)
+bool DiskListModel::convertSelectedItemsToVirtualDisks(QString destination)
 {
   std::vector<fxc::TBackupConfig> configuration;
+
+  if (!destination.size())
+  {
+    STATUS << "Backup destination not specified";
+    return false;
+  }
 
   for (auto& item : m_model)
   {
@@ -247,6 +253,12 @@ void DiskListModel::convertSelectedItemsToVirtualDisks(QString destination)
     });
   }
 
+  if (!configuration.size())
+  {
+    STATUS << "Please select the volumes to backup";
+    return false;
+  }
+
   setTransfer(static_cast<int>(configuration.size()));
 
   STATUS << "Transfer in progress : " << this->getTransfer();
@@ -271,6 +283,8 @@ void DiskListModel::convertSelectedItemsToVirtualDisks(QString destination)
       });
     }
   ));
+
+  return true;
 }
 
 void DiskListModel::refreshModel()

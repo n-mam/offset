@@ -50,8 +50,8 @@ class DiskListModel : public BaseModel
   QHash<int, QByteArray> roleNames() const override;
   QVariant data(const QModelIndex &index, int role) const override;
   bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole) override;
-  
-  Q_INVOKABLE void convertSelectedItemsToVirtualDisks(QString folder);
+
+  Q_INVOKABLE bool convertSelectedItemsToVirtualDisks(QString folder);
 
   Q_PROPERTY(bool stop READ getStop WRITE setStop);
   Q_PROPERTY(int transfer READ getTransfer WRITE setTransfer NOTIFY transferChanged);
