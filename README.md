@@ -71,3 +71,9 @@ qml\Release\offset.exe
 windeployqt --qmldir E:\offset\qml E:\offset\build\qml\Release\offset.exe
 ```
 vc redist is bundled with package zip; in case your system does not have that installed already
+
+#### Sponsor this project
+https://www.paypal.me/neelabhmam1
+
+#### Contact:
+Telegram: https://t.me/neelabhm
