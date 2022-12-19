@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import Qt.labs.platform
+import "./FTP"
 
 ApplicationWindow {
   width: 500
@@ -64,6 +65,13 @@ ApplicationWindow {
       anchors.margins: 10
       height: mainColumn.height * (mainColumn.showlog ? 0.68 : 0.94)
     }
+
+    // FTP {
+    //   anchors.left: parent.left
+    //   anchors.right: parent.right
+    //   anchors.margins: 10
+    //   height: mainColumn.height * (mainColumn.showlog ? 0.68 : 0.94)
+    // }
 
     Rectangle {
       id: status
