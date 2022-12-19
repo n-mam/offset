@@ -1,102 +1,61 @@
 import QtQuick
+import QtQuick.Layouts
 import QtQuick.Controls
 import Qt.labs.platform
-import "./FTP"
 
 ApplicationWindow {
-  width: 500
-  height: 600
+  width: 540
+  height: 620
   visible: true
   title: qsTr("Offset")
 
+  property var showlog: false
   property var borderColor: "#BCDCAA"
+  property var appSpacing: 5
 
-  Column {
-    id: mainColumn
-    spacing: 5
-    topPadding: 10
+  TabBar {
+    id: bar
     width: parent.width
-    height: parent.height
-
-    property var showlog: false
-
-    Rectangle {
-      id: log
-      radius: 5
-      border.width: 1
-      border.color: borderColor
-      anchors.left: parent.left
-      anchors.right: parent.right
-      anchors.margins: 10
-      height: mainColumn.height * (mainColumn.showlog ? 0.25 : 0)
-      color: Material.background
-      Flickable {
-        id: flickable
-        clip: true
-        anchors.fill: parent
-        flickableDirection: Flickable.VerticalFlick
-        TextArea.flickable: TextArea {
-          id: logText
-          color: "white"
-          visible: mainColumn.showlog
-          anchors.fill: parent
-          anchors.leftMargin: 5
-          background: null
-          Component.onCompleted: font.pointSize = font.pointSize - 3
-          Connections {
-            target: logger
-            function onAddLogLine(severity, log) {
-              if (severity === 3) {
-                statusText.text = log
-              } else {
-                logText.append(log)
-                logText.cursorPosition = logText.length - log.length
-              }
-            }
-          }
-        }
-        ScrollBar.vertical: ScrollBar {}
-      }
+    TabButton {
+      text: qsTr("FXC")
     }
+    TabButton {
+      text: qsTr("FTP")
+    }
+    TabButton {
+      text: qsTr("LOG")
+    }
+  }
 
+  StackLayout {
+    width: parent.width
+    height: parent.height * 0.95
+    currentIndex: bar.currentIndex
+    anchors.top: bar.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.margins: 5
     Fxc {
-      anchors.left: parent.left
-      anchors.right: parent.right
-      anchors.margins: 10
-      height: mainColumn.height * (mainColumn.showlog ? 0.68 : 0.94)
+      id: fxc
+      height: parent.height
     }
 
-    // FTP {
-    //   anchors.left: parent.left
-    //   anchors.right: parent.right
-    //   anchors.margins: 10
-    //   height: mainColumn.height * (mainColumn.showlog ? 0.68 : 0.94)
-    // }
+    FTP {
+      id: ftp
+      height: parent.height
+    }
 
-    Rectangle {
-      id: status
-      // radius: 5
-      // border.width: 1
-      // border.color: borderColor
-      anchors.left: parent.left
-      anchors.right: parent.right
-      anchors.margins: 10
-      color: Material.background
-      height: mainColumn.height * (mainColumn.showlog ? 0.02 : 0.03)
-      Text {
-        id: statusText
-        text: "Ready"
-        color: "white"
-      }
-      Component.onCompleted: statusText.font.pointSize = statusText.font.pointSize - 1.8
+    Log {
+      id: log
+      height: parent.height
     }
   }
 
-  Shortcut {
-    context: Qt.ApplicationShortcut
-    sequences: ["Ctrl+Q","Ctrl+W"]
-    onActivated: {
-      mainColumn.showlog = !mainColumn.showlog
-    }
-  }
+  // Shortcut {
+  //   context: Qt.ApplicationShortcut
+  //   sequences: ["Ctrl+Q","Ctrl+W"]
+  //   onActivated: {
+  //     //mainColumn.showlog = !mainColumn.showlog
+  //   }
+  // }
 }

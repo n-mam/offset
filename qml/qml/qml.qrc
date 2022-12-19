@@ -1,12 +1,13 @@
 <RCC>
   <qresource prefix="/">
-      <file>Fxc.qml</file>
-      <file>main.qml</file>
-      <file>Element.qml</file>
-      <file>List.qml</file>
-      <file>RowDelegate.qml</file>
-      <file>FTP/FTP.qml</file>
-      <file>FTP/LocalListView.qml</file>
-      <file>FTP/RemoteListView.qml</file>
+    <file>Fxc.qml</file>
+    <file>main.qml</file>
+    <file>Element.qml</file>
+    <file>List.qml</file>
+    <file>RowDelegate.qml</file>
+    <file>Log.qml</file>
+    <file>FTP.qml</file>
+    <file>LocalListView.qml</file>
+    <file>RemoteListView.qml</file>
   </qresource>
 </RCC>

@@ -6,7 +6,7 @@
 
 #include <Logger.h>
 #include <DiskListModel.h>
-//#include <Windows.h>
+#include <Windows.h>
 
 void q_logger(QtMsgType, const QMessageLogContext&, const QString&);
 
@@ -65,6 +65,6 @@ void q_logger(QtMsgType type, const QMessageLogContext &context, const QString &
       //OutputDebugStringA(buffer);
       abort();
   }
-  //OutputDebugStringA(buffer);
+  OutputDebugStringA(buffer);
   LOG << buffer;
 }

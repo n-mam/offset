@@ -2,8 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import Qt.labs.platform
 
-Column {
-  spacing: 5
+Item {
 
   Rectangle {
     id: listRect
@@ -55,16 +54,18 @@ Column {
 
   Rectangle {
     id: destinationRect
+    anchors.top: listRect.bottom
     anchors.left: parent.left
     anchors.right: parent.right
-    height: parent.height * 0.09
+    anchors.topMargin: 5
+    height: parent.height * 0.08
     color: Material.background
     radius: 5
     border.width: 1
     border.color: borderColor
     TextField {
       id: destination
-      width: (parent.width * 0.75) - mainColumn.spacing
+      width: (parent.width * 0.75) - appSpacing
       anchors.left: parent.left
       anchors.margins: 10
       placeholderText: "Destination"
@@ -88,10 +89,11 @@ Column {
     // radius: 5
     // border.width: 1
     // border.color: borderColor
+    anchors.top: destinationRect.bottom
     color: Material.background
     anchors.horizontalCenter: parent.horizontalCenter
-    width: 75 + 75 + (3 * mainColumn.spacing)
-    height: parent.height * 0.09
+    width: 75 + 75 + (3 * appSpacing)
+    height: parent.height * 0.08
     Button {
       id: startButton
       width: 75
@@ -99,7 +101,7 @@ Column {
       enabled: (diskListModel.transfer === 0)
       height: parent.height * 0.80
       anchors.left: parent.left
-      anchors.margins: mainColumn.spacing
+      anchors.margins: appSpacing
       anchors.verticalCenter: parent.verticalCenter
       onClicked: {
         diskListModel.convertSelectedItemsToVirtualDisks(destination.text)
@@ -112,12 +114,21 @@ Column {
       enabled: (diskListModel.transfer !== 0)
       height: parent.height * 0.80
       anchors.left: startButton.right
-      anchors.margins: mainColumn.spacing
+      anchors.margins: appSpacing
       anchors.verticalCenter: parent.verticalCenter
       onClicked: {
         diskListModel.stop = true;
       }
     }
+  }
+
+  Text {
+    id: statusText
+    text: "Ready"
+    color: "white"
+    anchors.top: actionsRect.bottom
+    anchors.left: parent.left
+    Component.onCompleted: statusText.font.pointSize = statusText.font.pointSize - 1.0
   }
 
   FolderDialog {
@@ -128,4 +139,5 @@ Column {
       destination.text = decodeURIComponent(path).replace(/\//g, "\\")
     }
   }
+
 }

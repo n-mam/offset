@@ -6,11 +6,14 @@ Item {
 
   implicitWidth: parent.width / 2
 
-  Column {
-    spacing: 5
+  Rectangle {
+    id: listRectangle
     anchors.fill: parent
     anchors.margins: 5
-    anchors.topMargin: 0
+    // radius: 2
+    // border.width: 1
+    // border.color: borderColor
+    color: Material.background
 
     TextField {
       id: currentDirectory
@@ -26,29 +29,21 @@ Item {
       Component.onCompleted: font.pointSize = font.pointSize - 1.5
     }
 
-    Rectangle {
+    ListView {
+      id: llv
       width: parent.width
-      height: parent.height * 0.87
-
-      radius: 2
-      border.width: 1
-      border.color: borderColor
-      color: Material.background
-
-      ListView {
-        anchors.fill: parent
-        anchors.margins: 5
-        anchors.bottomMargin: 10
-        clip: true
-        model: folderModel
-        delegate: listItemDelegate
-      }
+      height: parent.height * 0.85
+      anchors.top: currentDirectory.bottom
+      clip: true
+      model: folderModel
+      delegate: listItemDelegate
     }
 
     Text {
       id: status
-      height: parent.height * 0.05
       color: "white"
+      height: parent.height * 0.05
+      anchors.bottom: parent.bottom
       text: "Total Items : " + (folderModel.count - 2)
     }
   }
@@ -64,7 +59,7 @@ Item {
       color: Material.background
       Image {
         id: listItemIcon
-        x: parent.x + 5
+        x: parent.x + 3
         width: 16; height: 16
         anchors.verticalCenter: parent.verticalCenter
         source: model.fileIsDir ? (fileName !== "." ? "qrc:/folder.png" : "") : "qrc:/file.png"

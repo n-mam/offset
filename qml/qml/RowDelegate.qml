@@ -271,7 +271,7 @@ Rectangle {
               // border.width: 1
               // border.color: "#FFFFFF"
               color: "transparent"
-              width: 75 + 75 + (3 * mainColumn.spacing)
+              width: 75 + 75 + (3 * appSpacing)
               height: parent.height * 0.15
               anchors.horizontalCenter: parent.horizontalCenter
               anchors.top: popupText.bottom
@@ -293,7 +293,7 @@ Rectangle {
                 width: 75
                 height: parent.height * 0.90
                 anchors.right: parent.right
-                anchors.margins: mainColumn.spacing
+                anchors.margins: appSpacing
                 anchors.verticalCenter: parent.verticalCenter
                 onClicked: popup.close()
               }
