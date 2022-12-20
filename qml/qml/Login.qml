@@ -9,6 +9,7 @@ Rectangle {
 
   property var rowHeight: 50
   height: (rowHeight * 4) + 3
+  signal login(var host, var port, var user, var password)
 
   Column {
     width: parent.width
@@ -77,6 +78,9 @@ Rectangle {
         height: parent.height * 0.83
         text: "Connect"
         anchors.horizontalCenter: parent.horizontalCenter
+        onClicked: {
+          login(hostname.text, port.text, username.text, password.text)
+        }
       }
     }
   }

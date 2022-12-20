@@ -12,6 +12,10 @@ SPDispatcher D = nullptr;
 
 auto make_dispatcher(void)
 {
+  #ifdef _WIN32
+  WSADATA wsaData;
+  int winsockinit = WSAStartup(MAKEWORD(2, 2), &wsaData);
+  #endif
   D = std::make_shared<Dispatcher>();
   D->InitializeControl();
   return D;

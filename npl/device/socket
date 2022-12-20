@@ -28,7 +28,7 @@ enum ESocketType : uint8_t
   EAcceptedSocket,
 };
 
-std::map<SSL *, std::vector<SSL_SESSION *>> ssl_session_map;
+inline std::map<SSL *, std::vector<SSL_SESSION *>> ssl_session_map;
 
 using TOnHandshake = std::function<void (void)>;
 
@@ -630,55 +630,12 @@ class SocketDevice : public FileDevice
   #endif
 };
 
-int Base64Encode(unsigned char *encoded, const unsigned char *source, int n)
-{
-  return EVP_EncodeBlock(encoded, source, n);
-}
-
-int MessageDigest(const unsigned char *message, size_t message_len, unsigned char *digest, unsigned int *digest_len)
-{
-  int fRet = 0;
-
-  EVP_MD_CTX *ctx = NULL;
-
-  ctx = EVP_MD_CTX_create();
-
-  if (ctx == NULL)
-    goto _end;
-
-  fRet = EVP_DigestInit_ex(ctx, EVP_sha1(), NULL);
-
-  if (1 != fRet)
-    goto _end;
-
-  fRet = EVP_DigestUpdate(ctx, message, message_len);
-
-  if (1 != fRet)
-    goto _end;
-
-  fRet = EVP_DigestFinal_ex(ctx, digest, digest_len);
-
-  if (1 != fRet)
-    goto _end;
-
-  _end:
-
-  if (ctx)
-  {
-    EVP_MD_CTX_destroy(ctx);
-  }
-
-  return fRet;
-}
-
 using SPSocketDevice = std::shared_ptr<SocketDevice>;
 using WPDeviceSocket = std::weak_ptr<SocketDevice>;
 
 } // namespace npl
 
 #ifdef _WIN32
-WSADATA wsaData;
-int winsockinit = WSAStartup(MAKEWORD(2, 2), &wsaData);
 void * GetExtentionPfn(GUID guid, FD fd); 
 #endif
 

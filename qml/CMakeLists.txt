@@ -17,6 +17,7 @@ add_executable(
   ${QT_RESOURCES}
   ${CMAKE_CURRENT_SOURCE_DIR}/model/BaseModel.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/model/DiskListModel.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/model/RemoteListModel.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/model/Logger.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/icons/resource.rc
 )

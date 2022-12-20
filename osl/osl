@@ -43,7 +43,7 @@
 
 namespace osl {
 
-auto GetArgumentsVector(int argc, wchar_t *argv[])
+inline auto GetArgumentsVector(int argc, wchar_t *argv[])
 {
   std::vector<std::wstring> arguments;
 
@@ -55,7 +55,7 @@ auto GetArgumentsVector(int argc, wchar_t *argv[])
   return arguments;
 }
 
-auto GetArgumentsVector(int argc, char *argv[])
+inline auto GetArgumentsVector(int argc, char *argv[])
 {
   std::vector<std::string> arguments;
 
@@ -67,7 +67,7 @@ auto GetArgumentsVector(int argc, char *argv[])
   return arguments;
 }
 
-auto GetCurrentDateTime(void)
+inline auto GetCurrentDateTime(void)
 {
   char buf[80];
   struct tm tstruct;      
@@ -82,12 +82,12 @@ auto GetCurrentDateTime(void)
   return std::string(buf);
 }
 
-auto Base64Encode(unsigned char *encoded, const unsigned char *source, int n)
+inline auto Base64Encode(unsigned char *encoded, const unsigned char *source, int n)
 {
   return EVP_EncodeBlock(encoded, source, n);
 }
 
-auto MessageDigest(const unsigned char *message, size_t message_len, unsigned char *digest, unsigned int *digest_len)
+inline auto MessageDigest(const unsigned char *message, size_t message_len, unsigned char *digest, unsigned int *digest_len)
 {
   int fRet = 0;
 
@@ -123,7 +123,7 @@ auto MessageDigest(const unsigned char *message, size_t message_len, unsigned ch
   return fRet;
 }
 
-auto GetDirectoryList(std::string& dir)
+inline auto GetDirectoryList(std::string& dir)
 {
   if (!dir.size())
   {
@@ -149,7 +149,7 @@ auto GetDirectoryList(std::string& dir)
   }
 }
 
-auto WideToString(const std::wstring& src)
+inline auto WideToString(const std::wstring& src)
 {
   std::vector<CHAR> chBuffer;
 
@@ -164,7 +164,7 @@ auto WideToString(const std::wstring& src)
   return std::string(&chBuffer.front());
 }
 
-auto SetRegistry(HKEY hKey, std::wstring subKey, DWORD dwType, std::wstring valueName, std::wstring value)
+inline auto SetRegistry(HKEY hKey, std::wstring subKey, DWORD dwType, std::wstring valueName, std::wstring value)
 {
   HKEY hkResult;
   LSTATUS status;
@@ -204,7 +204,7 @@ auto SetRegistry(HKEY hKey, std::wstring subKey, DWORD dwType, std::wstring valu
   return (status == ERROR_SUCCESS);
 }
 
-BSTR ReadFileAsBSTR(const std::wstring& fileName)
+inline BSTR ReadFileAsBSTR(const std::wstring& fileName)
 {
   HANDLE hFile = GetFileHandle(fileName);
 
@@ -231,7 +231,7 @@ BSTR ReadFileAsBSTR(const std::wstring& fileName)
 }
 
 template<typename T>
-auto endian_reverse(T x)
+inline auto endian_reverse(T x)
 {
   auto l = sizeof(T);
 
@@ -247,7 +247,7 @@ auto endian_reverse(T x)
   return x;
 }
 
-auto DumpBufferToFile(const std::string& path, const uint8_t *b, uint64_t l)
+inline auto DumpBufferToFile(const std::string& path, const uint8_t *b, uint64_t l)
 {
   FILE *file = nullptr;
   fopen_s(&file, path.c_str(), "wb");
@@ -255,7 +255,7 @@ auto DumpBufferToFile(const std::string& path, const uint8_t *b, uint64_t l)
   fclose(file);
 }
 
-auto DocToJsonString(rapidjson::Document& rjd)
+inline auto DocToJsonString(rapidjson::Document& rjd)
 {
   rapidjson::StringBuffer buffer;
   rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
@@ -263,22 +263,22 @@ auto DocToJsonString(rapidjson::Document& rjd)
   return buffer.GetString();
 }
 
-void LTOB(uint64_t value, unsigned char *memory, int size)
+inline void LTOB(uint64_t value, unsigned char *memory, int size)
 {
   for (int i = 0; i < size; i++)
   {
     memory[size - 1 - i] = *((unsigned char *)(&value) + i);
   }
 }
-void LTOB16(uint64_t value, unsigned char *memory)
+inline void LTOB16(uint64_t value, unsigned char *memory)
 {
   LTOB(value, memory, 2);
 }
-void LTOB32(uint64_t value, unsigned char *memory)
+inline void LTOB32(uint64_t value, unsigned char *memory)
 {
   LTOB(value, memory, 4);
 }
-void LTOB64(uint64_t value, unsigned char *memory)
+inline void LTOB64(uint64_t value, unsigned char *memory)
 {
   LTOB(value, memory, 8);
 }

@@ -9,7 +9,7 @@
 
 namespace osl {
 
-std::vector<std::string> split(const std::string &s, char delim)
+inline std::vector<std::string> split(const std::string &s, char delim)
 {
   std::vector<std::string> elems;
   std::stringstream ss(s);
@@ -23,7 +23,7 @@ std::vector<std::string> split(const std::string &s, char delim)
   return elems;
 }
 
-std::vector<std::string> split(std::string s, std::string delim) 
+inline std::vector<std::string> split(std::string s, std::string delim) 
 {
     size_t pos_start = 0, pos_end, delim_len = delim.length();
     std::string token;
@@ -41,7 +41,7 @@ std::vector<std::string> split(std::string s, std::string delim)
     return res;
 }
 
-std::vector<std::wstring> wsplit(std::wstring s, std::wstring delim) 
+inline std::vector<std::wstring> wsplit(std::wstring s, std::wstring delim) 
 {
     size_t pos_start = 0, pos_end, delim_len = delim.length();
     std::wstring token;
@@ -59,7 +59,7 @@ std::vector<std::wstring> wsplit(std::wstring s, std::wstring delim)
     return res;
 }
 
-std::wstring s2ws(const std::string& str)
+inline std::wstring s2ws(const std::string& str)
 {
     using convert_typeX = std::codecvt_utf8<wchar_t>;
     std::wstring_convert<convert_typeX, wchar_t> converterX;
@@ -67,7 +67,7 @@ std::wstring s2ws(const std::string& str)
     return converterX.from_bytes(str);
 }
 
-std::string ws2s(const std::wstring& wstr)
+inline std::string ws2s(const std::wstring& wstr)
 {
     using convert_typeX = std::codecvt_utf8<wchar_t>;
     std::wstring_convert<convert_typeX, wchar_t> converterX;
@@ -75,24 +75,24 @@ std::string ws2s(const std::wstring& wstr)
     return converterX.to_bytes(wstr);
 }
 
-std::string& ltrim(std::string& str, const std::string& chars)
+inline std::string& ltrim(std::string& str, const std::string& chars)
 {
     str.erase(0, str.find_first_not_of(chars));
     return str;
 }
  
-std::string& rtrim(std::string& str, const std::string& chars)
+inline std::string& rtrim(std::string& str, const std::string& chars)
 {
     str.erase(str.find_last_not_of(chars) + 1);
     return str;
 }
 
-std::string& trim(std::string& str, const std::string& chars)
+inline std::string& trim(std::string& str, const std::string& chars)
 {
     return ltrim(rtrim(str, chars), chars);
 }
 
-bool StartsWith(std::wstring& str, std::wstring prefix)
+inline bool StartsWith(std::wstring& str, std::wstring prefix)
 {
   bool fRet = false;
 
@@ -104,7 +104,7 @@ bool StartsWith(std::wstring& str, std::wstring prefix)
   return fRet;
 }
 
-void removeDuplicates(std::string& str, const char& ch)
+inline void removeDuplicates(std::string& str, const char& ch)
 {
   auto new_end = std::unique(str.begin(), str.end(), 
     [ch](char lhs, char rhs) {
@@ -115,7 +115,7 @@ void removeDuplicates(std::string& str, const char& ch)
 }
 
 //Replace part of a string with another string
-auto replace(const std::string& str, const std::string& from, const std::string& to)
+inline auto replace(const std::string& str, const std::string& from, const std::string& to)
 {
   std::string result = str;
   size_t start_pos = result.find(from);
@@ -124,8 +124,7 @@ auto replace(const std::string& str, const std::string& from, const std::string&
   return result;
 }
 
-
-auto parseUrl(const std::string& url)
+inline auto parseUrl(const std::string& url)
 {
   char port[32] = { '\0' };
   char hostname[256] = { '\0' };

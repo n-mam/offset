@@ -6,6 +6,8 @@
 
 #include <Logger.h>
 #include <DiskListModel.h>
+#include <RemoteListModel.h>
+
 #include <Windows.h>
 
 void q_logger(QtMsgType, const QMessageLogContext&, const QString&);
@@ -36,6 +38,7 @@ int main(int argc, char *argv[])
 
   engine.rootContext()->setContextProperty("logger", new Logger());
   engine.rootContext()->setContextProperty("diskListModel", new DiskListModel());
+  engine.rootContext()->setContextProperty("remoteListModel", new RemoteListModel());
 
   engine.load(url);
 

@@ -253,7 +253,7 @@ class ProtocolWS : public ProtocolHTTP
     unsigned char hash[20] = { '\0' };
     unsigned int hashlen;
 
-    MessageDigest(
+    osl::MessageDigest(
       (const unsigned char *) key.c_str(), 
       key.size(),
       hash,
@@ -261,7 +261,7 @@ class ProtocolWS : public ProtocolHTTP
 
     unsigned char base64[128] = { '\0' };
 
-    Base64Encode(base64, hash, hashlen);
+    osl::Base64Encode(base64, hash, hashlen);
 
     std::stringstream sHello;
 

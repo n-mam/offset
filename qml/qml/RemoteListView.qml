@@ -35,7 +35,7 @@ Item {
       height: connected ? parent.height * 0.85 : 0
       anchors.top: currentDirectory.bottom
       clip: true
-      model: ListModel {}
+      model: remoteListModel
       delegate: listItemDelegate
     }
 
@@ -45,6 +45,9 @@ Item {
       width: parent.width - 10
       anchors.top: currentDirectory.bottom
       anchors.horizontalCenter: parent.horizontalCenter
+      onLogin: (host, port, user, password) => {
+        remoteListModel.InitConnect(host, port, user, password);
+      }
     }
 
     Text {
@@ -87,10 +90,10 @@ Item {
         onClicked: {
           if (model.fileIsDir) {
             if (fileName == "..")
-              folderModel.folder = folderModel.parentFolder
+              remoteListModel.folder = remoteListModel.parentFolder
             else
-              folderModel.folder = folderModel.folder + "/" + fileName
-            currentDirectory.text = urlToPath(folderModel.folder)
+              remoteListModel.folder = remoteListModel.folder + "/" + fileName
+            currentDirectory.text = urlToPath(remoteListModel.folder)
           }               
         }
       }
@@ -104,7 +107,6 @@ Item {
   }
 
   Component.onCompleted: {
-    console.log(folderModel.folder)
-    currentDirectory.text = urlToPath(folderModel.folder)
+    //currentDirectory.text = urlToPath(remoteListModel.folder)
   }
 }

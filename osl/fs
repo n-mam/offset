@@ -32,7 +32,7 @@ class DllHelper
     HMODULE hDll;
 };
 
-auto GetFileHandle(const std::wstring& file)
+inline auto GetFileHandle(const std::wstring& file)
 {
   return CreateFileW(
     file.c_str(),
@@ -44,7 +44,7 @@ auto GetFileHandle(const std::wstring& file)
     NULL);
 }
 
-auto GetFileHandle(const std::string& file)
+inline auto GetFileHandle(const std::string& file)
 {
   return CreateFileA(
     file.c_str(),
@@ -56,7 +56,7 @@ auto GetFileHandle(const std::string& file)
     NULL);
 }
 
-auto OpenVirtualDisk(const std::wstring& file)
+inline auto OpenVirtualDisk(const std::wstring& file)
 {
   DWORD fRet;
   HANDLE hvhd = INVALID_HANDLE_VALUE;
@@ -94,7 +94,7 @@ auto OpenVirtualDisk(const std::wstring& file)
   return hvhd;
 }
 
-auto AttachVHD(const std::wstring& source)
+inline auto AttachVHD(const std::wstring& source)
 {
   HANDLE hvhd = OpenVirtualDisk(source);
 
@@ -128,7 +128,7 @@ auto AttachVHD(const std::wstring& source)
   return hvhd;
 }
 
-auto GetPhysicalDiskPath(HANDLE hvhd)
+inline auto GetPhysicalDiskPath(HANDLE hvhd)
 {
   wchar_t buf[128] = { L'\0' };
   ULONG bufSize = sizeof(buf);
@@ -163,7 +163,7 @@ auto GetPhysicalDiskPath(HANDLE hvhd)
   return std::string(phyDiskPath);
 }
 
-PVOLUME_BITMAP_BUFFER GetVolumeInUseBitmap(HANDLE hvolume)
+inline PVOLUME_BITMAP_BUFFER GetVolumeInUseBitmap(HANDLE hvolume)
 {
   STARTING_LCN_INPUT_BUFFER startLCN;
   PVOLUME_BITMAP_BUFFER bitmap = NULL;
@@ -202,7 +202,7 @@ PVOLUME_BITMAP_BUFFER GetVolumeInUseBitmap(HANDLE hvolume)
   }
 }
 
-auto GetVolumeMetadata(const std::wstring& volume)
+inline auto GetVolumeMetadata(const std::wstring& volume)
 {
   DWORD d1,d2,d3;
   std::wstring name = volume;
@@ -217,7 +217,7 @@ auto GetVolumeMetadata(const std::wstring& volume)
   return std::make_tuple(std::wstring(b1), std::wstring(b2), d1);
 }
 
-auto AllowExtendedDasdIO(HANDLE hDevice) -> bool
+inline auto AllowExtendedDasdIO(HANDLE hDevice) -> bool
 {
   if (!DeviceIoControl(
             hDevice,
@@ -235,7 +235,7 @@ auto AllowExtendedDasdIO(HANDLE hDevice) -> bool
   return true;
 }
 
-auto GetNTFSVolumeData(HANDLE hDevice)
+inline auto GetNTFSVolumeData(HANDLE hDevice)
 {
   DWORD fRet, BytesReturned;
   NTFS_VOLUME_DATA_BUFFER nvdb = { 0 };
@@ -265,7 +265,7 @@ auto GetNTFSVolumeData(HANDLE hDevice)
   return nvdb;
 }
 
-auto GetPartitionInformation(const std::wstring& disk)
+inline auto GetPartitionInformation(const std::wstring& disk)
 {
   DWORD nReturned;
   PARTITION_INFORMATION_EX  pie = { 0 };
@@ -290,7 +290,7 @@ auto GetPartitionInformation(const std::wstring& disk)
   return pie;
 }
 
-auto GetBlockDeviceLength(HANDLE hVolume)
+inline auto GetBlockDeviceLength(HANDLE hVolume)
 {
   DWORD nReturned;
   GET_LENGTH_INFORMATION  gli = { 0 };
@@ -312,7 +312,7 @@ auto GetBlockDeviceLength(HANDLE hVolume)
   return gli.Length.QuadPart;
 }
 
-auto GetVolumeHandle(const std::string& name)
+inline auto GetVolumeHandle(const std::string& name)
 {
   char _guid[128] = { 0 };
 
@@ -331,7 +331,7 @@ auto GetVolumeHandle(const std::string& name)
   return INVALID_HANDLE_VALUE;
 }
 
-auto GetVolumeHandle(const std::wstring& name)
+inline auto GetVolumeHandle(const std::wstring& name)
 {
   wchar_t _guid[128] = { 0 };
 
@@ -357,7 +357,7 @@ auto GetVolumeHandle(const std::wstring& name)
   return INVALID_HANDLE_VALUE;
 }
 
-auto GetVolumeDiskExtents(const std::wstring& volume)
+inline auto GetVolumeDiskExtents(const std::wstring& volume)
 {
   std::vector<int> disks;
 
@@ -401,7 +401,7 @@ auto GetVolumeDiskExtents(const std::wstring& volume)
 }
 
 template<typename T>
-auto GetTotalAndFree(const T& volume)
+inline auto GetTotalAndFree(const T& volume)
 {
   auto h = osl::GetVolumeHandle(volume);
 
@@ -417,7 +417,7 @@ auto GetTotalAndFree(const T& volume)
   return std::make_pair(size, free);
 }
 
-auto EnumerateVolumes(void)
+inline auto EnumerateVolumes(void)
 {
   wchar_t _guid[128];
   wchar_t _buf[MAX_PATH];
@@ -476,7 +476,7 @@ auto EnumerateVolumes(void)
   return out;
 }
 
-auto GetVolumeList(void)
+inline auto GetVolumeList(void)
 {
   auto volumes = EnumerateVolumes();
 
@@ -499,7 +499,7 @@ auto GetVolumeList(void)
   }
 }
 
-auto UnlockVolume(HANDLE hTarget)
+inline auto UnlockVolume(HANDLE hTarget)
 {
   BOOL fRet = DeviceIoControl(
           hTarget,
@@ -521,7 +521,7 @@ auto UnlockVolume(HANDLE hTarget)
   return fRet;
 }
 
-auto LockAndDismountVolume(HANDLE hTarget)
+inline auto LockAndDismountVolume(HANDLE hTarget)
 {
   BOOL fRet = DeviceIoControl(
             hTarget,

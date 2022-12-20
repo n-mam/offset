@@ -59,7 +59,7 @@ struct Context
   bool            bFree;
 };
 
-auto EIOToString(EIOType t)
+inline auto EIOToString(EIOType t)
 {
   switch(t)
   {
