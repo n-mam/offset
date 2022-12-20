@@ -4,8 +4,8 @@ import QtQuick.Controls
 import Qt.labs.platform
 
 ApplicationWindow {
-  width: 540
-  height: 620
+  width: 560
+  height: 600
   visible: true
   title: qsTr("Offset")
 
@@ -31,20 +31,19 @@ ApplicationWindow {
     width: parent.width
     height: parent.height * 0.95
     currentIndex: bar.currentIndex
+    anchors.margins: 5   
     anchors.top: bar.bottom
     anchors.left: parent.left
     anchors.right: parent.right
-    anchors.margins: 5
+
     Fxc {
       id: fxc
       height: parent.height
     }
-
     FTP {
       id: ftp
       height: parent.height
     }
-
     Log {
       id: log
       height: parent.height

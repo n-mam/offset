@@ -7,6 +7,7 @@
     <file>RowDelegate.qml</file>
     <file>Log.qml</file>
     <file>FTP.qml</file>
+    <file>Login.qml</file>
     <file>LocalListView.qml</file>
     <file>RemoteListView.qml</file>
   </qresource>

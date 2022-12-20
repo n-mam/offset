@@ -3,7 +3,7 @@ import QtQuick.Controls
 
 Item {
 
-  Rectangle{
+  Rectangle {
     radius: 5
     border.width: 1
     border.color: borderColor
@@ -15,13 +15,11 @@ Item {
     SplitView {
       id: splitView
       anchors.fill: parent
-      //anchors.margins: 5
 
       handle: Rectangle {
         id: handleDelegate
         implicitWidth: 1
         implicitHeight: 1
-        //anchors.margins: 5
         color: SplitHandle.pressed ? 
           "#CCD1D1" : (SplitHandle.hovered ? Qt.lighter("#CCD1D1", 1.1) : "#CCD1D1")
         containmentMask: Item {
@@ -32,7 +30,6 @@ Item {
       }
 
       LocalListView{}
-
       RemoteListView{}
     }
   }

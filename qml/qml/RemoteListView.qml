@@ -3,6 +3,7 @@ import QtQuick.Controls
 
 Item {
 
+  property var connected: false;
   implicitWidth: parent.width / 2
 
   Rectangle {
@@ -31,20 +32,19 @@ Item {
     ListView {
       id: rlv
       width: parent.width
-      height: parent.height * 0.85
+      height: connected ? parent.height * 0.85 : 0
       anchors.top: currentDirectory.bottom
       clip: true
-      model: ListModel {
-                ListElement {
-                  fileName: "x.txt"
-                  fileIsDir: true
-                }
-                ListElement {
-                  fileName: "y.txt"
-                  fileIsDir: false
-                }
-              }
+      model: ListModel {}
       delegate: listItemDelegate
+    }
+
+    Login {
+      visible: !connected
+      anchors.margins: 90
+      width: parent.width - 10
+      anchors.top: currentDirectory.bottom
+      anchors.horizontalCenter: parent.horizontalCenter
     }
 
     Text {
@@ -52,7 +52,7 @@ Item {
       color: "white"
       height: parent.height * 0.05
       anchors.bottom: parent.bottom
-      text: "Total Items : " + 5
+      text: "Not connected"
     }
   }
 
