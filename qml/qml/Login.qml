@@ -20,14 +20,14 @@ Rectangle {
       anchors.right: parent.right
       TextField {
         id: hostname
-        width: parent.width * 0.82
+        width: parent.width * 0.81
         height: parent.height * 0.90
         placeholderText: qsTr("Host")
         horizontalAlignment: TextInput.AlignHCenter
       }
       TextField {
         id: port
-        width: parent.width * 0.16
+        width: parent.width * 0.17
         height: parent.height * 0.90
         placeholderText: qsTr("Port")
         validator: IntValidator {bottom: 1; top: 1000}
