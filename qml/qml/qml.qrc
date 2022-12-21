@@ -5,7 +5,7 @@
     <file>Element.qml</file>
     <file>List.qml</file>
     <file>RowDelegate.qml</file>
-    <file>Log.qml</file>
+    <file>Trace.qml</file>
     <file>FTP.qml</file>
     <file>Login.qml</file>
     <file>LocalListView.qml</file>

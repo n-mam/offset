@@ -8,9 +8,9 @@
 
 namespace npl {
 
-SPDispatcher D = nullptr;
+inline SPDispatcher D = nullptr;
 
-auto make_dispatcher(void)
+inline auto make_dispatcher(void)
 {
   #ifdef _WIN32
   WSADATA wsaData;
@@ -21,7 +21,7 @@ auto make_dispatcher(void)
   return D;
 }
 
-auto make_ftp(const std::string& host, int port, TLS ftps = TLS::No)
+inline auto make_ftp(const std::string& host, int port, TLS ftps = TLS::No)
 {
   auto ftp = std::make_shared<ProtocolFTP>("prot-ftp");    
 
@@ -36,7 +36,7 @@ auto make_ftp(const std::string& host, int port, TLS ftps = TLS::No)
   return ftp;
 }
 
-auto make_ws_server(const std::string& host, int port, TLS tls = TLS::No, TOnClientMessageCbk cbk = nullptr)
+inline auto make_ws_server(const std::string& host, int port, TLS tls = TLS::No, TOnClientMessageCbk cbk = nullptr)
 {
   auto cc = std::make_shared<SocketDevice>("ws-cc");
   auto ls = std::make_shared<ProtocolWS>("ws-ls");
@@ -52,7 +52,7 @@ auto make_ws_server(const std::string& host, int port, TLS tls = TLS::No, TOnCli
   return ls;
 }
 
-auto make_http_client(const std::string& host, int port)
+inline auto make_http_client(const std::string& host, int port)
 {
   auto sock = std::make_shared<SocketDevice>("http-socket");
   auto http = std::make_shared<ProtocolHTTP>("http-protocol");    
@@ -65,7 +65,7 @@ auto make_http_client(const std::string& host, int port)
 }
 
 template <typename T>
-auto make_file(const T& file, bool create = false)
+inline auto make_file(const T& file, bool create = false)
 {
   auto device = std::make_shared<FileDevice>(file, create);
 
@@ -81,7 +81,7 @@ auto make_file(const T& file, bool create = false)
   return device;
 }
 
-void test_http_client(const std::string& host, int port)
+inline void test_http_client(const std::string& host, int port)
 {
   for (int i = 0; i < 1; i++)
   {
@@ -96,7 +96,7 @@ void test_http_client(const std::string& host, int port)
   }
 }
 
-void test_ws_server(const std::string& host, int port)
+inline void test_ws_server(const std::string& host, int port)
 {
   auto ws = npl::make_ws_server(
     host, port, npl::TLS::Yes, 
@@ -116,7 +116,7 @@ void test_ws_server(const std::string& host, int port)
   getchar();
 }
 
-void test_ftp_client(const std::string& host, int port)
+inline void test_ftp_client(const std::string& host, int port)
 {
   auto ftp = npl::make_ftp(host, port, npl::TLS::Yes);
 
@@ -179,7 +179,7 @@ void test_ftp_client(const std::string& host, int port)
   getchar();  
 }
 
-void test_file_copy(const std::string& source, const std::string& dest)
+inline void test_file_copy(const std::string& source, const std::string& dest)
 {
   auto rd = npl::make_file(source);
 
@@ -221,7 +221,7 @@ void test_file_copy(const std::string& source, const std::string& dest)
   getchar();
 }
 
-void tests_dispatcher()
+inline void tests_dispatcher()
 {
   for (int i = 0; i < 100; i++)
   {
@@ -244,14 +244,14 @@ void tests_dispatcher()
   auto D2 = std::make_unique<Dispatcher>();
 }
 
-auto usage(void)
+inline auto usage(void)
 {
   LOG << " npl -h[ttp] ";
   LOG << " npl -f[tp] <host> <port> <file>";
   LOG << " npl -w[s] ";
 }
 
-void entry(std::vector<std::wstring> arguments)
+inline void entry(std::vector<std::wstring> arguments)
 {
   if (arguments.size() == 1)
   {

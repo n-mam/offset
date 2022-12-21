@@ -3,7 +3,6 @@ import QtQuick.Controls
 
 Item {
 
-  property var connected: false;
   implicitWidth: parent.width / 2
 
   Rectangle {
@@ -23,30 +22,35 @@ Item {
       horizontalAlignment: Text.AlignLeft
       verticalAlignment: TextInput.AlignVCenter
       onAccepted: {
-        console.log(currentDirectory.text)
-        //ListDirectory(currentDirectory.text)
+        ftpModel.currentDirectory = currentDirectory.text
       }
       Component.onCompleted: font.pointSize = font.pointSize - 1.5
     }
 
     ListView {
-      id: rlv
+      id: remoteListView
       width: parent.width
-      height: connected ? parent.height * 0.85 : 0
+      height: ftpModel.connected ? parent.height * 0.85 : 0
       anchors.top: currentDirectory.bottom
       clip: true
-      model: remoteListModel
+      model: ftpModel
       delegate: listItemDelegate
+      Connections {
+        target: ftpModel
+        function onDirectoryList() {
+          currentDirectory.text = ftpModel.currentDirectory
+        }
+      }
     }
 
     Login {
-      visible: !connected
+      visible: !ftpModel.connected
       anchors.margins: 90
       width: parent.width - 10
       anchors.top: currentDirectory.bottom
       anchors.horizontalCenter: parent.horizontalCenter
       onLogin: (host, port, user, password) => {
-        remoteListModel.InitConnect(host, port, user, password);
+        ftpModel.InitConnect(host, port, user, password, "ftps");
       }
     }
 
@@ -55,7 +59,7 @@ Item {
       color: "white"
       height: parent.height * 0.05
       anchors.bottom: parent.bottom
-      text: "Not connected"
+      text: !ftpModel.connected ? "Not connected" : ""
     }
   }
 
@@ -73,12 +77,12 @@ Item {
         x: parent.x + 3
         width: 16; height: 16
         anchors.verticalCenter: parent.verticalCenter
-        source: model.fileIsDir ? (fileName !== "." ? "qrc:/folder.png" : "") : "qrc:/file.png"
+        source: fileIsDir ? (fileName !== "." ? "qrc:/folder.png" : "") : "qrc:/file.png"
       }
 
       Text {
         x: listItemIcon.x + listItemIcon.width + 5
-        text: fileName          
+        text: fileName
         height: parent.height
         color: "white"
         verticalAlignment: Text.AlignVCenter
@@ -86,14 +90,13 @@ Item {
       MouseArea {
         hoverEnabled: true
         anchors.fill: parent
-        cursorShape: (containsMouse && model.fileIsDir) ? Qt.PointingHandCursor : Qt.ArrowCursor
+        cursorShape: (containsMouse && fileIsDir) ? Qt.PointingHandCursor : Qt.ArrowCursor
         onClicked: {
-          if (model.fileIsDir) {
+          if (fileIsDir) {
             if (fileName == "..")
-              remoteListModel.folder = remoteListModel.parentFolder
+              ftpModel.folder = ftpModel.parentFolder
             else
-              remoteListModel.folder = remoteListModel.folder + "/" + fileName
-            currentDirectory.text = urlToPath(remoteListModel.folder)
+              ftpModel.currentDirectory = ftpModel.currentDirectory + fileName
           }               
         }
       }
@@ -107,6 +110,6 @@ Item {
   }
 
   Component.onCompleted: {
-    //currentDirectory.text = urlToPath(remoteListModel.folder)
+    
   }
 }

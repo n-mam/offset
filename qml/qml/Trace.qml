@@ -59,7 +59,8 @@ Item {
         anchors.margins: appSpacing
         anchors.verticalCenter: parent.verticalCenter
         onClicked: {
-          
+          logText.selectAll()
+          logText.cut()
         }
       }
       Button {

@@ -24,7 +24,7 @@ Item {
           "#CCD1D1" : (SplitHandle.hovered ? Qt.lighter("#CCD1D1", 1.1) : "#CCD1D1")
         containmentMask: Item {
           x: (handleDelegate.width - width) / 2
-          width: 64
+          width: 20
           height: splitView.height
         }
       }

@@ -44,7 +44,7 @@ ApplicationWindow {
       id: ftp
       height: parent.height
     }
-    Log {
+    Trace {
       id: log
       height: parent.height
     }

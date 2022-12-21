@@ -9,7 +9,7 @@
 
 namespace osl {
 
-inline std::vector<std::string> split(const std::string &s, char delim)
+inline std::vector<std::string> split(const std::string& s, char delim)
 {
   std::vector<std::string> elems;
   std::stringstream ss(s);
@@ -23,7 +23,7 @@ inline std::vector<std::string> split(const std::string &s, char delim)
   return elems;
 }
 
-inline std::vector<std::string> split(std::string s, std::string delim) 
+inline std::vector<std::string> split(const std::string& s, const std::string& delim) 
 {
     size_t pos_start = 0, pos_end, delim_len = delim.length();
     std::string token;
@@ -41,7 +41,7 @@ inline std::vector<std::string> split(std::string s, std::string delim)
     return res;
 }
 
-inline std::vector<std::wstring> wsplit(std::wstring s, std::wstring delim) 
+inline std::vector<std::wstring> wsplit(const std::wstring& s, const std::wstring& delim) 
 {
     size_t pos_start = 0, pos_end, delim_len = delim.length();
     std::wstring token;

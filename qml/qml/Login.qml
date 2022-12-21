@@ -7,7 +7,7 @@ Rectangle {
   border.color: "#5FFAFF"
   color: Material.background
 
-  property var rowHeight: 50
+  property var rowHeight: 45
   height: (rowHeight * 4) + 3
   signal login(var host, var port, var user, var password)
 
@@ -15,8 +15,8 @@ Rectangle {
     width: parent.width
     Row {
       spacing: 5
-      anchors.margins: 5
       height: rowHeight
+      anchors.margins: 5
       anchors.left: parent.left
       anchors.right: parent.right
       TextField {
@@ -24,6 +24,7 @@ Rectangle {
         width: parent.width * 0.81
         height: parent.height * 0.90
         placeholderText: qsTr("Host")
+        text: "127.0.0.1"
         horizontalAlignment: TextInput.AlignHCenter
       }
       TextField {
@@ -32,12 +33,13 @@ Rectangle {
         height: parent.height * 0.90
         placeholderText: qsTr("Port")
         validator: IntValidator {bottom: 1; top: 1000}
+        text: "21"
         horizontalAlignment: TextInput.AlignHCenter
       }
     }
 
     Row {
-      spacing: 8
+      spacing: 5
       anchors.left: parent.left
       anchors.right: parent.right
       anchors.margins: 5
@@ -47,12 +49,13 @@ Rectangle {
         width: parent.width
         height: parent.height * 0.90
         placeholderText: qsTr("User")
+        text: "nmam"
         horizontalAlignment: TextInput.AlignHCenter
       }
     }
 
     Row {
-      spacing: 8
+      spacing: 5
       anchors.left: parent.left
       anchors.right: parent.right
       anchors.margins: 5
@@ -63,19 +66,20 @@ Rectangle {
         height: parent.height * 0.90        
         echoMode: TextInput.Password
         placeholderText: qsTr("Password")
+        text: "welcome123"
         horizontalAlignment: TextInput.AlignHCenter
       }
     }
 
     Rectangle {
+      height: rowHeight
+      anchors.margins: 5
       anchors.left: parent.left
       anchors.right: parent.right
-      anchors.margins: 5
-      height: rowHeight
       color: Material.background
       Button {
-        width: parent.width * 0.40
-        height: parent.height * 0.83
+        width: parent.width * 0.38
+        height: parent.height * 0.85
         text: "Connect"
         anchors.horizontalCenter: parent.horizontalCenter
         onClicked: {

@@ -6,7 +6,7 @@
 
 #include <Logger.h>
 #include <DiskListModel.h>
-#include <RemoteListModel.h>
+#include <FTPModel.h>
 
 #include <Windows.h>
 
@@ -38,7 +38,7 @@ int main(int argc, char *argv[])
 
   engine.rootContext()->setContextProperty("logger", new Logger());
   engine.rootContext()->setContextProperty("diskListModel", new DiskListModel());
-  engine.rootContext()->setContextProperty("remoteListModel", new RemoteListModel());
+  engine.rootContext()->setContextProperty("ftpModel", new FTPModel());
 
   engine.load(url);
 

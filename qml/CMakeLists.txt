@@ -15,11 +15,11 @@ add_executable(
   WIN32
   main.cpp
   ${QT_RESOURCES}
+  ${CMAKE_CURRENT_SOURCE_DIR}/icons/resource.rc
+  ${CMAKE_CURRENT_SOURCE_DIR}/model/Logger.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/model/FTPModel.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/model/BaseModel.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/model/DiskListModel.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/model/RemoteListModel.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/model/Logger.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/icons/resource.rc
 )
 
 set_property(TARGET offset PROPERTY CXX_STANDARD 17)

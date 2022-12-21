@@ -103,7 +103,7 @@ Item {
   }
 
   Component.onCompleted: {
-    console.log(folderModel.folder)
+    //console.log(folderModel.folder)
     currentDirectory.text = urlToPath(folderModel.folder)
   }
 }
