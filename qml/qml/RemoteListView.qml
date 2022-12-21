@@ -96,7 +96,8 @@ Item {
             if (fileName == "..")
               ftpModel.folder = ftpModel.parentFolder
             else
-              ftpModel.currentDirectory = ftpModel.currentDirectory + fileName
+              ftpModel.currentDirectory = ftpModel.currentDirectory + 
+                (ftpModel.currentDirectory.endsWith("/") ? fileName : ("/" + fileName))
           }               
         }
       }
