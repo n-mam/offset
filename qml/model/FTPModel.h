@@ -9,6 +9,7 @@ struct FileElement
 {
   std::string m_name;
   std::string m_size;
+  std::string m_timestamp;
   std::string m_attributes;
 };
 

@@ -105,12 +105,9 @@ void FTPModel::setCurrentDirectory(QString directory)
 
     m_ftp->Transfer(npl::ProtocolFTP::EDirection::List, m_currentDirectory,
       [this, list = std::string()] (const char *b, size_t n) mutable {
-        if (b)
-        {
-          list.append(std::string(b, n));
-        }
-        else
-        {
+        if (b) {
+          list.append(b, n);
+        } else {
           ParseLinuxDirectoryList(list);
           setConnected(true);
           emit directoryList();
@@ -122,35 +119,58 @@ void FTPModel::setCurrentDirectory(QString directory)
 
 bool FTPModel::ParseLinuxDirectoryList(const std::string& list)
 {
-  LOG << list;
-  // -rw-rw-rw- 1 ftp ftp   1468320 Oct 15 17:37 accesschk.exe
+  //LOG << list;
+  // -rw-rw-rw- 1 ftp    ftp       1468320 Oct 15 17:37 a b c
   auto lines = osl::split(list, "\r\n");
 
   beginResetModel();
 
   m_model.clear();
 
-  for (const auto& line : lines)
+  for (auto& line : lines)
   {
-    if (line.size())
+    if (!line.size()) continue;
+
+    FileElement fe;
+
+    auto p = line.c_str();
+
+    fe.m_attributes.append(p, 10), p += 10;
+
+    for (int i = 0; i < 3; i++) {
+      while(*p == ' ') { p++; }
+      while(*p != ' ') { p++; }      
+    }
+    
+    while(*p == ' ') { p++; }
+    while(*p != ' ') {
+      fe.m_size.append(1, *p);
+      p++;
+    }
+
+    while(*p == ' ') { p++; }
+
+    int count = 0;
+    while(count != 3)
     {
-      auto elements = osl::split(line, " ");
-
-      if (elements.size() > 1)
-      {
-        auto name = elements.back();
-        auto size = elements[4];
-        auto attributes = elements.front();
-
-        if (attributes[0] == 'd')
-          m_folderCount++;
-        else if (attributes[0] == '-')
-          m_fileCount++;
-
-        m_model.push_back({name, size, attributes});
+      fe.m_timestamp.append(1, *p);
+      p++;
+      if (*p == ' ') {
+        count++;
+        fe.m_timestamp.append(1, *p);
+        while(*p == ' ') { p++; }
       }
     }
+
+    while(*p == ' ') { p++; }
+
+    fe.m_name.append(p);
+
+    m_model.push_back(fe);
   }
+
+  std::partition(m_model.begin(), m_model.end(), 
+    [](const FileElement& e){ return e.m_attributes[0] != '-'; });
 
   endResetModel();
 

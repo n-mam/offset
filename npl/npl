@@ -129,7 +129,7 @@ inline void test_ftp_client(const std::string& host, int port)
     "/",
     [list = std::string()] (const char *b, size_t n) mutable {
       if (b) {
-        list.append(std::string(b, n));
+        list.append(b, n);
       } else {
         LOG << list;
       }

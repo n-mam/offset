@@ -7,7 +7,7 @@ Rectangle {
   border.color: "#5FFAFF"
   color: Material.background
 
-  property var rowHeight: 45
+  property var rowHeight: 43
   height: (rowHeight * 4) + 3
   signal login(var host, var port, var user, var password)
 
@@ -16,7 +16,7 @@ Rectangle {
     Row {
       spacing: 5
       height: rowHeight
-      anchors.margins: 5
+      anchors.margins: 7
       anchors.left: parent.left
       anchors.right: parent.right
       TextField {
@@ -25,6 +25,7 @@ Rectangle {
         height: parent.height * 0.90
         placeholderText: qsTr("Host")
         text: "127.0.0.1"
+        anchors.bottom: parent.bottom        
         horizontalAlignment: TextInput.AlignHCenter
       }
       TextField {
@@ -34,22 +35,24 @@ Rectangle {
         placeholderText: qsTr("Port")
         validator: IntValidator {bottom: 1; top: 1000}
         text: "21"
+        anchors.bottom: parent.bottom        
         horizontalAlignment: TextInput.AlignHCenter
       }
     }
 
     Row {
       spacing: 5
+      height: rowHeight
       anchors.left: parent.left
       anchors.right: parent.right
-      anchors.margins: 5
-      height: rowHeight
+      anchors.margins: 7
       TextField {
         id: username
         width: parent.width
         height: parent.height * 0.90
         placeholderText: qsTr("User")
         text: "nmam"
+        anchors.bottom: parent.bottom        
         horizontalAlignment: TextInput.AlignHCenter
       }
     }
@@ -58,7 +61,7 @@ Rectangle {
       spacing: 5
       anchors.left: parent.left
       anchors.right: parent.right
-      anchors.margins: 5
+      anchors.margins: 7
       height: rowHeight
       TextField {
         id: password
@@ -67,19 +70,20 @@ Rectangle {
         echoMode: TextInput.Password
         placeholderText: qsTr("Password")
         text: "welcome123"
+        anchors.bottom: parent.bottom        
         horizontalAlignment: TextInput.AlignHCenter
       }
     }
 
     Rectangle {
       height: rowHeight
-      anchors.margins: 5
+      anchors.margins: 7
       anchors.left: parent.left
       anchors.right: parent.right
       color: Material.background
       Button {
         width: parent.width * 0.38
-        height: parent.height * 0.85
+        height: parent.height * 0.88
         text: "Connect"
         anchors.horizontalCenter: parent.horizontalCenter
         onClicked: {
