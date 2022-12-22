@@ -36,6 +36,7 @@ class FTPModel : public QAbstractListModel
 
   Q_PROPERTY(bool connected READ getConnected WRITE setConnected NOTIFY connected);
   Q_PROPERTY(QString currentDirectory READ getCurrentDirectory WRITE setCurrentDirectory);
+  Q_PROPERTY(QString totalFilesAndFolders READ getTotalFilesAndFolder);
 
   Q_INVOKABLE bool InitConnect(QString host, QString port, QString user, QString password, QString protocol);
 
@@ -51,6 +52,7 @@ class FTPModel : public QAbstractListModel
 
   QString getCurrentDirectory(void);
   void setCurrentDirectory(QString dir);
+  QString getTotalFilesAndFolder(void);
 
   protected:
 

@@ -39,6 +39,9 @@ Item {
         target: ftpModel
         function onDirectoryList() {
           currentDirectory.text = ftpModel.currentDirectory
+          var files, folders
+          [files, folders] = ftpModel.totalFilesAndFolders.split(":")
+          status.text = files + " files " + folders + " folders "
         }
       }
     }
@@ -59,7 +62,7 @@ Item {
       color: "white"
       height: parent.height * 0.05
       anchors.bottom: parent.bottom
-      text: !ftpModel.connected ? "Not connected" : ""
+      text: "Not connected"
     }
   }
 

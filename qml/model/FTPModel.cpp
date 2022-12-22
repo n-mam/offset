@@ -117,6 +117,11 @@ void FTPModel::setCurrentDirectory(QString directory)
   }
 }
 
+QString FTPModel::getTotalFilesAndFolder(void)
+{
+  return QString::number(m_fileCount) + ":" + QString::number(m_folderCount);
+}
+
 bool FTPModel::ParseLinuxDirectoryList(const std::string& list)
 {
   //LOG << list;
@@ -126,6 +131,8 @@ bool FTPModel::ParseLinuxDirectoryList(const std::string& list)
   beginResetModel();
 
   m_model.clear();
+
+  m_fileCount = m_folderCount = 0;
 
   if (m_currentDirectory != "/")
     m_model.push_back({"..", "", "", "d"});
@@ -139,6 +146,8 @@ bool FTPModel::ParseLinuxDirectoryList(const std::string& list)
     auto p = line.c_str();
 
     fe.m_attributes.append(p, 10), p += 10;
+
+    (fe.m_attributes[0] == 'd') ? m_folderCount++ : m_fileCount++;
 
     for (int i = 0; i < 3; i++) {
       while(*p == ' ') { p++; }
