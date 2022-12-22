@@ -93,8 +93,9 @@ Item {
         cursorShape: (containsMouse && fileIsDir) ? Qt.PointingHandCursor : Qt.ArrowCursor
         onClicked: {
           if (fileIsDir) {
-            if (fileName == "..")
-              ftpModel.folder = ftpModel.parentFolder
+            if (fileName == "..") {
+              ftpModel.currentDirectory = getParentFolder();
+            }
             else
               ftpModel.currentDirectory = ftpModel.currentDirectory + 
                 (ftpModel.currentDirectory.endsWith("/") ? fileName : ("/" + fileName))
@@ -102,6 +103,18 @@ Item {
         }
       }
     }
+  }
+
+  function getParentFolder() {
+    var tokens = ftpModel.currentDirectory.split("/");
+    tokens.pop()
+    var parentFolder = "";
+    for (var e of tokens) {
+      if (e.length) 
+        parentFolder += ("/" + e)
+    }
+    if (!parentFolder.length) parentFolder = "/"
+    return parentFolder
   }
 
   function urlToPath(url) {

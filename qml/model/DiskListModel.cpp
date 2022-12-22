@@ -432,8 +432,7 @@ void DiskListModel::refreshModel()
     [](const auto& x, const auto& y) -> bool {
       return (std::static_pointer_cast<BlockDevice>(x))->m_disk <
                 (std::static_pointer_cast<BlockDevice>(y))->m_disk;
-    }
-  );
+    });
 
   endResetModel();
 }

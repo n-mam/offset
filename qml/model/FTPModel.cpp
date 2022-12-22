@@ -127,6 +127,9 @@ bool FTPModel::ParseLinuxDirectoryList(const std::string& list)
 
   m_model.clear();
 
+  if (m_currentDirectory != "/")
+    m_model.push_back({"..", "", "", "d"});
+
   for (auto& line : lines)
   {
     if (!line.size()) continue;
