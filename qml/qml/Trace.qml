@@ -12,31 +12,35 @@ Item {
     height: parent.height * 0.85
     color: Material.background
 
-    Flickable {
-      id: flickable
+    ListModel {
+      id: traceModel
+      ListElement {line: ""}
+    }
+
+    ListView {
+      id: traceView
       clip: true
       anchors.fill: parent
-      flickableDirection: Flickable.VerticalFlick
-      TextArea.flickable: TextArea {
-        id: logText
-        color: "white"
-        anchors.fill: parent
-        anchors.leftMargin: 5
-        background: null
-        Component.onCompleted: font.pointSize = font.pointSize - 3
-        Connections {
-          target: logger
-          function onAddLogLine(severity, log) {
-            if (severity === 3) {
-              statusText.text = log
-            } else {
-              logText.append(log)
-              logText.cursorPosition = logText.length - log.length
-            }
+      anchors.margins: 5
+      model: traceModel
+      delegate: Item {
+        width: ListView.view.width;
+        height: 17
+        Label { 
+          text: line
+          Component.onCompleted: font.pointSize = font.pointSize - 2
+        }
+      }
+      Connections {
+        target: logger
+        function onAddLogLine(severity, log) {
+          if (severity === 3) {
+            statusText.text = log
+          } else {
+            traceModel.append({line: log})
           }
         }
       }
-      ScrollBar.vertical: ScrollBar {}
     }
 
     Rectangle {
@@ -44,7 +48,8 @@ Item {
       // radius: 5
       // border.width: 1
       // border.color: borderColor
-      anchors.top: flickable.bottom
+      anchors.top: traceView.bottom
+      anchors.margins: 5
       color: Material.background
       anchors.horizontalCenter: parent.horizontalCenter
       width: 75 + 75 + (3 * appSpacing)
@@ -58,10 +63,7 @@ Item {
         anchors.left: parent.left
         anchors.margins: appSpacing
         anchors.verticalCenter: parent.verticalCenter
-        onClicked: {
-          logText.selectAll()
-          logText.cut()
-        }
+        onClicked: traceModel.clear()
       }
       Button {
         id: savebutton
@@ -72,11 +74,8 @@ Item {
         anchors.left: clearButton.right
         anchors.margins: appSpacing
         anchors.verticalCenter: parent.verticalCenter
-        onClicked: {
-          
-        }
+        onClicked: {}
       }
     }
-
   }
 }

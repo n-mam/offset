@@ -108,9 +108,16 @@ void FTPModel::setCurrentDirectory(QString directory)
         if (b) {
           list.append(b, n);
         } else {
-          ParseLinuxDirectoryList(list);
-          setConnected(true);
-          emit directoryList();
+          m_fileCount = m_folderCount = 0;          
+          auto feList = ParseLinuxDirectoryList(list);
+          QMetaObject::invokeMethod(this, [this, feList](){
+            beginResetModel();
+            m_model.clear();
+            m_model = feList;
+            setConnected(true);
+            emit directoryList();
+            endResetModel();
+          }, Qt::QueuedConnection);
         }
         return true;
       }, npl::TLS::Yes);
@@ -122,20 +129,16 @@ QString FTPModel::getTotalFilesAndFolder(void)
   return QString::number(m_fileCount) + ":" + QString::number(m_folderCount);
 }
 
-bool FTPModel::ParseLinuxDirectoryList(const std::string& list)
+auto FTPModel::ParseLinuxDirectoryList(const std::string& list) -> std::vector<FileElement>
 {
   //LOG << list;
   // -rw-rw-rw- 1 ftp    ftp       1468320 Oct 15 17:37 a b c
+  std::vector<FileElement> feList;
+
   auto lines = osl::split(list, "\r\n");
 
-  beginResetModel();
-
-  m_model.clear();
-
-  m_fileCount = m_folderCount = 0;
-
   if (m_currentDirectory != "/")
-    m_model.push_back({"..", "", "", "d"});
+    feList.push_back({"..", "", "", "d"});
 
   for (auto& line : lines)
   {
@@ -153,7 +156,7 @@ bool FTPModel::ParseLinuxDirectoryList(const std::string& list)
       while(*p == ' ') { p++; }
       while(*p != ' ') { p++; }      
     }
-    
+
     while(*p == ' ') { p++; }
     while(*p != ' ') {
       fe.m_size.append(1, *p);
@@ -178,13 +181,11 @@ bool FTPModel::ParseLinuxDirectoryList(const std::string& list)
 
     fe.m_name.append(p);
 
-    m_model.push_back(fe);
+    feList.push_back(fe);
   }
 
-  std::partition(m_model.begin(), m_model.end(), 
+  std::partition(feList.begin(), feList.end(), 
     [](const FileElement& e){ return e.m_attributes[0] != '-'; });
 
-  endResetModel();
-
-  return false;
+  return feList;
 }
