@@ -11,6 +11,7 @@ struct FileElement
   std::string m_size;
   std::string m_timestamp;
   std::string m_attributes;
+  bool m_selected = false;
 };
 
 class FTPModel : public QAbstractListModel
@@ -22,6 +23,7 @@ class FTPModel : public QAbstractListModel
     EFileName = Qt::UserRole,
     EFileSize,
     EFileIsDir,
+    ESelected,
     EFileAttributes
   };
 
@@ -31,8 +33,9 @@ class FTPModel : public QAbstractListModel
   ~FTPModel();
 
   QHash<int, QByteArray> roleNames() const override;
-  int rowCount(const QModelIndex &parent = QModelIndex()) const override;
-  QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
+  int rowCount(const QModelIndex& parent = QModelIndex()) const override;
+  QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
+  bool setData(const QModelIndex& index, const QVariant& value, int role = Qt::EditRole) override;
 
   Q_PROPERTY(bool connected READ getConnected WRITE setConnected NOTIFY connected);
   Q_PROPERTY(QString currentDirectory READ getCurrentDirectory WRITE setCurrentDirectory);

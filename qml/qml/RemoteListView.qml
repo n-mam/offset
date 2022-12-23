@@ -30,7 +30,7 @@ Item {
     ListView {
       id: remoteListView
       width: parent.width
-      height: ftpModel.connected ? parent.height * 0.85 : 0
+      height: ftpModel.connected ? parent.height * 0.89 : 0
       anchors.top: currentDirectory.bottom
       clip: true
       model: ftpModel
@@ -57,12 +57,21 @@ Item {
       }
     }
 
-    Text {
-      id: status
-      color: "white"
+    Rectangle {
+      width: parent.width
       height: parent.height * 0.05
       anchors.bottom: parent.bottom
-      text: "Not connected"
+      color: Material.background
+      // radius: 2
+      // border.width: 1
+      // border.color: borderColor
+
+      Text {
+        id: status
+        color: "white"
+        text: "Not connected"
+        anchors.verticalCenter: parent.verticalCenter
+      }
     }
   }
 
@@ -84,26 +93,39 @@ Item {
       }
 
       Text {
+        id: feText
         x: listItemIcon.x + listItemIcon.width + 5
         text: fileName
         height: parent.height
         color: "white"
         verticalAlignment: Text.AlignVCenter
       }
+
+      ContextMenuPopup {
+        id: contextMenu
+        parent: feText
+      }      
+
       MouseArea {
         hoverEnabled: true
         anchors.fill: parent
+        acceptedButtons: Qt.LeftButton | Qt.RightButton
         cursorShape: (containsMouse && fileIsDir) ? Qt.PointingHandCursor : Qt.ArrowCursor
-        onClicked: {
+        onDoubleClicked: {
           if (fileIsDir) {
-            if (fileName == "..") {
-              ftpModel.currentDirectory = getParentFolder();
+            if (fileName === "..") {
+              ftpModel.currentDirectory = getParentFolder()
             }
             else
               ftpModel.currentDirectory = ftpModel.currentDirectory + 
                 (ftpModel.currentDirectory.endsWith("/") ? fileName : ("/" + fileName))
           }               
         }
+        onClicked: (mouse) => {
+          if (mouse.button == Qt.RightButton) {
+            contextMenu.open()
+          }
+        }      
       }
     }
   }

@@ -15,6 +15,7 @@ QHash<int, QByteArray> FTPModel::roleNames() const
   roles.insert(EFileName, "fileName");
   roles.insert(EFileSize, "fileSize");
   roles.insert(EFileIsDir, "fileIsDir");
+  roles.insert(ESelected, "elementSelected");
   roles.insert(EFileAttributes, "fileAttributes");
 
   return roles;
@@ -49,6 +50,11 @@ QVariant FTPModel::data(const QModelIndex &index, int role) const
       return QString::fromStdString(m_model[row].m_size);
     }
 
+    case ESelected:
+    {
+      return m_model[row].m_selected;
+    }
+
     case EFileAttributes:
     {
       return QString::fromStdString(m_model[row].m_attributes);
@@ -59,6 +65,20 @@ QVariant FTPModel::data(const QModelIndex &index, int role) const
   }
 
   return QVariant();
+}
+
+bool FTPModel::setData(const QModelIndex &index, const QVariant &value, int role)
+{
+  switch (role)
+  {
+    case ESelected:
+    {
+      m_model[index.row()].m_selected = value.toBool();
+    }
+    default:
+    break;
+  }
+  return true;
 }
 
 bool FTPModel::InitConnect(QString host, QString port, QString user, QString password, QString protocol)

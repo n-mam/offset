@@ -32,19 +32,28 @@ Item {
     ListView {
       id: llv
       width: parent.width
-      height: parent.height * 0.85
+      height: parent.height * 0.89
       anchors.top: currentDirectory.bottom
       clip: true
       model: folderModel
       delegate: listItemDelegate
     }
 
-    Text {
-      id: status
-      color: "white"
+    Rectangle {
+      width: parent.width
       height: parent.height * 0.05
       anchors.bottom: parent.bottom
-      text: "Total Items : " + (folderModel.count - 2)
+      color: Material.background
+      // radius: 2
+      // border.width: 1
+      // border.color: borderColor
+
+      Text {
+        id: status
+        color: "white"
+        text: "Total Items : " + (folderModel.count - 2)
+        anchors.verticalCenter: parent.verticalCenter
+      }
     }
   }
 
@@ -76,7 +85,7 @@ Item {
         hoverEnabled: true
         anchors.fill: parent
         cursorShape: (containsMouse && model.fileIsDir) ? Qt.PointingHandCursor : Qt.ArrowCursor
-        onClicked: {
+        onDoubleClicked: {
           if (model.fileIsDir) {
             if (fileName == "..")
               folderModel.folder = folderModel.parentFolder

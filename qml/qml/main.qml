@@ -16,6 +16,7 @@ ApplicationWindow {
   TabBar {
     id: bar
     width: parent.width
+    currentIndex: 1
     TabButton {
       text: qsTr("FXC")
     }
