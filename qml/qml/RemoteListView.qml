@@ -78,6 +78,7 @@ Item {
   Component {
     id: listItemDelegate
     Rectangle {
+      id: delegateRect
       width: ListView.view.width
       height: fileName === "." ? 0 : 26
       // radius: 2
@@ -104,6 +105,10 @@ Item {
       ContextMenuPopup {
         id: contextMenu
         parent: feText
+        onClosed: {
+          feText.color = "white"
+          delegateRect.color = Material.background
+        }
       }      
 
       MouseArea {
@@ -113,16 +118,17 @@ Item {
         cursorShape: (containsMouse && fileIsDir) ? Qt.PointingHandCursor : Qt.ArrowCursor
         onDoubleClicked: {
           if (fileIsDir) {
-            if (fileName === "..") {
+            if (fileName === "..")
               ftpModel.currentDirectory = getParentFolder()
-            }
             else
               ftpModel.currentDirectory = ftpModel.currentDirectory + 
                 (ftpModel.currentDirectory.endsWith("/") ? fileName : ("/" + fileName))
-          }               
+          }
         }
         onClicked: (mouse) => {
-          if (mouse.button == Qt.RightButton) {
+          if (mouse.button == Qt.RightButton && fileName !== "..") {
+            delegateRect.color = "#A3CCAB"
+            feText.color = "black"
             contextMenu.open()
           }
         }      

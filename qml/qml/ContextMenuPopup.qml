@@ -49,6 +49,7 @@ Popup {
     }
   }
   onOpened: {
-
+  }
+  onClosed: {
   }
 }
