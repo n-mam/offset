@@ -16,15 +16,15 @@ add_executable(
   main.cpp
   ${QT_RESOURCES}
   ${CMAKE_CURRENT_SOURCE_DIR}/icons/resource.rc
-  ${CMAKE_CURRENT_SOURCE_DIR}/model/Logger.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/model/FTPModel.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/model/BaseModel.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/model/DiskListModel.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/models/Logger.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/models/FTPModel.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/models/BaseModel.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/models/DiskListModel.cpp
 )
 
 set_property(TARGET offset PROPERTY CXX_STANDARD 17)
 
-target_include_directories(offset PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/model)
+target_include_directories(offset PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/models)
 
 target_link_libraries(
   offset

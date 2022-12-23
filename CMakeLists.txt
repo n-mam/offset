@@ -16,7 +16,7 @@ include_directories(
   ${CMAKE_SOURCE_DIR}/fxc
 )
 
-add_subdirectory(app)
+add_subdirectory(qml)
 
 add_executable(Test test.cpp)
 
