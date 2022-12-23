@@ -5,8 +5,8 @@
 #include <QQmlApplicationEngine>
 
 #include <Logger.h>
-#include <DiskListModel.h>
 #include <FTPModel.h>
+#include <DiskListModel.h>
 
 #include <Windows.h>
 
