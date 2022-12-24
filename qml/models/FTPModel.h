@@ -47,6 +47,7 @@ class FTPModel : public QAbstractListModel
   Q_INVOKABLE void RemoveFile(QString path);
   Q_INVOKABLE void RemoveDirectory(QString path);
   Q_INVOKABLE void CreateDirectory(QString path);
+  Q_INVOKABLE void Rename(QString from, QString to);
   Q_INVOKABLE void Quit();
 
   signals:

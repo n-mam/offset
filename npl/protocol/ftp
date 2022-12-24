@@ -155,6 +155,15 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
     CheckQueue(bQWasEmpty);
   }
 
+  virtual void Rename(const std::string& from, const std::string& to, TResponseCbk cbk = nullptr)
+  {
+    std::lock_guard<std::mutex> lg(iQLock);
+    bool bQWasEmpty = iCmdQ.empty();
+    iCmdQ.push_back({"RNFR", from, cbk, nullptr});
+    iCmdQ.push_back({"RNTO", to, cbk, nullptr});
+    CheckQueue(bQWasEmpty);
+  }
+
   virtual void Quit(TResponseCbk cbk = nullptr)
   {
     std::lock_guard<std::mutex> lg(iQLock);

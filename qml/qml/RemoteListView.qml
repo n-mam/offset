@@ -94,7 +94,7 @@ Item {
       }
 
       Text {
-        id: rfeText
+        id: feText
         x: listItemIcon.x + listItemIcon.width + 5
         text: fileName
         height: parent.height
@@ -102,37 +102,66 @@ Item {
         verticalAlignment: Text.AlignVCenter
       }
 
+      RenameNewPopup {
+        id: newRenamePopup
+        parent: feText
+        context: ""
+        onDismissed: (userInput) => {
+          newRenamePopup.close()
+          if (userInput.length)
+          {
+            if (context.startsWith("New folder"))
+            {
+              ftpModel.CreateDirectory(userInput)
+            }
+            else if (context.startsWith("Rename"))
+            {
+              ftpModel.Rename(feText.text, userInput)
+            }
+          }      
+        }
+      }
+
       ContextMenuPopup {
         id: contextMenu
-        parent: rfeText
-        context: rfeText.text
+        parent: feText
+        context: feText.text
         menu: ["Download", "Rename", "Delete", "Refresh", "New folder"]
         onClosed: {
-          rfeText.color = "white"
+          feText.color = "white"
           delegateRect.color = Material.background
         }
         onMenuItemActivated: (action, context) => {
-          rfeText.color = "white"
+          feText.color = "white"
           delegateRect.color = Material.background          
           contextMenu.close()
           console.log(action, context, fileIsDir)
 
           var path = ftpModel.currentDirectory + "/" + context
 
-          if (action === "Delete") {
-            if (fileIsDir)
-              ftpModel.RemoveDirectory(path)
-            else
-              ftpModel.RemoveFile(path)              
-          } else if (action === "Download") {
-
-          } else if (action === "Rename") {
-
-          } else if (action === "Refresh") {
-            ftpModel.currentDirectory = ftpModel.currentDirectory
-          } else if (action === "New Folder") {
+          if (action === "Delete")
+          {
+            fileIsDir ? ftpModel.RemoveDirectory(path) :
+              ftpModel.RemoveFile(path)
+          }
+          else if (action === "Download")
+          {
 
           }
+          else if (action === "Rename")
+          {
+            newRenamePopup.context = "Rename \"" + fileName + "\""
+            newRenamePopup.open()
+          }
+          else if (action === "New folder")
+          {
+            newRenamePopup.context = "New folder"
+            newRenamePopup.open()            
+          }
+          else if (action === "Refresh")
+          {
+            ftpModel.currentDirectory = ftpModel.currentDirectory
+          }          
         }
       }      
 
@@ -152,8 +181,8 @@ Item {
         onClicked: (mouse) => {
           if (mouse.button == Qt.RightButton && fileName !== "..") {
             delegateRect.color = "#A3CCAB"
-            rfeText.color = "black"
-            contextMenu.x = mouse.x - rfeText.x
+            feText.color = "black"
+            contextMenu.x = mouse.x - feText.x
             contextMenu.y = mouse.y
             contextMenu.open()
           }

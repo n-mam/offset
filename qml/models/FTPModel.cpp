@@ -131,6 +131,12 @@ void FTPModel::CreateDirectory(QString path)
   setCurrentDirectory(QString::fromStdString(m_currentDirectory));
 }
 
+void FTPModel::Rename(QString from, QString to)
+{
+  m_ftp->Rename(from.toStdString(), to.toStdString());
+  setCurrentDirectory(QString::fromStdString(m_currentDirectory));
+}
+
 void FTPModel::Quit()
 {
   m_ftp->Quit();
