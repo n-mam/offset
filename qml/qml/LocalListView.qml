@@ -23,14 +23,13 @@ Item {
       horizontalAlignment: Text.AlignLeft
       verticalAlignment: TextInput.AlignVCenter
       onAccepted: {
-        console.log(currentDirectory.text)
         folderModel.folder = "file:///" + currentDirectory.text
       }
       Component.onCompleted: font.pointSize = font.pointSize - 1.5
     }
 
     ListView {
-      id: llv
+      id: localListView
       width: parent.width
       height: parent.height * 0.89
       anchors.top: currentDirectory.bottom
@@ -60,6 +59,7 @@ Item {
   Component {
     id: listItemDelegate
     Rectangle {
+      id: lDelegateRect
       width: ListView.view.width
       height: fileName === "." ? 0 : 26
       // radius: 2
@@ -75,16 +75,28 @@ Item {
       }
 
       Text {
+        id: lfeText
         x: listItemIcon.x + listItemIcon.width + 5
-        text: fileName          
+        text: fileName
         height: parent.height
         color: "white"
         verticalAlignment: Text.AlignVCenter
       }
+
+      ContextMenuPopup {
+        id: lcontextMenu
+        parent: lfeText
+        menu: ["Upload", "Rename", "Delete", "Refresh", "New folder"]
+        onClosed: {
+          lfeText.color = "white"
+          lDelegateRect.color = Material.background
+        }
+      }      
+
       MouseArea {
         hoverEnabled: true
         anchors.fill: parent
-        cursorShape: (containsMouse && model.fileIsDir) ? Qt.PointingHandCursor : Qt.ArrowCursor
+        acceptedButtons: Qt.LeftButton | Qt.RightButton
         onDoubleClicked: {
           if (model.fileIsDir) {
             if (fileName == "..")
@@ -92,7 +104,16 @@ Item {
             else
               folderModel.folder = folderModel.folder + "/" + fileName
             currentDirectory.text = urlToPath(folderModel.folder)
-          }               
+          }
+        }
+        onClicked: (mouse) => {
+          if (mouse.button == Qt.RightButton && fileName !== "..") {
+            lDelegateRect.color = "#A3CCAB"
+            lfeText.color = "black"
+            lcontextMenu.x = mouse.x - lfeText.x
+            lcontextMenu.y = mouse.y
+            lcontextMenu.open()
+          }
         }
       }
     }
@@ -112,7 +133,6 @@ Item {
   }
 
   Component.onCompleted: {
-    //console.log(folderModel.folder)
     currentDirectory.text = urlToPath(folderModel.folder)
   }
 }

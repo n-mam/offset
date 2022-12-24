@@ -78,7 +78,7 @@ Item {
   Component {
     id: listItemDelegate
     Rectangle {
-      id: delegateRect
+      id: rDelegateRect
       width: ListView.view.width
       height: fileName === "." ? 0 : 26
       // radius: 2
@@ -94,7 +94,7 @@ Item {
       }
 
       Text {
-        id: feText
+        id: rfeText
         x: listItemIcon.x + listItemIcon.width + 5
         text: fileName
         height: parent.height
@@ -103,11 +103,12 @@ Item {
       }
 
       ContextMenuPopup {
-        id: contextMenu
-        parent: feText
+        id: rcontextMenu
+        parent: rfeText
+        menu: ["Download", "Rename", "Delete", "Refresh", "New folder"]
         onClosed: {
-          feText.color = "white"
-          delegateRect.color = Material.background
+          rfeText.color = "white"
+          rDelegateRect.color = Material.background
         }
       }      
 
@@ -115,7 +116,6 @@ Item {
         hoverEnabled: true
         anchors.fill: parent
         acceptedButtons: Qt.LeftButton | Qt.RightButton
-        cursorShape: (containsMouse && fileIsDir) ? Qt.PointingHandCursor : Qt.ArrowCursor
         onDoubleClicked: {
           if (fileIsDir) {
             if (fileName === "..")
@@ -127,11 +127,13 @@ Item {
         }
         onClicked: (mouse) => {
           if (mouse.button == Qt.RightButton && fileName !== "..") {
-            delegateRect.color = "#A3CCAB"
-            feText.color = "black"
-            contextMenu.open()
+            rDelegateRect.color = "#A3CCAB"
+            rfeText.color = "black"
+            rcontextMenu.x = mouse.x - rfeText.x
+            rcontextMenu.y = mouse.y
+            rcontextMenu.open()
           }
-        }      
+        }
       }
     }
   }

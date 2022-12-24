@@ -2,12 +2,11 @@ import QtQuick
 import QtQuick.Controls
 
 Popup {
-  x: parent.width / 2
-  y: parent.height / 2
+  required property var menu;
   contentItem: Item {
     anchors.fill: parent
     Rectangle {
-      radius: 5
+      radius: 3
       border.width: 1
       border.color: "white"
       color: Qt.darker(Material.background)
@@ -15,25 +14,9 @@ Popup {
       height: 130
       ListView {
         spacing: 10
-        anchors.fill: parent
         anchors.margins: 5
-        model: ListModel {
-          ListElement {
-            name: "Download"
-          }
-          ListElement {
-            name: "Rename"
-          }
-          ListElement {
-            name: "Delete"
-          }                        
-          ListElement {
-            name: "Refresh"
-          }
-          ListElement {
-            name: "New folder"
-          }  
-        }
+        anchors.fill: parent
+        model: ListModel { id: menuModel }
         delegate: Text {
           text: name
           color: "white"
@@ -45,7 +28,11 @@ Popup {
             onExited: parent.color = "white"
           }
         }
-      }      
+        Component.onCompleted: {
+          for (var e of menu)
+            menuModel.append({"name": e})
+        }
+      }
     }
   }
   onOpened: {
