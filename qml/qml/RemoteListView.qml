@@ -53,7 +53,7 @@ Item {
       anchors.top: currentDirectory.bottom
       anchors.horizontalCenter: parent.horizontalCenter
       onLogin: (host, port, user, password) => {
-        ftpModel.InitConnect(host, port, user, password, "ftps");
+        ftpModel.Connect(host, port, user, password, "ftps");
       }
     }
 
@@ -78,7 +78,7 @@ Item {
   Component {
     id: listItemDelegate
     Rectangle {
-      id: rDelegateRect
+      id: delegateRect
       width: ListView.view.width
       height: fileName === "." ? 0 : 26
       // radius: 2
@@ -103,12 +103,36 @@ Item {
       }
 
       ContextMenuPopup {
-        id: rcontextMenu
+        id: contextMenu
         parent: rfeText
+        context: rfeText.text
         menu: ["Download", "Rename", "Delete", "Refresh", "New folder"]
         onClosed: {
           rfeText.color = "white"
-          rDelegateRect.color = Material.background
+          delegateRect.color = Material.background
+        }
+        onMenuItemActivated: (action, context) => {
+          rfeText.color = "white"
+          delegateRect.color = Material.background          
+          contextMenu.close()
+          console.log(action, context, fileIsDir)
+
+          var path = ftpModel.currentDirectory + "/" + context
+
+          if (action === "Delete") {
+            if (fileIsDir)
+              ftpModel.RemoveDirectory(path)
+            else
+              ftpModel.RemoveFile(path)              
+          } else if (action === "Download") {
+
+          } else if (action === "Rename") {
+
+          } else if (action === "Refresh") {
+            ftpModel.currentDirectory = ftpModel.currentDirectory
+          } else if (action === "New Folder") {
+
+          }
         }
       }      
 
@@ -127,11 +151,11 @@ Item {
         }
         onClicked: (mouse) => {
           if (mouse.button == Qt.RightButton && fileName !== "..") {
-            rDelegateRect.color = "#A3CCAB"
+            delegateRect.color = "#A3CCAB"
             rfeText.color = "black"
-            rcontextMenu.x = mouse.x - rfeText.x
-            rcontextMenu.y = mouse.y
-            rcontextMenu.open()
+            contextMenu.x = mouse.x - rfeText.x
+            contextMenu.y = mouse.y
+            contextMenu.open()
           }
         }
       }

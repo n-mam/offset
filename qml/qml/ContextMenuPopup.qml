@@ -2,7 +2,12 @@ import QtQuick
 import QtQuick.Controls
 
 Popup {
+
   required property var menu;
+  required property var context;
+
+  signal menuItemActivated(var item, var context)
+
   contentItem: Item {
     anchors.fill: parent
     Rectangle {
@@ -26,6 +31,7 @@ Popup {
             anchors.fill: parent
             onEntered: parent.color = "#9AEBA3"
             onExited: parent.color = "white"
+            onClicked: () => menuItemActivated(text, context)
           }
         }
         Component.onCompleted: {

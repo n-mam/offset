@@ -41,7 +41,13 @@ class FTPModel : public QAbstractListModel
   Q_PROPERTY(QString currentDirectory READ getCurrentDirectory WRITE setCurrentDirectory);
   Q_PROPERTY(QString totalFilesAndFolders READ getTotalFilesAndFolder);
 
-  Q_INVOKABLE bool InitConnect(QString host, QString port, QString user, QString password, QString protocol);
+  Q_INVOKABLE bool Connect(QString host, QString port, QString user, QString password, QString protocol);
+  Q_INVOKABLE void Upload(QString path);
+  Q_INVOKABLE void Download(QString path);
+  Q_INVOKABLE void RemoveFile(QString path);
+  Q_INVOKABLE void RemoveDirectory(QString path);
+  Q_INVOKABLE void CreateDirectory(QString path);
+  Q_INVOKABLE void Quit();
 
   signals:
 

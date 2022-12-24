@@ -131,7 +131,7 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
     CheckQueue(bQWasEmpty);
   }
 
-  virtual void CreateDirectory(const std::string& dir, TResponseCbk cbk)
+  virtual void CreateDirectory(const std::string& dir, TResponseCbk cbk = nullptr)
   {
     std::lock_guard<std::mutex> lg(iQLock);
     bool bQWasEmpty = iCmdQ.empty();
@@ -139,7 +139,7 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
     CheckQueue(bQWasEmpty);
   }
 
-  virtual void RemoveDirectory(const std::string& dir, TResponseCbk cbk)
+  virtual void RemoveDirectory(const std::string& dir, TResponseCbk cbk = nullptr)
   {
     std::lock_guard<std::mutex> lg(iQLock);
     bool bQWasEmpty = iCmdQ.empty();
@@ -147,7 +147,7 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
     CheckQueue(bQWasEmpty);
   }
 
-  virtual void RemoveFile(const std::string& file, TResponseCbk cbk)
+  virtual void RemoveFile(const std::string& file, TResponseCbk cbk = nullptr)
   {
     std::lock_guard<std::mutex> lg(iQLock);
     bool bQWasEmpty = iCmdQ.empty();

@@ -86,10 +86,17 @@ Item {
       ContextMenuPopup {
         id: lcontextMenu
         parent: lfeText
+        context: lfeText.text
         menu: ["Upload", "Rename", "Delete", "Refresh", "New folder"]
         onClosed: {
           lfeText.color = "white"
           lDelegateRect.color = Material.background
+        }
+        onMenuItemActivated: (item, context) => {
+          lfeText.color = "white"
+          lDelegateRect.color = Material.background          
+          console.log(item, context)
+          lcontextMenu.close()
         }
       }      
 
