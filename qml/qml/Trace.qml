@@ -37,7 +37,8 @@ Item {
           if (severity === 3) {
             statusText.text = log
           } else {
-            traceModel.append({line: log})
+            for (var l of log.split("\n"))
+              traceModel.append({line: l})
           }
         }
       }

@@ -101,7 +101,7 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
     std::string command;
 
     if (direction == EDirection::List) {
-      command = "LIST";
+      command = "MLSD";
     } else if (direction == EDirection::Upload) {
       command = "STOR";
     } else if (direction == EDirection::Download) {
@@ -410,7 +410,7 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
 
   auto GetTransferDirection(const std::string& cmd)
   {
-    if (cmd == "LIST") {
+    if (cmd == "LIST" || cmd == "MLSD") {
       return EDirection::Download;
     } else if (cmd == "RETR") {
       return EDirection::Download;
@@ -608,6 +608,7 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
   {
     return (cmd == "RETR" || 
             cmd == "LIST" ||
+            cmd == "MLSD" ||
             cmd == "STOR");
   }
 

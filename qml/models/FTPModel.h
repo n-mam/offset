@@ -59,6 +59,7 @@ class FTPModel : public QAbstractListModel
 
   protected:
 
+  auto ParseMLSDList(const std::string& list) -> std::vector<FileElement>;
   auto ParseLinuxDirectoryList(const std::string& list) -> std::vector<FileElement>;
 
   int m_fileCount = 0;

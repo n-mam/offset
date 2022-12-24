@@ -129,7 +129,7 @@ void FTPModel::setCurrentDirectory(QString directory)
           list.append(b, n);
         } else {
           m_fileCount = m_folderCount = 0;          
-          auto feList = ParseLinuxDirectoryList(list);
+          auto feList = ParseMLSDList(list);
           QMetaObject::invokeMethod(this, [this, feList](){
             beginResetModel();
             m_model.clear();
@@ -147,6 +147,41 @@ void FTPModel::setCurrentDirectory(QString directory)
 QString FTPModel::getTotalFilesAndFolder(void)
 {
   return QString::number(m_fileCount) + ":" + QString::number(m_folderCount);
+}
+
+// type=dir;modify=20221129050708.519;perms=cple; symbols
+// type=dir;modify=20221223154036.441;perms=cple; System Volume Information
+// type=dir;modify=20221222045647.133;perms=cple; test
+// type=dir;modify=20221015164516.306;perms=cple; Users
+
+auto FTPModel::ParseMLSDList(const std::string& list) -> std::vector<FileElement>
+{
+  std::vector<FileElement> feList;
+
+  auto lines = osl::split(list, "\r\n");
+
+  if (m_currentDirectory != "/")
+    feList.push_back({"..", "", "", "d"});
+
+  for (auto& line : lines)
+  {
+    if (!line.size()) continue;
+
+    auto tokens = osl::split(line, ";");
+
+    feList.push_back({
+      osl::trim(tokens.back(), " "),
+      "",
+      "",
+      tokens.front() == "type=dir" ? "d" : "-",
+      false
+    });
+  }
+
+  std::partition(feList.begin(), feList.end(), 
+    [](const FileElement& e){ return e.m_attributes[0] != '-'; });
+
+  return feList;
 }
 
 auto FTPModel::ParseLinuxDirectoryList(const std::string& list) -> std::vector<FileElement>
