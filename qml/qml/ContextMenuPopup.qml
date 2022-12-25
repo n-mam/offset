@@ -19,6 +19,7 @@ Popup {
       height: 130
       ListView {
         spacing: 10
+        clip: true
         anchors.margins: 5
         anchors.fill: parent
         model: ListModel { id: menuModel }

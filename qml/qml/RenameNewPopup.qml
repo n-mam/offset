@@ -49,24 +49,21 @@ Popup {
         Button {
           id: okButton
           width: parent.width * 0.4
-          height: parent.height          
+          height: parent.height
           text: "OK"
-          anchors.top: userInput.bottom
           anchors.left: parent.left
           anchors.verticalCenter: parent.verticalCenter
           onClicked: dismissed(userInput.text)
         }
         Button {
           text: "Cancel"
-          width: parent.width * 0.4     
-          height: parent.height     
-          anchors.top: userInput.bottom
+          width: parent.width * 0.4
+          height: parent.height
           anchors.right: parent.right
           anchors.verticalCenter: parent.verticalCenter
           onClicked: dismissed("")
         }
       }
-
     }
   }
   onOpened: {

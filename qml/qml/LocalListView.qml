@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Dialogs
 import Qt.labs.folderlistmodel
 
 Item {
@@ -59,7 +60,7 @@ Item {
   Component {
     id: listItemDelegate
     Rectangle {
-      id: lDelegateRect
+      id: delegateRect
       width: ListView.view.width
       height: fileName === "." ? 0 : 26
       // radius: 2
@@ -75,7 +76,7 @@ Item {
       }
 
       Text {
-        id: lfeText
+        id: feText
         x: listItemIcon.x + listItemIcon.width + 5
         text: fileName
         height: parent.height
@@ -83,22 +84,77 @@ Item {
         verticalAlignment: Text.AlignVCenter
       }
 
+      MessageDialog {
+        id: warningDialog
+        text: "WARNING"
+        informativeText: "Do you really want to delete ?"
+        buttons: MessageDialog.Ok | MessageDialog.Cancel
+        onAccepted: () => {
+          var path = currentDirectory.text + "/" + feText.text
+          fileIsDir ? ftpModel.RemoveDirectory(path, true) :
+            ftpModel.RemoveFile(path, true)          
+        }
+      }
+
+      RenameNewPopup {
+        id: newRenamePopup
+        parent: feText
+        context: ""
+        onDismissed: (userInput) => {
+          newRenamePopup.close()
+          if (userInput.length)
+          {
+            if (context.startsWith("New folder"))
+            {
+              ftpModel.CreateDirectory(currentDirectory.text + "/" + userInput, true)
+            }
+            else if (context.startsWith("Rename"))
+            {
+              ftpModel.Rename(
+                currentDirectory.text + "/" + feText.text,
+                currentDirectory.text + "/" + userInput, true)
+            }
+          }      
+        }
+      }
+
       ContextMenuPopup {
-        id: lcontextMenu
-        parent: lfeText
-        context: lfeText.text
-        menu: ["Upload", "Rename", "Delete", "Refresh", "New folder"]
+        id: contextMenu
+        parent: feText
+        context: feText.text
+        menu: ["Upload", "Rename", "Delete", "New folder"]
         onClosed: {
-          lfeText.color = "white"
-          lDelegateRect.color = Material.background
+          feText.color = "white"
+          delegateRect.color = Material.background
         }
-        onMenuItemActivated: (item, context) => {
-          lfeText.color = "white"
-          lDelegateRect.color = Material.background          
-          console.log(item, context)
-          lcontextMenu.close()
+        onMenuItemActivated: (action, context) => {
+          feText.color = "white"
+          delegateRect.color = Material.background
+          contextMenu.close()
+          console.log(action, context, fileIsDir)
+
+          var path = currentDirectory.text + "/" + context
+
+          if (action === "Delete")
+          {
+            warningDialog.open();
+          }
+          else if (action === "Download")
+          {
+
+          }
+          else if (action === "Rename")
+          {
+            newRenamePopup.context = "Rename \"" + fileName + "\""
+            newRenamePopup.open()
+          }
+          else if (action === "New folder")
+          {
+            newRenamePopup.context = "New folder"
+            newRenamePopup.open()            
+          }
         }
-      }      
+      }
 
       MouseArea {
         hoverEnabled: true
@@ -106,7 +162,7 @@ Item {
         acceptedButtons: Qt.LeftButton | Qt.RightButton
         onDoubleClicked: {
           if (model.fileIsDir) {
-            if (fileName == "..")
+            if (fileName === "..")
               folderModel.folder = folderModel.parentFolder
             else
               folderModel.folder = folderModel.folder + "/" + fileName
@@ -115,11 +171,11 @@ Item {
         }
         onClicked: (mouse) => {
           if (mouse.button == Qt.RightButton && fileName !== "..") {
-            lDelegateRect.color = "#A3CCAB"
-            lfeText.color = "black"
-            lcontextMenu.x = mouse.x - lfeText.x
-            lcontextMenu.y = mouse.y
-            lcontextMenu.open()
+            delegateRect.color = "#A3CCAB"
+            feText.color = "black"
+            contextMenu.x = mouse.x - feText.x
+            contextMenu.y = mouse.y
+            contextMenu.open()
           }
         }
       }

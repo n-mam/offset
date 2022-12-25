@@ -113,28 +113,84 @@ void FTPModel::Download(QString path)
     }, npl::TLS::Yes);
 }
 
-void FTPModel::RemoveFile(QString path)
+void FTPModel::RemoveFile(QString path, bool local)
 {
-  m_ftp->RemoveFile(path.toStdString());
-  setCurrentDirectory(QString::fromStdString(m_currentDirectory));  
+  if (local) 
+  {
+    try
+    {
+      std::filesystem::remove(path.toStdString());
+    }
+    catch(const std::filesystem::filesystem_error& err)
+    {
+      LOG << "RemoveFile error: " << err.what();
+    }
+  }
+  else
+  {
+    m_ftp->RemoveFile(path.toStdString());
+    setCurrentDirectory(QString::fromStdString(m_currentDirectory));
+  }
 }
 
-void FTPModel::RemoveDirectory(QString path)
+void FTPModel::RemoveDirectory(QString path, bool local)
 {
-  m_ftp->RemoveDirectory(path.toStdString());
-  setCurrentDirectory(QString::fromStdString(m_currentDirectory));  
+  if (local)
+  {
+    try
+    {
+      std::filesystem::remove_all(path.toStdString());
+    }
+    catch(const std::filesystem::filesystem_error& err)
+    {
+      LOG << "RemoveDirectory error: " << err.what();
+    }
+  }
+  else
+  {
+    m_ftp->RemoveDirectory(path.toStdString());
+    setCurrentDirectory(QString::fromStdString(m_currentDirectory));
+  }
 }
 
-void FTPModel::CreateDirectory(QString path)
+void FTPModel::CreateDirectory(QString path, bool local)
 {
-  m_ftp->CreateDirectory(path.toStdString());
-  setCurrentDirectory(QString::fromStdString(m_currentDirectory));
+  if (local)
+  {
+    try
+    {
+      std::filesystem::create_directory(path.toStdString());
+    }
+    catch(const std::exception& e)
+    {
+      LOG << e.what();
+    }
+  }
+  else
+  {
+    m_ftp->CreateDirectory(path.toStdString());
+    setCurrentDirectory(QString::fromStdString(m_currentDirectory));
+  }
 }
 
-void FTPModel::Rename(QString from, QString to)
+void FTPModel::Rename(QString from, QString to, bool local)
 {
-  m_ftp->Rename(from.toStdString(), to.toStdString());
-  setCurrentDirectory(QString::fromStdString(m_currentDirectory));
+  if (local)
+  {
+    try
+    {
+      std::filesystem::rename(from.toStdString(), to.toStdString());
+    }
+    catch(const std::exception& e)
+    {
+      LOG << e.what();
+    }
+  }
+  else
+  {
+    m_ftp->Rename(from.toStdString(), to.toStdString());
+    setCurrentDirectory(QString::fromStdString(m_currentDirectory));
+  }
 }
 
 void FTPModel::Quit()

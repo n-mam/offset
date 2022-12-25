@@ -44,10 +44,10 @@ class FTPModel : public QAbstractListModel
   Q_INVOKABLE bool Connect(QString host, QString port, QString user, QString password, QString protocol);
   Q_INVOKABLE void Upload(QString path);
   Q_INVOKABLE void Download(QString path);
-  Q_INVOKABLE void RemoveFile(QString path);
-  Q_INVOKABLE void RemoveDirectory(QString path);
-  Q_INVOKABLE void CreateDirectory(QString path);
-  Q_INVOKABLE void Rename(QString from, QString to);
+  Q_INVOKABLE void RemoveFile(QString path, bool local = false);
+  Q_INVOKABLE void RemoveDirectory(QString path, bool local = false);
+  Q_INVOKABLE void CreateDirectory(QString path, bool local = false);
+  Q_INVOKABLE void Rename(QString from, QString to, bool local = false);
   Q_INVOKABLE void Quit();
 
   signals:

@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Dialogs
 import QtQuick.Controls
 
 Item {
@@ -102,6 +103,18 @@ Item {
         verticalAlignment: Text.AlignVCenter
       }
 
+      MessageDialog {
+        id: warningDialog
+        text: "WARNING"
+        informativeText: "Do you really want to delete ?"
+        buttons: MessageDialog.Ok | MessageDialog.Cancel
+        onAccepted: () => {
+          var path = ftpModel.currentDirectory + "/" + feText.text
+          fileIsDir ? ftpModel.RemoveDirectory(path) :
+            ftpModel.RemoveFile(path)
+        }
+      }
+
       RenameNewPopup {
         id: newRenamePopup
         parent: feText
@@ -133,7 +146,7 @@ Item {
         }
         onMenuItemActivated: (action, context) => {
           feText.color = "white"
-          delegateRect.color = Material.background          
+          delegateRect.color = Material.background
           contextMenu.close()
           console.log(action, context, fileIsDir)
 
@@ -141,8 +154,7 @@ Item {
 
           if (action === "Delete")
           {
-            fileIsDir ? ftpModel.RemoveDirectory(path) :
-              ftpModel.RemoveFile(path)
+            warningDialog.open();
           }
           else if (action === "Download")
           {
@@ -161,9 +173,9 @@ Item {
           else if (action === "Refresh")
           {
             ftpModel.currentDirectory = ftpModel.currentDirectory
-          }          
+          }
         }
-      }      
+      }
 
       MouseArea {
         hoverEnabled: true
