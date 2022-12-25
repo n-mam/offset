@@ -265,9 +265,13 @@ auto FTPModel::ParseMLSDList(const std::string& list) -> std::vector<FileElement
 
     auto tokens = osl::split(line, ";");
 
+    auto isDir = tokens.front() == "type=dir";
+
+    isDir ? m_folderCount++ : m_fileCount++;
+
     feList.push_back({
       osl::trim(tokens.back(), " "), "", "",
-      tokens.front() == "type=dir" ? "d" : "-",
+      isDir ? "d" : "-",
       false
     });
   }

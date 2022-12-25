@@ -20,7 +20,6 @@ Item {
       width: parent.width
       height: parent.height * 0.08
       placeholderText: qsTr("Remote Directory")
-      horizontalAlignment: Text.AlignLeft
       verticalAlignment: TextInput.AlignVCenter
       onAccepted: {
         ftpModel.currentDirectory = currentDirectory.text
@@ -81,7 +80,7 @@ Item {
     Rectangle {
       id: delegateRect
       width: ListView.view.width
-      height: fileName === "." ? 0 : 26
+      height: 26
       // radius: 2
       // border.width: 1
       // border.color: "#123"
@@ -222,6 +221,6 @@ Item {
   }
 
   Component.onCompleted: {
-    
+
   }
 }

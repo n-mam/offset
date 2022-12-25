@@ -1,6 +1,6 @@
 import QtQuick
-import QtQuick.Controls
 import QtQuick.Dialogs
+import QtQuick.Controls
 import Qt.labs.folderlistmodel
 
 Item {
@@ -21,7 +21,6 @@ Item {
       width: parent.width
       height: parent.height * 0.08
       placeholderText: qsTr("Local Directory")
-      horizontalAlignment: Text.AlignLeft
       verticalAlignment: TextInput.AlignVCenter
       onAccepted: {
         folderModel.folder = "file:///" + currentDirectory.text
