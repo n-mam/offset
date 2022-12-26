@@ -14,6 +14,8 @@ struct FileElement
   bool m_selected = false;
 };
 
+using TRemoteWalkFileCallback = std::function<void (const std::string&)>;
+
 class FTPModel : public QAbstractListModel
 {
   Q_OBJECT
@@ -37,13 +39,14 @@ class FTPModel : public QAbstractListModel
   QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
   bool setData(const QModelIndex& index, const QVariant& value, int role = Qt::EditRole) override;
 
-  Q_PROPERTY(bool connected READ getConnected WRITE setConnected NOTIFY connected);
-  Q_PROPERTY(QString currentDirectory READ getCurrentDirectory WRITE setCurrentDirectory);
   Q_PROPERTY(QString totalFilesAndFolders READ getTotalFilesAndFolder);
+  Q_PROPERTY(bool connected READ getConnected WRITE setConnected NOTIFY connected);
+  Q_PROPERTY(QString localDirectory WRITE setLocalDirectory);
+  Q_PROPERTY(QString remoteDirectory READ getRemoteDirectory WRITE setRemoteDirectory);
 
   Q_INVOKABLE bool Connect(QString host, QString port, QString user, QString password, QString protocol);
-  Q_INVOKABLE void Upload(QString path);
-  Q_INVOKABLE void Download(QString path);
+  Q_INVOKABLE void Upload(QString path, bool isDir);
+  Q_INVOKABLE void Download(QString remoteFolder, QString fileElement, bool isDirectory);
   Q_INVOKABLE void RemoveFile(QString path, bool local = false);
   Q_INVOKABLE void RemoveDirectory(QString path, bool local = false);
   Q_INVOKABLE void CreateDirectory(QString path, bool local = false);
@@ -60,13 +63,16 @@ class FTPModel : public QAbstractListModel
   bool getConnected(void);
   void setConnected(bool);
 
-  QString getCurrentDirectory(void);
-  void setCurrentDirectory(QString dir);
   QString getTotalFilesAndFolder(void);
+  void setLocalDirectory(QString dir);
+  QString getRemoteDirectory(void);
+  void setRemoteDirectory(QString dir);
 
   protected:
 
-  auto ParseMLSDList(const std::string& list) -> std::vector<FileElement>;
+  void RefreshRemoteView(void);
+  void WalkDirectory(const std::string& root, TRemoteWalkFileCallback callback);
+  void ParseMLSDList(const std::string& list, std::vector<FileElement>& feList, int *pfc = nullptr, int * pdc = nullptr);
   auto ParseLinuxDirectoryList(const std::string& list) -> std::vector<FileElement>;
 
   int m_fileCount = 0;
@@ -75,7 +81,9 @@ class FTPModel : public QAbstractListModel
 
   bool m_connected = false;
 
-  std::string m_currentDirectory;
+  std::string m_localDirectory;
+
+  std::string m_remoteDirectory;
 
   std::vector<FileElement> m_model;
 

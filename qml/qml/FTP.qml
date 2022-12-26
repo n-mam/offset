@@ -9,7 +9,7 @@ Item {
     border.color: borderColor
     anchors.left: parent.left
     anchors.right: parent.right
-    height: parent.height * 0.90
+    height: parent.height * 0.95
     color: Material.background
 
     SplitView {

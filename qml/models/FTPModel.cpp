@@ -91,26 +91,48 @@ bool FTPModel::Connect(QString host, QString port, QString user, QString passwor
 
   m_ftp->StartClient();
 
-  this->setCurrentDirectory("/");
+  setRemoteDirectory("/");
 
   return true;
 }
 
-void FTPModel::Upload(QString path)
+void FTPModel::Upload(QString localPath, bool isDir)
 {
 
 }
 
-void FTPModel::Download(QString path)
+void FTPModel::Download(QString remoteFolder, QString fileElement, bool isDirectory)
 {
-  m_ftp->Transfer(npl::ProtocolFTP::EDirection::Download, path.toStdString(),
-    [](const char *b, size_t n){
-      if (b)
-      {
+  auto fepath = (remoteFolder + "/" + fileElement).toStdString();
 
-      }
-      return true;
-    }, npl::TLS::Yes);
+  if (isDirectory)
+  {
+    auto currentLocalDirectory = m_localDirectory;
+
+    WalkDirectory(fepath, 
+      [this, currentLocalDirectory](const std::string& file){
+
+      });
+  }
+  else
+  {
+    auto file = std::make_shared<npl::FileDevice>(
+      m_localDirectory + "/" + fileElement.toStdString(), true);
+
+    m_ftp->Transfer(npl::ProtocolFTP::EDirection::Download, fepath,
+      [file, offset = 0ULL](const char *b, size_t n) mutable {
+        if (b)
+        {
+          file->Write((uint8_t *)b, n, offset);
+          offset += n;
+        }
+        else
+        {
+          file.reset();
+        }
+        return true;
+      }, npl::TLS::Yes);
+  }
 }
 
 void FTPModel::RemoveFile(QString path, bool local)
@@ -129,7 +151,7 @@ void FTPModel::RemoveFile(QString path, bool local)
   else
   {
     m_ftp->RemoveFile(path.toStdString());
-    setCurrentDirectory(QString::fromStdString(m_currentDirectory));
+    RefreshRemoteView();
   }
 }
 
@@ -149,7 +171,7 @@ void FTPModel::RemoveDirectory(QString path, bool local)
   else
   {
     m_ftp->RemoveDirectory(path.toStdString());
-    setCurrentDirectory(QString::fromStdString(m_currentDirectory));
+    RefreshRemoteView();
   }
 }
 
@@ -169,7 +191,7 @@ void FTPModel::CreateDirectory(QString path, bool local)
   else
   {
     m_ftp->CreateDirectory(path.toStdString());
-    setCurrentDirectory(QString::fromStdString(m_currentDirectory));
+    RefreshRemoteView();
   }
 }
 
@@ -189,7 +211,7 @@ void FTPModel::Rename(QString from, QString to, bool local)
   else
   {
     m_ftp->Rename(from.toStdString(), to.toStdString());
-    setCurrentDirectory(QString::fromStdString(m_currentDirectory));
+    RefreshRemoteView();
   }
 }
 
@@ -212,33 +234,88 @@ void FTPModel::setConnected(bool isConnected)
   }
 }
 
-QString FTPModel::getCurrentDirectory(void)
+QString FTPModel::getRemoteDirectory(void)
 {
-  return QString::fromStdString(m_currentDirectory);
+  return QString::fromStdString(m_remoteDirectory);
 }
 
-void FTPModel::setCurrentDirectory(QString directory)
+void FTPModel::setRemoteDirectory(QString directory)
 {
-  m_currentDirectory = directory.toStdString();
+  m_remoteDirectory = directory.toStdString();
 
-  m_ftp->SetCurrentDirectory(m_currentDirectory);
+  m_ftp->SetCurrentDirectory(m_remoteDirectory);
 
-  m_ftp->Transfer(npl::ProtocolFTP::EDirection::List, m_currentDirectory,
+  m_ftp->Transfer(npl::ProtocolFTP::EDirection::List, m_remoteDirectory,
     [this, list = std::string()] (const char *b, size_t n) mutable {
-      if (b) {
-        list.append(b, n);
-      } else {
-        //LOG << list;
-        m_fileCount = m_folderCount = 0;          
-        auto feList = ParseMLSDList(list);
+      if (!b)
+      {
+        std::vector<FileElement> feList;
+
+        if (m_remoteDirectory != "/") 
+          feList.push_back({"..", "", "", "d"});
+
+        int fileCount = 0, folderCount = 0;
+        ParseMLSDList(list, feList, &fileCount, &folderCount);
+        m_fileCount = fileCount, m_folderCount = folderCount;
+
+        std::partition(feList.begin(), feList.end(),
+          [](const FileElement& e){ 
+            return e.m_attributes[0] != '-';
+          });
+
         QMetaObject::invokeMethod(this, [this, feList](){
           beginResetModel();
-          m_model.clear();
-          m_model = feList;
-          setConnected(true);
-          emit directoryList();
+            m_model.clear();
+            m_model = feList;
+            setConnected(true);
           endResetModel();
+          emit directoryList();
         }, Qt::QueuedConnection);
+      }
+      else
+      {
+        list.append(b, n);
+      }
+      return true;
+    }, npl::TLS::Yes);
+}
+
+void FTPModel::setLocalDirectory(QString directory)
+{
+  m_localDirectory = directory.toStdString();
+}
+
+void FTPModel::WalkDirectory(const std::string& root, TRemoteWalkFileCallback callback)
+{
+  m_ftp->Transfer(npl::ProtocolFTP::EDirection::List, root,
+    [=, list = std::string()] (const char *b, size_t n) mutable {
+      if (b)
+      {
+        list.append(b, n);
+      }
+      else
+      {
+        std::vector<FileElement> feList;
+
+        ParseMLSDList(list, feList);
+
+        LOG << "listing : " << root;
+
+        for (const auto& fe : feList)
+        {
+          auto childPath = root + "/" + fe.m_name;
+
+          LOG << " " << childPath;
+
+          if (fe.m_attributes[0] == 'd')
+          {
+            this->WalkDirectory(childPath, callback);
+          }
+          else
+          {
+            callback(childPath);
+          }
+        }
       }
       return true;
     }, npl::TLS::Yes);
@@ -249,15 +326,14 @@ QString FTPModel::getTotalFilesAndFolder(void)
   return QString::number(m_fileCount) + ":" + QString::number(m_folderCount);
 }
 
-// type=dir;modify=20221223154036.441;perms=cple; System Volume Information
-auto FTPModel::ParseMLSDList(const std::string& list) -> std::vector<FileElement>
+void FTPModel::RefreshRemoteView(void)
 {
-  std::vector<FileElement> feList;
-
+  setRemoteDirectory(QString::fromStdString(m_remoteDirectory));
+}
+// type=dir;modify=20221223154036.441;perms=cple; System Volume Information
+void FTPModel::ParseMLSDList(const std::string& list, std::vector<FileElement>& feList, int *pfc, int *pdc)
+{
   auto lines = osl::split(list, "\r\n");
-
-  if (m_currentDirectory != "/")
-    feList.push_back({"..", "", "", "d"});
 
   for (auto& line : lines)
   {
@@ -267,19 +343,12 @@ auto FTPModel::ParseMLSDList(const std::string& list) -> std::vector<FileElement
 
     auto isDir = tokens.front() == "type=dir";
 
-    isDir ? m_folderCount++ : m_fileCount++;
+    if (pfc && pdc) isDir ? (*pdc += 1) : (*pfc += 1);
 
     feList.push_back({
       osl::trim(tokens.back(), " "), "", "",
-      isDir ? "d" : "-",
-      false
-    });
+      isDir ? "d" : "-", false});
   }
-
-  std::partition(feList.begin(), feList.end(), 
-    [](const FileElement& e){ return e.m_attributes[0] != '-'; });
-
-  return feList;
 }
 
 // -rw-rw-rw- 1 ftp    ftp       1468320 Oct 15 17:37 a b c
@@ -288,9 +357,6 @@ auto FTPModel::ParseLinuxDirectoryList(const std::string& list) -> std::vector<F
   std::vector<FileElement> feList;
 
   auto lines = osl::split(list, "\r\n");
-
-  if (m_currentDirectory != "/")
-    feList.push_back({"..", "", "", "d"});
 
   for (auto& line : lines)
   {
@@ -335,9 +401,6 @@ auto FTPModel::ParseLinuxDirectoryList(const std::string& list) -> std::vector<F
 
     feList.push_back(fe);
   }
-
-  std::partition(feList.begin(), feList.end(), 
-    [](const FileElement& e){ return e.m_attributes[0] != '-'; });
 
   return feList;
 }
