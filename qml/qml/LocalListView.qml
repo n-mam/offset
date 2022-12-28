@@ -19,7 +19,7 @@ Item {
     TextField {
       id: currentDirectory
       width: parent.width
-      height: parent.height * 0.08
+      height: parent.height * 0.10
       placeholderText: qsTr("Local Directory")
       verticalAlignment: TextInput.AlignVCenter
       onAccepted: {
@@ -46,7 +46,7 @@ Item {
     ListView {
       id: localListView
       width: parent.width
-      height: parent.height * 0.88
+      height: parent.height * 0.86
       anchors.top: currentDirectory.bottom
       clip: true
       model: folderModel
@@ -85,7 +85,7 @@ Item {
           x: listItemIcon.x + listItemIcon.width + 5
           text: fileName
           height: parent.height
-          color: "white"
+          color: delegateRect.ListView.isCurrentItem ? "black" : "white"
           verticalAlignment: Text.AlignVCenter
         }
 
@@ -187,6 +187,7 @@ Item {
         id: status
         color: "white"
         text: "Total Items : " + (folderModel.count - 2)
+        verticalAlignment: Text.AlignVCenter
         anchors.verticalCenter: parent.verticalCenter
       }
     }

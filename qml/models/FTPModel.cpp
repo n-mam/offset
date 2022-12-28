@@ -6,6 +6,8 @@ FTPModel::FTPModel()
 
 FTPModel::~FTPModel()
 {
+  if (m_queue)
+    delete m_queue;
 }
 
 QHash<int, QByteArray> FTPModel::roleNames() const
@@ -81,6 +83,13 @@ bool FTPModel::setData(const QModelIndex &index, const QVariant &value, int role
   return true;
 }
 
+TransferModel * FTPModel::getTransferModel(void)
+{
+  if (!m_queue)
+    m_queue = new TransferModel();
+  return m_queue;
+}
+
 bool FTPModel::Connect(QString host, QString port, QString user, QString password, QString protocol)
 {
   m_ftp = npl::make_ftp(host.toStdString(), port.toInt(), npl::TLS::Yes);
@@ -101,38 +110,77 @@ void FTPModel::Upload(QString localPath, bool isDir)
 
 }
 
-void FTPModel::Download(QString remoteFolder, QString fileElement, bool isDirectory)
+/*
+\x\y\z\TEST
+        ├───11
+        │   └───a
+        │       └───b
+        │           └───c
+        ├───22
+        └───33
+        ADInsight.exe
+        accessenum.exe
+        ADInsight64.exe
+*/
+void FTPModel::Download(QString file, QString folder, QString localFolder, bool isFolder)
 {
-  auto fepath = (remoteFolder + "/" + fileElement).toStdString();
+  DownloadInternal(file.toStdString(), folder.toStdString(), localFolder.toStdString(), isFolder);
+}
 
-  if (isDirectory)
+void FTPModel::DownloadInternal(std::string file, std::string folder, std::string localFolder, bool isFolder)
+{
+  auto path = folder + ((folder.back() == '/') ? file : ("/" + file));
+
+  LOG << file << " " << folder << " " << localFolder << " " << path;
+
+  if (isFolder)
   {
-    auto currentLocalDirectory = m_localDirectory;
-
-    WalkDirectory(fepath, 
-      [this, currentLocalDirectory](const std::string& file){
-
-      });
+    WalkDirectory(path, [=](const FileElement& fe){
+      if (fe.m_attributes[0] == 'd') {
+        DownloadInternal(
+          fe.m_name, path,
+          localFolder + "/" + fe.m_name, 
+          true);
+      }
+      else {
+        m_queue->AddToTransferQueue({
+          localFolder + "/" + fe.m_name, 
+          path + "/" + fe.m_name, 
+          npl::ProtocolFTP::EDirection::Download, 'I'
+        });
+      }});
   }
   else
   {
-    auto file = std::make_shared<npl::FileDevice>(
-      m_localDirectory + "/" + fileElement.toStdString(), true);
-
-    m_ftp->Transfer(npl::ProtocolFTP::EDirection::Download, fepath,
-      [file, offset = 0ULL](const char *b, size_t n) mutable {
-        if (b)
-        {
-          file->Write((uint8_t *)b, n, offset);
-          offset += n;
-        }
-        else
-        {
-          file.reset();
-        }
-        return true;
-      }, npl::TLS::Yes);
+    m_queue->AddToTransferQueue({
+      localFolder + "/" + file,
+      path, 
+      npl::ProtocolFTP::EDirection::Download, 'I'
+    });
   }
+}
+
+void FTPModel::WalkDirectory(const std::string& path, TFileElementCallback callback)
+{
+  m_ftp->Transfer(npl::ProtocolFTP::EDirection::List, path,
+    [=, list = std::string()] (const char *b, size_t n) mutable {
+      if (b)
+      {
+        list.append(b, n);
+      }
+      else
+      {
+        std::vector<FileElement> feList;
+
+        ParseMLSDList(list, feList);
+
+        for (const auto& fe : feList)
+        {
+          callback(fe);
+        }
+      }
+      return true;
+    }, npl::TLS::Yes);
 }
 
 void FTPModel::RemoveFile(QString path, bool local)
@@ -280,45 +328,14 @@ void FTPModel::setRemoteDirectory(QString directory)
     }, npl::TLS::Yes);
 }
 
+QString FTPModel::getLocalDirectory(void)
+{
+  return QString::fromStdString(m_localDirectory);
+}
+
 void FTPModel::setLocalDirectory(QString directory)
 {
   m_localDirectory = directory.toStdString();
-}
-
-void FTPModel::WalkDirectory(const std::string& root, TRemoteWalkFileCallback callback)
-{
-  m_ftp->Transfer(npl::ProtocolFTP::EDirection::List, root,
-    [=, list = std::string()] (const char *b, size_t n) mutable {
-      if (b)
-      {
-        list.append(b, n);
-      }
-      else
-      {
-        std::vector<FileElement> feList;
-
-        ParseMLSDList(list, feList);
-
-        LOG << "listing : " << root;
-
-        for (const auto& fe : feList)
-        {
-          auto childPath = root + "/" + fe.m_name;
-
-          LOG << " " << childPath;
-
-          if (fe.m_attributes[0] == 'd')
-          {
-            this->WalkDirectory(childPath, callback);
-          }
-          else
-          {
-            callback(childPath);
-          }
-        }
-      }
-      return true;
-    }, npl::TLS::Yes);
 }
 
 QString FTPModel::getTotalFilesAndFolder(void)

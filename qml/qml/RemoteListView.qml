@@ -18,7 +18,7 @@ Item {
     TextField {
       id: currentDirectory
       width: parent.width
-      height: parent.height * 0.08
+      height: parent.height * 0.10
       placeholderText: qsTr("Remote Directory")
       verticalAlignment: TextInput.AlignVCenter
       onAccepted: {
@@ -30,7 +30,7 @@ Item {
     ListView {
       id: remoteListView
       width: parent.width
-      height: ftpModel.connected ? parent.height * 0.88 : 0
+      height: ftpModel.connected ? parent.height * 0.86 : 0
       anchors.top: currentDirectory.bottom
       clip: true
       model: ftpModel
@@ -73,7 +73,7 @@ Item {
           x: listItemIcon.x + listItemIcon.width + 5
           text: fileName
           height: parent.height
-          color: "white"
+          color: delegateRect.ListView.isCurrentItem ? "black" : "white"
           verticalAlignment: Text.AlignVCenter
         }
 
@@ -122,9 +122,12 @@ Item {
             feText.color = "white"
             delegateRect.color = Material.background
             contextMenu.close()
-            console.log(action, context, fileIsDir)
 
-            var path = ftpModel.remoteDirectory + "/" + context
+            console.log(action, fileName, fileIsDir)
+
+            var path = ftpModel.remoteDirectory + 
+                           (ftpModel.remoteDirectory.endsWith("/") ? 
+                              fileName : ("/" + fileName))
 
             if (action === "Delete")
             {
@@ -132,7 +135,7 @@ Item {
             }
             else if (action === "Download")
             {
-
+              ftpModel.Download(fileName, ftpModel.remoteDirectory, ftpModel.localDirectory, fileIsDir)
             }
             else if (action === "Rename")
             {
@@ -199,6 +202,7 @@ Item {
         id: status
         color: "white"
         text: "Not connected"
+        verticalAlignment: Text.AlignVCenter
         anchors.verticalCenter: parent.verticalCenter
       }
     }

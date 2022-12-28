@@ -19,6 +19,7 @@ add_executable(
   ${CMAKE_CURRENT_SOURCE_DIR}/models/Logger.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/models/FTPModel.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/models/BaseModel.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/models/TransferModel.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/models/DiskListModel.cpp
 )
 
