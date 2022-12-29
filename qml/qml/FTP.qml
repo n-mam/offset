@@ -12,7 +12,7 @@ Item {
       border.color: borderColor
       anchors.left: parent.left
       anchors.right: parent.right
-      height: parent.height * 0.75
+      height: parent.height * 0.73
       color: Material.background
 
       SplitView {
@@ -44,17 +44,15 @@ Item {
       border.color: borderColor
       anchors.left: parent.left
       anchors.right: parent.right
-      height: parent.height * 0.18
+      height: parent.height * 0.20
       color: Material.background
 
       ListView {
         clip: true
         anchors.fill: parent
+        anchors.margins: 3
         model: ftpModel.transferModel
-        delegate: Text {
-          text: local + " : " + remote + " : " + "direction" + " : " + type
-          color: "white"
-        }
+        delegate: TransferQueueDelegate{}
       }
     }
   }

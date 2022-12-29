@@ -45,11 +45,10 @@ class FTPModel : public QAbstractListModel
   Q_PROPERTY(bool connected READ getConnected WRITE setConnected NOTIFY connected);
   Q_PROPERTY(QString localDirectory READ getLocalDirectory WRITE setLocalDirectory);
   Q_PROPERTY(QString remoteDirectory READ getRemoteDirectory WRITE setRemoteDirectory);
-  Q_PROPERTY(TransferModel* transferModel READ getTransferModel)
+  Q_PROPERTY(TransferModel* transferModel READ getTransferModel NOTIFY transferModelchanged)
 
   Q_INVOKABLE bool Connect(QString host, QString port, QString user, QString password, QString protocol);
-  Q_INVOKABLE void Upload(QString path, bool isDir);
-  Q_INVOKABLE void Download(QString remoteFile, QString remoteFolder, QString localFolder, bool isFolder);
+  Q_INVOKABLE void Transfer(QString remoteFile, QString remoteFolder, QString localFolder, bool isFolder, bool direction);
   Q_INVOKABLE void RemoveFile(QString path, bool local = false);
   Q_INVOKABLE void RemoveDirectory(QString path, bool local = false);
   Q_INVOKABLE void CreateDirectory(QString path, bool local = false);
@@ -60,6 +59,7 @@ class FTPModel : public QAbstractListModel
 
   void connected(bool);
   void directoryList(void);
+  void transferModelchanged(void);
 
   public slots:
 
@@ -75,8 +75,9 @@ class FTPModel : public QAbstractListModel
   protected:
 
   void RefreshRemoteView(void);
-  void WalkDirectory(const std::string& path, TFileElementCallback callback);
+  void WalkRemoteDirectory(const std::string& path, TFileElementCallback callback);
   void DownloadInternal(std::string file, std::string folder, std::string localFolder, bool isFolder);
+  void UploadInternal(std::string file, std::string folder, std::string localFolder, bool isFolder);
 
   void ParseMLSDList(const std::string& list, std::vector<FileElement>& feList, int *pfc = nullptr, int * pdc = nullptr);
   auto ParseLinuxDirectoryList(const std::string& list) -> std::vector<FileElement>;

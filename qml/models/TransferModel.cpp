@@ -2,8 +2,6 @@
 
 TransferModel::TransferModel()
 {
-  beginResetModel();
-  endResetModel();
 }
 
 TransferModel::~TransferModel()

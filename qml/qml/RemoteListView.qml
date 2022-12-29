@@ -13,7 +13,7 @@ Item {
     // radius: 2
     // border.width: 1
     // border.color: borderColor
-    color: Material.background
+    color: "transparent"
 
     TextField {
       id: currentDirectory
@@ -135,7 +135,7 @@ Item {
             }
             else if (action === "Download")
             {
-              ftpModel.Download(fileName, ftpModel.remoteDirectory, ftpModel.localDirectory, fileIsDir)
+              ftpModel.Transfer(fileName, ftpModel.remoteDirectory, ftpModel.localDirectory, fileIsDir, false)
             }
             else if (action === "Rename")
             {
@@ -227,6 +227,6 @@ Item {
   }
 
   Component.onCompleted: {
-    console.log(remoteListView.cacheBuffer)
+    //console.log(remoteListView.cacheBuffer)
   }
 }

@@ -1,5 +1,7 @@
 #include <FTPModel.h>
 
+#include <filesystem>
+
 FTPModel::FTPModel()
 {
 }
@@ -105,26 +107,52 @@ bool FTPModel::Connect(QString host, QString port, QString user, QString passwor
   return true;
 }
 
-void FTPModel::Upload(QString localPath, bool isDir)
+void FTPModel::Transfer(QString file, QString folder, QString localFolder, bool isFolder, bool direction)
 {
-
+  if (direction)
+  {
+    UploadInternal(file.toStdString(), folder.toStdString(), localFolder.toStdString(), isFolder);
+  }
+  else
+  {
+    DownloadInternal(file.toStdString(), folder.toStdString(), localFolder.toStdString(), isFolder);
+  }
 }
 
-/*
-\x\y\z\TEST
-        ├───11
-        │   └───a
-        │       └───b
-        │           └───c
-        ├───22
-        └───33
-        ADInsight.exe
-        accessenum.exe
-        ADInsight64.exe
-*/
-void FTPModel::Download(QString file, QString folder, QString localFolder, bool isFolder)
+void FTPModel::UploadInternal(std::string file, std::string folder, std::string remoteFolder, bool isFolder)
 {
-  DownloadInternal(file.toStdString(), folder.toStdString(), localFolder.toStdString(), isFolder);
+  auto path = folder + ((folder.back() == path_sep) ? file : (path_sep + file));
+
+  LOG << file << " " << folder << " " << remoteFolder << " " << path;
+
+  if (isFolder)
+  {
+    for (auto const& entry : std::filesystem::directory_iterator(path))
+    {
+      if (entry.is_directory()) {
+        UploadInternal(
+          entry.path().filename().string(),
+          path,
+          remoteFolder + ((remoteFolder.back() == '/') ? file : ("/" + file)),
+          true);
+      }
+      else if(entry.is_regular_file()) {
+        m_queue->AddToTransferQueue({
+          entry.path().string(),
+          remoteFolder + "/"  + file + "/" + entry.path().filename().string(),
+          npl::ProtocolFTP::EDirection::Upload, 'I'
+        });
+      }
+    }
+  }
+  else
+  {
+    m_queue->AddToTransferQueue({
+      path,
+      remoteFolder + ((remoteFolder.back() == '/') ? file : ("/" + file)),
+      npl::ProtocolFTP::EDirection::Upload, 'I'
+    });
+  }
 }
 
 void FTPModel::DownloadInternal(std::string file, std::string folder, std::string localFolder, bool isFolder)
@@ -135,7 +163,7 @@ void FTPModel::DownloadInternal(std::string file, std::string folder, std::strin
 
   if (isFolder)
   {
-    WalkDirectory(path, [=](const FileElement& fe){
+    WalkRemoteDirectory(path, [=](const FileElement& fe){
       if (fe.m_attributes[0] == 'd') {
         DownloadInternal(
           fe.m_name, path,
@@ -160,7 +188,7 @@ void FTPModel::DownloadInternal(std::string file, std::string folder, std::strin
   }
 }
 
-void FTPModel::WalkDirectory(const std::string& path, TFileElementCallback callback)
+void FTPModel::WalkRemoteDirectory(const std::string& path, TFileElementCallback callback)
 {
   m_ftp->Transfer(npl::ProtocolFTP::EDirection::List, path,
     [=, list = std::string()] (const char *b, size_t n) mutable {

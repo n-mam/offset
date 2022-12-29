@@ -137,16 +137,23 @@ Item {
             delegateRect.color = Material.background
             contextMenu.close()
 
-            if (action === "Delete") {
+            if (action === "Delete")
+            {
                 warningDialog.open();
-            } else if (action === "Upload") {
-
-            } else if (action === "Rename") {
-                newRenamePopup.context = "Rename \"" + fileName + "\""
-                newRenamePopup.open()
-            } else if (action === "New folder") {
-                newRenamePopup.context = "New folder"
-                newRenamePopup.open()
+            }
+            else if (action === "Upload")
+            {
+              ftpModel.Transfer(fileName, ftpModel.localDirectory, "/" /*ftpModel.remoteDirectory*/, fileIsDir, true)
+            }
+            else if (action === "Rename")
+            {
+              newRenamePopup.context = "Rename \"" + fileName + "\""
+              newRenamePopup.open()
+            }
+            else if (action === "New folder")
+            {
+              newRenamePopup.context = "New folder"
+              newRenamePopup.open()
             }
           }
         }
@@ -200,6 +207,6 @@ Item {
   }
 
   Component.onCompleted: {
-    console.log(localListView.cacheBuffer)
+    //console.log(localListView.cacheBuffer)
   }
 }

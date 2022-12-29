@@ -41,4 +41,10 @@ class TransferModel : public QAbstractListModel
   std::vector<Transfer> m_transfers;
 };
 
+#if defined _WIN32
+constexpr char path_sep = '\\';
+#else
+constexpr char path_sep = '/';
+#endif
+
 #endif
