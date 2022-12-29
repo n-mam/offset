@@ -2,7 +2,11 @@ import QtQuick
 import QtQuick.Controls
 import Qt.labs.platform
 
-Item {
+Rectangle {
+  // radius: 5
+  // border.width: 1
+  // border.color: borderColor
+  color: Material.background
 
   Rectangle {
     id: listRect
@@ -12,7 +16,7 @@ Item {
     anchors.left: parent.left
     anchors.right: parent.right
     height: parent.height * 0.75
-    color: Material.background
+    color: "transparent"
     Rectangle {
       width: 18
       height: 18
@@ -58,8 +62,8 @@ Item {
     anchors.left: parent.left
     anchors.right: parent.right
     anchors.topMargin: 5
-    height: parent.height * 0.08
-    color: Material.background
+    height: parent.height * 0.10
+    color: "transparent"
     radius: 5
     border.width: 1
     border.color: borderColor
@@ -90,10 +94,10 @@ Item {
     // border.width: 1
     // border.color: borderColor
     anchors.top: destinationRect.bottom
-    color: Material.background
+    color: "transparent"
     anchors.horizontalCenter: parent.horizontalCenter
     width: 75 + 75 + (3 * appSpacing)
-    height: parent.height * 0.08
+    height: parent.height * 0.10
     Button {
       id: startButton
       width: 75
@@ -126,7 +130,7 @@ Item {
     id: statusText
     text: "Ready"
     color: "white"
-    anchors.top: actionsRect.bottom
+    anchors.bottom: parent.bottom
     anchors.left: parent.left
     Component.onCompleted: statusText.font.pointSize = statusText.font.pointSize - 1.0
   }

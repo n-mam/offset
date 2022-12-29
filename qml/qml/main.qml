@@ -29,26 +29,16 @@ ApplicationWindow {
   }
 
   StackLayout {
-    width: parent.width
-    height: parent.height * 0.95
-    currentIndex: bar.currentIndex
-    anchors.margins: 5   
+    anchors.margins: 5
     anchors.top: bar.bottom
     anchors.left: parent.left
     anchors.right: parent.right
+    height: parent.height * 0.90
+    currentIndex: bar.currentIndex
 
-    Fxc {
-      id: fxc
-      height: parent.height
-    }
-    FTP {
-      id: ftp
-      height: parent.height
-    }
-    Trace {
-      id: log
-      height: parent.height
-    }
+    Fxc {}
+    FTP {}
+    Trace {}
   }
 
   // Shortcut {

@@ -1,56 +1,66 @@
 import QtQuick
 import QtQuick.Controls
 
-Item {
-  Column {
-    spacing: 5
+Rectangle {
+  radius: 5
+  border.width: 1
+  border.color: borderColor
+  color: Material.background
+
+  SplitView {
+    id: splitViewTop
+    orientation: Qt.Vertical
     anchors.fill: parent
-    Rectangle {
-      id: splitViewRect
-      radius: 5
-      border.width: 1
-      border.color: borderColor
-      anchors.left: parent.left
-      anchors.right: parent.right
-      height: parent.height * 0.73
-      color: Material.background
 
-      SplitView {
-        id: splitView
-        anchors.fill: parent
-
-        handle: Rectangle {
-          id: handleDelegate
-          implicitWidth: 1
-          implicitHeight: 1
-          color: SplitHandle.pressed ? 
-            "#CCD1D1" : (SplitHandle.hovered ? Qt.lighter("#CCD1D1", 1.1) : "#CCD1D1")
-          containmentMask: Item {
-            x: (handleDelegate.width - width) / 2
-            width: 20
-            height: splitView.height
-          }
-        }
-
-        LocalListView{}
-        RemoteListView{}
+    handle: Rectangle {
+      id: handleDelegate
+      implicitWidth: 1
+      implicitHeight: 1
+      color: SplitHandle.pressed ? 
+        "#CCD1D1" : (SplitHandle.hovered ? Qt.lighter("#CCD1D1", 1.1) : "#CCD1D1")
+      containmentMask: Item {
+        x: (handleDelegate.width - width) / 2
+        width: splitViewTop.width
+        height: 20
       }
+    }
+
+    SplitView {
+      id: splitView
+      implicitHeight: parent.height * 0.75
+
+      handle: Rectangle {
+        id: handleDelegate
+        implicitWidth: 1
+        implicitHeight: 1
+        color: SplitHandle.pressed ? 
+          "#CCD1D1" : (SplitHandle.hovered ? Qt.lighter("#CCD1D1", 1.1) : "#CCD1D1")
+        containmentMask: Item {
+          x: (handleDelegate.width - width) / 2
+          width: 20
+          height: splitView.height
+        }
+      }
+
+      LocalListView{}
+      RemoteListView{}
     }
 
     Rectangle {
       id: transferQueue
-      radius: 5
-      border.width: 1
-      border.color: borderColor
-      anchors.left: parent.left
-      anchors.right: parent.right
-      height: parent.height * 0.20
-      color: Material.background
-
+      width: parent.width
+      height: parent.height * 0.25
+      color: "transparent"
+      // radius: 5
+      // border.width: 1
+      // border.color: borderColor
+    
       ListView {
         clip: true
         anchors.fill: parent
-        anchors.margins: 3
+        anchors.margins: 5
+        anchors.leftMargin: 10
+        anchors.rightMargin: 10
         model: ftpModel.transferModel
         delegate: TransferQueueDelegate{}
       }
