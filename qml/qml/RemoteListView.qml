@@ -10,6 +10,7 @@ Item {
     id: listRectangle
     anchors.fill: parent
     anchors.margins: 5
+    clip: true
     // radius: 2
     // border.width: 1
     // border.color: borderColor
@@ -184,8 +185,8 @@ Item {
       width: parent.width - 10
       anchors.top: currentDirectory.bottom
       anchors.horizontalCenter: parent.horizontalCenter
-      onLogin: (host, port, user, password) => {
-        ftpModel.Connect(host, port, user, password, "ftps");
+      onLogin: (host, port, user, password, protocol) => {
+        ftpModel.Connect(host, port, user, password, protocol)
       }
     }
 

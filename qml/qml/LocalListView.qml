@@ -11,10 +11,11 @@ Item {
     id: listRectangle
     anchors.fill: parent
     anchors.margins: 5
+    color: "transparent"    
+    clip: true
     // radius: 2
     // border.width: 1
     // border.color: borderColor
-    color: "transparent"
 
     TextField {
       id: currentDirectory
@@ -141,9 +142,9 @@ Item {
             {
                 warningDialog.open();
             }
-            else if (action === "Upload")
+            else if (action === "Upload" && ftpModel.connected)
             {
-              ftpModel.Transfer(fileName, ftpModel.localDirectory, "/" /*ftpModel.remoteDirectory*/, fileIsDir, true)
+              ftpModel.Transfer(fileName, ftpModel.localDirectory, ftpModel.remoteDirectory, fileIsDir, true)
             }
             else if (action === "Rename")
             {

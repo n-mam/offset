@@ -94,7 +94,9 @@ TransferModel * FTPModel::getTransferModel(void)
 
 bool FTPModel::Connect(QString host, QString port, QString user, QString password, QString protocol)
 {
-  m_ftp = npl::make_ftp(host.toStdString(), port.toInt(), npl::TLS::Yes);
+  m_protection = (protocol == "FTPS") ? npl::TLS::Yes : npl::TLS::No;
+
+  m_ftp = npl::make_ftp(host.toStdString(), port.toInt(), m_protection);
 
   if (!m_ftp) return false;
 
@@ -211,7 +213,7 @@ void FTPModel::WalkRemoteDirectory(const std::string& path, TFileElementCallback
         }
       }
       return true;
-    }, npl::TLS::Yes);
+    }, m_protection);
 }
 
 void FTPModel::RemoveFile(QString path, bool local)
@@ -356,7 +358,7 @@ void FTPModel::setRemoteDirectory(QString directory)
         list.append(b, n);
       }
       return true;
-    }, npl::TLS::Yes);
+    }, m_protection);
 }
 
 QString FTPModel::getLocalDirectory(void)

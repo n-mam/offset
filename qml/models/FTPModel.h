@@ -97,6 +97,8 @@ class FTPModel : public QAbstractListModel
   std::vector<FileElement> m_model;
 
   TransferModel *m_queue = nullptr;
+
+  npl::TLS m_protection = npl::TLS::Yes;
 };
 
 #endif

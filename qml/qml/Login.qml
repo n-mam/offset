@@ -8,8 +8,8 @@ Rectangle {
   color: Material.background
 
   property var rowHeight: 43
-  height: (rowHeight * 4) + 3
-  signal login(var host, var port, var user, var password)
+  height: (rowHeight * 5) + 3
+  signal login(var host, var port, var user, var password, var protocol)
 
   Column {
     width: parent.width
@@ -75,6 +75,24 @@ Rectangle {
       }
     }
 
+    ButtonGroup {
+      id: optionsGroup
+      buttons: choices.children
+    }
+
+    Row {
+        id: choices
+        height: rowHeight
+        anchors.horizontalCenter: parent.horizontalCenter
+        RadioButton {
+          text: qsTr("FTP")
+        }
+        RadioButton {
+          checked: true
+          text: qsTr("FTPS")
+        }
+    }
+
     Rectangle {
       height: rowHeight
       anchors.margins: 7
@@ -83,11 +101,11 @@ Rectangle {
       color: Material.background
       Button {
         width: parent.width * 0.38
-        height: parent.height * 0.88
+        height: parent.height * 0.90
         text: "Connect"
         anchors.horizontalCenter: parent.horizontalCenter
         onClicked: {
-          login(hostname.text, port.text, username.text, password.text)
+          login(hostname.text, port.text, username.text, password.text, optionsGroup.checkedButton.text)
         }
       }
     }
