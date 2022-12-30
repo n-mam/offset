@@ -6,6 +6,7 @@ Rectangle {
   border.width: 1
   border.color: borderColor
   color: Material.background
+  clip: true
 
   SplitView {
     id: splitViewTop

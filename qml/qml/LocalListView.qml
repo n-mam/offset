@@ -19,7 +19,7 @@ Item {
     TextField {
       id: currentDirectory
       width: parent.width
-      height: parent.height * 0.10
+      height: 43
       placeholderText: qsTr("Local Directory")
       verticalAlignment: TextInput.AlignVCenter
       onAccepted: {
@@ -46,7 +46,7 @@ Item {
     ListView {
       id: localListView
       width: parent.width
-      height: parent.height * 0.86
+      height: parent.height - currentDirectory.height - statusRect.height
       anchors.top: currentDirectory.bottom
       clip: true
       model: folderModel
@@ -182,8 +182,9 @@ Item {
     }
 
     Rectangle {
+      id: statusRect
       width: parent.width
-      height: parent.height * 0.05
+      height: 25
       anchors.top: localListView.bottom
       color: "transparent"
       // radius: 2

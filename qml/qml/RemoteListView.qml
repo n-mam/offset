@@ -18,7 +18,7 @@ Item {
     TextField {
       id: currentDirectory
       width: parent.width
-      height: parent.height * 0.10
+      height: 43
       placeholderText: qsTr("Remote Directory")
       verticalAlignment: TextInput.AlignVCenter
       onAccepted: {
@@ -30,7 +30,7 @@ Item {
     ListView {
       id: remoteListView
       width: parent.width
-      height: ftpModel.connected ? parent.height * 0.86 : 0
+      height: ftpModel.connected ? (parent.height - currentDirectory.height - statusRect.height) : 0
       anchors.top: currentDirectory.bottom
       clip: true
       model: ftpModel
@@ -190,8 +190,9 @@ Item {
     }
 
     Rectangle {
+      id: statusRect
       width: parent.width
-      height: parent.height * 0.05
+      height: 25
       anchors.top: remoteListView.bottom
       color: "transparent"
       // radius: 2
