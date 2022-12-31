@@ -16,6 +16,7 @@ QHash<int, QByteArray> TransferModel::roleNames() const
   roles.insert(ERemote, "remote");
   roles.insert(EDirection, "direction");
   roles.insert(EType, "type");
+  roles.insert(EActive, "active");
 
   return roles;
 }
@@ -49,6 +50,10 @@ QVariant TransferModel::data(const QModelIndex& index, int role) const
     case EType:
     {
       return m_transfers[row].m_type;
+    }
+    case EActive:
+    {
+      return m_transfers[row].m_active;
     }
     default:
       break;

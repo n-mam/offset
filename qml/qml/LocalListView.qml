@@ -185,7 +185,7 @@ Item {
     Rectangle {
       id: statusRect
       width: parent.width
-      height: 25
+      height: 20
       anchors.top: localListView.bottom
       color: "transparent"
       // radius: 2

@@ -58,12 +58,15 @@ Rectangle {
     
       ListView {
         clip: true
+        spacing: 5
         anchors.fill: parent
         anchors.margins: 5
         anchors.leftMargin: 10
         anchors.rightMargin: 10
         model: ftpModel.transferModel
+        currentIndex: -1
         delegate: TransferQueueDelegate{}
+        highlight: Rectangle { color: "lightsteelblue"; radius: 5 }
       }
     }
   }

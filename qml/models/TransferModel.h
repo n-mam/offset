@@ -11,6 +11,7 @@ struct Transfer
   std::string m_remote;
   npl::ProtocolFTP::EDirection m_direction;
   char m_type;
+  bool m_active = false;
 };
 
 class TransferModel : public QAbstractListModel
@@ -22,7 +23,8 @@ class TransferModel : public QAbstractListModel
     ELocal = Qt::UserRole,
     ERemote,
     EDirection,
-    EType
+    EType,
+    EActive
   };
 
   public:
@@ -39,6 +41,8 @@ class TransferModel : public QAbstractListModel
   private:
 
   std::vector<Transfer> m_transfers;
+
+  std::vector<npl::SPProtocolFTP> m_sessions;
 };
 
 #if defined _WIN32

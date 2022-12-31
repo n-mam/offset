@@ -631,6 +631,11 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
     return (c == '1');
   }
 
+  virtual void OnDisconnect(void) override
+  {
+    Protocol::OnDisconnect();
+  }
+
   virtual void OnConnect(void) override
   {
     Protocol::OnConnect();

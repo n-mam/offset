@@ -88,9 +88,9 @@ inline void test_http_client(const std::string& host, int port)
     auto http = npl::make_http_client(host, port);
 
     http->StartClient(
-      [](auto p)
+      [](auto p, bool connected)
       {
-        LOG << "client connected";
+        LOG << "client connected : " << connected;
       }
     );
   }

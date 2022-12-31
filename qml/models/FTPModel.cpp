@@ -102,7 +102,18 @@ bool FTPModel::Connect(QString host, QString port, QString user, QString passwor
 
   m_ftp->SetCredentials(user.toStdString(), password.toStdString());
 
-  m_ftp->StartClient();
+  m_ftp->StartClient(
+    [this](auto p, bool isConnected){
+      QMetaObject::invokeMethod(this, [=](){
+        setConnected(isConnected);
+        if(!isConnected)
+        {
+          beginResetModel();
+          m_model.clear();
+          endResetModel();
+        }
+      }, Qt::QueuedConnection);
+  });
 
   setRemoteDirectory("/");
 
@@ -346,9 +357,9 @@ void FTPModel::setRemoteDirectory(QString directory)
 
         QMetaObject::invokeMethod(this, [this, feList](){
           beginResetModel();
-            m_model.clear();
-            m_model = feList;
-            setConnected(true);
+          m_model.clear();
+          m_model = feList;
+          setConnected(true);
           endResetModel();
           emit directoryList();
         }, Qt::QueuedConnection);

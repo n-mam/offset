@@ -193,7 +193,7 @@ Item {
     Rectangle {
       id: statusRect
       width: parent.width
-      height: 25
+      height: 20
       anchors.top: remoteListView.bottom
       color: "transparent"
       // radius: 2
@@ -202,8 +202,8 @@ Item {
 
       Text {
         id: status
+        visible: ftpModel.connected
         color: "white"
-        text: "Not connected"
         verticalAlignment: Text.AlignVCenter
         anchors.verticalCenter: parent.verticalCenter
       }

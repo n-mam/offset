@@ -62,7 +62,7 @@ class Protocol : public Subject<T1, T2>
 
   using SPProtocol = std::shared_ptr<Protocol<T1, T2>>;
 
-  using TOnConnectCbk = std::function<void (SPProtocol)>;
+  using TOnConnectCbk = std::function<void (SPProtocol, bool)>;
 
   using TOnClientMessageCbk = std::function<void (SPProtocol, const std::string&)>;
 
@@ -142,15 +142,20 @@ class Protocol : public Subject<T1, T2>
   {
     if (iConnectCbk)
     {
-      iConnectCbk(std::dynamic_pointer_cast<Protocol<T1, T2>>(this->shared_from_this()));
+      iConnectCbk(std::dynamic_pointer_cast<Protocol<T1, T2>>(this->shared_from_this()), true);
     }
 
     iCurrentState = EStateConnected;
   }
 
   virtual void OnDisconnect(void) override
-  {
-    iCurrentState = EStateDisconnected;
+  {   
+    if (iConnectCbk)
+    {
+      iConnectCbk(std::dynamic_pointer_cast<Protocol<T1, T2>>(this->shared_from_this()), false);
+    }
+
+    iCurrentState = EStateDisconnected;    
   }
 
   virtual void OnRead(const T1 *b, size_t n) override
