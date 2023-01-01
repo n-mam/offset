@@ -124,8 +124,6 @@ Item {
             delegateRect.color = Material.background
             contextMenu.close()
 
-            console.log(action, fileName, fileIsDir)
-
             var path = ftpModel.remoteDirectory + 
                            (ftpModel.remoteDirectory.endsWith("/") ? 
                               fileName : ("/" + fileName))
@@ -136,7 +134,7 @@ Item {
             }
             else if (action === "Download")
             {
-              ftpModel.Transfer(fileName, ftpModel.remoteDirectory, ftpModel.localDirectory, fileIsDir, false)
+              ftpModel.Transfer(fileName, ftpModel.remoteDirectory, ftpModel.localDirectory, fileIsDir, false, fileSize)
             }
             else if (action === "Rename")
             {

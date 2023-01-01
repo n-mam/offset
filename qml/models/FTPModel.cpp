@@ -88,19 +88,27 @@ bool FTPModel::setData(const QModelIndex &index, const QVariant &value, int role
 TransferModel * FTPModel::getTransferModel(void)
 {
   if (!m_queue)
-    m_queue = new TransferModel();
+  {
+    m_queue = new TransferModel(this);
+  }
+
   return m_queue;
 }
 
 bool FTPModel::Connect(QString host, QString port, QString user, QString password, QString protocol)
 {
+  m_port = port.toInt();
+  m_host = host.toStdString();
+  m_user = user.toStdString();
+  m_password = password.toStdString();
+
   m_protection = (protocol == "FTPS") ? npl::TLS::Yes : npl::TLS::No;
 
-  m_ftp = npl::make_ftp(host.toStdString(), port.toInt(), m_protection);
+  m_ftp = npl::make_ftp(m_host, m_port , m_protection);
 
   if (!m_ftp) return false;
 
-  m_ftp->SetCredentials(user.toStdString(), password.toStdString());
+  m_ftp->SetCredentials(m_user, m_password);
 
   m_ftp->StartClient(
     [this](auto p, bool isConnected){
@@ -120,24 +128,24 @@ bool FTPModel::Connect(QString host, QString port, QString user, QString passwor
   return true;
 }
 
-void FTPModel::Transfer(QString file, QString folder, QString localFolder, bool isFolder, bool direction)
+void FTPModel::Transfer(QString file, QString folder, QString localFolder, bool isFolder, bool direction, uint64_t size)
 {
   if (direction)
   {
-    UploadInternal(file.toStdString(), folder.toStdString(), localFolder.toStdString(), isFolder);
+    UploadInternal(file.toStdString(), folder.toStdString(), localFolder.toStdString(), isFolder, size);
   }
   else
   {
-    DownloadInternal(file.toStdString(), folder.toStdString(), localFolder.toStdString(), isFolder);
+    DownloadInternal(file.toStdString(), folder.toStdString(), localFolder.toStdString(), isFolder, size);
   }
 }
 
-void FTPModel::UploadInternal(std::string file, std::string localFolder, std::string remoteFolder, bool isFolder)
+void FTPModel::UploadInternal(std::string file, std::string localFolder, std::string remoteFolder, bool isFolder, uint64_t size)
 {
   auto localPath = localFolder + ((localFolder.back() == path_sep) ? file : (path_sep + file));
   auto remotePath = remoteFolder + ((remoteFolder.back() == '/') ? file : ("/" + file));
 
-  LOG << file << " " << localFolder << " " << remoteFolder << " " << localPath << remotePath;
+  LOG << file << " " << localFolder << " " << remoteFolder << " " << localPath << " " << remotePath;
 
   if (isFolder)
   {
@@ -154,7 +162,8 @@ void FTPModel::UploadInternal(std::string file, std::string localFolder, std::st
         m_queue->AddToTransferQueue({
           entry.path().string(),
           remotePath + "/" + entry.path().filename().string(),
-          npl::ProtocolFTP::EDirection::Upload, 'I'
+          npl::ProtocolFTP::EDirection::Upload,
+          'I', entry.file_size()
         });
       }
     }
@@ -164,17 +173,18 @@ void FTPModel::UploadInternal(std::string file, std::string localFolder, std::st
     m_queue->AddToTransferQueue({
       localPath,
       remotePath,
-      npl::ProtocolFTP::EDirection::Upload, 'I'
+      npl::ProtocolFTP::EDirection::Upload,
+      'I', size
     });
   }
 }
 
-void FTPModel::DownloadInternal(std::string file, std::string folder, std::string localFolder, bool isFolder)
+void FTPModel::DownloadInternal(std::string file, std::string folder, std::string localFolder, bool isFolder, uint64_t size)
 {
   auto remotePath = folder + ((folder.back() == '/') ? file : ("/" + file));
   auto localPath = localFolder + ((localFolder.back() == path_sep) ? file : (path_sep + file));
 
-  LOG << file << " " << folder << " " << localFolder << " " << localPath << remotePath;
+  LOG << file << " " << folder << " " << localFolder << " " << localPath << " " << remotePath;
 
   if (isFolder)
   {
@@ -190,7 +200,8 @@ void FTPModel::DownloadInternal(std::string file, std::string folder, std::strin
         m_queue->AddToTransferQueue({
           localPath + path_sep + fe.m_name,
           remotePath + "/" + fe.m_name,
-          npl::ProtocolFTP::EDirection::Download, 'I'
+          npl::ProtocolFTP::EDirection::Download,
+          'I', std::stoull(fe.m_size)
         });
       }});
   }
@@ -199,7 +210,8 @@ void FTPModel::DownloadInternal(std::string file, std::string folder, std::strin
     m_queue->AddToTransferQueue({
       localPath,
       remotePath,
-      npl::ProtocolFTP::EDirection::Download, 'I'
+      npl::ProtocolFTP::EDirection::Download,
+      'I', size
     });
   }
 }
@@ -359,7 +371,6 @@ void FTPModel::setRemoteDirectory(QString directory)
           beginResetModel();
           m_model.clear();
           m_model = feList;
-          setConnected(true);
           endResetModel();
           emit directoryList();
         }, Qt::QueuedConnection);
@@ -391,7 +402,9 @@ void FTPModel::RefreshRemoteView(void)
 {
   setRemoteDirectory(QString::fromStdString(m_remoteDirectory));
 }
-// type=dir;modify=20221223154036.441;perms=cple; System Volume Information
+
+// type=file;size=8192;modify=20221219022112.389;perms=awr; DumpStack.log
+// type=dir;modify=20221015170330.792;perms=cple; Intel
 void FTPModel::ParseMLSDList(const std::string& list, std::vector<FileElement>& feList, int *pfc, int *pdc)
 {
   auto lines = osl::split(list, "\r\n");
@@ -402,12 +415,21 @@ void FTPModel::ParseMLSDList(const std::string& list, std::vector<FileElement>& 
 
     auto tokens = osl::split(line, ";");
 
+    auto name = osl::trim(tokens.back(), " ");
+
     auto isDir = tokens.front() == "type=dir";
+
+    std::string size;
+
+    if (!isDir)
+    {
+      size = osl::split(tokens[1], "=")[1];
+    }
 
     if (pfc && pdc) isDir ? (*pdc += 1) : (*pfc += 1);
 
     feList.push_back({
-      osl::trim(tokens.back(), " "), "", "",
+      name, size, "",
       isDir ? "d" : "-", false});
   }
 }

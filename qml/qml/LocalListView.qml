@@ -144,7 +144,7 @@ Item {
             }
             else if (action === "Upload" && ftpModel.connected)
             {
-              ftpModel.Transfer(fileName, ftpModel.localDirectory, ftpModel.remoteDirectory, fileIsDir, true)
+              ftpModel.Transfer(fileName, ftpModel.localDirectory, ftpModel.remoteDirectory, fileIsDir, true, fileSize)
             }
             else if (action === "Rename")
             {

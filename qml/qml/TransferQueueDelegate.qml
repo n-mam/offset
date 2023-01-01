@@ -58,7 +58,8 @@ Rectangle {
     anchors.top: direction.bottom
     from: 0
     to: 100
-    visible: true //active
+    value: progress
+    visible: progress > 0
   }
 
   MouseArea {

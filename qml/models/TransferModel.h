@@ -11,12 +11,20 @@ struct Transfer
   std::string m_remote;
   npl::ProtocolFTP::EDirection m_direction;
   char m_type;
-  bool m_active = false;
+  uint64_t m_size = 0;
+  int m_progress = 0;
+  int m_index = -1;
 };
+
+class FTPModel;
+
+constexpr int MAX_SESSIONS = 1;
 
 class TransferModel : public QAbstractListModel
 {
   Q_OBJECT
+
+  public:
 
   enum Roles
   {
@@ -24,25 +32,31 @@ class TransferModel : public QAbstractListModel
     ERemote,
     EDirection,
     EType,
-    EActive
+    EProgress
   };
 
-  public:
-
-  TransferModel();
+  TransferModel(FTPModel *ftpModel);
   ~TransferModel();
 
   QHash<int, QByteArray> roleNames() const override;
   int rowCount(const QModelIndex& parent = QModelIndex()) const override;
   QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
 
-  void AddToTransferQueue(const Transfer& transfer);
+  void AddToTransferQueue(Transfer&& transfer);
 
   private:
 
-  std::vector<Transfer> m_transfers;
+  void ProcessTransfer(Transfer&);
+
+  void CreateFTPSession(void);
+
+  FTPModel *m_ftpModel;
+
+  std::vector<Transfer> m_queue;
 
   std::vector<npl::SPProtocolFTP> m_sessions;
+
+  int m_next_session = 0;
 };
 
 #if defined _WIN32

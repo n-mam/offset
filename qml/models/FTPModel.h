@@ -48,12 +48,20 @@ class FTPModel : public QAbstractListModel
   Q_PROPERTY(TransferModel* transferModel READ getTransferModel NOTIFY transferModelchanged)
 
   Q_INVOKABLE bool Connect(QString host, QString port, QString user, QString password, QString protocol);
-  Q_INVOKABLE void Transfer(QString remoteFile, QString remoteFolder, QString localFolder, bool isFolder, bool direction);
+  Q_INVOKABLE void Transfer(QString remoteFile, QString remoteFolder, QString localFolder, bool isFolder, bool direction, uint64_t);
   Q_INVOKABLE void RemoveFile(QString path, bool local = false);
   Q_INVOKABLE void RemoveDirectory(QString path, bool local = false);
   Q_INVOKABLE void CreateDirectory(QString path, bool local = false);
   Q_INVOKABLE void Rename(QString from, QString to, bool local = false);
   Q_INVOKABLE void Quit();
+
+  int m_port;
+  std::string m_host;
+  std::string m_user;
+  std::string m_password;
+  std::string m_protocol;
+
+  npl::TLS m_protection = npl::TLS::Yes;
 
   signals:
 
@@ -76,8 +84,8 @@ class FTPModel : public QAbstractListModel
 
   void RefreshRemoteView(void);
   void WalkRemoteDirectory(const std::string& path, TFileElementCallback callback);
-  void DownloadInternal(std::string file, std::string folder, std::string localFolder, bool isFolder);
-  void UploadInternal(std::string file, std::string folder, std::string localFolder, bool isFolder);
+  void DownloadInternal(std::string file, std::string folder, std::string localFolder, bool isFolder, uint64_t size = 0);
+  void UploadInternal(std::string file, std::string folder, std::string localFolder, bool isFolder, uint64_t size = 0);
 
   void ParseMLSDList(const std::string& list, std::vector<FileElement>& feList, int *pfc = nullptr, int * pdc = nullptr);
   auto ParseLinuxDirectoryList(const std::string& list) -> std::vector<FileElement>;
@@ -97,8 +105,6 @@ class FTPModel : public QAbstractListModel
   std::vector<FileElement> m_model;
 
   TransferModel *m_queue = nullptr;
-
-  npl::TLS m_protection = npl::TLS::Yes;
 };
 
 #endif
