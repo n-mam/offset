@@ -17,8 +17,6 @@ Rectangle {
       id: handleDelegate
       implicitWidth: 1
       implicitHeight: 1
-      color: SplitHandle.pressed ? 
-        "#CCD1D1" : (SplitHandle.hovered ? Qt.lighter("#CCD1D1", 1.1) : "#CCD1D1")
       containmentMask: Item {
         x: (handleDelegate.width - width) / 2
         width: splitViewTop.width
@@ -34,8 +32,6 @@ Rectangle {
         id: handleDelegate
         implicitWidth: 1
         implicitHeight: 1
-        color: SplitHandle.pressed ? 
-          "#CCD1D1" : (SplitHandle.hovered ? Qt.lighter("#CCD1D1", 1.1) : "#CCD1D1")
         containmentMask: Item {
           x: (handleDelegate.width - width) / 2
           width: 20

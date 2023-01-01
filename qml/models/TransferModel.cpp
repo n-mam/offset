@@ -64,31 +64,36 @@ QVariant TransferModel::data(const QModelIndex& index, int role) const
   return QVariant();
 }
 
-void TransferModel::AddToTransferQueue(Transfer&& transfer)
+void TransferModel::AddToTransferQueue(const Transfer& transfer)
 {
-  QMetaObject::invokeMethod(this, [=]() mutable {
-    transfer.m_index = m_queue.size();
-    beginInsertRows(QModelIndex(), 
-      transfer.m_index, transfer.m_index);
-    m_queue.push_back(transfer);
-    endInsertRows();
-    ProcessTransfer(m_queue.back());
-  });
+  QMetaObject::invokeMethod(this,
+    [=, t = std::move(transfer)]() mutable {
+      t.m_index = m_queue.size();
+      beginInsertRows(QModelIndex(), t.m_index, t.m_index);
+      m_queue.emplace_back(t);
+      endInsertRows();
+      ProcessTransfer();
+    });
 }
 
-void TransferModel::ProcessTransfer(Transfer& t)
+void TransferModel::ProcessTransfer(void)
 {
   while (m_sessions.size() != MAX_SESSIONS)
     CreateFTPSession();
 
   auto& ftp = m_sessions[m_next_session];
 
+  auto& t = m_queue.back();
+
   if (t.m_direction == npl::ProtocolFTP::EDirection::Download)
   {
+    std::filesystem::path path = t.m_local;
+    std::filesystem::create_directories(path.parent_path());
+
     auto file = std::make_shared<npl::FileDevice>(t.m_local, true);
 
     ftp->Transfer(t.m_direction, t.m_remote,
-      [=, &t, offset = 0ULL](const char *b, size_t n) mutable {
+      [=, idx = t.m_index, offset = 0ULL](const char *b, size_t n) mutable {
         if (b)
         {
           file->Write((uint8_t *)b, n, offset);
@@ -96,15 +101,23 @@ void TransferModel::ProcessTransfer(Transfer& t)
         }
         else
         {
-          LOG << "Download complete";
           file.reset();
         }
-        t.m_progress = b ? (((float)offset / t.m_size) * 100) : 100;
-        QMetaObject::invokeMethod(this, [=]() mutable {
-          emit dataChanged(index(t.m_index), index(t.m_index), {Roles::EProgress});
+
+        auto& tt = m_queue[idx];
+
+        if (tt.m_size) {
+          tt.m_progress = b ?
+            (((float)offset / tt.m_size) * 100) : 100;
+        }
+
+        QMetaObject::invokeMethod(this, [=]() {
+          emit dataChanged(index(idx), index(idx), {Roles::EProgress});
         });
+
         return true;
-      }, m_ftpModel->m_protection);
+      },
+      m_ftpModel->m_protection);
   }
   else if (t.m_direction == npl::ProtocolFTP::EDirection::Upload)
   {

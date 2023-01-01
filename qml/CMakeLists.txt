@@ -40,6 +40,8 @@ target_link_libraries(
   Crc32c::crc32c
 )
 
+# set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DQT_QML_DEBUG")
+
 if (WIN32)
   target_link_libraries(offset PRIVATE Ws2_32.lib VssApi.lib)
 endif(WIN32)
