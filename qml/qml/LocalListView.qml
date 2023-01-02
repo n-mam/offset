@@ -100,7 +100,7 @@ Item {
     Rectangle {
       id: delegateRect
       width: ListView.view.width
-      height: 26
+      height: 23
       Component.onCompleted: {
         if (fileName === ".") {
           height = 0

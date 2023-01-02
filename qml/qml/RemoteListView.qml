@@ -58,7 +58,7 @@ Item {
 
   Login {
     visible: !ftpModel.connected
-    width: parent.width - 20
+    width: parent.width - 30
     anchors.top: currentDirectory.bottom
     anchors.topMargin: 45
     anchors.horizontalCenter: parent.horizontalCenter
@@ -126,7 +126,7 @@ Item {
     Rectangle {
       id: delegateRect
       width: ListView.view.width
-      height: 26
+      height: 23
       color: "transparent"
       // radius: 2
       // border.width: 1

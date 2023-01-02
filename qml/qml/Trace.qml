@@ -58,13 +58,13 @@ Rectangle {
     color: Material.background
     anchors.horizontalCenter: parent.horizontalCenter
     width: 75 + 75 + (3 * appSpacing)
-    height: parent.height * 0.07
+    height: parent.height * 0.08
     Button {
       id: clearButton
       width: 75
       text: "CLEAR"
       enabled: (diskListModel.transfer === 0)
-      height: parent.height * 0.85
+      height: parent.height * 0.90
       anchors.left: parent.left
       anchors.margins: appSpacing
       anchors.verticalCenter: parent.verticalCenter
@@ -75,7 +75,7 @@ Rectangle {
       width: 75
       text: "SAVE"
       enabled: (diskListModel.transfer !== 0)
-      height: parent.height * 0.85
+      height: parent.height * 0.90
       anchors.left: clearButton.right
       anchors.margins: appSpacing
       anchors.verticalCenter: parent.verticalCenter

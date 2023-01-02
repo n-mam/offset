@@ -100,7 +100,7 @@ Rectangle {
         color: "transparent"
         Text {
           color: "white"
-          text: "Queue : " + queue.count
+          text: "Queue: " + queue.count
           verticalAlignment: Text.AlignVCenter
           anchors.verticalCenter: parent.verticalCenter          
         }
