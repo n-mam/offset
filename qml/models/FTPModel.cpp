@@ -145,7 +145,7 @@ void FTPModel::UploadInternal(std::string file, std::string localFolder, std::st
   auto localPath = localFolder + ((localFolder.back() == path_sep) ? file : (path_sep + file));
   auto remotePath = remoteFolder + ((remoteFolder.back() == '/') ? file : ("/" + file));
 
-  LOG << file << " " << localFolder << " " << remoteFolder << " " << localPath << " " << remotePath;
+  //LOG << file << " " << localFolder << " " << remoteFolder << " " << localPath << " " << remotePath;
 
   if (isFolder)
   {
@@ -184,7 +184,7 @@ void FTPModel::DownloadInternal(std::string file, std::string folder, std::strin
   auto remotePath = folder + ((folder.back() == '/') ? file : ("/" + file));
   auto localPath = localFolder + ((localFolder.back() == path_sep) ? file : (path_sep + file));
 
-  LOG << file << " " << folder << " " << localFolder << " " << localPath << " " << remotePath;
+  //LOG << file << " " << folder << " " << localFolder << " " << localPath << " " << remotePath;
 
   if (isFolder)
   {

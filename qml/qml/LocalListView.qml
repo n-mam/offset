@@ -53,7 +53,9 @@ Item {
       model: folderModel
       delegate: listItemDelegate
       cacheBuffer: 1024
-      highlight: Rectangle { color: "lightsteelblue"; radius: 5 }
+      highlightMoveDuration: 100
+      highlightMoveVelocity: 800
+      highlight: Rectangle { color: "lightsteelblue"; radius: 2 }
     }
 
     Component {

@@ -26,7 +26,7 @@ Rectangle {
 
     SplitView {
       id: splitView
-      implicitHeight: parent.height * 0.75
+      implicitHeight: parent.height * 0.70
 
       handle: Rectangle {
         id: handleDelegate
@@ -46,23 +46,39 @@ Rectangle {
     Rectangle {
       id: transferQueue
       width: parent.width
-      height: parent.height * 0.25
+      height: parent.height * 0.30
       color: "transparent"
       // radius: 5
       // border.width: 1
       // border.color: borderColor
     
       ListView {
+        id: queue
         clip: true
         spacing: 5
-        anchors.fill: parent
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: parent.height * 0.85
         anchors.margins: 5
         anchors.leftMargin: 10
         anchors.rightMargin: 10
         model: ftpModel.transferModel
         currentIndex: -1
         delegate: TransferQueueDelegate{}
-        highlight: Rectangle { color: "lightsteelblue"; radius: 5 }
+        highlight: Rectangle { color: "lightsteelblue"; radius: 2 }
+      }
+      Rectangle {
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.leftMargin: 10
+        anchors.rightMargin: 10        
+        height: parent.height * 0.15        
+        anchors.top: queue.bottom
+        color: "transparent"
+        Text {
+          color: "white"
+          text: "Queued : " + queue.count
+        }
       }
     }
   }

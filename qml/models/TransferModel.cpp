@@ -72,7 +72,7 @@ void TransferModel::AddToTransferQueue(const Transfer& transfer)
       beginInsertRows(QModelIndex(), t.m_index, t.m_index);
       m_queue.emplace_back(t);
       endInsertRows();
-      ProcessTransfer();
+      //ProcessTransfer();
     });
 }
 

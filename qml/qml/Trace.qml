@@ -13,30 +13,36 @@ Rectangle {
     ListElement {line: ""}
   }
 
-  ListView {
+  ScrollView {
     id: traceView
+    width: parent.width
+    height: parent.height * 0.90
     clip: true
-    anchors.left: parent.left
-    anchors.right: parent.right
-    anchors.margins: 10
-    height: parent.height * 0.85
-    model: traceModel
-    delegate: Item {
-      width: ListView.view.width;
-      height: 17
-      Label { 
-        text: line
-        Component.onCompleted: font.pointSize = font.pointSize - 2
+
+    ListView {
+      clip: true
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.margins: 10
+      height: parent.height
+      model: traceModel
+      delegate: Item {
+        width: ListView.view.width;
+        height: 17
+        Label { 
+          text: line
+          Component.onCompleted: font.pointSize = font.pointSize - 2
+        }
       }
-    }
-    Connections {
-      target: logger
-      function onAddLogLine(severity, log) {
-        if (severity === 3) {
-          statusText.text = log
-        } else {
-          for (var l of log.split("\n"))
-            traceModel.append({line: l})
+      Connections {
+        target: logger
+        function onAddLogLine(severity, log) {
+          if (severity === 3) {
+            statusText.text = log
+          } else {
+            for (var l of log.split("\n"))
+              traceModel.append({line: l})
+          }
         }
       }
     }
@@ -47,12 +53,12 @@ Rectangle {
     // radius: 5
     // border.width: 1
     // border.color: borderColor
-    anchors.bottom: parent.bottom
+    anchors.top: traceView.bottom
     anchors.margins: 5
     color: Material.background
     anchors.horizontalCenter: parent.horizontalCenter
     width: 75 + 75 + (3 * appSpacing)
-    height: parent.height * 0.10
+    height: parent.height * 0.07
     Button {
       id: clearButton
       width: 75
