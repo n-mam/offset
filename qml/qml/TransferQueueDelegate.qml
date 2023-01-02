@@ -7,7 +7,7 @@ Rectangle {
   // border.color: "gray"
   id: delegateRect
   color: "transparent"
-  height: 24
+  height: 23
   width: ListView.view.width
 
   Rectangle {

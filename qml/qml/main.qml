@@ -4,13 +4,13 @@ import QtQuick.Controls
 import Qt.labs.platform
 
 ApplicationWindow {
-  width: 560
-  height: 600
+  width: 590
+  height: 620
   visible: true
   title: qsTr("Offset")
 
   property var showlog: false
-  property var borderColor: "#BCDCAA"
+  property var borderColor: "white" //"#BCDCAA"
   property var appSpacing: 5
 
   TabBar {

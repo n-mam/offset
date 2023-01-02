@@ -3,6 +3,7 @@
     <file>file.png</file>
     <file>folder.png</file>
     <file>arrow.png</file>
+    <file>exit.png</file>
     <file>app.ico</file>
   </qresource>
 </RCC>

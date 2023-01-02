@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Shapes
 import QtQuick.Controls
 
 Rectangle {
@@ -20,7 +21,7 @@ Rectangle {
       containmentMask: Item {
         x: (handleDelegate.width - width) / 2
         width: splitViewTop.width
-        height: 20
+        height: 15
       }
     }
 
@@ -34,7 +35,7 @@ Rectangle {
         implicitHeight: 1
         containmentMask: Item {
           x: (handleDelegate.width - width) / 2
-          width: 20
+          width: 15
           height: splitView.height
         }
       }
@@ -55,11 +56,12 @@ Rectangle {
       ListView {
         id: queue
         clip: true
-        spacing: 5
+        spacing: 3
+        height: parent.height - spacer.height - queueStatus.height
+        anchors.top: parent.top
         anchors.left: parent.left
         anchors.right: parent.right
-        height: parent.height * 0.85
-        anchors.margins: 5
+        anchors.topMargin: 5
         anchors.leftMargin: 10
         anchors.rightMargin: 10
         model: ftpModel.transferModel
@@ -67,17 +69,40 @@ Rectangle {
         delegate: TransferQueueDelegate{}
         highlight: Rectangle { color: "lightsteelblue"; radius: 2 }
       }
+
       Rectangle {
+        id: spacer
+        color: "transparent"
+        width: parent.width
+        height: 1
+        anchors.top: queue.bottom
+        Shape {
+          anchors.fill: parent
+          anchors.centerIn: parent
+          ShapePath {
+            strokeWidth: 1
+            strokeColor: "white"
+            strokeStyle: ShapePath.SolidLine
+            startX: 0; startY: 0
+            PathLine {x: parent.width; y: 0}
+          }
+        }
+      }
+
+      Rectangle {
+        id: queueStatus
+        height: 25
         anchors.left: parent.left
         anchors.right: parent.right
+        anchors.bottom: parent.bottom
         anchors.leftMargin: 10
-        anchors.rightMargin: 10        
-        height: parent.height * 0.15        
-        anchors.top: queue.bottom
+        anchors.rightMargin: 10
         color: "transparent"
         Text {
           color: "white"
-          text: "Queued : " + queue.count
+          text: "Queue : " + queue.count
+          verticalAlignment: Text.AlignVCenter
+          anchors.verticalCenter: parent.verticalCenter          
         }
       }
     }

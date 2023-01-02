@@ -2,10 +2,10 @@ import QtQuick
 import QtQuick.Controls
 
 Rectangle {
-  radius: 2
-  border.width: 1
-  border.color: "#5FFAFF"
-  color: Material.background
+  // radius: 2
+  // border.width: 1
+  // border.color: "#5FFAFF"
+  color: "transparent"
 
   property var rowHeight: 43
   height: (rowHeight * 5) + 3
