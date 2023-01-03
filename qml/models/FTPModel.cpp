@@ -413,17 +413,31 @@ void FTPModel::ParseMLSDList(const std::string& list, std::vector<FileElement>& 
   {
     if (!line.size()) continue;
 
-    auto tokens = osl::split(line, ";");
+    std::string name;
 
-    auto name = osl::trim(tokens.back(), " ");
+    auto pos = line.rfind(';');
 
-    auto isDir = tokens.front() == "type=dir";
+    if (pos != std::string::npos)
+    {
+      pos++;
+      name = line.substr(pos);
+      name = osl::trim(name, " ");
+    }
+
+    auto isDir = (line.find("type=dir") != std::string::npos);
 
     std::string size;
 
     if (!isDir)
     {
-      size = osl::split(tokens[1], "=")[1];
+      auto pos = line.find("size=");
+
+      if (pos != std::string::npos)
+      {
+        pos += strlen("size=");
+        while (line[pos] != ';')
+          size += line[pos++];
+      }
     }
 
     if (pfc && pdc) isDir ? (*pdc += 1) : (*pfc += 1);

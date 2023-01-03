@@ -67,6 +67,20 @@ Item {
     }
   }
 
+  Image {
+    id: quit
+    width: 18; height: 18
+    visible: false
+    source: "qrc:/exit.png" 
+    anchors.right: parent.right
+    anchors.top: currentDirectory.bottom
+    anchors.rightMargin: 5
+    MouseArea {
+      anchors.fill: parent
+      onClicked: ftpModel.Quit()
+    }
+  }
+
   Rectangle {
     id: spacer
     color: "transparent"
@@ -105,19 +119,6 @@ Item {
       anchors.verticalCenter: parent.verticalCenter
       anchors.left: parent.left
       anchors.leftMargin: 5
-    }     
-    Image {
-      id: quit
-      width: 18; height: 18
-      visible: false
-      source: "qrc:/exit.png" 
-      anchors.right: parent.right
-      anchors.margins: 3
-      anchors.verticalCenter: parent.verticalCenter
-      MouseArea {
-        anchors.fill: parent
-        onClicked: ftpModel.Quit()
-      }
     }
   }
 

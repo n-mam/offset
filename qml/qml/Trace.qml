@@ -41,7 +41,7 @@ Rectangle {
             statusText.text = log
           } else {
             for (var l of log.split("\n"))
-              traceModel.append({line: l})
+              traceModel.append({line: new Date().toLocaleTimeString(Qt.locale(), "hh:" + "mm:" + "ss:" + "zzz") + " " + l})
           }
         }
       }
