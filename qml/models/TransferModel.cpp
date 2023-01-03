@@ -111,7 +111,7 @@ void TransferModel::ProcessTransfer(void)
             (((float)offset / tt.m_size) * 100) : 100;
         }
 
-        QMetaObject::invokeMethod(this, [=]() {
+        QMetaObject::invokeMethod(this, [=](){
           emit dataChanged(index(idx), index(idx), {Roles::EProgress});
         });
 

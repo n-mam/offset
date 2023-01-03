@@ -89,6 +89,9 @@ class SocketDevice : public FileDevice
     closesocket((SOCKET)iFD);
     if (ssl)
     {
+      if (ssl_session_map[ssl].size()) {
+        ssl_session_map[ssl].clear();
+      }
       SSL_free(ssl);
     }
     DBG << "~SocketDevice() <-- " << GetName() << " shutdown(sd_recv)";

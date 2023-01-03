@@ -100,7 +100,7 @@ Item {
     Rectangle {
       id: delegateRect
       width: ListView.view.width
-      height: 23
+      height: 24
       Component.onCompleted: {
         if (fileName === ".") {
           height = 0
@@ -115,7 +115,7 @@ Item {
       Image {
         id: listItemIcon
         x: 3
-        width: 16; height: 16
+        width: 18; height: 18
         anchors.verticalCenter: parent.verticalCenter
         source: fileIsDir ? (fileName !== "." ? "qrc:/folder.png" : "") : "qrc:/file.png"
       }
@@ -127,6 +127,7 @@ Item {
         height: parent.height
         color: delegateRect.ListView.isCurrentItem ? "black" : "white"
         verticalAlignment: Text.AlignVCenter
+        anchors.verticalCenter: parent.verticalCenter
       }
 
       MessageDialog {
