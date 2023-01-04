@@ -83,7 +83,7 @@ class SocketDevice : public FileDevice
 
   ~SocketDevice()
   {
-    DBG << "~SocketDevice() --> " << GetName();
+    //DBG << "~SocketDevice() --> " << GetName();
     StopSocket();
     shutdown((SOCKET)iFD, 0); //sd_recv
     closesocket((SOCKET)iFD);
@@ -94,7 +94,7 @@ class SocketDevice : public FileDevice
       }
       SSL_free(ssl);
     }
-    DBG << "~SocketDevice() <-- " << GetName() << " shutdown(sd_recv)";
+    //DBG << "~SocketDevice() <-- " << GetName() << " shutdown(sd_recv)";
   }
 
   virtual void StopSocket(void)
@@ -108,7 +108,7 @@ class SocketDevice : public FileDevice
         if (!(flag & SSL_SENT_SHUTDOWN))
         {
           int rc = SSL_shutdown(ssl);
-          DBG << GetName() << " ssl_shutdown() rc : " << rc;
+          //DBG << GetName() << " ssl_shutdown() rc : " << rc;
           UpdateWriteBIO();
         }
       }
@@ -117,7 +117,7 @@ class SocketDevice : public FileDevice
 
       shutdown((SOCKET)iFD, 1); //sd_send
 
-      DBG << GetName() << " shutdown(sd_send)";
+      //DBG << GetName() << " shutdown(sd_send)";
     }
   }
 
@@ -353,7 +353,7 @@ class SocketDevice : public FileDevice
 
     if (flag & SSL_RECEIVED_SHUTDOWN)
     {
-      DBG << GetName() << " SSL_RECEIVED_SHUTDOWN, flags : " << flag;
+      //DBG << GetName() << " SSL_RECEIVED_SHUTDOWN, flags : " << flag;
 
       if (!(flag & SSL_SENT_SHUTDOWN))
       {
@@ -485,7 +485,7 @@ class SocketDevice : public FileDevice
   {
     assert(IsClientSocket());
 
-    DBG << GetName() << " OnConnect()";
+    //DBG << GetName() << " OnConnect()";
 
     FileDevice::OnConnect();
 
@@ -497,9 +497,9 @@ class SocketDevice : public FileDevice
 
   virtual void OnDisconnect() override
   {
-    if(ssl) 
-      DBG << GetName() <<
-      " shutdown mode : " << SSL_get_shutdown(ssl);
+    // if(ssl) 
+    //   DBG << GetName() <<
+    //   " shutdown mode : " << SSL_get_shutdown(ssl);
     FileDevice::OnDisconnect();
   }
 
@@ -529,7 +529,7 @@ class SocketDevice : public FileDevice
 
           iTlsVersion = SSL_get_version(ssl);
 
-          DBG << GetName() << " " << iTlsVersion << " handshake done, session reused : " << SSL_session_reused(ssl);
+          //DBG << GetName() << " " << iTlsVersion << " handshake done, session reused : " << SSL_session_reused(ssl);
 
           if (iOnHandShake)
           {
@@ -538,7 +538,7 @@ class SocketDevice : public FileDevice
         }
         else
         {
-          DBG << GetName() << " SSL_do_handshake : " << rc << " " << SSL_get_error(ssl, rc);
+          //DBG << GetName() << " SSL_do_handshake : " << rc << " " << SSL_get_error(ssl, rc);
         }
       }
 

@@ -51,6 +51,8 @@ class Message
 
 using SPMessage = std::shared_ptr<Message>;
 
+using TOnUserLoginCbk = std::function<void (bool)>;
+
 using TResponseCbk = std::function<void (const std::string&)>;
 
 using TTransferCbk = std::function<bool (const char *, size_t)>;
@@ -117,10 +119,11 @@ class Protocol : public Subject<T1, T2>
     return iMessages.size();
   }
 
-  virtual void SetCredentials(const std::string& user, const std::string& pass)
+  virtual void SetCredentials(const std::string& user, const std::string& pass, TOnUserLoginCbk cbk = nullptr)
   {
     iUserName = user;
     iPassword = pass;
+    iLoginCallback = cbk;
   }
 
   virtual void SetResponseCallback(TResponseCbk cbk)
@@ -223,6 +226,8 @@ class Protocol : public Subject<T1, T2>
   uint8_t iCurrentState = EStateConnecting;
 
   TResponseCbk iResponseCallback = nullptr;
+
+  TOnUserLoginCbk iLoginCallback = nullptr;
 
   TOnClientMessageCbk iClientMessageCallback = nullptr;
 };

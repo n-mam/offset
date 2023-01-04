@@ -48,7 +48,7 @@ class Subject : public std::enable_shared_from_this<Subject<T1, T2>>
   {
     std::lock_guard<std::mutex> lg(m_lock);
     RemoveAllEventListenersInternal();
-    DBG << "~Subject : " << GetName();
+    //DBG << "~Subject : " << GetName();
   }
 
   virtual std::string GetName(void)

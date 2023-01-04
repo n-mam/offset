@@ -87,8 +87,10 @@ class FTPModel : public QAbstractListModel
   void DownloadInternal(std::string file, std::string folder, std::string localFolder, bool isFolder, uint64_t size = 0);
   void UploadInternal(std::string file, std::string folder, std::string localFolder, bool isFolder, uint64_t size = 0);
 
+  void ParseDirectoryList(const std::string& list, std::vector<FileElement>& feList, int *pfc = nullptr, int *pdc = nullptr);
   void ParseMLSDList(const std::string& list, std::vector<FileElement>& feList, int *pfc = nullptr, int * pdc = nullptr);
-  auto ParseLinuxDirectoryList(const std::string& list) -> std::vector<FileElement>;
+  void ParseWindowsList(const std::string& list, std::vector<FileElement>& feList, int *pfc = nullptr, int *pdc = nullptr);
+  void ParseLinuxList(const std::string& list, std::vector<FileElement>& feList, int *pfc = nullptr, int *pdc = nullptr);
 
   int m_fileCount = 0;
 

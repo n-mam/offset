@@ -101,7 +101,8 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
     std::string command;
 
     if (direction == EDirection::List) {
-      command = "MLSD";
+      HasFeature("MLSD") ?
+        command = "MLSD" : command = "LIST";
     } else if (direction == EDirection::Upload) {
       command = "STOR";
     } else if (direction == EDirection::Download) {
@@ -172,6 +173,16 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
     CheckQueue(bQWasEmpty);
   }
 
+  virtual bool HasFeature(const std::string& feature)
+  {
+    return m_feat.find(feature) != std::string::npos;
+  }
+
+  virtual std::string SystemType(void)
+  {
+    return m_syst;
+  }
+
   virtual void Stop(void) override
   {
     std::lock_guard<std::mutex> lg(iQLock);
@@ -186,6 +197,10 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
   }
 
   protected:
+
+  std::string m_feat;
+
+  std::string m_syst;
 
   TLS iDCProt = TLS::No;
 
@@ -275,18 +290,21 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
 
         iCurrentState = t.iNextState;
 
-        auto cbk = iCmdQ.front().m_rcbk;
-
-        if (cbk)
+        if (iCmdQ.size())
         {
-          cbk(msg->GetPayloadString());
-        }
+          auto cbk = iCmdQ.front().m_rcbk;
 
-        uint8_t f_skip = t.iFlags & 0x0F;
+          if (cbk)
+          {
+            cbk(msg->GetPayloadString());
+          }
 
-        for (auto i = 0; i < f_skip; i++)
-        {
-          iCmdQ.pop_front();
+          uint8_t f_skip = t.iFlags & 0x0F;
+
+          for (auto i = 0; i < f_skip; i++)
+          {
+            iCmdQ.pop_front();
+          }
         }
 
         if (t.iTransitionFn)
@@ -610,6 +628,19 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
       iCmdQ.clear();
       LOG << "User login failed";
       NotifyUploadChannelReady();
+      if (iLoginCallback)
+        iLoginCallback(false);
+    }
+    else
+    {
+      iCmdQ.push_front({"SYST", "", [this](auto res){
+        m_syst = res;
+      }});
+      iCmdQ.push_front({"FEAT", "", [this](auto res){
+        m_feat = res;
+        if (iLoginCallback)
+          iLoginCallback(true);
+      }});
     }
   }
 

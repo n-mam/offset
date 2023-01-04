@@ -108,7 +108,14 @@ bool FTPModel::Connect(QString host, QString port, QString user, QString passwor
 
   if (!m_ftp) return false;
 
-  m_ftp->SetCredentials(m_user, m_password);
+  m_ftp->SetCredentials(m_user, m_password,
+    [this](bool success){
+      QMetaObject::invokeMethod(this, [=](){
+        if (success) {
+          setRemoteDirectory("/");
+        }
+      }, Qt::QueuedConnection);
+    });
 
   m_ftp->StartClient(
     [this](auto p, bool isConnected){
@@ -121,9 +128,7 @@ bool FTPModel::Connect(QString host, QString port, QString user, QString passwor
           endResetModel();
         }
       }, Qt::QueuedConnection);
-  });
-
-  setRemoteDirectory("/");
+    });
 
   return true;
 }
@@ -227,13 +232,9 @@ void FTPModel::WalkRemoteDirectory(const std::string& path, TFileElementCallback
       else
       {
         std::vector<FileElement> feList;
-
-        ParseMLSDList(list, feList);
-
+        ParseDirectoryList(list, feList);
         for (const auto& fe : feList)
-        {
           callback(fe);
-        }
       }
       return true;
     }, m_protection);
@@ -249,7 +250,7 @@ void FTPModel::RemoveFile(QString path, bool local)
     }
     catch(const std::filesystem::filesystem_error& err)
     {
-      LOG << "RemoveFile error: " << err.what();
+      LOG << "std::filesystem::remove exception : " << err.what();
     }
   }
   else
@@ -269,7 +270,7 @@ void FTPModel::RemoveDirectory(QString path, bool local)
     }
     catch(const std::filesystem::filesystem_error& err)
     {
-      LOG << "RemoveDirectory error: " << err.what();
+      LOG << "std::filesystem::remove_all exception : " << err.what();
     }
   }
   else
@@ -359,7 +360,7 @@ void FTPModel::setRemoteDirectory(QString directory)
           feList.push_back({"..", "", "", "d"});
 
         int fileCount = 0, folderCount = 0;
-        ParseMLSDList(list, feList, &fileCount, &folderCount);
+        ParseDirectoryList(list, feList, &fileCount, &folderCount);
         m_fileCount = fileCount, m_folderCount = folderCount;
 
         std::partition(feList.begin(), feList.end(),
@@ -401,6 +402,16 @@ QString FTPModel::getTotalFilesAndFolder(void)
 void FTPModel::RefreshRemoteView(void)
 {
   setRemoteDirectory(QString::fromStdString(m_remoteDirectory));
+}
+
+void FTPModel::ParseDirectoryList(const std::string& list, std::vector<FileElement>& feList, int *pfc, int *pdc)
+{
+  if (m_ftp->HasFeature("MLSD"))
+    ParseMLSDList(list, feList, pfc, pdc);
+  else if (m_ftp->SystemType().find("UNIX") != std::string::npos)
+    ParseLinuxList(list, feList, pfc, pdc);
+  else if (m_ftp->SystemType().find("Windows") != std::string::npos)
+    ParseWindowsList(list, feList, pfc, pdc);
 }
 
 // type=file;size=8192;modify=20221219022112.389;perms=awr; DumpStack.log
@@ -449,10 +460,8 @@ void FTPModel::ParseMLSDList(const std::string& list, std::vector<FileElement>& 
 }
 
 // -rw-rw-rw- 1 ftp    ftp       1468320 Oct 15 17:37 a b c
-auto FTPModel::ParseLinuxDirectoryList(const std::string& list) -> std::vector<FileElement>
+void FTPModel::ParseLinuxList(const std::string& list, std::vector<FileElement>& feList, int *pfc, int *pdc)
 {
-  std::vector<FileElement> feList;
-
   auto lines = osl::split(list, "\r\n");
 
   for (auto& line : lines)
@@ -465,7 +474,7 @@ auto FTPModel::ParseLinuxDirectoryList(const std::string& list) -> std::vector<F
 
     fe.m_attributes.append(p, 10), p += 10;
 
-    (fe.m_attributes[0] == 'd') ? m_folderCount++ : m_fileCount++;
+    auto isDir = (fe.m_attributes[0] == 'd');
 
     for (int i = 0; i < 3; i++) {
       while(*p == ' ') { p++; }
@@ -497,7 +506,45 @@ auto FTPModel::ParseLinuxDirectoryList(const std::string& list) -> std::vector<F
     fe.m_name.append(p);
 
     feList.push_back(fe);
-  }
 
-  return feList;
+    if (pfc && pdc) isDir ? (*pdc += 1) : (*pfc += 1);
+  }
+}
+
+void FTPModel::ParseWindowsList(const std::string& list, std::vector<FileElement>& feList, int *pfc, int *pdc)
+{
+  LOG << list;
+
+  auto lines = osl::split(list, "\r\n");
+
+  for (auto& line : lines)
+  {
+    if (!line.size()) continue;
+
+    auto p = line.c_str();
+
+    while(*p != ' ') { p++; }
+    while(*p == ' ') { p++; }
+    while(*p != ' ') { p++; }
+    while(*p == ' ') { p++; }
+
+    auto isDir = (0 == memcmp(p, "<DIR>", strlen("<DIR>")));
+
+    std::string size, name; 
+
+    while(*p != ' ') {
+      size.append(1, *p);
+      p++;
+    }
+
+    while(*p == ' ') { p++; }
+
+    name.append(p);
+
+    if (pfc && pdc) isDir ? (*pdc += 1) : (*pfc += 1);
+
+    feList.push_back({
+      name, size, "",
+      isDir ? "d" : "-", false});
+  }
 }
