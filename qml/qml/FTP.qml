@@ -3,7 +3,7 @@ import QtQuick.Shapes
 import QtQuick.Controls
 
 Rectangle {
-  radius: 5
+  radius: 3
   border.width: 1
   border.color: borderColor
   color: Material.background
@@ -102,7 +102,34 @@ Rectangle {
           color: "white"
           text: "Queue: " + queue.count
           verticalAlignment: Text.AlignVCenter
-          anchors.verticalCenter: parent.verticalCenter          
+          anchors.verticalCenter: parent.verticalCenter
+        }
+        Image {
+          width: 16; height: 16
+          source: "qrc:/queue.png"
+          anchors.right: clear.left
+          anchors.verticalCenter: parent.verticalCenter
+          MouseArea {
+            hoverEnabled: true
+            anchors.fill: parent
+            onClicked: () => {
+              ftpModel.transferModel.ProcessAllTransfers()
+            }
+          }
+        }        
+        Image {
+          id: clear
+          width: 16; height: 16
+          source: "qrc:/delete.png"
+          anchors.right: parent.right
+          anchors.verticalCenter: parent.verticalCenter
+          MouseArea {
+            hoverEnabled: true
+            anchors.fill: parent
+            // onEntered: parent.color = "#9AEBA3"
+            // onExited: parent.color = "white"
+            onClicked: () => ftpModel.transferModel.DeleteTransfer(-1)
+          }          
         }
       }
     }

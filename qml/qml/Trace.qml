@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Controls
 
 Rectangle {
-  radius: 5
+  radius: 3
   border.width: 1
   border.color: borderColor
   color: Material.background

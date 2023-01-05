@@ -3,7 +3,7 @@ import QtQuick.Controls
 import Qt.labs.platform
 
 Rectangle {
-  radius: 5
+  radius: 3
   border.width: 1
   border.color: borderColor
   color: Material.background

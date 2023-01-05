@@ -14,6 +14,7 @@ struct Transfer
   uint64_t m_size = 0;
   int m_progress = 0;
   int m_index = -1;
+  bool m_done = false;
 };
 
 class FTPModel;
@@ -44,9 +45,11 @@ class TransferModel : public QAbstractListModel
 
   void AddToTransferQueue(const Transfer& transfer);
 
-  private:
+  Q_INVOKABLE void ProcessAllTransfers(void);
+  Q_INVOKABLE void ProcessTransfer(int row = -1);
+  Q_INVOKABLE void DeleteTransfer(int row = -1);
 
-  void ProcessTransfer(void);
+  private:
 
   void CreateFTPSession(void);
 

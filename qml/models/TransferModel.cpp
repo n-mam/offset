@@ -72,18 +72,28 @@ void TransferModel::AddToTransferQueue(const Transfer& transfer)
       beginInsertRows(QModelIndex(), t.m_index, t.m_index);
       m_queue.emplace_back(t);
       endInsertRows();
-      //ProcessTransfer();
     });
 }
 
-void TransferModel::ProcessTransfer(void)
+void TransferModel::ProcessAllTransfers(void)
+{
+  for (int i = 0; i < m_queue.size(); i++)
+  {
+    auto& t = m_queue[i];
+
+    if (!t.m_done)
+    {
+      //ProcessTransfer(i);
+    }
+  }
+}
+
+void TransferModel::ProcessTransfer(int row)
 {
   while (m_sessions.size() != MAX_SESSIONS)
     CreateFTPSession();
 
-  auto& ftp = m_sessions[m_next_session];
-
-  auto& t = m_queue.back();
+  Transfer& t = (row < 0) ? m_queue.back() : m_queue[row];
 
   if (t.m_direction == npl::ProtocolFTP::EDirection::Download)
   {
@@ -91,6 +101,8 @@ void TransferModel::ProcessTransfer(void)
     std::filesystem::create_directories(path.parent_path());
 
     auto file = std::make_shared<npl::FileDevice>(t.m_local, true);
+
+    auto& ftp = m_sessions[m_next_session];
 
     ftp->Transfer(t.m_direction, t.m_remote,
       [=, idx = t.m_index, offset = 0ULL](const char *b, size_t n) mutable {
@@ -121,10 +133,20 @@ void TransferModel::ProcessTransfer(void)
   }
   else if (t.m_direction == npl::ProtocolFTP::EDirection::Upload)
   {
-    assert(false);
+    
   }
 
   m_next_session = (m_next_session + 1) % MAX_SESSIONS;
+}
+
+void TransferModel::DeleteTransfer(int row)
+{
+  beginResetModel();
+  if (row < 0)
+    m_queue.clear();
+  else
+    m_queue.erase(m_queue.begin() + row);
+  endResetModel();
 }
 
 void TransferModel::CreateFTPSession(void)

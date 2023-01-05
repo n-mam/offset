@@ -187,7 +187,7 @@ Item {
         id: contextMenu
         parent: feText
         context: feText.text
-        menu: ["Download", "Rename", "Delete", "Refresh", "New folder"]
+        menu: ["Queue", "Rename", "Delete", "Refresh", "New folder"]
         onClosed: {
           feText.color = "white"
           delegateRect.color = Material.background
@@ -201,14 +201,14 @@ Item {
                           (ftpModel.remoteDirectory.endsWith("/") ? 
                             fileName : ("/" + fileName))
 
-          if (action === "Delete")
-          {
-            warningDialog.open();
-          }
-          else if (action === "Download")
+          if (action === "Queue")
           {
             ftpModel.Transfer(fileName, ftpModel.remoteDirectory, ftpModel.localDirectory, fileIsDir, false, fileSize)
           }
+          else if (action === "Delete")
+          {
+            warningDialog.open();
+          }          
           else if (action === "Rename")
           {
             newRenamePopup.context = "Rename \"" + fileName + "\""

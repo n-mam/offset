@@ -11,7 +11,7 @@ Rectangle {
   width: ListView.view.width
 
   Rectangle {
-    id: direction
+    id: topRow
     // radius: 5
     // border.width: 1
     // border.color: "gray"
@@ -55,7 +55,7 @@ Rectangle {
   ProgressBar {
     width: parent.width * 0.70
     height: parent.height * 0.20
-    anchors.top: direction.bottom
+    anchors.top: topRow.bottom
     from: 0
     to: 100
     value: progress
