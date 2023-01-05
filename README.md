@@ -3,7 +3,8 @@ WIP
 [Download](https://github.com/n-mam/offset/releases/download/1.5/Offset-1.5.zip)
 
 <p align="center">
- <img src="https://github.com/n-mam/offset/blob/master/qml/icons/ui.png?raw=true" width="45%">
+ <img src="https://drive.google.com/uc?id=1u-tsnDwuQPH6OXepCAEoARDSgAWCqNT2" width="45%">
+ <img src="https://drive.google.com/uc?id=1RpPvy074uBcxyvaE7RI3M91AXgtzr1Qz" width="45%">
 </p>
 
 #### Features
