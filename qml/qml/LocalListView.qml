@@ -34,6 +34,7 @@ Item {
     model: folderModel
     delegate: listItemDelegate
     cacheBuffer: 1024
+    focus: true
     highlightMoveDuration: 100
     highlightMoveVelocity: 800
     highlight: Rectangle { color: "lightsteelblue"; radius: 2 }
@@ -170,12 +171,9 @@ Item {
         context: feText.text
         menu: ["Queue", "Rename", "Delete", "New folder"]
         onClosed: {
-          feText.color = "white"
-          delegateRect.color = Material.background
         }
         onMenuItemActivated: (action, context) => {
-          feText.color = "white"
-          delegateRect.color = Material.background
+
           contextMenu.close()
 
           if (action === "Queue" && ftpModel.connected)
@@ -211,7 +209,7 @@ Item {
           }
         }
         onClicked: (mouse) => {
-          delegateRect.ListView.view.currentIndex = index
+          localListView.currentIndex = index
           if (mouse.button == Qt.RightButton && fileName !== "..") {
             contextMenu.x = mouse.x - feText.x
             contextMenu.y = mouse.y
