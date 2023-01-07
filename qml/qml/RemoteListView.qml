@@ -29,7 +29,7 @@ Item {
     anchors.top: currentDirectory.bottom
     anchors.leftMargin: 5
     anchors.rightMargin: 5
-    height: parent.height - currentDirectory.height - - spacer.height - statusRect.height 
+    height: parent.height - currentDirectory.height - spacer.height - statusRect.height - 2
     clip: true
     model: ftpModel
     delegate: listItemDelegate

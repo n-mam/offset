@@ -27,7 +27,7 @@ Rectangle {
 
     SplitView {
       id: splitView
-      implicitHeight: parent.height * 0.70
+      implicitHeight: parent.height * 0.69
 
       handle: Rectangle {
         id: handleDelegate
@@ -108,6 +108,7 @@ Rectangle {
           width: 16; height: 16
           source: "qrc:/queue.png"
           anchors.right: clear.left
+          anchors.rightMargin: 5
           anchors.verticalCenter: parent.verticalCenter
           MouseArea {
             hoverEnabled: true

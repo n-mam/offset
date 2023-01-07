@@ -12,7 +12,7 @@
 #include <functional>
 
 #include <observer/listener>
-#include <protocol/base>
+#include <protocol/protocol>
 
 namespace npl {
 

@@ -18,6 +18,7 @@ Popup {
       width: 100
       height: 130
       ListView {
+        id: menuListview
         spacing: 10
         clip: true
         anchors.margins: 5
@@ -26,7 +27,8 @@ Popup {
         delegate: Text {
           text: name
           color: "white"
-          anchors.horizontalCenter: parent.horizontalCenter
+          width: menuListview.width
+          horizontalAlignment: Text.AlignHCenter
           MouseArea {
             hoverEnabled: true
             anchors.fill: parent
