@@ -5,7 +5,9 @@
     <file>arrow.png</file>
     <file>exit.png</file>
     <file>queue.png</file>
-    <file>delete.png</file>    
+    <file>run.png</file>
+    <file>delete.png</file>
+    <file>remove.png</file>
     <file>app.ico</file>
   </qresource>
 </RCC>

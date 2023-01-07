@@ -62,8 +62,8 @@ Rectangle {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.topMargin: 5
-        anchors.leftMargin: 10
-        anchors.rightMargin: 10
+        anchors.leftMargin: 5
+        anchors.rightMargin: 5
         model: ftpModel.transferModel
         currentIndex: -1
         delegate: TransferQueueDelegate{}
@@ -127,9 +127,7 @@ Rectangle {
           MouseArea {
             hoverEnabled: true
             anchors.fill: parent
-            // onEntered: parent.color = "#9AEBA3"
-            // onExited: parent.color = "white"
-            onClicked: () => ftpModel.transferModel.DeleteTransfer(-1)
+            onClicked: () => ftpModel.transferModel.RemoveAllTransfers()
           }          
         }
       }

@@ -15,7 +15,9 @@ Rectangle {
     // radius: 5
     // border.width: 1
     // border.color: "gray"
-    width: parent.width
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.margins: 5
     height: parent.height * 0.80
     color: "transparent"
 
@@ -60,6 +62,43 @@ Rectangle {
     to: 100
     value: progress
     visible: progress > 0
+  }
+
+  Image {
+    z: 3
+    id: runTransfer
+    visible: delegateRect.ListView.view.currentIndex === index
+    width: 16; height: 16
+    source: "qrc:/run.png"
+    anchors.rightMargin: 5
+    anchors.right: removeTransfer.left
+    anchors.verticalCenter: parent.verticalCenter
+    MouseArea {
+      hoverEnabled: true
+      anchors.fill: parent
+      onClicked: () => {
+
+      }
+    }          
+  }
+
+  Image {
+    z: 3
+    id: removeTransfer
+    visible: delegateRect.ListView.view.currentIndex === index
+    width: 16; height: 16
+    source: "qrc:/remove.png"
+    anchors.rightMargin: 5
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    MouseArea {
+      hoverEnabled: true
+      anchors.fill: parent
+      onClicked: () => {
+        delegateRect.ListView.view.currentIndex = -1
+        ftpModel.transferModel.RemoveTransfer(index)
+      }
+    }          
   }
 
   MouseArea {

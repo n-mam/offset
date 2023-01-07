@@ -33,7 +33,7 @@ Rectangle {
       // border.color: borderColor
       anchors.left: parent.left
       anchors.right: parent.right
-      implicitHeight: parent.height * 0.85
+      implicitHeight: (parent.height * 0.85) - 2
       color: "transparent"
       Rectangle {
         width: 18
@@ -64,6 +64,7 @@ Rectangle {
       List {
         anchors.fill: parent
         anchors.margins: 10
+        anchors.bottomMargin: 0
         model: diskListModel
         Connections {
           target: diskListModel

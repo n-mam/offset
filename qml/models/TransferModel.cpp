@@ -139,14 +139,21 @@ void TransferModel::ProcessTransfer(int row)
   m_next_session = (m_next_session + 1) % MAX_SESSIONS;
 }
 
-void TransferModel::DeleteTransfer(int row)
+void TransferModel::RemoveAllTransfers(void)
 {
   beginResetModel();
-  if (row < 0)
-    m_queue.clear();
-  else
-    m_queue.erase(m_queue.begin() + row);
+  m_queue.clear();
   endResetModel();
+}
+
+void TransferModel::RemoveTransfer(int row)
+{
+  if (row >= 0)
+  {
+    beginRemoveRows(QModelIndex(), row, row);
+    m_queue.erase(m_queue.begin() + row);
+    endRemoveRows();
+  }
 }
 
 void TransferModel::CreateFTPSession(void)

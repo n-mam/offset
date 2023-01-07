@@ -47,7 +47,8 @@ class TransferModel : public QAbstractListModel
 
   Q_INVOKABLE void ProcessAllTransfers(void);
   Q_INVOKABLE void ProcessTransfer(int row = -1);
-  Q_INVOKABLE void DeleteTransfer(int row = -1);
+  Q_INVOKABLE void RemoveAllTransfers(void);
+  Q_INVOKABLE void RemoveTransfer(int row = -1);
 
   private:
 
