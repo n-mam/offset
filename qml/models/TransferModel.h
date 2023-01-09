@@ -19,7 +19,7 @@ struct Transfer
 
 class FTPModel;
 
-constexpr int MAX_SESSIONS = 1;
+constexpr size_t MAX_SESSIONS = 1;
 
 class TransferModel : public QAbstractListModel
 {
@@ -50,9 +50,18 @@ class TransferModel : public QAbstractListModel
   Q_INVOKABLE void RemoveAllTransfers(void);
   Q_INVOKABLE void RemoveTransfer(int row = -1);
 
+  public slots:
+
+  signals:
+
+  void transferDone(int);
+
   private:
 
-  void CreateFTPSession(void);
+  void DownloadTransfer(const Transfer& t);
+  void UploadTransfer(const Transfer& t);
+  bool InitializeFTPSessions(void);
+  void CheckAndReconnectSessions(void);
 
   FTPModel *m_ftpModel;
 
@@ -61,6 +70,8 @@ class TransferModel : public QAbstractListModel
   std::vector<npl::SPProtocolFTP> m_sessions;
 
   int m_next_session = 0;
+
+  int m_successful_transfers = 0;  
 };
 
 #if defined _WIN32

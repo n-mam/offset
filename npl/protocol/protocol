@@ -141,6 +141,30 @@ class Protocol : public Subject<T1, T2>
     return;
   }
 
+  virtual TLS GetChannelTLS(npl::SPSubject<T1, T2> channel)
+  {
+    auto sock = std::dynamic_pointer_cast<SocketDevice>(channel);
+
+    if (sock)
+    {
+      return sock->GetTLS();
+    }
+
+    return TLS::No;
+  }
+
+  virtual bool IsConnected(void) override
+  {
+    auto sock = GetTargetSocketDevice();
+
+    if (sock)
+    {
+      return sock->IsConnected() && (iCurrentState != EStateDisconnected);
+    }
+
+    return false;
+  }
+
   virtual void OnConnect(void) override
   {
     if (iConnectCbk)
@@ -179,18 +203,6 @@ class Protocol : public Subject<T1, T2>
         iBuffer.clear();
       }
     }
-  }
-
-  virtual TLS GetChannelTLS(npl::SPSubject<T1, T2> channel)
-  {
-    auto sock = std::dynamic_pointer_cast<SocketDevice>(channel);
-
-    if (sock)
-    {
-      return sock->GetTLS();
-    }
-
-    return TLS::No;
   }
 
   protected:

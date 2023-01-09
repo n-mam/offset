@@ -447,6 +447,8 @@ class Dispatcher : public Subject<uint8_t, uint8_t>
 using SPDispatcher = std::shared_ptr<Dispatcher>;
 using UPDispatcher = std::unique_ptr<Dispatcher>;
 
+inline SPDispatcher D = nullptr;
+
 } // namespace npl
 
 #endif //DISPATCHER_HPP;

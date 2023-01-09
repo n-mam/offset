@@ -7,7 +7,7 @@ Rectangle {
   // border.color: "gray"
   id: delegateRect
   color: "transparent"
-  height: 23
+  height: 25
   width: ListView.view.width
 
   Rectangle {
@@ -15,11 +15,12 @@ Rectangle {
     // radius: 5
     // border.width: 1
     // border.color: "gray"
+    anchors.margins: 5
+    color: "transparent"
     anchors.left: parent.left
     anchors.right: parent.right
-    anchors.margins: 5
     height: parent.height * 0.80
-    color: "transparent"
+    anchors.verticalCenter: parent.verticalCenter
 
     Text {
       id: localText
@@ -55,7 +56,7 @@ Rectangle {
   }
 
   ProgressBar {
-    width: parent.width * 0.70
+    width: parent.width
     height: parent.height * 0.20
     anchors.top: topRow.bottom
     from: 0
@@ -70,23 +71,22 @@ Rectangle {
     visible: delegateRect.ListView.view.currentIndex === index
     width: 16; height: 16
     source: "qrc:/run.png"
-    anchors.rightMargin: 5
+    anchors.rightMargin: 10
     anchors.right: removeTransfer.left
     anchors.verticalCenter: parent.verticalCenter
     MouseArea {
       hoverEnabled: true
       anchors.fill: parent
-      onClicked: () => {
-
-      }
-    }          
+      cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
+      onClicked: ftpModel.transferModel.ProcessTransfer(index)
+    }
   }
 
   Image {
     z: 3
     id: removeTransfer
     visible: delegateRect.ListView.view.currentIndex === index
-    width: 16; height: 16
+    width: 18; height: 18
     source: "qrc:/remove.png"
     anchors.rightMargin: 5
     anchors.right: parent.right
@@ -94,6 +94,7 @@ Rectangle {
     MouseArea {
       hoverEnabled: true
       anchors.fill: parent
+      cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
       onClicked: () => {
         delegateRect.ListView.view.currentIndex = -1
         ftpModel.transferModel.RemoveTransfer(index)

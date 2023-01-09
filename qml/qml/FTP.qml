@@ -56,7 +56,7 @@ Rectangle {
       ListView {
         id: queue
         clip: true
-        spacing: 3
+        spacing: 1
         height: parent.height - spacer.height - queueStatus.height
         anchors.top: parent.top
         anchors.left: parent.left
@@ -99,10 +99,16 @@ Rectangle {
         anchors.rightMargin: 10
         color: "transparent"
         Text {
+          id: statsId
           color: "white"
-          text: "Queue: " + queue.count
           verticalAlignment: Text.AlignVCenter
           anchors.verticalCenter: parent.verticalCenter
+        }
+        Connections {
+          target: ftpModel.transferModel
+          function onTransferDone(n) {
+            statsId.text = "Q: " + queue.count + ", T: " + n
+          }
         }
         Image {
           width: 16; height: 16
@@ -113,9 +119,8 @@ Rectangle {
           MouseArea {
             hoverEnabled: true
             anchors.fill: parent
-            onClicked: () => {
-              ftpModel.transferModel.ProcessAllTransfers()
-            }
+            onClicked: ftpModel.transferModel.ProcessAllTransfers()
+            cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
           }
         }        
         Image {
@@ -127,8 +132,9 @@ Rectangle {
           MouseArea {
             hoverEnabled: true
             anchors.fill: parent
-            onClicked: () => ftpModel.transferModel.RemoveAllTransfers()
-          }          
+            onClicked: ftpModel.transferModel.RemoveAllTransfers()
+            cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
+          }
         }
       }
     }

@@ -8,8 +8,6 @@
 
 namespace npl {
 
-inline SPDispatcher D = nullptr;
-
 inline auto make_dispatcher(void)
 {
   #ifdef _WIN32

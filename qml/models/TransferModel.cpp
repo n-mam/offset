@@ -72,6 +72,7 @@ void TransferModel::AddToTransferQueue(const Transfer& transfer)
       beginInsertRows(QModelIndex(), t.m_index, t.m_index);
       m_queue.emplace_back(t);
       endInsertRows();
+      emit transferDone(0); //fixme
     });
 }
 
@@ -83,60 +84,72 @@ void TransferModel::ProcessAllTransfers(void)
 
     if (!t.m_done)
     {
-      //ProcessTransfer(i);
+      ProcessTransfer(i);
     }
   }
 }
 
 void TransferModel::ProcessTransfer(int row)
 {
-  while (m_sessions.size() != MAX_SESSIONS)
-    CreateFTPSession();
+  static bool b = InitializeFTPSessions();
 
-  Transfer& t = (row < 0) ? m_queue.back() : m_queue[row];
+  b ? b = false : (CheckAndReconnectSessions(), false);
+
+  Transfer& t = m_queue[row];
 
   if (t.m_direction == npl::ProtocolFTP::EDirection::Download)
   {
-    std::filesystem::path path = t.m_local;
-    std::filesystem::create_directories(path.parent_path());
-
-    auto file = std::make_shared<npl::FileDevice>(t.m_local, true);
-
-    auto& ftp = m_sessions[m_next_session];
-
-    ftp->Transfer(t.m_direction, t.m_remote,
-      [=, idx = t.m_index, offset = 0ULL](const char *b, size_t n) mutable {
-        if (b)
-        {
-          file->Write((uint8_t *)b, n, offset);
-          offset += n;
-        }
-        else
-        {
-          file.reset();
-        }
-
-        auto& tt = m_queue[idx];
-
-        if (tt.m_size) {
-          tt.m_progress = b ?
-            (((float)offset / tt.m_size) * 100) : 100;
-        }
-
-        QMetaObject::invokeMethod(this, [=](){
-          emit dataChanged(index(idx), index(idx), {Roles::EProgress});
-        });
-
-        return true;
-      },
-      m_ftpModel->m_protection);
+    DownloadTransfer(t);
   }
   else if (t.m_direction == npl::ProtocolFTP::EDirection::Upload)
   {
-    
+    UploadTransfer(t);
   }
 
   m_next_session = (m_next_session + 1) % MAX_SESSIONS;
+}
+
+void TransferModel::DownloadTransfer(const Transfer& t)
+{
+  std::filesystem::path path = t.m_local;
+  std::filesystem::create_directories(path.parent_path());
+
+  auto file = std::make_shared<npl::FileDevice>(t.m_local, true);
+
+  auto& ftp = m_sessions[m_next_session];
+
+  ftp->Transfer(t.m_direction, t.m_remote,
+    [=, idx = t.m_index, offset = 0ULL](const char *b, size_t n) mutable {
+      if (b)
+      {
+        file->Write((uint8_t *)b, n, offset);
+        offset += n;
+      }
+      else
+      {
+        file.reset();
+        emit transferDone(++m_successful_transfers);
+      }
+
+      auto& tt = m_queue[idx];
+
+      if (tt.m_size) {
+        tt.m_progress = b ?
+          (((float)offset / tt.m_size) * 100) : 100;
+      }
+
+      QMetaObject::invokeMethod(this, [=](){
+        emit dataChanged(index(idx), index(idx), {Roles::EProgress});
+      });
+
+      return true;
+    },
+    m_ftpModel->m_protection);
+}
+
+void TransferModel::UploadTransfer(const Transfer& t)
+{
+  
 }
 
 void TransferModel::RemoveAllTransfers(void)
@@ -156,22 +169,43 @@ void TransferModel::RemoveTransfer(int row)
   }
 }
 
-void TransferModel::CreateFTPSession(void)
+bool TransferModel::InitializeFTPSessions(void)
 {
-  auto ftp = npl::make_ftp(
-    m_ftpModel->m_host, m_ftpModel->m_port, m_ftpModel->m_protection);
+  while(m_sessions.size() != MAX_SESSIONS)
+  {
+    auto ftp = npl::make_ftp(
+      m_ftpModel->m_host, m_ftpModel->m_port, m_ftpModel->m_protection);
 
-  if (!ftp) return;
+    if (!ftp) return false;
 
-  ftp->SetCredentials(m_ftpModel->m_user, m_ftpModel->m_password);
+    ftp->SetCredentials(m_ftpModel->m_user, m_ftpModel->m_password);
 
-  ftp->StartClient(
-    [this](auto p, bool isConnected){
-      if(!isConnected) {
+    ftp->StartClient(
+      [this](auto p, bool isConnected){
+        if(!isConnected) { }
+      });
 
-      }
+    m_sessions.push_back(ftp);
+  }
+
+  return true;
+}
+
+void TransferModel::CheckAndReconnectSessions(void)
+{
+  for (size_t i = 0; i < MAX_SESSIONS; i++)
+  {
+    if (!m_sessions[i]->IsConnected())
+    {
+      m_sessions[i] = npl::make_ftp(
+        m_ftpModel->m_host, m_ftpModel->m_port, m_ftpModel->m_protection);
+
+      m_sessions[i]->SetCredentials(m_ftpModel->m_user, m_ftpModel->m_password);
+
+      m_sessions[i]->StartClient(
+        [this](auto p, bool isConnected){
+          if(!isConnected) { }
+        });
     }
-  );
-
-  m_sessions.push_back(ftp);
+  }
 }
