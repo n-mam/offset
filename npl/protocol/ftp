@@ -88,11 +88,11 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
     return fRet ? (int32_t)l : 0;
   }
 
-  virtual void Transfer(EDirection direction, const std::string& remote, TTransferCbk cbk, TLS P = TLS::No)
+  virtual void Transfer(EDirection direction, const std::string& remote, TTransferCbk tcbk, TResponseCbk rcbk = nullptr, TLS P = TLS::No)
   {
     std::lock_guard<std::mutex> lg(iQLock);
 
-    if (!remote.size() || !cbk) assert(false);
+    if (!remote.size() || !tcbk) assert(false);
 
     bool bQWasEmpty = iCmdQ.empty();
 
@@ -111,7 +111,7 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
 
     iCmdQ.push_back({"TYPE", "I"});
     iCmdQ.push_back({"PASV"});
-    iCmdQ.push_back({command.c_str(), remote, nullptr, cbk});
+    iCmdQ.push_back({command.c_str(), remote, rcbk, tcbk});
 
     CheckQueue(bQWasEmpty);
   }

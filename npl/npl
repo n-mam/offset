@@ -133,6 +133,7 @@ inline void test_ftp_client(const std::string& host, int port)
       }
       return true;
     },
+    nullptr,
     npl::TLS::Yes
   );
 
@@ -150,6 +151,7 @@ inline void test_ftp_client(const std::string& host, int port)
         }
         return true;
       },
+      nullptr,
       npl::TLS::Yes);
 
   file.reset();
@@ -158,6 +160,7 @@ inline void test_ftp_client(const std::string& host, int port)
       [&](const char *b, size_t n) mutable {
         return true;
       },
+      nullptr,
       npl::TLS::No);
 
   ftp->WriteSync((uint8_t *)"hello ", strlen("hello "));

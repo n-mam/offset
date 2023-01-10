@@ -25,7 +25,7 @@ QHash<int, QByteArray> TransferModel::roleNames() const
 
 int TransferModel::rowCount(const QModelIndex& parent) const
 {
-  return m_queue.size();
+  return static_cast<int>(m_queue.size());
 }
 
 QVariant TransferModel::data(const QModelIndex& index, int role) const
@@ -72,7 +72,7 @@ void TransferModel::AddToTransferQueue(const Transfer& transfer)
       beginInsertRows(QModelIndex(), t.m_index, t.m_index);
       m_queue.emplace_back(t);
       endInsertRows();
-      emit transferDone(0); //fixme
+      emit transferQueueSize(m_queue.size());
     });
 }
 
@@ -82,9 +82,10 @@ void TransferModel::ProcessAllTransfers(void)
   {
     auto& t = m_queue[i];
 
-    if (!t.m_done)
+    if (t.m_status == Transfer::status::queued)
     {
       ProcessTransfer(i);
+      t.m_status = Transfer::status::processing;
     }
   }
 }
@@ -119,7 +120,8 @@ void TransferModel::DownloadTransfer(const Transfer& t)
   auto& ftp = m_sessions[m_next_session];
 
   ftp->Transfer(t.m_direction, t.m_remote,
-    [=, idx = t.m_index, offset = 0ULL](const char *b, size_t n) mutable {
+    [=, i = t.m_index, offset = 0ULL]
+    (const char *b, size_t n) mutable {
       if (b)
       {
         file->Write((uint8_t *)b, n, offset);
@@ -128,10 +130,11 @@ void TransferModel::DownloadTransfer(const Transfer& t)
       else
       {
         file.reset();
-        emit transferDone(++m_successful_transfers);
+        m_queue[i].m_status = Transfer::status::successful;
+        emit transferSuccessful(i, ++m_successful_transfers);
       }
 
-      auto& tt = m_queue[idx];
+      auto& tt = m_queue[i];
 
       if (tt.m_size) {
         tt.m_progress = b ?
@@ -139,10 +142,16 @@ void TransferModel::DownloadTransfer(const Transfer& t)
       }
 
       QMetaObject::invokeMethod(this, [=](){
-        emit dataChanged(index(idx), index(idx), {Roles::EProgress});
+        emit dataChanged(index(i), index(i), {Roles::EProgress});
       });
 
       return true;
+    },
+    [=, i = t.m_index](const auto& res) {
+      if (res[0] == '4' || res[0] == '5') {
+        m_queue[i].m_status = Transfer::status::failed;
+        emit transferFailed(i, ++m_failed_transfers);
+      }
     },
     m_ftpModel->m_protection);
 }
@@ -156,6 +165,7 @@ void TransferModel::RemoveAllTransfers(void)
 {
   beginResetModel();
   m_queue.clear();
+  emit transferQueueSize(0);
   endResetModel();
 }
 
@@ -165,6 +175,7 @@ void TransferModel::RemoveTransfer(int row)
   {
     beginRemoveRows(QModelIndex(), row, row);
     m_queue.erase(m_queue.begin() + row);
+    emit transferQueueSize(static_cast<int>(m_queue.size()));
     endRemoveRows();
   }
 }

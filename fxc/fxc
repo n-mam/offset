@@ -66,7 +66,7 @@ auto GetTargetForDestination(const std::wstring& destination, const std::wstring
     auto file = "/" + directory + "/" + osl::ws2s(name + L"." + GetExtentionForFormat(format));
 
     ftp->Transfer(npl::ProtocolFTP::EDirection::Upload, 
-        file, [&](const char *b, size_t n) { return true; }, protect);
+        file, [&](const char *b, size_t n) { return true; }, nullptr, protect);
 
     ftp->Quit();
 

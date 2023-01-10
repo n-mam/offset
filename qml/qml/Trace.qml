@@ -13,6 +13,17 @@ Rectangle {
     ListElement {line: ""}
   }
 
+  CheckBox {
+    id: traceEnable
+    z: 2
+    anchors.top: parent.top
+    anchors.right: parent.right
+    anchors.topMargin: 3
+    anchors.rightMargin: 15
+    checked: true
+    text: qsTr("Enable")
+  }
+
   ScrollView {
     id: traceView
     width: parent.width
@@ -21,9 +32,11 @@ Rectangle {
 
     ListView {
       clip: true
+      anchors.top: parent.top      
       anchors.left: parent.left
       anchors.right: parent.right
       anchors.margins: 10
+      anchors.topMargin: 5
       height: parent.height
       model: traceModel
       delegate: Item {
@@ -36,6 +49,7 @@ Rectangle {
       }
       Connections {
         target: logger
+        enabled: (traceEnable.checkState === Qt.Checked)
         function onAddLogLine(severity, log) {
           if (severity === 3) {
             statusText.text = log

@@ -89,53 +89,8 @@ Rectangle {
         }
       }
 
-      Rectangle {
+      FTPQueue{
         id: queueStatus
-        height: 25
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.bottom: parent.bottom
-        anchors.leftMargin: 10
-        anchors.rightMargin: 10
-        color: "transparent"
-        Text {
-          id: statsId
-          color: "white"
-          verticalAlignment: Text.AlignVCenter
-          anchors.verticalCenter: parent.verticalCenter
-        }
-        Connections {
-          target: ftpModel.transferModel
-          function onTransferDone(n) {
-            statsId.text = "Q: " + queue.count + ", T: " + n
-          }
-        }
-        Image {
-          width: 16; height: 16
-          source: "qrc:/queue.png"
-          anchors.right: clear.left
-          anchors.rightMargin: 5
-          anchors.verticalCenter: parent.verticalCenter
-          MouseArea {
-            hoverEnabled: true
-            anchors.fill: parent
-            onClicked: ftpModel.transferModel.ProcessAllTransfers()
-            cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
-          }
-        }        
-        Image {
-          id: clear
-          width: 16; height: 16
-          source: "qrc:/delete.png"
-          anchors.right: parent.right
-          anchors.verticalCenter: parent.verticalCenter
-          MouseArea {
-            hoverEnabled: true
-            anchors.fill: parent
-            onClicked: ftpModel.transferModel.RemoveAllTransfers()
-            cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
-          }
-        }
       }
     }
   }

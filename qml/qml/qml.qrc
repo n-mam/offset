@@ -1,15 +1,16 @@
 <RCC>
   <qresource prefix="/">
     <file>Fxc.qml</file>
-    <file>FTP.qml</file>    
+    <file>FTP.qml</file>
     <file>main.qml</file>
     <file>List.qml</file>
     <file>Trace.qml</file>
     <file>Login.qml</file>
-    <file>Element.qml</file>    
+    <file>Element.qml</file>
+    <file>FTPQueue.qml</file>
     <file>RowDelegate.qml</file>
     <file>LocalListView.qml</file>
-    <file>RenameNewPopup.qml</file>    
+    <file>RenameNewPopup.qml</file>
     <file>RemoteListView.qml</file>
     <file>ExcludeListPopup.qml</file>
     <file>ContextMenuPopup.qml</file>

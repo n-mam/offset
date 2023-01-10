@@ -14,7 +14,15 @@ struct Transfer
   uint64_t m_size = 0;
   int m_progress = 0;
   int m_index = -1;
-  bool m_done = false;
+
+  enum status {
+    queued = 0,
+    processing,
+    failed,
+    successful
+  };
+
+  mutable status m_status = queued;
 };
 
 class FTPModel;
@@ -54,7 +62,9 @@ class TransferModel : public QAbstractListModel
 
   signals:
 
-  void transferDone(int);
+  void transferQueueSize(int count);
+  void transferSuccessful(int index, int count);
+  void transferFailed(int index, int count);
 
   private:
 
@@ -71,7 +81,9 @@ class TransferModel : public QAbstractListModel
 
   int m_next_session = 0;
 
-  int m_successful_transfers = 0;  
+  int m_failed_transfers = 0;
+
+  int m_successful_transfers = 0;
 };
 
 #if defined _WIN32

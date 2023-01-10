@@ -27,7 +27,7 @@ QHash<int, QByteArray> FTPModel::roleNames() const
 
 int FTPModel::rowCount(const QModelIndex &parent) const
 {
-  return m_model.size();
+  return static_cast<int>(m_model.size());
 }
 
 QVariant FTPModel::data(const QModelIndex &index, int role) const
@@ -237,7 +237,7 @@ void FTPModel::WalkRemoteDirectory(const std::string& path, TFileElementCallback
           callback(fe);
       }
       return true;
-    }, m_protection);
+    }, nullptr, m_protection);
 }
 
 void FTPModel::RemoveFile(QString path, bool local)
@@ -381,7 +381,7 @@ void FTPModel::setRemoteDirectory(QString directory)
         list.append(b, n);
       }
       return true;
-    }, m_protection);
+    }, nullptr, m_protection);
 }
 
 QString FTPModel::getLocalDirectory(void)
