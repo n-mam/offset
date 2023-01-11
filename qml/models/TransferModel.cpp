@@ -68,8 +68,8 @@ void TransferModel::AddToTransferQueue(const Transfer& transfer)
 {
   QMetaObject::invokeMethod(this,
     [=, t = std::move(transfer)]() mutable {
-      t.m_index = m_queue.size();
-      beginInsertRows(QModelIndex(), t.m_index, t.m_index);
+      auto pos = m_queue.size();
+      beginInsertRows(QModelIndex(), pos, pos);
       m_queue.emplace_back(t);
       endInsertRows();
       emit transferQueueSize(m_queue.size());
@@ -98,6 +98,8 @@ void TransferModel::ProcessTransfer(int row)
   m_activeTransfers++;
 
   Transfer& t = m_queue[row];
+
+  t.m_index = row;
 
   t.m_status = Transfer::status::processing;
 

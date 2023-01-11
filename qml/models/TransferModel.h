@@ -12,8 +12,6 @@ struct Transfer
   npl::ProtocolFTP::EDirection m_direction;
   char m_type;
   uint64_t m_size = 0;
-  int m_progress = 0;
-  int m_index = -1;
 
   enum status {
     queued = 0,
@@ -22,6 +20,8 @@ struct Transfer
     successful
   };
 
+  int m_index = -1;
+  int m_progress = 0;
   mutable status m_status = queued;
 };
 
