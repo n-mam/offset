@@ -81,6 +81,8 @@ class TransferModel : public QAbstractListModel
 
   int m_next_session = 0;
 
+  int m_activeTransfers = 0;
+
   int m_failed_transfers = 0;
 
   int m_successful_transfers = 0;

@@ -85,7 +85,6 @@ void TransferModel::ProcessAllTransfers(void)
     if (t.m_status == Transfer::status::queued)
     {
       ProcessTransfer(i);
-      t.m_status = Transfer::status::processing;
     }
   }
 }
@@ -96,7 +95,11 @@ void TransferModel::ProcessTransfer(int row)
 
   b ? b = false : (CheckAndReconnectSessions(), false);
 
+  m_activeTransfers++;
+
   Transfer& t = m_queue[row];
+
+  t.m_status = Transfer::status::processing;
 
   if (t.m_direction == npl::ProtocolFTP::EDirection::Download)
   {
@@ -131,6 +134,7 @@ void TransferModel::DownloadTransfer(const Transfer& t)
       {
         file.reset();
         m_queue[i].m_status = Transfer::status::successful;
+        m_activeTransfers--;
         emit transferSuccessful(i, ++m_successful_transfers);
       }
 
@@ -163,15 +167,18 @@ void TransferModel::UploadTransfer(const Transfer& t)
 
 void TransferModel::RemoveAllTransfers(void)
 {
-  beginResetModel();
-  m_queue.clear();
-  emit transferQueueSize(0);
-  endResetModel();
+  if (!m_activeTransfers)
+  {
+    beginResetModel();
+    m_queue.clear();
+    emit transferQueueSize(0);
+    endResetModel();
+  }
 }
 
 void TransferModel::RemoveTransfer(int row)
 {
-  if (row >= 0)
+  if (!m_activeTransfers)
   {
     beginRemoveRows(QModelIndex(), row, row);
     m_queue.erase(m_queue.begin() + row);
