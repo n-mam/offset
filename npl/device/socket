@@ -406,7 +406,7 @@ class SocketDevice : public FileDevice
     SSL_CTX_sess_set_new_cb(ctx,
       [](SSL *ssl, SSL_SESSION *session) {
         ssl_session_map[ssl].push_back(session);
-        DBG << "new session callback " << SSL_get_version(ssl);
+        //DBG << "new session callback " << SSL_get_version(ssl);
         return 0;
       });
 

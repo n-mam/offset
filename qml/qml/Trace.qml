@@ -31,6 +31,7 @@ Rectangle {
     clip: true
 
     ListView {
+      id: traceList
       clip: true
       anchors.top: parent.top      
       anchors.left: parent.left
@@ -56,6 +57,7 @@ Rectangle {
               line: new Date().toLocaleTimeString(Qt.locale(), 
               "hh:" + "mm:" + "ss:" + "zzz") + " " + l
             })
+          traceList.positionViewAtEnd()
         }
       }
     }
