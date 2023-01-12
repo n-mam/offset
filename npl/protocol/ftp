@@ -81,11 +81,15 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
       else
       {
         std::dynamic_pointer_cast<SocketDevice>(iDataChannel)->StopSocket();
-        iDataChannel.reset();
       }
     }
 
     return fRet ? (int32_t)l : 0;
+  }
+
+  virtual bool Write(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override
+  {
+    return iDataChannel->Write(b, l);
   }
 
   virtual void Transfer(EDirection direction, const std::string& remote, TTransferCbk tcbk, TResponseCbk rcbk = nullptr, TLS P = TLS::No)
@@ -548,10 +552,12 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
         OnDataChannelConnect();
       },
       [this](const uint8_t *b, size_t n) {
-        OnDataChannelIoCompletion(b, n, EDirection::Download);
+        if (!iDataChannel->IsStopped()) 
+          OnDataChannelIoCompletion(b, n, EDirection::Download);
       },
       [this](const uint8_t *b, size_t n) {
-        OnDataChannelIoCompletion(b, n, EDirection::Upload);
+        if (!iDataChannel->IsStopped()) 
+          OnDataChannelIoCompletion(b, n, EDirection::Upload);
       },
       [this](){
         OnDataChannelDisconnect();
@@ -579,7 +585,6 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
         if (!continueTransfer)
         {
           std::dynamic_pointer_cast<SocketDevice>(iDataChannel)->StopSocket();
-          iDataChannel.reset();
         }
 
         if (direction == EDirection::Upload)
@@ -610,7 +615,10 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
 
     if (GetTransferDirection(cmd) == EDirection::Upload)
     {
-
+      if (iCmdQ.front().m_tcbk)
+      {
+        iCmdQ.front().m_tcbk(nullptr, 0);
+      }
     }
   }
 

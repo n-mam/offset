@@ -118,6 +118,7 @@ void TransferModel::ProcessTransfer(int row)
 void TransferModel::DownloadTransfer(const Transfer& t)
 {
   std::filesystem::path path = t.m_local;
+
   std::filesystem::create_directories(path.parent_path());
 
   auto file = std::make_shared<npl::FileDevice>(t.m_local, true);
@@ -134,10 +135,13 @@ void TransferModel::DownloadTransfer(const Transfer& t)
       }
       else
       {
-        file.reset();
-        m_queue[i].m_status = Transfer::status::successful;
-        m_activeTransfers--;
-        emit transferSuccessful(i, ++m_successful_transfers);
+        if (m_queue[i].m_status != Transfer::status::successful)
+        {
+          file.reset();
+          m_queue[i].m_status = Transfer::status::successful;
+          m_activeTransfers--;
+          emit transferSuccessful(i, ++m_successful_transfers);
+        }
       }
 
       auto& tt = m_queue[i];
@@ -164,7 +168,56 @@ void TransferModel::DownloadTransfer(const Transfer& t)
 
 void TransferModel::UploadTransfer(const Transfer& t)
 {
-  
+  std::filesystem::path path = t.m_remote;
+
+  auto& ftp = m_sessions[m_next_session];
+
+  ftp->CreateDirectory(path.parent_path().string());
+
+  auto file = std::make_shared<npl::FileDevice>(t.m_local, false);
+
+  uint8_t *buf = (uint8_t *) calloc(1, _1M);
+
+  ftp->Transfer(t.m_direction, t.m_remote,
+    [=, i = t.m_index, offset = 0ULL]
+    (const char *b, size_t l) mutable {
+
+      auto n = file->ReadSync(buf, _1M, offset);
+
+      if (n)
+      {
+        ftp->Write(buf, n);
+        offset += n;
+      }
+      else
+      {
+        if (m_queue[i].m_status != Transfer::status::successful)
+        {
+          m_queue[i].m_status = Transfer::status::successful;
+          m_activeTransfers--;
+          emit transferSuccessful(i, ++m_successful_transfers);
+        }
+      }
+
+      auto& tt = m_queue[i];
+
+      if (tt.m_size) {
+        tt.m_progress = (((float)offset / tt.m_size) * 100);
+      }
+
+      QMetaObject::invokeMethod(this, [=](){
+        emit dataChanged(index(i), index(i), {Roles::EProgress});
+      });
+    
+      return (n > 0);
+    },
+    [=, i = t.m_index](const auto& res) {
+      if (res[0] == '4' || res[0] == '5') {
+        m_queue[i].m_status = Transfer::status::failed;
+        emit transferFailed(i, ++m_failed_transfers);
+      }
+    },
+    m_ftpModel->m_protection);
 }
 
 void TransferModel::RemoveAllTransfers(void)

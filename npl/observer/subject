@@ -28,6 +28,8 @@ class Subject : public std::enable_shared_from_this<Subject<T1, T2>>
 
   std::string m_name = "xxx";
 
+  bool m_stopped = false;
+
   bool m_connected = false;
 
   bool m_removeAllListeners = false;
@@ -210,6 +212,16 @@ class Subject : public std::enable_shared_from_this<Subject<T1, T2>>
   virtual bool IsConnected(void)
   {
     return m_connected;
+  }
+
+  virtual void MarkStopped(bool stopped)
+  {
+    m_stopped = stopped;
+  }
+
+  virtual bool IsStopped(void)
+  {
+    return m_stopped;
   }
 
   virtual bool IsRemoveSelfAsListenerMarked(void)

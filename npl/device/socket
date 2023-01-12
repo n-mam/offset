@@ -45,8 +45,6 @@ class SocketDevice : public FileDevice
 
   std::string iHost;
 
-  bool iStopped = false;
-
   TLS iTLS = TLS::No;
 
   SSL_CTX *ctx = nullptr;
@@ -99,7 +97,7 @@ class SocketDevice : public FileDevice
 
   virtual void StopSocket(void)
   {
-    if (!iStopped)
+    if (!IsStopped())
     {
       if (ssl)
       {
@@ -113,7 +111,7 @@ class SocketDevice : public FileDevice
         }
       }
 
-      iStopped = true;
+      FileDevice::MarkStopped(true);
 
       shutdown((SOCKET)iFD, 1); //sd_send
 
