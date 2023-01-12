@@ -81,18 +81,17 @@ class SocketDevice : public FileDevice
 
   ~SocketDevice()
   {
-    //DBG << "~SocketDevice() --> " << GetName();
     StopSocket();
     shutdown((SOCKET)iFD, 0); //sd_recv
     closesocket((SOCKET)iFD);
-    if (ssl)
-    {
+    //DBG << "~SocketDevice() <-- " << GetName() << " shutdown(sd_recv)";
+
+    if (ssl) {
       if (ssl_session_map[ssl].size()) {
         ssl_session_map[ssl].clear();
       }
       SSL_free(ssl);
     }
-    //DBG << "~SocketDevice() <-- " << GetName() << " shutdown(sd_recv)";
   }
 
   virtual void StopSocket(void)
@@ -364,8 +363,6 @@ class SocketDevice : public FileDevice
   {
     bool fRet = true;
 
-    CheckPeerSSLShutdown();
-
     int pending = BIO_pending(wbio);
 
     uint8_t buf[DEVICE_BUFFER_SIZE];
@@ -495,9 +492,12 @@ class SocketDevice : public FileDevice
 
   virtual void OnDisconnect() override
   {
-    // if(ssl) 
-    //   DBG << GetName() <<
-    //   " shutdown mode : " << SSL_get_shutdown(ssl);
+    if (ssl) {
+      // DBG << GetName() <<
+      // " shutdown mode : " << SSL_get_shutdown(ssl);
+      CheckPeerSSLShutdown();
+    }
+
     FileDevice::OnDisconnect();
   }
 

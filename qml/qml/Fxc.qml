@@ -22,7 +22,7 @@ Rectangle {
       containmentMask: Item {
         x: (handleDelegate.width - width) / 2
         width: splitViewTop.width
-        height: 20
+        height: 15
       }
     }
 

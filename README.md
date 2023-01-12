@@ -1,11 +1,10 @@
-```
-This is a work in progress. If anything stated below does not seem to be working with either the build or the release please feel free to highlight that via issues. 
-```
 [Download](https://github.com/n-mam/offset/releases/download/1.6/Offset-1.6.zip)
 <p align="center">
  <img src="https://drive.google.com/uc?id=1u-tsnDwuQPH6OXepCAEoARDSgAWCqNT2" width="45%">
  <img src="https://drive.google.com/uc?id=1RpPvy074uBcxyvaE7RI3M91AXgtzr1Qz" width="45%">
 </p>
+
+> This is a work in progress. If anything stated below does not seem to be working with either the current master build or the last release please feel free to highlight that via issues. 
 
 #### Features (FXC)
 
@@ -70,7 +69,7 @@ SET PATH=%PATH%;D:\QT-6.4.0\INSTALL\bin
 cmake -DCMAKE_TOOLCHAIN_FILE=D:/vcpkg/scripts/buildsystems/vcpkg.cmake ..
 cmake --build . --config Release
 
-Run as admin:
+Run as admin (needed for FXC):
 qml\Release\offset.exe
 ```
 

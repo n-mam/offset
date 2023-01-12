@@ -187,19 +187,6 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
     return m_syst;
   }
 
-  virtual void Stop(void) override
-  {
-    std::lock_guard<std::mutex> lg(iQLock);
-
-    if (iDataChannel)
-    {
-      std::dynamic_pointer_cast<SocketDevice>(iDataChannel)->StopSocket();
-      iDataChannel.reset();
-    }
-
-    Protocol::Stop();
-  }
-
   protected:
 
   std::string m_feat;
