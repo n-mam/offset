@@ -51,12 +51,11 @@ Rectangle {
         target: logger
         enabled: (traceEnable.checkState === Qt.Checked)
         function onAddLogLine(severity, log) {
-          if (severity === 3) {
-            statusText.text = log
-          } else {
-            for (var l of log.split("\n"))
-              traceModel.append({line: new Date().toLocaleTimeString(Qt.locale(), "hh:" + "mm:" + "ss:" + "zzz") + " " + l})
-          }
+          for (var l of log.split("\n"))
+            traceModel.append({
+              line: new Date().toLocaleTimeString(Qt.locale(), 
+              "hh:" + "mm:" + "ss:" + "zzz") + " " + l
+            })
         }
       }
     }

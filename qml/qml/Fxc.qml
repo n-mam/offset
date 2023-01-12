@@ -169,6 +169,12 @@ Rectangle {
     anchors.top: splitViewTop.bottom
     anchors.left: parent.left
     anchors.margins: 5
+    Connections {
+      target: logger
+      function onUpdateStatus(status) {
+        statusText.text = status
+      }
+    }    
     Component.onCompleted: statusText.font.pointSize = statusText.font.pointSize - 1.0
   }
 }

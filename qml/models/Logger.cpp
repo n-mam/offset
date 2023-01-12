@@ -8,7 +8,10 @@ Logger::Logger()
     [this](int sev, const std::wstring& log){
       if (log.size()) {
         QMetaObject::invokeMethod(this, [this, sev, log](){
-          emit this->addLogLine(sev, QString::fromStdWString(log).trimmed());
+          if (sev != osl::Log::Status)
+            emit this->addLogLine(sev, QString::fromStdWString(log).trimmed());
+          else
+            emit this->updateStatus(QString::fromStdWString(log).trimmed());
         }, Qt::QueuedConnection);
       }
     });
@@ -16,7 +19,10 @@ Logger::Logger()
     [this](int sev, const std::string& log){
       if (log.size()) {
         QMetaObject::invokeMethod(this, [this, sev, log](){
-          emit this->addLogLine(sev, QString::fromStdString(log).trimmed());
+          if (sev != osl::Log::Status)
+            emit this->addLogLine(sev, QString::fromStdString(log).trimmed());
+          else
+            emit this->updateStatus(QString::fromStdString(log).trimmed());
         }, Qt::QueuedConnection);
       }
     });
@@ -25,4 +31,3 @@ Logger::Logger()
 Logger::~Logger()
 {
 }
-
