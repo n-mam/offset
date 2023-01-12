@@ -1,13 +1,13 @@
-WIP
-
-[Download](https://github.com/n-mam/offset/releases/download/1.5/Offset-1.5.zip)
-
+```
+This is a work in progress. If anything stated below does not seem to be working with either the build or the release please feel free to highlight that via issues. 
+```
+[Download](https://github.com/n-mam/offset/releases/download/1.6/Offset-1.6.zip)
 <p align="center">
  <img src="https://drive.google.com/uc?id=1u-tsnDwuQPH6OXepCAEoARDSgAWCqNT2" width="45%">
  <img src="https://drive.google.com/uc?id=1RpPvy074uBcxyvaE7RI3M91AXgtzr1Qz" width="45%">
 </p>
 
-#### Features
+#### Features (FXC)
 
 - Creates volume level images using either VSS snapshots or from live volume.
 - Creates volume level images of already existing persistent VSS snapshots on the system.
@@ -18,10 +18,16 @@ WIP
   - Fixed vhd (f-vhd)
   - Dynamic vhdx (d-vhdx)
   - Raw volume image (raw)
-- Volume images can either be generated locally or streamed to an FTPS server.
-- FTPS streaming supports TLS1.3
+- Volume images can either be generated locally or streamed to an FTP server.
 - URI format for streaming to FTP:
   - ftps://username:password@hostname:port/a/b/c
+
+#### Features (FTPS)
+
+- Supports plain and secure FTPS (using openssl async bio).
+- Ability to browse while transfers are in progress.
+- Directory listing support for Linux, Windows and MLSD.
+- FTPS supports TLS1.3
 
 #### Dependencies
 
