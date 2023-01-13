@@ -92,7 +92,7 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
     return iDataChannel->Write(b, l);
   }
 
-  virtual void Transfer(EDirection direction, const std::string& remote, TTransferCbk tcbk, TResponseCbk rcbk = nullptr, TLS P = TLS::No)
+  virtual void Transfer(EDirection direction, const std::string& remote, TTransferCbk tcbk, TResponseCbk rcbk = nullptr, tls P = tls::no)
   {
     std::lock_guard<std::mutex> lg(iQLock);
 
@@ -193,7 +193,7 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
 
   std::string m_syst;
 
-  TLS iDCProt = TLS::No;
+  tls iDCProt = tls::no;
 
   SPSubject iDataChannel = nullptr;
 
@@ -354,15 +354,15 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
     }
   }
 
-  virtual void SetDCProtLevel(TLS P)
+  virtual void SetDCProtLevel(tls P)
   {
     auto tls = GetChannelTLS(m_target.lock());
 
-    if (tls == TLS::Yes || tls == TLS::Implicit)
+    if (tls == tls::yes || tls == tls::implicit)
     {
       iCmdQ.push_back({"PBSZ", "0"});
 
-      auto level = (P == TLS::No) ? "C" : "P";
+      auto level = (P == tls::no) ? "C" : "P";
 
       iCmdQ.push_back({"PROT", level,
         [this, P](const std::string& res){
@@ -416,7 +416,7 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
   {
     auto tls = GetChannelTLS(m_target.lock());
 
-    if (tls == TLS::Yes)
+    if (tls == tls::yes)
     {
       iCmdQ.push_front({"AUTH", "TLS"});
     }
@@ -443,7 +443,7 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
   {
     if (IsPositivePreliminaryReply(code))
     {
-      if (iDCProt == TLS::Yes)
+      if (iDCProt == tls::yes)
       {
         auto cc = std::dynamic_pointer_cast<SocketDevice>(m_target.lock());
 
@@ -668,7 +668,7 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
 
     auto tls = GetChannelTLS(m_target.lock());
 
-    if (tls == TLS::Implicit)
+    if (tls == tls::implicit)
     {
       DoCCHandshake();
     }
@@ -684,7 +684,7 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
         nullptr,
         [this]() {
           auto tls = GetChannelTLS(m_target.lock()); 
-          if (tls == TLS::Yes)
+          if (tls == tls::yes)
           {
             iCmdQ.push_front({"USER", iUserName});
           }

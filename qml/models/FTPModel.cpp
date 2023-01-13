@@ -102,7 +102,7 @@ bool FTPModel::Connect(QString host, QString port, QString user, QString passwor
   m_user = user.toStdString();
   m_password = password.toStdString();
 
-  m_protection = (protocol == "FTPS") ? npl::TLS::Yes : npl::TLS::No;
+  m_protection = (protocol == "FTPS") ? npl::tls::yes : npl::tls::no;
 
   m_ftp = npl::make_ftp(m_host, m_port , m_protection);
 

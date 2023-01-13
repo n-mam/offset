@@ -138,8 +138,8 @@ void TransferModel::DownloadTransfer(const Transfer& t)
         if (m_queue[i].m_status != Transfer::status::successful)
         {
           file.reset();
-          m_queue[i].m_status = Transfer::status::successful;
           m_activeTransfers--;
+          m_queue[i].m_status = Transfer::status::successful;
           emit transferSuccessful(i, ++m_successful_transfers);
         }
       }
@@ -172,7 +172,15 @@ void TransferModel::UploadTransfer(const Transfer& t)
 
   auto& ftp = m_sessions[m_next_session];
 
-  ftp->CreateDirectory(path.parent_path().string());
+  std::string directory;
+  auto tokens = osl::split(path.parent_path().string(), "/");
+
+  for (const auto& e : tokens) {
+    if (e.size()) {
+      directory += "/" + e;
+      ftp->CreateDirectory(directory);
+    }
+  }
 
   auto file = std::make_shared<npl::FileDevice>(t.m_local, false);
 
@@ -193,8 +201,8 @@ void TransferModel::UploadTransfer(const Transfer& t)
       {
         if (m_queue[i].m_status != Transfer::status::successful)
         {
-          m_queue[i].m_status = Transfer::status::successful;
           m_activeTransfers--;
+          m_queue[i].m_status = Transfer::status::successful;
           emit transferSuccessful(i, ++m_successful_transfers);
         }
       }

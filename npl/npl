@@ -19,7 +19,7 @@ inline auto make_dispatcher(void)
   return D;
 }
 
-inline auto make_ftp(const std::string& host, int port, TLS ftps = TLS::No)
+inline auto make_ftp(const std::string& host, int port, tls ftps = tls::no)
 {
   auto ftp = std::make_shared<ProtocolFTP>("prot-ftp");    
 
@@ -34,7 +34,7 @@ inline auto make_ftp(const std::string& host, int port, TLS ftps = TLS::No)
   return ftp;
 }
 
-inline auto make_ws_server(const std::string& host, int port, TLS tls = TLS::No, TOnClientMessageCbk cbk = nullptr)
+inline auto make_ws_server(const std::string& host, int port, tls tls = tls::no, TOnClientMessageCbk cbk = nullptr)
 {
   auto cc = std::make_shared<SocketDevice>("ws-cc");
   auto ls = std::make_shared<ProtocolWS>("ws-ls");
@@ -97,7 +97,7 @@ inline void test_http_client(const std::string& host, int port)
 inline void test_ws_server(const std::string& host, int port)
 {
   auto ws = npl::make_ws_server(
-    host, port, npl::TLS::Yes, 
+    host, port, npl::tls::yes, 
     [] (npl::SPProtocol c, const std::string& m) 
     {
       LOG << "client : " << m;
@@ -116,7 +116,7 @@ inline void test_ws_server(const std::string& host, int port)
 
 inline void test_ftp_client(const std::string& host, int port)
 {
-  auto ftp = npl::make_ftp(host, port, npl::TLS::Yes);
+  auto ftp = npl::make_ftp(host, port, npl::tls::yes);
 
   ftp->SetCredentials("nmam", "welcome123");
 
@@ -134,7 +134,7 @@ inline void test_ftp_client(const std::string& host, int port)
       return true;
     },
     nullptr,
-    npl::TLS::Yes
+    npl::tls::yes
   );
 
   ftp->SetCurrentDirectory("/");
@@ -152,7 +152,7 @@ inline void test_ftp_client(const std::string& host, int port)
         return true;
       },
       nullptr,
-      npl::TLS::Yes);
+      npl::tls::yes);
 
   file.reset();
 
@@ -161,7 +161,7 @@ inline void test_ftp_client(const std::string& host, int port)
         return true;
       },
       nullptr,
-      npl::TLS::No);
+      npl::tls::no);
 
   ftp->WriteSync((uint8_t *)"hello ", strlen("hello "));
 

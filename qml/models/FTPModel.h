@@ -61,7 +61,7 @@ class FTPModel : public QAbstractListModel
   std::string m_password;
   std::string m_protocol;
 
-  npl::TLS m_protection = npl::TLS::Yes;
+  npl::tls m_protection = npl::tls::yes;
 
   signals:
 

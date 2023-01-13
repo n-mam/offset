@@ -141,7 +141,7 @@ class Protocol : public Subject<T1, T2>
     return;
   }
 
-  virtual TLS GetChannelTLS(npl::SPSubject<T1, T2> channel)
+  virtual tls GetChannelTLS(npl::SPSubject<T1, T2> channel)
   {
     auto sock = std::dynamic_pointer_cast<SocketDevice>(channel);
 
@@ -150,7 +150,7 @@ class Protocol : public Subject<T1, T2>
       return sock->GetTLS();
     }
 
-    return TLS::No;
+    return tls::no;
   }
 
   virtual bool IsConnected(void) override
