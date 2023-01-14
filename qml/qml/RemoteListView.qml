@@ -2,6 +2,8 @@ import QtQuick
 import QtQuick.Shapes
 import QtQuick.Dialogs
 import QtQuick.Controls
+import Qt.labs.folderlistmodel
+import Qt5Compat.GraphicalEffects
 
 Item {
 
@@ -24,6 +26,7 @@ Item {
 
   ListView {
     id: remoteListView
+    currentIndex: -1
     anchors.left: parent.left
     anchors.right: parent.right
     anchors.top: currentDirectory.bottom
@@ -45,7 +48,7 @@ Item {
           currentDirectory.text = ""
           status.text = "Not connected"
         }
-        quit.visible = currentDirectory.enabled = isConnected
+        currentDirectory.enabled = isConnected
       }
       function onDirectoryList() {
         remoteListView.currentIndex = -1
@@ -53,6 +56,162 @@ Item {
         var files, folders
         [files, folders] = ftpModel.totalFilesAndFolders.split(":")
         status.text = files + " files " + folders + " folders "
+      }
+    }
+  }
+
+  Rectangle {
+    id: toolBar
+    z: 10
+    width: 24
+    height: 140
+    radius: 2
+    border.width: 1
+    border.color: borderColor
+    color: Qt.lighter(Material.background, 1.8)
+    visible: ftpModel.connected
+    anchors.right: parent.right
+    anchors.top: currentDirectory.bottom
+    anchors.rightMargin: 5
+
+    Image {
+      id: queueTool
+      width: 18; height: 18
+      source: "qrc:/down.png"
+      anchors.top: parent.top
+      anchors.horizontalCenter: parent.horizontalCenter
+      anchors.margins: 5
+      MouseArea {
+        anchors.fill: parent
+        onClicked: processToolBarAction("Queue")
+      }
+    }
+    Image {
+      id: newTool
+      width: 18; height: 18
+      source: "qrc:/new.png"
+      anchors.top: queueTool.bottom
+      anchors.horizontalCenter: parent.horizontalCenter
+      anchors.margins: 5      
+      MouseArea {
+        anchors.fill: parent
+        onClicked: processToolBarAction("New folder")
+      }
+    }
+    Image {
+      id: renameTool
+      width: 18; height: 18
+      source: "qrc:/rename.png"
+      anchors.top: newTool.bottom
+      anchors.horizontalCenter: parent.horizontalCenter
+      anchors.margins: 5      
+      MouseArea {
+        anchors.fill: parent
+        onClicked: processToolBarAction("Rename")
+      }
+    }
+    Image {
+      id: deleteTool
+      width: 18; height: 18
+      source: "qrc:/filedelete.png"
+      anchors.top: renameTool.bottom
+      anchors.horizontalCenter: parent.horizontalCenter
+      anchors.margins: 5      
+      MouseArea {
+        anchors.fill: parent
+        onClicked: processToolBarAction("Delete")
+      }
+    }
+    Image {
+      id: refresh
+      width: 18; height: 18
+      source: "qrc:/refresh.png"
+      anchors.top: deleteTool.bottom
+      anchors.horizontalCenter: parent.horizontalCenter
+      anchors.margins: 5      
+      MouseArea {
+        anchors.fill: parent
+        onClicked: processToolBarAction("Refresh")
+      }
+    }
+    Image {
+      id: quit
+      width: 18; height: 18
+      source: "qrc:/exit.png"
+      anchors.top: refresh.bottom
+      anchors.horizontalCenter: parent.horizontalCenter
+      anchors.margins: 5      
+      MouseArea {
+        anchors.fill: parent
+        onClicked: ftpModel.Quit()
+      }
+    }
+  }
+
+  function processToolBarAction(action) {
+
+    var fileName = ftpModel.get(remoteListView.currentIndex, "fileName")
+    var fileIsDir = ftpModel.get(remoteListView.currentIndex, "fileIsDir")
+    var fileSize = ftpModel.get(remoteListView.currentIndex, "fileSize")
+
+    if (action === "Queue" && ftpModel.connected)
+    {
+      ftpModel.Transfer(fileName, ftpModel.remoteDirectory, ftpModel.localDirectory, fileIsDir, false, fileSize)
+    }
+    else if (action === "Delete" && remoteListView.currentIndex >= 0)
+    {
+      newRenamePopup.context = "Delete \"" + fileName + "\""
+      newRenamePopup.elementName = fileName
+      newRenamePopup.elementIsDir = fileIsDir
+      newRenamePopup.inputHint = "Folder name"
+      newRenamePopup.inputValue = fileName
+      newRenamePopup.open()
+    }
+    else if (action === "Rename" && remoteListView.currentIndex >= 0)
+    {
+      newRenamePopup.context = "Rename \"" + fileName + "\""
+      newRenamePopup.elementName = fileName
+      newRenamePopup.inputHint = "New name"
+      newRenamePopup.inputValue = ""
+      newRenamePopup.open()
+    }
+    else if (action === "New folder")
+    {
+      newRenamePopup.context = "New folder"
+      newRenamePopup.inputHint = "Folder name"
+      newRenamePopup.inputValue = ""      
+      newRenamePopup.open()
+    }
+    else if (action === "Refresh")
+    {
+      ftpModel.remoteDirectory = ftpModel.remoteDirectory
+    }
+  }
+
+  RenameNewPopup {
+    id: newRenamePopup
+    parent: remoteListView
+    context: ""
+    elementName: ""
+    elementIsDir: ""
+    onDismissed: (userInput) => {
+      newRenamePopup.close()
+      if (userInput.length)
+      {
+        if (context.startsWith("New folder"))
+        {
+          ftpModel.CreateDirectory(userInput)
+        }
+        else if (context.startsWith("Rename"))
+        {
+          ftpModel.Rename(elementName, userInput)
+        }
+        else if (context.startsWith("Delete"))
+        {
+          var path = ftpModel.remoteDirectory + "/" + elementName
+          elementIsDir ? ftpModel.RemoveDirectory(path) :
+            ftpModel.RemoveFile(path)
+        }
       }
     }
   }
@@ -65,20 +224,6 @@ Item {
     anchors.horizontalCenter: parent.horizontalCenter
     onLogin: (host, port, user, password, protocol) => {
       ftpModel.Connect(host, port, user, password, protocol)
-    }
-  }
-
-  Image {
-    id: quit
-    width: 18; height: 18
-    visible: false
-    source: "qrc:/exit.png" 
-    anchors.right: parent.right
-    anchors.top: currentDirectory.bottom
-    anchors.rightMargin: 5
-    MouseArea {
-      anchors.fill: parent
-      onClicked: ftpModel.Quit()
     }
   }
 
@@ -152,78 +297,6 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
       }
 
-      MessageDialog {
-        id: warningDialog
-        text: "WARNING"
-        informativeText: "Do you really want to delete ?"
-        buttons: MessageDialog.Ok | MessageDialog.Cancel
-        onAccepted: () => {
-          var path = ftpModel.remoteDirectory + "/" + feText.text
-          fileIsDir ? ftpModel.RemoveDirectory(path) :
-            ftpModel.RemoveFile(path)
-        }
-      }
-
-      RenameNewPopup {
-        id: newRenamePopup
-        parent: feText
-        context: ""
-        onDismissed: (userInput) => {
-          newRenamePopup.close()
-          if (userInput.length)
-          {
-            if (context.startsWith("New folder"))
-            {
-              ftpModel.CreateDirectory(userInput)
-            }
-            else if (context.startsWith("Rename"))
-            {
-              ftpModel.Rename(feText.text, userInput)
-            }
-          }
-        }
-      }
-
-      ContextMenuPopup {
-        id: contextMenu
-        parent: feText
-        context: feText.text
-        menu: ["Queue", "Rename", "Delete", "Refresh", "New folder"]
-        onClosed: {
-        }
-        onMenuItemActivated: (action, context) => {
-
-          contextMenu.close()
-
-          var path = ftpModel.remoteDirectory + 
-                          (ftpModel.remoteDirectory.endsWith("/") ? 
-                            fileName : ("/" + fileName))
-
-          if (action === "Queue")
-          {
-            ftpModel.Transfer(fileName, ftpModel.remoteDirectory, ftpModel.localDirectory, fileIsDir, false, fileSize)
-          }
-          else if (action === "Delete")
-          {
-            warningDialog.open();
-          }
-          else if (action === "Rename")
-          {
-            newRenamePopup.context = "Rename \"" + fileName + "\""
-            newRenamePopup.open()
-          }
-          else if (action === "New folder")
-          {
-            newRenamePopup.context = "New folder"
-            newRenamePopup.open()
-          }
-          else if (action === "Refresh")
-          {
-            ftpModel.remoteDirectory = ftpModel.remoteDirectory
-          }
-        }
-      }
-
       MouseArea {
         anchors.fill: parent
         acceptedButtons: Qt.AllButtons
@@ -238,11 +311,6 @@ Item {
         }
         onClicked: (mouse) => {
           remoteListView.currentIndex = index
-          if (mouse.button == Qt.RightButton && fileName !== "..") {
-            contextMenu.x = mouse.x - feText.x
-            contextMenu.y = mouse.y
-            contextMenu.open()
-          }
         }
       }
     }

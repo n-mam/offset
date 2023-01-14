@@ -75,7 +75,6 @@ Rectangle {
     anchors.right: removeTransfer.left
     anchors.verticalCenter: parent.verticalCenter
     MouseArea {
-      hoverEnabled: true
       anchors.fill: parent
       cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
       onClicked: ftpModel.transferModel.ProcessTransfer(index)
@@ -92,7 +91,6 @@ Rectangle {
     anchors.right: parent.right
     anchors.verticalCenter: parent.verticalCenter
     MouseArea {
-      hoverEnabled: true
       anchors.fill: parent
       cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
       onClicked: () => {

@@ -30,6 +30,18 @@ int FTPModel::rowCount(const QModelIndex &parent) const
   return static_cast<int>(m_model.size());
 }
 
+QVariant FTPModel::get(int row, QString role)
+{
+  if (role == "fileName") {
+   return data(index(row, 0), EFileName);
+  } else if (role == "fileSize") {
+   return data(index(row, 0), EFileSize);
+  } else if (role == "fileIsDir") {
+   return data(index(row, 0), EFileIsDir);
+  }
+  return QVariant();
+}
+
 QVariant FTPModel::data(const QModelIndex &index, int role) const
 {
   if (!index.isValid())

@@ -1,5 +1,9 @@
 <RCC>
   <qresource prefix="/">
+    <file>up.png</file>  
+    <file>down.png</file>
+    <file>new.png</file>    
+    <file>rename.png</file>    
     <file>file.png</file>
     <file>folder.png</file>
     <file>arrow.png</file>
@@ -7,7 +11,9 @@
     <file>queue.png</file>
     <file>run.png</file>
     <file>delete.png</file>
-    <file>remove.png</file>
+    <file>remove.png</file> 
+    <file>refresh.png</file> 
+    <file>filedelete.png</file>
     <file>app.ico</file>
   </qresource>
 </RCC>

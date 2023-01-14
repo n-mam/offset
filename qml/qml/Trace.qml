@@ -24,41 +24,38 @@ Rectangle {
     text: qsTr("Enable")
   }
 
-  ScrollView {
-    id: traceView
-    width: parent.width
-    height: parent.height * 0.90
+  ListView {
+    id: traceList
     clip: true
-
-    ListView {
-      id: traceList
-      clip: true
-      anchors.top: parent.top      
-      anchors.left: parent.left
-      anchors.right: parent.right
-      anchors.margins: 10
-      anchors.topMargin: 5
-      height: parent.height
-      model: traceModel
-      delegate: Item {
-        width: ListView.view.width;
-        height: 17
-        Label { 
-          text: line
-          Component.onCompleted: font.pointSize = font.pointSize - 2
-        }
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.margins: 10
+    anchors.topMargin: 5
+    height: parent.height * 0.90
+    ScrollBar.vertical: ScrollBar {
+      width: 8
+    }
+    flickableDirection: Flickable.VerticalFlick    
+    model: traceModel
+    delegate: Item {
+      width: ListView.view.width;
+      height: 17
+      Label { 
+        text: line
+        Component.onCompleted: font.pointSize = font.pointSize - 2
       }
-      Connections {
-        target: logger
-        enabled: (traceEnable.checkState === Qt.Checked)
-        function onAddLogLine(severity, log) {
-          for (var l of log.split("\n"))
-            traceModel.append({
-              line: new Date().toLocaleTimeString(Qt.locale(), 
-              "hh:" + "mm:" + "ss:" + "zzz") + " " + l
-            })
-          traceList.positionViewAtEnd()
-        }
+    }
+    Connections {
+      target: logger
+      enabled: (traceEnable.checkState === Qt.Checked)
+      function onAddLogLine(severity, log) {
+        for (var l of log.split("\n"))
+          traceModel.append({
+            line: new Date().toLocaleTimeString(Qt.locale(), 
+            "hh:" + "mm:" + "ss:" + "zzz") + " " + l
+          })
+        traceList.positionViewAtEnd()
       }
     }
   }
@@ -68,7 +65,7 @@ Rectangle {
     // radius: 5
     // border.width: 1
     // border.color: borderColor
-    anchors.top: traceView.bottom
+    anchors.top: traceList.bottom
     anchors.margins: 5
     color: Material.background
     anchors.horizontalCenter: parent.horizontalCenter

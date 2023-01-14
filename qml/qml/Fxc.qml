@@ -53,7 +53,6 @@ Rectangle {
           anchors.horizontalCenter: parent.horizontalCenter
         }
         MouseArea {
-          hoverEnabled: true
           anchors.fill: parent
           cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
           onClicked: { 

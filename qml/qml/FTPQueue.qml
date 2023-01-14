@@ -57,7 +57,6 @@ Rectangle {
     anchors.rightMargin: 10
     anchors.verticalCenter: parent.verticalCenter
     MouseArea {
-      hoverEnabled: true
       anchors.fill: parent
       onClicked: ftpModel.transferModel.ProcessAllTransfers()
       cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
@@ -70,7 +69,6 @@ Rectangle {
     anchors.right: parent.right
     anchors.verticalCenter: parent.verticalCenter
     MouseArea {
-      hoverEnabled: true
       anchors.fill: parent
       onClicked: ftpModel.transferModel.RemoveAllTransfers()
       cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor

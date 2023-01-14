@@ -3,7 +3,11 @@ import QtQuick.Controls
 
 Popup {
 
-  required property var context;
+  required property var context
+  property var elementName: ""
+  property var elementIsDir: false
+  property var inputHint: ""
+  property var inputValue: ""
 
   signal dismissed(var userInput)
 
@@ -30,7 +34,8 @@ Popup {
         width: parent.width - 20
         anchors.top: title.bottom
         anchors.margins: 20
-        placeholderText: qsTr("Remote Directory")
+        text: inputValue
+        placeholderText: inputHint
         anchors.horizontalCenter: parent.horizontalCenter
         horizontalAlignment: Text.AlignHCenter
         verticalAlignment: TextInput.AlignVCenter

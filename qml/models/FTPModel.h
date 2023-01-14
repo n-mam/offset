@@ -47,6 +47,7 @@ class FTPModel : public QAbstractListModel
   Q_PROPERTY(QString remoteDirectory READ getRemoteDirectory WRITE setRemoteDirectory);
   Q_PROPERTY(TransferModel* transferModel READ getTransferModel NOTIFY transferModelchanged)
 
+  Q_INVOKABLE QVariant get(int index, QString role);
   Q_INVOKABLE bool Connect(QString host, QString port, QString user, QString password, QString protocol);
   Q_INVOKABLE void Transfer(QString remoteFile, QString remoteFolder, QString localFolder, bool isFolder, bool direction, uint64_t);
   Q_INVOKABLE void RemoveFile(QString path, bool local = false);
