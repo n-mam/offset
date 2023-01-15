@@ -269,7 +269,8 @@ Item {
             if (fileName === "..")
               folderModel.folder = folderModel.parentFolder
             else
-              folderModel.folder = "file:///" + currentDirectory.text + "/" + fileName                       
+              folderModel.folder = "file:///" + currentDirectory.text +
+                (currentDirectory.text.endsWith("\\") ? fileName : ("\\" + fileName))
           }
         }
         onClicked: (mouse) => {

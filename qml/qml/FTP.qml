@@ -57,7 +57,7 @@ Rectangle {
         id: queue
         clip: true
         spacing: 1
-        height: parent.height - spacer.height - queueStatus.height
+        height: parent.height - spacer.height - ftpStatus.height
         anchors.top: parent.top
         anchors.left: parent.left
         anchors.right: parent.right
@@ -92,8 +92,8 @@ Rectangle {
         }
       }
 
-      FTPQueue{
-        id: queueStatus
+      FTPStatus{
+        id: ftpStatus
       }
     }
   }

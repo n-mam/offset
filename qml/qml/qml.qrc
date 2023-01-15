@@ -7,7 +7,7 @@
     <file>Trace.qml</file>
     <file>Login.qml</file>
     <file>Element.qml</file>
-    <file>FTPQueue.qml</file>
+    <file>FTPStatus.qml</file>
     <file>RowDelegate.qml</file>
     <file>LocalListView.qml</file>
     <file>RenameNewPopup.qml</file>

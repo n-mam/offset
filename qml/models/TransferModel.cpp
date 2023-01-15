@@ -148,13 +148,14 @@ void TransferModel::DownloadTransfer(const Transfer& t)
       auto& tt = m_queue[i];
 
       if (tt.m_size) {
-        tt.m_progress = b ?
-          (((float)offset / tt.m_size) * 100) : 100;
+        int p = b ? (((float)offset / tt.m_size) * 100) : 100;
+        if (p > tt.m_progress) {
+          tt.m_progress = p;
+          QMetaObject::invokeMethod(this, [=](){
+            emit dataChanged(index(i), index(i), {Roles::EProgress});
+          });
+        }
       }
-
-      QMetaObject::invokeMethod(this, [=](){
-        emit dataChanged(index(i), index(i), {Roles::EProgress});
-      });
 
       return true;
     },
@@ -211,12 +212,14 @@ void TransferModel::UploadTransfer(const Transfer& t)
       auto& tt = m_queue[i];
 
       if (tt.m_size) {
-        tt.m_progress = (((float)offset / tt.m_size) * 100);
+        int p = b ? (((float)offset / tt.m_size) * 100) : 100;
+        if (p > tt.m_progress) {
+          tt.m_progress = p;
+          QMetaObject::invokeMethod(this, [=](){
+            emit dataChanged(index(i), index(i), {Roles::EProgress});
+          });
+        }
       }
-
-      QMetaObject::invokeMethod(this, [=](){
-        emit dataChanged(index(i), index(i), {Roles::EProgress});
-      });
     
       return (n > 0);
     },
