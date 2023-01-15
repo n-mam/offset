@@ -24,7 +24,7 @@ Rectangle {
 
     Text {
       id: localText
-      width: parent.width * 0.50
+      width: parent.width * 0.40
       color: delegateRect.ListView.isCurrentItem ? "black" : "white"
       text: local
       elide: Text.ElideRight
@@ -45,7 +45,7 @@ Rectangle {
 
     Text {
       id: remoteText
-      width: parent.width * 0.45
+      width: parent.width * 0.40
       color: delegateRect.ListView.isCurrentItem ? "black" : "white"
       text: remote
       elide: Text.ElideRight

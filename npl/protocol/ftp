@@ -96,7 +96,7 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
   {
     std::lock_guard<std::mutex> lg(iQLock);
 
-    if (!remote.size() || !tcbk) assert(false);
+    if (remote.empty() || !tcbk) assert(false);
 
     bool bQWasEmpty = iCmdQ.empty();
 
@@ -281,7 +281,7 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
 
         iCurrentState = t.iNextState;
 
-        if (iCmdQ.size())
+        if (!iCmdQ.empty())
         {
           auto cbk = iCmdQ.front().m_rcbk;
 
@@ -376,7 +376,7 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
 
   virtual void TriggerNextCommand(void)
   {
-    if (iCmdQ.size())
+    if (!iCmdQ.empty())
     {
       auto& cmd = iCmdQ.front();
       UpdateProtocolState(cmd.m_name);

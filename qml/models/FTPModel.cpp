@@ -434,7 +434,7 @@ void FTPModel::ParseMLSDList(const std::string& list, std::vector<FileElement>& 
 
   for (auto& line : lines)
   {
-    if (!line.size()) continue;
+    if (line.empty()) continue;
 
     std::string name;
 
@@ -478,7 +478,7 @@ void FTPModel::ParseLinuxList(const std::string& list, std::vector<FileElement>&
 
   for (auto& line : lines)
   {
-    if (!line.size()) continue;
+    if (line.empty()) continue;
 
     FileElement fe;
 
@@ -531,7 +531,7 @@ void FTPModel::ParseWindowsList(const std::string& list, std::vector<FileElement
 
   for (auto& line : lines)
   {
-    if (!line.size()) continue;
+    if (line.empty()) continue;
 
     auto p = line.c_str();
 

@@ -4,6 +4,7 @@
 TransferModel::TransferModel(FTPModel *ftpModel)
 {
   m_ftpModel = ftpModel;
+  m_queue.reserve(4096);
 }
 
 TransferModel::~TransferModel()
@@ -176,7 +177,7 @@ void TransferModel::UploadTransfer(const Transfer& t)
   auto tokens = osl::split(path.parent_path().string(), "/");
 
   for (const auto& e : tokens) {
-    if (e.size()) {
+    if (!e.empty()) {
       directory += "/" + e;
       ftp->CreateDirectory(directory);
     }

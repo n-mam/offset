@@ -216,7 +216,7 @@ bool DiskListModel::convertSelectedItemsToVirtualDisks(QString destination)
 {
   std::vector<fxc::TBackupConfig> configuration;
 
-  if (!destination.size())
+  if (destination.isEmpty())
   {
     STATUS << "Backup destination not specified";
     return false;

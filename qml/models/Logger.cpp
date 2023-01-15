@@ -6,7 +6,7 @@ Logger::Logger()
 {
   osl::Log::SetLogSink<std::wstring>(
     [this](int sev, const std::wstring& log){
-      if (log.size()) {
+      if (!log.empty()) {
         QMetaObject::invokeMethod(this, [this, sev, log](){
           if (sev != osl::Log::Status)
             emit this->addLogLine(sev, QString::fromStdWString(log).trimmed());
@@ -17,7 +17,7 @@ Logger::Logger()
     });
   osl::Log::SetLogSink<std::string>(
     [this](int sev, const std::string& log){
-      if (log.size()) {
+      if (!log.empty()) {
         QMetaObject::invokeMethod(this, [this, sev, log](){
           if (sev != osl::Log::Status)
             emit this->addLogLine(sev, QString::fromStdString(log).trimmed());
