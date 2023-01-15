@@ -31,6 +31,7 @@ Item {
     anchors.top: currentDirectory.bottom
     anchors.leftMargin: 5
     anchors.rightMargin: 5
+    boundsBehavior: Flickable.StopAtBounds
     height: parent.height - currentDirectory.height - spacer.height - statusRect.height - 2
     clip: true
     model: folderModel

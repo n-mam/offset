@@ -66,6 +66,9 @@ Rectangle {
         anchors.rightMargin: 5
         model: ftpModel.transferModel
         currentIndex: -1
+        boundsBehavior: Flickable.StopAtBounds
+        highlightMoveDuration: 100
+        highlightMoveVelocity: 800
         delegate: TransferQueueDelegate{}
         highlight: Rectangle { color: "lightsteelblue"; radius: 2 }
       }
