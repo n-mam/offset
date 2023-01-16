@@ -134,19 +134,19 @@ auto CreateSnapshot(const std::vector<std::wstring>& volumes, TSnapshotCBK cbk =
 
   fxc::InitializeCOM();
 
-  STATUS << "Creating backup component..";
+  STATUS(0) << "Creating backup component..";
 
   CHKCOM(hr = InitializeBackupComponent(&pBC, false, nullptr))
 
   CHKCOM(hr = pBC->SetBackupState(FALSE, TRUE, VSS_BT_FULL, FALSE))
 
-  STATUS << "Gather writer metadata..";
+  STATUS(0) << "Gather writer metadata..";
 
   CHKCOM(hr = pBC->GatherWriterMetadata(&pAS))
 
   CHKCOM(hr = AsyncWait(&pAS))
 
-  STATUS << "StartSnapshotSet..";
+  STATUS(0) << "StartSnapshotSet..";
 
   VSS_ID m_set;
 
@@ -160,13 +160,13 @@ auto CreateSnapshot(const std::vector<std::wstring>& volumes, TSnapshotCBK cbk =
         &m_snap[i]))
   }
 
-  STATUS << "PrepareForBackup..";
+  STATUS(0) << "PrepareForBackup..";
 
   CHKCOM(hr = pBC->PrepareForBackup(&pAS))
 
   CHKCOM(hr = AsyncWait(&pAS))
 
-  STATUS << "DoSnapshotSet..";
+  STATUS(0) << "DoSnapshotSet..";
 
   CHKCOM(hr = pBC->DoSnapshotSet(&pAS))
 
@@ -191,7 +191,7 @@ auto CreateSnapshot(const std::vector<std::wstring>& volumes, TSnapshotCBK cbk =
     cbk(ss);
   }
 
-  STATUS << "BackupComplete..";
+  STATUS(0) << "BackupComplete..";
 
   CHKCOM(hr = pBC->BackupComplete(&pAS))
 
@@ -378,11 +378,11 @@ class FxcWriter : public CVssWriter
 
           if (rc)
           {
-            STATUS << "OnPostSnapshot successfully deleted file " << snapshotFilePath;
+            STATUS(0) << "OnPostSnapshot successfully deleted file " << snapshotFilePath;
           }
           else
           {
-            STATUS << "OnPostSnapshot failed to delete file " << snapshotFilePath << GetLastError();
+            STATUS(0) << "OnPostSnapshot failed to delete file " << snapshotFilePath << GetLastError();
           }
         }
       }

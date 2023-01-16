@@ -63,9 +63,8 @@ Item {
 
   Rectangle {
     id: toolBar
-    z: 10
     width: 24
-    height: 140
+    height: 155
     radius: 2
     border.width: 1
     border.color: borderColor
@@ -84,6 +83,8 @@ Item {
       anchors.margins: 5
       MouseArea {
         anchors.fill: parent
+        hoverEnabled: true
+        cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor        
         onClicked: processToolBarAction("Queue")
       }
     }
@@ -93,9 +94,11 @@ Item {
       source: "qrc:/new.png"
       anchors.top: queueTool.bottom
       anchors.horizontalCenter: parent.horizontalCenter
-      anchors.margins: 5      
+      anchors.margins: 7
       MouseArea {
         anchors.fill: parent
+        hoverEnabled: true
+        cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor        
         onClicked: processToolBarAction("New folder")
       }
     }
@@ -105,9 +108,11 @@ Item {
       source: "qrc:/rename.png"
       anchors.top: newTool.bottom
       anchors.horizontalCenter: parent.horizontalCenter
-      anchors.margins: 5      
+      anchors.margins: 7
       MouseArea {
         anchors.fill: parent
+        hoverEnabled: true
+        cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor        
         onClicked: processToolBarAction("Rename")
       }
     }
@@ -117,9 +122,11 @@ Item {
       source: "qrc:/filedelete.png"
       anchors.top: renameTool.bottom
       anchors.horizontalCenter: parent.horizontalCenter
-      anchors.margins: 5      
+      anchors.margins: 7
       MouseArea {
         anchors.fill: parent
+        hoverEnabled: true
+        cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor        
         onClicked: processToolBarAction("Delete")
       }
     }
@@ -129,9 +136,11 @@ Item {
       source: "qrc:/refresh.png"
       anchors.top: deleteTool.bottom
       anchors.horizontalCenter: parent.horizontalCenter
-      anchors.margins: 5      
+      anchors.margins: 7
       MouseArea {
         anchors.fill: parent
+        hoverEnabled: true
+        cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor        
         onClicked: processToolBarAction("Refresh")
       }
     }
@@ -141,9 +150,11 @@ Item {
       source: "qrc:/exit.png"
       anchors.top: refresh.bottom
       anchors.horizontalCenter: parent.horizontalCenter
-      anchors.margins: 5      
+      anchors.margins: 7
       MouseArea {
         anchors.fill: parent
+        hoverEnabled: true
+        cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor        
         onClicked: ftpModel.Quit()
       }
     }
@@ -209,7 +220,7 @@ Item {
         }
         else if (context.startsWith("Delete"))
         {
-          var path = ftpModel.remoteDirectory + "/" + elementName
+          var path = ftpModel.remoteDirectory + "/" + userInput
           elementIsDir ? ftpModel.RemoveDirectory(path) :
             ftpModel.RemoveFile(path)
         }
@@ -233,7 +244,7 @@ Item {
     color: "transparent"
     anchors.left: parent.left
     anchors.right: parent.right
-    anchors.top: remoteListView.bottom
+    anchors.bottom: statusRect.top
     height: 1
     Shape {
       anchors.fill: spacer
@@ -250,10 +261,13 @@ Item {
 
   Rectangle {
     id: statusRect
-    width: parent.width
     height: 25
+    anchors.left: parent.left
+    anchors.right: parent.right
     anchors.bottom: parent.bottom
-    color: "transparent"
+    anchors.leftMargin: 5
+    anchors.rightMargin: 2
+    color: Material.background
     // radius: 2
     // border.width: 1
     // border.color: borderColor
@@ -265,7 +279,6 @@ Item {
       verticalAlignment: Text.AlignVCenter
       anchors.verticalCenter: parent.verticalCenter
       anchors.left: parent.left
-      anchors.leftMargin: 5
     }
   }
 
@@ -335,6 +348,5 @@ Item {
     return decodeURIComponent(path).replace(/\//g, "\\") 
   }
 
-  Component.onCompleted: {
-  }
+  Component.onCompleted: {}
 }

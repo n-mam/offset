@@ -218,7 +218,7 @@ bool DiskListModel::convertSelectedItemsToVirtualDisks(QString destination)
 
   if (destination.isEmpty())
   {
-    STATUS << "Backup destination not specified";
+    STATUS(0) << "Backup destination not specified";
     return false;
   }
 
@@ -255,13 +255,13 @@ bool DiskListModel::convertSelectedItemsToVirtualDisks(QString destination)
 
   if (!configuration.size())
   {
-    STATUS << "Please select the volumes to backup";
+    STATUS(0) << "Please select the volumes to backup";
     return false;
   }
 
   setTransfer(static_cast<int>(configuration.size()));
 
-  STATUS << "Transfer in progress : " << this->getTransfer();
+  STATUS(0) << "Transfer in progress : " << this->getTransfer();
 
   m_futures.push_back(std::async(std::launch::async, 
     [this, configuration](){
@@ -271,7 +271,7 @@ bool DiskListModel::convertSelectedItemsToVirtualDisks(QString destination)
             emit this->progress(QString::fromStdWString(device), percent);
             if (percent >= 100) {
               this->setTransfer(this->getTransfer() - 1);
-              STATUS << "Transfer in progress : " << this->getTransfer();
+              STATUS(0) << "Transfer in progress : " << this->getTransfer();
             }
           }, Qt::QueuedConnection);
           return this->stop;
@@ -279,7 +279,7 @@ bool DiskListModel::convertSelectedItemsToVirtualDisks(QString destination)
       QMetaObject::invokeMethod(this, [this](){
         this->setTransfer(0);
         this->setStop(false);
-        STATUS << "Transfer finished";
+        STATUS(0) << "Transfer finished";
       });
     }
   ));

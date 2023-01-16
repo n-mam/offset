@@ -358,17 +358,15 @@ QString FTPModel::getRemoteDirectory(void)
 
 void FTPModel::setRemoteDirectory(QString directory)
 {
-  m_remoteDirectory = directory.toStdString();
+  m_ftp->SetCurrentDirectory(directory.toStdString());
 
-  m_ftp->SetCurrentDirectory(m_remoteDirectory);
-
-  m_ftp->Transfer(npl::ProtocolFTP::EDirection::List, m_remoteDirectory,
-    [this, list = std::string()] (const char *b, size_t n) mutable {
+  m_ftp->Transfer(npl::ProtocolFTP::EDirection::List, directory.toStdString(),
+    [=, list = std::string()] (const char *b, size_t n) mutable {
       if (!b)
       {
         std::vector<FileElement> feList;
 
-        if (m_remoteDirectory != "/") 
+        if (directory.toStdString() != "/") 
           feList.push_back({"..", "", "", "d"});
 
         int fileCount = 0, folderCount = 0;
@@ -380,11 +378,12 @@ void FTPModel::setRemoteDirectory(QString directory)
             return e.m_attributes[0] != '-';
           });
 
-        QMetaObject::invokeMethod(this, [this, feList](){
+        QMetaObject::invokeMethod(this, [=](){
           beginResetModel();
           m_model.clear();
           m_model = feList;
           endResetModel();
+          m_remoteDirectory = directory.toStdString();
           emit directoryList();
         }, Qt::QueuedConnection);
       }
@@ -393,7 +392,13 @@ void FTPModel::setRemoteDirectory(QString directory)
         list.append(b, n);
       }
       return true;
-    }, nullptr, m_protection);
+    },
+    [](const std::string& res) {
+      if (res[0] == '4' || res[0] == '5') {
+        STATUS(1) << "Error: " << res;
+      }
+    },
+    m_protection);
 }
 
 QString FTPModel::getLocalDirectory(void)

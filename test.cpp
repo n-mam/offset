@@ -12,8 +12,8 @@ int wmain(int argc, wchar_t *argv[])
     return 0;
   }
 
-  osl::Log::SetLogSink<std::string>(
-    [](auto level, auto log){
+  osl::log::SetLogSink<std::string>(
+    [](auto level, int key, auto log){
       if (level >= 0) {
         std::cout << log << std::endl;
       }

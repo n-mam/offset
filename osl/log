@@ -12,51 +12,53 @@
 namespace osl {
 
 template<typename T>
-using TLogCallback = std::function<void (int, const T&)>;
+using TLogCallback = std::function<void (int, int, const T&)>;
 
-class Log
+class log
 {
   template<typename T>
-  friend Log&& operator <<(Log&& lhs, const T& rhs);
+  friend log&& operator <<(log&& lhs, const T& rhs);
 
   inline static TLogCallback<std::string> a_sink = nullptr;
   inline static TLogCallback<std::wstring> w_sink = nullptr;
 
-  int m_level = Info;
+  int m_key = 0;
+  int m_level = info;
   std::stringstream a_ss;
   std::wstringstream w_ss;
 
   public:
 
-  Log()
+  log()
   {
   }
 
-  Log(int level)
+  log(int level, int key = 0)
   {
+    m_key = key;
     m_level = level;
   }
 
-  ~Log()
+  ~log()
   {
     if (a_sink && a_ss.str().size())
     {
-      a_sink(m_level, a_ss.str());
+      a_sink(m_level, m_key, a_ss.str());
       //OutputDebugStringA(a_ss.str().c_str());
     }
     if (w_sink && w_ss.str().size())
     {
-      w_sink(m_level, w_ss.str());
+      w_sink(m_level, m_key, w_ss.str());
       //OutputDebugStringW(w_ss.str().c_str());
     }
   }
 
   enum {
-    Info,
-    Debug,
-    Error,
-    Status,
-    Warning
+    info,
+    debug,
+    error,
+    status,
+    warning
   };
 
   template<typename T>
@@ -75,7 +77,7 @@ class Log
 };
 
 template<typename T>
-Log&& operator <<(Log&& lhs, const T& rhs)
+log&& operator <<(log&& lhs, const T& rhs)
 {
   if constexpr(std::is_convertible_v<T, const std::string&>)
   {
@@ -99,12 +101,12 @@ Log&& operator <<(Log&& lhs, const T& rhs)
 
 }
 
-#define LOG osl::Log()
+#define LOG osl::log()
 
-#define ERR osl::Log(osl::Log::Error)
+#define ERR osl::log(osl::log::error)
 
-#define DBG osl::Log(osl::Log::Debug)
+#define DBG osl::log(osl::log::debug)
 
-#define STATUS osl::Log(osl::Log::Status)
+#define STATUS(k) osl::log(osl::log::status, k)
 
 #endif

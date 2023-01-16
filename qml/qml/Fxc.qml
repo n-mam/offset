@@ -7,13 +7,16 @@ Rectangle {
   border.width: 1
   border.color: borderColor
   color: Material.background
-  clip: true
+  width: parent.width
+  height: parent.height
 
   SplitView {
     id: splitViewTop
     orientation: Qt.Vertical
-    width: parent.width
-    height: parent.height * 0.95
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.top: parent.top
+    anchors.bottom: fxcFooter.top
 
     handle: Rectangle {
       id: handleDelegate
@@ -31,9 +34,8 @@ Rectangle {
       // radius: 5
       // border.width: 1
       // border.color: borderColor
-      anchors.left: parent.left
-      anchors.right: parent.right
-      implicitHeight: (parent.height * 0.85) - 2
+      width: parent.width
+      SplitView.preferredHeight: (parent.height * 0.79) - 2
       color: "transparent"
       Rectangle {
         width: 18
@@ -63,7 +65,7 @@ Rectangle {
       List {
         anchors.fill: parent
         anchors.margins: 10
-        anchors.bottomMargin: 0
+        anchors.bottomMargin: 1
         model: diskListModel
         Connections {
           target: diskListModel
@@ -84,9 +86,10 @@ Rectangle {
 
     Rectangle {
       id: bottomRect
-      anchors.left: parent.left
-      anchors.right: parent.right
-      height: parent.height * 0.15
+      width: parent.width
+      SplitView.minimumHeight: 90
+      SplitView.preferredHeight: parent.height * 0.20
+      SplitView.maximumHeight: 100
       color: "transparent"
       // radius: 5
       // border.width: 1
@@ -96,7 +99,6 @@ Rectangle {
         width: parent.width
         height: 45
         color: "transparent"
-        clip: true
         // radius: 5
         // border.width: 1
         // border.color: borderColor
@@ -108,7 +110,6 @@ Rectangle {
           anchors.bottom: parent.bottom
           placeholderText: "Destination"
           text: folderDialog.folder
-          Component.onCompleted: font.pointSize = font.pointSize - 1.5
         }
         Button {
           text: "Select"
@@ -161,19 +162,20 @@ Rectangle {
     }
   }
 
-  Text {
-    id: statusText
-    text: "Ready"
-    color: "white"
-    anchors.top: splitViewTop.bottom
+  FxcFooter {
+    id: fxcFooter
+    height: 25
     anchors.left: parent.left
-    anchors.margins: 5
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
     Connections {
       target: logger
-      function onUpdateStatus(status) {
-        statusText.text = status
+      function onUpdateStatus(key, status) {
+        if (key === 0) {
+          fxcFooter.currentStatus = status
+        }
       }
-    }    
-    Component.onCompleted: statusText.font.pointSize = statusText.font.pointSize - 1.0
+    }
   }
+
 }

@@ -1,18 +1,21 @@
 import QtQuick
-import QtQuick.Shapes
 import QtQuick.Controls
 
 Rectangle {
   radius: 3
   border.width: 1
   border.color: borderColor
-  color: Material.background
-  clip: true
+  color: "transparent"
+  width: parent.width
+  height: parent.height
 
   SplitView {
     id: splitViewTop
     orientation: Qt.Vertical
-    anchors.fill: parent
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.top: parent.top
+    anchors.bottom: ftpFooter.top
 
     handle: Rectangle {
       id: handleDelegate
@@ -27,7 +30,7 @@ Rectangle {
 
     SplitView {
       id: splitView
-      implicitHeight: parent.height * 0.69
+      SplitView.preferredHeight: (parent.height * 0.74) - 2
 
       handle: Rectangle {
         id: handleDelegate
@@ -46,9 +49,13 @@ Rectangle {
 
     Rectangle {
       id: transferQueue
-      width: parent.width
-      height: parent.height * 0.30
-      color: "transparent"
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.leftMargin: 2
+      anchors.rightMargin: 2
+      SplitView.minimumHeight: 90
+      SplitView.preferredHeight: parent.height * 0.25
+      color: Material.background
       // radius: 5
       // border.width: 1
       // border.color: borderColor
@@ -57,13 +64,10 @@ Rectangle {
         id: queue
         clip: true
         spacing: 1
-        height: parent.height - spacer.height - ftpStatus.height
-        anchors.top: parent.top
-        anchors.left: parent.left
-        anchors.right: parent.right
+        anchors.fill: parent
         anchors.topMargin: 5
-        anchors.leftMargin: 5
-        anchors.rightMargin: 5
+        anchors.leftMargin: 3
+        anchors.rightMargin: 3
         model: ftpModel.transferModel
         currentIndex: -1
         boundsBehavior: Flickable.StopAtBounds
@@ -72,28 +76,21 @@ Rectangle {
         delegate: TransferQueueDelegate{}
         highlight: Rectangle { color: "lightsteelblue"; radius: 2 }
       }
+    }
+  }
 
-      Rectangle {
-        id: spacer
-        color: "transparent"
-        width: parent.width
-        height: 1
-        anchors.top: queue.bottom
-        Shape {
-          anchors.fill: parent
-          anchors.centerIn: parent
-          ShapePath {
-            strokeWidth: 1
-            strokeColor: "white"
-            strokeStyle: ShapePath.SolidLine
-            startX: 0; startY: 0
-            PathLine {x: parent.width; y: 0}
-          }
+  FTPFooter {
+    id: ftpFooter
+    height: 25
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom    
+    Connections {
+      target: logger
+      function onUpdateStatus(key, status) {
+        if (key === 1) {
+          ftpFooter.currentStatus = status
         }
-      }
-
-      FTPStatus{
-        id: ftpStatus
       }
     }
   }

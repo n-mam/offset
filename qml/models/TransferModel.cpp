@@ -92,13 +92,15 @@ void TransferModel::ProcessAllTransfers(void)
 
 void TransferModel::ProcessTransfer(int row)
 {
+  Transfer& t = m_queue[row];
+
+  if (t.m_status != Transfer::status::queued) return;
+
   static bool b = InitializeFTPSessions();
 
   b ? b = false : (CheckAndReconnectSessions(), false);
 
   m_activeTransfers++;
-
-  Transfer& t = m_queue[row];
 
   t.m_index = row;
 

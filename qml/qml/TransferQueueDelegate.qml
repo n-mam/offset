@@ -111,6 +111,5 @@ Rectangle {
     }
   }
 
-  Component.onCompleted: {
-  }
+  Component.onCompleted: {}
 }
