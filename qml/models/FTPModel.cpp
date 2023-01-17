@@ -125,6 +125,9 @@ bool FTPModel::Connect(QString host, QString port, QString user, QString passwor
       QMetaObject::invokeMethod(this, [=](){
         if (success) {
           setRemoteDirectory("/");
+          STATUS(1) << "User " << m_user << " logged in";
+        } else {
+          STATUS(1) << "Login failed";
         }
       }, Qt::QueuedConnection);
     });
@@ -164,35 +167,38 @@ void FTPModel::UploadInternal(std::string file, std::string localFolder, std::st
 
   //LOG << file << " " << localFolder << " " << remoteFolder << " " << localPath << " " << remotePath;
 
-  if (isFolder)
+  try
   {
-    for (auto const& entry : std::filesystem::directory_iterator(localPath))
-    {
-      if (entry.is_directory()) {
-        UploadInternal(
-          entry.path().filename().string(),
-          localPath,
-          remotePath,
-          true);
+    if (isFolder) {
+      for (auto const& entry : std::filesystem::directory_iterator(localPath)) {
+        if (entry.is_directory()) {
+          UploadInternal(
+            entry.path().filename().string(),
+            localPath,
+            remotePath,
+            true);
+        }
+        else if(entry.is_regular_file()) {
+          m_queue->AddToTransferQueue({
+            entry.path().string(),
+            remotePath + "/" + entry.path().filename().string(),
+            npl::ProtocolFTP::EDirection::Upload,
+            'I', entry.file_size()
+          });
+        }
       }
-      else if(entry.is_regular_file()) {
-        m_queue->AddToTransferQueue({
-          entry.path().string(),
-          remotePath + "/" + entry.path().filename().string(),
-          npl::ProtocolFTP::EDirection::Upload,
-          'I', entry.file_size()
-        });
-      }
+    } else {
+      m_queue->AddToTransferQueue({
+        localPath,
+        remotePath,
+        npl::ProtocolFTP::EDirection::Upload,
+        'I', size
+      });
     }
   }
-  else
+  catch(const std::exception& e)
   {
-    m_queue->AddToTransferQueue({
-      localPath,
-      remotePath,
-      npl::ProtocolFTP::EDirection::Upload,
-      'I', size
-    });
+    LOG << e.what();
   }
 }
 
@@ -287,7 +293,10 @@ void FTPModel::RemoveDirectory(QString path, bool local)
   }
   else
   {
-    m_ftp->RemoveDirectory(path.toStdString());
+    m_ftp->RemoveDirectory(path.toStdString(),
+      [](const std::string& res) {
+        STATUS(1) << res;
+      });    
     RefreshRemoteView();
   }
 }
@@ -307,7 +316,10 @@ void FTPModel::CreateDirectory(QString path, bool local)
   }
   else
   {
-    m_ftp->CreateDirectory(path.toStdString());
+    m_ftp->CreateDirectory(path.toStdString(),
+      [](const std::string& res) {
+        STATUS(1) << res;
+      });
     RefreshRemoteView();
   }
 }
@@ -327,14 +339,20 @@ void FTPModel::Rename(QString from, QString to, bool local)
   }
   else
   {
-    m_ftp->Rename(from.toStdString(), to.toStdString());
+    m_ftp->Rename(from.toStdString(), to.toStdString(),
+      [](const std::string& res) {
+        if (res[0] == '4' || res[0] == '5')
+          STATUS(1) << "Error: " << res;
+      });
     RefreshRemoteView();
   }
 }
 
 void FTPModel::Quit()
 {
-  m_ftp->Quit();
+  m_ftp->Quit([](const std::string& res) {
+    STATUS(1) << res;
+  });
 }
 
 bool FTPModel::getConnected(void)
@@ -358,6 +376,8 @@ QString FTPModel::getRemoteDirectory(void)
 
 void FTPModel::setRemoteDirectory(QString directory)
 {
+  STATUS(1) << "Directory listing in progress..";
+
   m_ftp->SetCurrentDirectory(directory.toStdString());
 
   m_ftp->Transfer(npl::ProtocolFTP::EDirection::List, directory.toStdString(),
@@ -385,6 +405,7 @@ void FTPModel::setRemoteDirectory(QString directory)
           endResetModel();
           m_remoteDirectory = directory.toStdString();
           emit directoryList();
+          STATUS(1) << "Directory listing successful";
         }, Qt::QueuedConnection);
       }
       else

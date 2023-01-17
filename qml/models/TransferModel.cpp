@@ -81,12 +81,7 @@ void TransferModel::ProcessAllTransfers(void)
 {
   for (int i = 0; i < m_queue.size(); i++)
   {
-    auto& t = m_queue[i];
-
-    if (t.m_status == Transfer::status::queued)
-    {
-      ProcessTransfer(i);
-    }
+    ProcessTransfer(i);
   }
 }
 
@@ -94,28 +89,29 @@ void TransferModel::ProcessTransfer(int row)
 {
   Transfer& t = m_queue[row];
 
-  if (t.m_status != Transfer::status::queued) return;
-
-  static bool b = InitializeFTPSessions();
-
-  b ? b = false : (CheckAndReconnectSessions(), false);
-
-  m_activeTransfers++;
-
-  t.m_index = row;
-
-  t.m_status = Transfer::status::processing;
-
-  if (t.m_direction == npl::ProtocolFTP::EDirection::Download)
+  if (t.m_status == Transfer::status::queued)
   {
-    DownloadTransfer(t);
-  }
-  else if (t.m_direction == npl::ProtocolFTP::EDirection::Upload)
-  {
-    UploadTransfer(t);
-  }
+    static bool b = InitializeFTPSessions();
 
-  m_next_session = (m_next_session + 1) % MAX_SESSIONS;
+    b ? b = false : (CheckAndReconnectSessions(), false);
+
+    t.m_index = row;
+
+    m_activeTransfers++;
+
+    t.m_status = Transfer::status::processing;
+
+    if (t.m_direction == npl::ProtocolFTP::EDirection::Download)
+    {
+      DownloadTransfer(t);
+    }
+    else if (t.m_direction == npl::ProtocolFTP::EDirection::Upload)
+    {
+      UploadTransfer(t);
+    }
+
+    m_next_session = (m_next_session + 1) % MAX_SESSIONS;
+  }
 }
 
 void TransferModel::DownloadTransfer(const Transfer& t)
