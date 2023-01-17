@@ -1,9 +1,8 @@
 <RCC>
   <qresource prefix="/">
-    <file>up.png</file>  
-    <file>down.png</file>
-    <file>new.png</file>    
-    <file>rename.png</file>    
+    <file>addq.png</file>
+    <file>new.png</file>
+    <file>rename.png</file>
     <file>file.png</file>
     <file>folder.png</file>
     <file>arrow.png</file>

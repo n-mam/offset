@@ -77,7 +77,7 @@ Item {
     Image {
       id: queueTool
       width: 18; height: 18
-      source: "qrc:/down.png"
+      source: "qrc:/addq.png"
       anchors.top: parent.top
       anchors.horizontalCenter: parent.horizontalCenter
       anchors.margins: 5

@@ -45,7 +45,7 @@ Item {
 
   Rectangle {
     id: toolBar
-    width: 24
+    width: 26
     height: 110
     radius: 2
     border.width: 1
@@ -57,8 +57,8 @@ Item {
 
     Image {
       id: queueTool
-      width: 18; height: 18
-      source: "qrc:/up.png"
+      width: 20; height: 20
+      source: "qrc:/addq.png"
       anchors.top: parent.top
       anchors.horizontalCenter: parent.horizontalCenter
       anchors.margins: 7
@@ -71,7 +71,7 @@ Item {
     }
     Image {
       id: newTool
-      width: 18; height: 18
+      width: 20; height: 20
       source: "qrc:/new.png"
       anchors.top: queueTool.bottom
       anchors.horizontalCenter: parent.horizontalCenter
@@ -85,7 +85,7 @@ Item {
     }
     Image {
       id: renameTool
-      width: 18; height: 18
+      width: 20; height: 20
       source: "qrc:/rename.png"
       anchors.top: newTool.bottom
       anchors.horizontalCenter: parent.horizontalCenter
@@ -99,7 +99,7 @@ Item {
     }
     Image {
       id: deleteTool
-      width: 18; height: 18
+      width: 20; height: 20
       source: "qrc:/filedelete.png"
       anchors.top: renameTool.bottom
       anchors.horizontalCenter: parent.horizontalCenter
@@ -257,7 +257,7 @@ Item {
       Image {
         id: listItemIcon
         x: 3
-        width: 18; height: 18
+        width: 20; height: 20
         anchors.verticalCenter: parent.verticalCenter
         source: fileIsDir ? (fileName !== "." ? "qrc:/folder.png" : "") : "qrc:/file.png"
       }

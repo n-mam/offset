@@ -92,7 +92,7 @@ Item {
     }
 
     Image {
-      width: 16; height: 16
+      width: 20; height: 20
       source: "qrc:/queue.png"
       anchors.right: clear.left
       anchors.rightMargin: 10
@@ -107,7 +107,7 @@ Item {
 
     Image {
       id: clear
-      width: 16; height: 16
+      width: 20; height: 20
       source: "qrc:/delete.png"
       anchors.right: parent.right
       anchors.rightMargin: 10
