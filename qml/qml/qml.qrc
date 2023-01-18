@@ -14,7 +14,6 @@
     <file>RenameNewPopup.qml</file>
     <file>RemoteListView.qml</file>
     <file>ExcludeListPopup.qml</file>
-    <file>ContextMenuPopup.qml</file>
     <file>TransferQueueDelegate.qml</file>
   </qresource>
 </RCC>

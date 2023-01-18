@@ -46,7 +46,6 @@ Item {
     Text {
       id: queueCount
       color: "#8CDCFE"
-      width: 50
       anchors.left: parent.left
       anchors.leftMargin: 5
       verticalAlignment: Text.AlignVCenter
@@ -62,7 +61,6 @@ Item {
     Text {
       id: successCount
       color: "#2EDE79"
-      width: 50
       anchors.left: queueCount.right
       anchors.leftMargin: 10
       verticalAlignment: Text.AlignVCenter
@@ -78,7 +76,6 @@ Item {
     Text {
       id: failedCount
       color: "#EF5129"
-      width: 50
       anchors.left: successCount.right
       anchors.leftMargin: 10
       verticalAlignment: Text.AlignVCenter
