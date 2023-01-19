@@ -25,7 +25,6 @@ Item {
 
   ListView {
     id: localListView
-    currentIndex: -1
     anchors.left: parent.left
     anchors.right: parent.right
     anchors.top: currentDirectory.bottom
@@ -36,6 +35,7 @@ Item {
     clip: true
     model: folderModel
     delegate: listItemDelegate
+    currentIndex: -1
     cacheBuffer: 1024
     focus: true
     highlightMoveDuration: 100
@@ -241,8 +241,8 @@ Item {
     id: listItemDelegate
     Rectangle {
       id: delegateRect
-      width: ListView.view.width
-      height: 24
+      implicitWidth: ListView.view.width
+      implicitHeight: 24
       Component.onCompleted: {
         if (fileName === ".") {
           height = 0

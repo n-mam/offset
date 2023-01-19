@@ -95,7 +95,7 @@ Item {
       anchors.rightMargin: 10
       anchors.verticalCenter: parent.verticalCenter
       MouseArea {
-        hoverEnabled: true      
+        hoverEnabled: true
         anchors.fill: parent
         onClicked: ftpModel.transferModel.ProcessAllTransfers()
         cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor

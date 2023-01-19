@@ -64,7 +64,8 @@ Rectangle {
     value: progress
     visible: progress > 0
     onValueChanged: {
-      delegateRect.ListView.view.positionViewAtIndex(index, ListView.Center)
+      if (progress % 25 === 0)
+        delegateRect.ListView.view.positionViewAtIndex(index, ListView.Center)
     }
   }
 

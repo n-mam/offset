@@ -60,6 +60,8 @@ class TransferModel : public QAbstractListModel
 
   public slots:
 
+  void TransferFinished(int i);
+
   signals:
 
   void transferQueueSize(int count);

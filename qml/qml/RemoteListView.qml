@@ -26,7 +26,6 @@ Item {
 
   ListView {
     id: remoteListView
-    currentIndex: -1
     anchors.left: parent.left
     anchors.right: parent.right
     anchors.top: currentDirectory.bottom
@@ -37,6 +36,7 @@ Item {
     clip: true
     model: ftpModel
     delegate: listItemDelegate
+    currentIndex: -1
     cacheBuffer: 1024
     focus: true
     highlightMoveDuration: 100
@@ -64,7 +64,7 @@ Item {
   Rectangle {
     id: toolBar
     width: 24
-    height: 155
+    height: 162
     radius: 2
     border.width: 1
     border.color: borderColor
@@ -90,7 +90,7 @@ Item {
     }
     Image {
       id: newTool
-      width: 18; height: 18
+      width: 20; height: 20
       source: "qrc:/new.png"
       anchors.top: queueTool.bottom
       anchors.horizontalCenter: parent.horizontalCenter
@@ -104,7 +104,7 @@ Item {
     }
     Image {
       id: renameTool
-      width: 18; height: 18
+      width: 20; height: 20
       source: "qrc:/rename.png"
       anchors.top: newTool.bottom
       anchors.horizontalCenter: parent.horizontalCenter
@@ -118,7 +118,7 @@ Item {
     }
     Image {
       id: deleteTool
-      width: 18; height: 18
+      width: 20; height: 20
       source: "qrc:/filedelete.png"
       anchors.top: renameTool.bottom
       anchors.horizontalCenter: parent.horizontalCenter
@@ -132,7 +132,7 @@ Item {
     }
     Image {
       id: refresh
-      width: 18; height: 18
+      width: 20; height: 20
       source: "qrc:/refresh.png"
       anchors.top: deleteTool.bottom
       anchors.horizontalCenter: parent.horizontalCenter
@@ -146,7 +146,7 @@ Item {
     }
     Image {
       id: quit
-      width: 18; height: 18
+      width: 20; height: 20
       source: "qrc:/exit.png"
       anchors.top: refresh.bottom
       anchors.horizontalCenter: parent.horizontalCenter
@@ -286,8 +286,8 @@ Item {
     id: listItemDelegate
     Rectangle {
       id: delegateRect
-      width: ListView.view.width
-      height: 24
+      implicitWidth: ListView.view.width
+      implicitHeight: 24
       color: "transparent"
       // radius: 2
       // border.width: 1

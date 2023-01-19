@@ -5,6 +5,8 @@ TransferModel::TransferModel(FTPModel *ftpModel)
 {
   m_ftpModel = ftpModel;
   m_queue.reserve(4096);
+  connect(this, &TransferModel::transferFailed, this, &TransferModel::TransferFinished);
+  connect(this, &TransferModel::transferSuccessful, this, &TransferModel::TransferFinished);
 }
 
 TransferModel::~TransferModel()
@@ -77,11 +79,24 @@ void TransferModel::AddToTransferQueue(const Transfer& transfer)
     });
 }
 
+void TransferModel::TransferFinished(int i)
+{
+  --m_activeTransfers;
+
+  for ( ; i < m_queue.size(); i++) {
+    if (m_queue[i].m_status == Transfer::status::queued) {
+      ProcessTransfer(i);
+      break;
+    }
+  }
+}
+
 void TransferModel::ProcessAllTransfers(void)
 {
-  for (int i = 0; i < m_queue.size(); i++)
-  {
-    ProcessTransfer(i);
+  if (m_queue.size()) {
+    for (int i = 0; i < MAX_SESSIONS; i++) {
+      ProcessTransfer(i);
+    }
   }
 }
 
@@ -137,9 +152,10 @@ void TransferModel::DownloadTransfer(const Transfer& t)
         if (m_queue[i].m_status != Transfer::status::successful)
         {
           file.reset();
-          m_activeTransfers--;
-          m_queue[i].m_status = Transfer::status::successful;
-          emit transferSuccessful(i, ++m_successful_transfers);
+          QMetaObject::invokeMethod(this, [=](){
+            m_queue[i].m_status = Transfer::status::successful;
+            emit transferSuccessful(i, ++m_successful_transfers);
+          });
         }
       }
 
@@ -159,8 +175,10 @@ void TransferModel::DownloadTransfer(const Transfer& t)
     },
     [=, i = t.m_index](const auto& res) {
       if (res[0] == '4' || res[0] == '5') {
-        m_queue[i].m_status = Transfer::status::failed;
-        emit transferFailed(i, ++m_failed_transfers);
+        QMetaObject::invokeMethod(this, [=](){
+          m_queue[i].m_status = Transfer::status::failed;
+          emit transferFailed(i, ++m_failed_transfers);
+        });
       }
     },
     m_ftpModel->m_protection);
@@ -201,9 +219,10 @@ void TransferModel::UploadTransfer(const Transfer& t)
       {
         if (m_queue[i].m_status != Transfer::status::successful)
         {
-          m_activeTransfers--;
-          m_queue[i].m_status = Transfer::status::successful;
-          emit transferSuccessful(i, ++m_successful_transfers);
+          QMetaObject::invokeMethod(this, [=](){
+            m_queue[i].m_status = Transfer::status::successful;
+            emit transferSuccessful(i, ++m_successful_transfers);
+          });
         }
       }
 
