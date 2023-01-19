@@ -93,10 +93,9 @@ void TransferModel::TransferFinished(int i)
 
 void TransferModel::ProcessAllTransfers(void)
 {
-  if (m_queue.size()) {
-    for (int i = 0; i < MAX_SESSIONS; i++) {
-      ProcessTransfer(i);
-    }
+  auto limit = std::min(MAX_SESSIONS, m_queue.size());
+  for (int i = 0; i < limit; i++) {
+    ProcessTransfer(i);
   }
 }
 
