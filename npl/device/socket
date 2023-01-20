@@ -473,6 +473,11 @@ class SocketDevice : public FileDevice
     #endif
   }
 
+  virtual void OnError(uint64_t error)
+  {
+    FileDevice::OnError(error);
+  }
+
   virtual void OnConnect() override
   {
     assert(IsClientSocket());

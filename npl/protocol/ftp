@@ -668,6 +668,11 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
     return (c == '1');
   }
 
+  virtual void OnError(uint64_t error) override
+  {
+    STATUS(1) << "Control channel error " << error;
+  }
+
   virtual void OnDisconnect(void) override
   {
     Protocol::OnDisconnect();

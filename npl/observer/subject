@@ -130,6 +130,12 @@ class Subject : public std::enable_shared_from_this<Subject<T1, T2>>
     return -1;
   }
 
+  virtual void OnError(uint64_t error)
+  {
+    std::lock_guard<std::mutex> lg(m_lock);
+    NotifyError(error);
+  }
+
   virtual void OnAccept(void)
   {
     std::lock_guard<std::mutex> lg(m_lock);
@@ -338,6 +344,15 @@ class Subject : public std::enable_shared_from_this<Subject<T1, T2>>
         m_observers.begin(), m_observers.end(), consumer),
       m_observers.end()
     );
+  }
+
+  virtual void NotifyError(uint64_t error)
+  {
+    for (auto& observer : m_observers)
+    {
+      observer->OnError(error);
+    }
+    ProcessListenersMarkedForRemoval();
   }
 
   virtual void NotifyConnect()

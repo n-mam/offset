@@ -187,19 +187,21 @@ class Dispatcher : public Subject<uint8_t, uint8_t>
     while (!iExitWorker)
     {
       void *k = nullptr;
+      uint64_t error = 0;
 
       #ifdef _WIN32
 
       LPOVERLAPPED ol;
       unsigned long n;
 
-      bool fRet = GetQueuedCompletionStatus(iEventPort, &n, (PULONG_PTR) &k, &ol, INFINITE);
+      auto fRet = GetQueuedCompletionStatus(iEventPort, &n, (PULONG_PTR) &k, &ol, INFINITE);
 
       if (iExitWorker) break;
 
       if (!fRet)
       {
-        DBG << "GQCS failed : " << GetLastError() << " " << 
+        error = GetLastError();
+        DBG << "GQCS failed : " << error << " " << 
                 ((Subject<uint8_t, uint8_t> *) k)->GetName();
       }
 
@@ -218,16 +220,13 @@ class Dispatcher : public Subject<uint8_t, uint8_t>
 
       if (fRet < 0)
       {
-        DBG << "epoll_wait failed : " << strerror(errno) << " " <<
+        error = errno;
+        DBG << "epoll_wait failed : " << strerror(error) << " " <<
                 ((Subject<uint8_t, uint8_t> *) k)->GetName();
 
         if (errno == EINTR)
         {
           continue;
-        }
-        else
-        {
-          break;
         }
       }
 
@@ -245,7 +244,8 @@ class Dispatcher : public Subject<uint8_t, uint8_t>
 
       if (fRet < 0)
       {
-        DBG << "kevent failed : " << strerror(errno) << " " <<
+        error = errno;
+        DBG << "kevent failed : " << strerror(error) << " " <<
                 ((Subject<uint8_t, uint8_t> *) k)->GetName();
         break;
       }
@@ -273,7 +273,7 @@ class Dispatcher : public Subject<uint8_t, uint8_t>
 
           for (auto ctx : contexts)
           {
-            ProcessContext(o.get(), ctx);
+            ProcessContext(o.get(), ctx, fRet, error);
           }
 
           ul.lock();
@@ -288,14 +288,18 @@ class Dispatcher : public Subject<uint8_t, uint8_t>
     DBG << "Dispatcher thread returning, observers : " << m_observers.size();
   }
 
-  void ProcessContext(void *key, Context *ctx)
+  void ProcessContext(void *key, Context *ctx, int fRet = 1, int error = 0)
   {
     auto k = (Subject<uint8_t, uint8_t> *) key;
 
     // DBG << k->GetName() << " " << (uint64_t)k << " "
     //         <<  npl::EIOToString(ctx->type) << ", n " << ctx->n;
 
-    if (ctx->type == EIOType::READ)
+    if (fRet <= 0)
+    {
+      k->OnError(error);
+    }
+    else if (ctx->type == EIOType::READ)
     {
       if (ctx->n != 0)
       {
