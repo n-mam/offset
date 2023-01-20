@@ -20,6 +20,7 @@ struct Transfer
     successful
   };
 
+  int m_sid = 0;
   int m_index = -1;
   int m_progress = 0;
   mutable status m_status = queued;
@@ -27,7 +28,7 @@ struct Transfer
 
 class FTPModel;
 
-constexpr size_t MAX_SESSIONS = 1;
+constexpr size_t MAX_SESSIONS = 2;
 
 class TransferModel : public QAbstractListModel
 {
@@ -54,9 +55,9 @@ class TransferModel : public QAbstractListModel
   void AddToTransferQueue(const Transfer& transfer);
 
   Q_INVOKABLE void ProcessAllTransfers(void);
-  Q_INVOKABLE void ProcessTransfer(int row = -1);
+  Q_INVOKABLE void ProcessTransfer(int row, int sid);
   Q_INVOKABLE void RemoveAllTransfers(void);
-  Q_INVOKABLE void RemoveTransfer(int row = -1);
+  Q_INVOKABLE void RemoveTransfer(int row);
 
   public slots:
 
@@ -70,10 +71,11 @@ class TransferModel : public QAbstractListModel
 
   private:
 
-  void DownloadTransfer(const Transfer& t);
-  void UploadTransfer(const Transfer& t);
   bool InitializeFTPSessions(void);
   void CheckAndReconnectSessions(void);
+  int GetSessionWithLeastQueueDepth(void);
+  void DownloadTransfer(const Transfer& t, int sid);
+  void UploadTransfer(const Transfer& t, int sid);
 
   FTPModel *m_ftpModel;
 

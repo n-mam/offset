@@ -23,6 +23,8 @@ Popup {
 
       Text {
         id: title
+        width: parent.width * 0.80
+        elide: Text.ElideMiddle
         color: "white"
         text: context
         anchors.top: parent.top

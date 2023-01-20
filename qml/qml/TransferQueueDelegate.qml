@@ -81,7 +81,7 @@ Rectangle {
     MouseArea {
       anchors.fill: parent
       cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
-      onClicked: ftpModel.transferModel.ProcessTransfer(index)
+      onClicked: ftpModel.transferModel.ProcessTransfer(index, -1)
     }
   }
 

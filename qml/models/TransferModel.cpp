@@ -79,13 +79,28 @@ void TransferModel::AddToTransferQueue(const Transfer& transfer)
     });
 }
 
+int TransferModel::GetSessionWithLeastQueueDepth(void)
+{
+  int sid, minimum = INT_MAX;
+
+  for (int i = 0; i < MAX_SESSIONS; i++) {
+    auto pending = m_sessions[i]->PendingTransfers();
+    if (pending < minimum) {
+      sid = i;
+      minimum = pending;      
+    }
+  }
+
+  return sid;
+}
+
 void TransferModel::TransferFinished(int i)
 {
   --m_activeTransfers;
 
-  for ( ; i < m_queue.size(); i++) {
-    if (m_queue[i].m_status == Transfer::status::queued) {
-      ProcessTransfer(i);
+  for (int j = i; j < m_queue.size(); j++) {
+    if (m_queue[j].m_status == Transfer::status::queued) {
+      ProcessTransfer(j, m_queue[i].m_sid);
       break;
     }
   }
@@ -95,11 +110,12 @@ void TransferModel::ProcessAllTransfers(void)
 {
   auto limit = std::min(MAX_SESSIONS, m_queue.size());
   for (int i = 0; i < limit; i++) {
-    ProcessTransfer(i);
+    ProcessTransfer(i, m_next_session);
+    m_next_session = (m_next_session + 1) % MAX_SESSIONS;
   }
 }
 
-void TransferModel::ProcessTransfer(int row)
+void TransferModel::ProcessTransfer(int row, int sid)
 {
   Transfer& t = m_queue[row];
 
@@ -109,6 +125,8 @@ void TransferModel::ProcessTransfer(int row)
 
     b ? b = false : (CheckAndReconnectSessions(), false);
 
+    t.m_sid = (sid >= 0) ? sid : GetSessionWithLeastQueueDepth();
+
     t.m_index = row;
 
     m_activeTransfers++;
@@ -117,18 +135,16 @@ void TransferModel::ProcessTransfer(int row)
 
     if (t.m_direction == npl::ProtocolFTP::EDirection::Download)
     {
-      DownloadTransfer(t);
+      DownloadTransfer(t, t.m_sid);
     }
     else if (t.m_direction == npl::ProtocolFTP::EDirection::Upload)
     {
-      UploadTransfer(t);
+      UploadTransfer(t, t.m_sid);
     }
-
-    m_next_session = (m_next_session + 1) % MAX_SESSIONS;
   }
 }
 
-void TransferModel::DownloadTransfer(const Transfer& t)
+void TransferModel::DownloadTransfer(const Transfer& t, int sid)
 {
   std::filesystem::path path = t.m_local;
 
@@ -136,7 +152,7 @@ void TransferModel::DownloadTransfer(const Transfer& t)
 
   auto file = std::make_shared<npl::FileDevice>(t.m_local, true);
 
-  auto& ftp = m_sessions[m_next_session];
+  auto& ftp = m_sessions[sid];
 
   ftp->Transfer(t.m_direction, t.m_remote,
     [=, i = t.m_index, offset = 0ULL]
@@ -183,11 +199,11 @@ void TransferModel::DownloadTransfer(const Transfer& t)
     m_ftpModel->m_protection);
 }
 
-void TransferModel::UploadTransfer(const Transfer& t)
+void TransferModel::UploadTransfer(const Transfer& t, int sid)
 {
   std::filesystem::path path = t.m_remote;
 
-  auto& ftp = m_sessions[m_next_session];
+  auto& ftp = m_sessions[sid];
 
   std::string directory;
   auto tokens = osl::split(path.parent_path().string(), "/");
@@ -236,13 +252,15 @@ void TransferModel::UploadTransfer(const Transfer& t)
           });
         }
       }
-    
+
       return (n > 0);
     },
     [=, i = t.m_index](const auto& res) {
       if (res[0] == '4' || res[0] == '5') {
-        m_queue[i].m_status = Transfer::status::failed;
-        emit transferFailed(i, ++m_failed_transfers);
+        QMetaObject::invokeMethod(this, [=](){
+          m_queue[i].m_status = Transfer::status::failed;
+          emit transferFailed(i, ++m_failed_transfers);
+        });
       }
     },
     m_ftpModel->m_protection);

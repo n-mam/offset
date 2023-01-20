@@ -117,6 +117,8 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
     iCmdQ.push_back({"PASV"});
     iCmdQ.push_back({command.c_str(), remote, rcbk, tcbk});
 
+    m_pending_transfers++;
+
     CheckQueue(bQWasEmpty);
   }
 
@@ -187,6 +189,11 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
     return m_syst;
   }
 
+  virtual int PendingTransfers(void)
+  {
+    return m_pending_transfers;
+  }
+
   protected:
 
   std::string m_feat;
@@ -196,6 +203,8 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
   tls iDCProt = tls::no;
 
   SPSubject iDataChannel = nullptr;
+
+  int m_pending_transfers = 0;
 
   struct Command
   {
@@ -584,6 +593,8 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
 
   virtual void OnDataChannelDisconnect(void)
   {
+    m_pending_transfers--;
+
     auto& transferCallback = iCmdQ.front().m_tcbk;
 
     if (transferCallback)
