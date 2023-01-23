@@ -46,7 +46,7 @@ Item {
   Rectangle {
     id: toolBar
     width: 26
-    height: 110
+    height: 137
     radius: 2
     border.width: 1
     border.color: borderColor
@@ -56,10 +56,24 @@ Item {
     anchors.rightMargin: 5
 
     Image {
+      id: uploadTool
+      width: 20; height: 20
+      source: "qrc:/upload.png"
+      anchors.top: parent.top
+      anchors.horizontalCenter: parent.horizontalCenter
+      anchors.margins: 5
+      MouseArea {
+        anchors.fill: parent
+        hoverEnabled: true
+        cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
+        onClicked: processToolBarAction("Upload")
+      }
+    }
+    Image {
       id: queueTool
       width: 20; height: 20
       source: "qrc:/addq.png"
-      anchors.top: parent.top
+      anchors.top: uploadTool.bottom
       anchors.horizontalCenter: parent.horizontalCenter
       anchors.margins: 7
       MouseArea {
@@ -103,7 +117,7 @@ Item {
       source: "qrc:/filedelete.png"
       anchors.top: renameTool.bottom
       anchors.horizontalCenter: parent.horizontalCenter
-      anchors.margins: 7
+      anchors.margins: 5
       MouseArea {
         anchors.fill: parent
         hoverEnabled: true
@@ -119,7 +133,11 @@ Item {
     var fileIsDir = folderModel.get(localListView.currentIndex, "fileIsDir")
     var fileSize = folderModel.get(localListView.currentIndex, "fileSize")
 
-    if (action === "Queue" && ftpModel.connected)
+    if (action === "Upload" && ftpModel.connected && remoteListView.currentIndex >= 0)
+    {
+
+    }
+    else if (action === "Queue" && ftpModel.connected && localListView.currentIndex >= 0)
     {
       ftpModel.Transfer(fileName, ftpModel.localDirectory, ftpModel.remoteDirectory, fileIsDir, true, fileSize)
     }

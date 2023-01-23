@@ -64,7 +64,7 @@ Item {
   Rectangle {
     id: toolBar
     width: 24
-    height: 162
+    height: 187
     radius: 2
     border.width: 1
     border.color: borderColor
@@ -75,12 +75,26 @@ Item {
     anchors.rightMargin: 5
 
     Image {
-      id: queueTool
-      width: 18; height: 18
-      source: "qrc:/addq.png"
+      id: downloadTool
+      width: 20; height: 20
+      source: "qrc:/download.png"
       anchors.top: parent.top
       anchors.horizontalCenter: parent.horizontalCenter
       anchors.margins: 5
+      MouseArea {
+        anchors.fill: parent
+        hoverEnabled: true
+        cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
+        onClicked: processToolBarAction("Download")
+      }
+    }
+    Image {
+      id: queueTool
+      width: 20; height: 20
+      source: "qrc:/addq.png"
+      anchors.top: downloadTool.bottom
+      anchors.horizontalCenter: parent.horizontalCenter
+      anchors.margins: 7
       MouseArea {
         anchors.fill: parent
         hoverEnabled: true
@@ -108,7 +122,7 @@ Item {
       source: "qrc:/rename.png"
       anchors.top: newTool.bottom
       anchors.horizontalCenter: parent.horizontalCenter
-      anchors.margins: 7
+      anchors.margins: 5
       MouseArea {
         anchors.fill: parent
         hoverEnabled: true
@@ -122,7 +136,7 @@ Item {
       source: "qrc:/filedelete.png"
       anchors.top: renameTool.bottom
       anchors.horizontalCenter: parent.horizontalCenter
-      anchors.margins: 7
+      anchors.margins: 5
       MouseArea {
         anchors.fill: parent
         hoverEnabled: true
@@ -136,7 +150,7 @@ Item {
       source: "qrc:/refresh.png"
       anchors.top: deleteTool.bottom
       anchors.horizontalCenter: parent.horizontalCenter
-      anchors.margins: 7
+      anchors.margins: 5
       MouseArea {
         anchors.fill: parent
         hoverEnabled: true
@@ -166,7 +180,11 @@ Item {
     var fileIsDir = ftpModel.get(remoteListView.currentIndex, "fileIsDir")
     var fileSize = ftpModel.get(remoteListView.currentIndex, "fileSize")
 
-    if (action === "Queue" && ftpModel.connected)
+    if (action === "Download" && ftpModel.connected && remoteListView.currentIndex >= 0)
+    {
+
+    }
+    else if (action === "Queue" && ftpModel.connected && remoteListView.currentIndex >= 0)
     {
       ftpModel.Transfer(fileName, ftpModel.remoteDirectory, ftpModel.localDirectory, fileIsDir, false, fileSize)
     }
