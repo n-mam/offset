@@ -75,6 +75,12 @@ Rectangle {
         highlightMoveVelocity: 800
         delegate: TransferQueueDelegate{}
         highlight: Rectangle { color: "lightsteelblue"; radius: 2 }
+        Connections {
+          target: ftpModel.transferModel
+          function onTransferStarted(index) {
+            queue.positionViewAtIndex(index, ListView.Center)
+          }
+        }
       }
     }
   }

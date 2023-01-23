@@ -85,8 +85,8 @@ class FTPModel : public QAbstractListModel
 
   void RefreshRemoteView(void);
   void WalkRemoteDirectory(const std::string& path, TFileElementCallback callback);
-  void DownloadInternal(std::string file, std::string folder, std::string localFolder, bool isFolder, uint64_t size = 0);
-  void UploadInternal(std::string file, std::string folder, std::string localFolder, bool isFolder, uint64_t size = 0);
+  void DownloadInternal(const std::string& file, const std::string& folder, const std::string& localFolder, bool isFolder, uint64_t size = 0);
+  void UploadInternal(const std::string& file, const std::string& folder, const std::string& localFolder, bool isFolder, uint64_t size = 0);
 
   void ParseDirectoryList(const std::string& list, std::vector<FileElement>& feList, int *pfc = nullptr, int *pdc = nullptr);
   void ParseMLSDList(const std::string& list, std::vector<FileElement>& feList, int *pfc = nullptr, int * pdc = nullptr);
@@ -107,7 +107,7 @@ class FTPModel : public QAbstractListModel
 
   std::vector<FileElement> m_model;
 
-  TransferModel *m_queue = nullptr;
+  TransferModel *m_transferManager = nullptr;
 };
 
 #endif

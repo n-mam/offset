@@ -13,7 +13,7 @@ struct Transfer
   char m_type;
   uint64_t m_size = 0;
 
-  enum status {
+  enum status : uint8_t {
     queued = 0,
     processing,
     failed,
@@ -65,6 +65,7 @@ class TransferModel : public QAbstractListModel
 
   signals:
 
+  void transferStarted(int index);
   void transferQueueSize(int count);
   void transferSuccessful(int index, int count);
   void transferFailed(int index, int count);

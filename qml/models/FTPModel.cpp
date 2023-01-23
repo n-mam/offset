@@ -8,8 +8,8 @@ FTPModel::FTPModel()
 
 FTPModel::~FTPModel()
 {
-  if (m_queue)
-    delete m_queue;
+  if (m_transferManager)
+    delete m_transferManager;
 }
 
 QHash<int, QByteArray> FTPModel::roleNames() const
@@ -99,12 +99,12 @@ bool FTPModel::setData(const QModelIndex &index, const QVariant &value, int role
 
 TransferModel * FTPModel::getTransferModel(void)
 {
-  if (!m_queue)
+  if (!m_transferManager)
   {
-    m_queue = new TransferModel(this);
+    m_transferManager = new TransferModel(this);
   }
 
-  return m_queue;
+  return m_transferManager;
 }
 
 bool FTPModel::Connect(QString host, QString port, QString user, QString password, QString protocol)
@@ -160,7 +160,7 @@ void FTPModel::Transfer(QString file, QString folder, QString localFolder, bool 
   }
 }
 
-void FTPModel::UploadInternal(std::string file, std::string localFolder, std::string remoteFolder, bool isFolder, uint64_t size)
+void FTPModel::UploadInternal(const std::string& file, const std::string& localFolder, const std::string& remoteFolder, bool isFolder, uint64_t size)
 {
   auto localPath = localFolder + ((localFolder.back() == path_sep) ? file : (path_sep + file));
   auto remotePath = remoteFolder + ((remoteFolder.back() == '/') ? file : ("/" + file));
@@ -179,7 +179,7 @@ void FTPModel::UploadInternal(std::string file, std::string localFolder, std::st
             true);
         }
         else if(entry.is_regular_file()) {
-          m_queue->AddToTransferQueue({
+          m_transferManager->AddToTransferQueue({
             entry.path().string(),
             remotePath + "/" + entry.path().filename().string(),
             npl::ProtocolFTP::EDirection::Upload,
@@ -188,7 +188,7 @@ void FTPModel::UploadInternal(std::string file, std::string localFolder, std::st
         }
       }
     } else {
-      m_queue->AddToTransferQueue({
+      m_transferManager->AddToTransferQueue({
         localPath,
         remotePath,
         npl::ProtocolFTP::EDirection::Upload,
@@ -202,7 +202,7 @@ void FTPModel::UploadInternal(std::string file, std::string localFolder, std::st
   }
 }
 
-void FTPModel::DownloadInternal(std::string file, std::string folder, std::string localFolder, bool isFolder, uint64_t size)
+void FTPModel::DownloadInternal(const std::string& file, const std::string& folder, const std::string& localFolder, bool isFolder, uint64_t size)
 {
   auto remotePath = folder + ((folder.back() == '/') ? file : ("/" + file));
   auto localPath = localFolder + ((localFolder.back() == path_sep) ? file : (path_sep + file));
@@ -220,7 +220,7 @@ void FTPModel::DownloadInternal(std::string file, std::string folder, std::strin
           true);
       }
       else {
-        m_queue->AddToTransferQueue({
+        m_transferManager->AddToTransferQueue({
           localPath + path_sep + fe.m_name,
           remotePath + "/" + fe.m_name,
           npl::ProtocolFTP::EDirection::Download,
@@ -230,7 +230,7 @@ void FTPModel::DownloadInternal(std::string file, std::string folder, std::strin
   }
   else
   {
-    m_queue->AddToTransferQueue({
+    m_transferManager->AddToTransferQueue({
       localPath,
       remotePath,
       npl::ProtocolFTP::EDirection::Download,
@@ -260,8 +260,7 @@ void FTPModel::WalkRemoteDirectory(const std::string& path, TFileElementCallback
 
 void FTPModel::RemoveFile(QString path, bool local)
 {
-  if (local) 
-  {
+  if (local) {
     try
     {
       std::filesystem::remove(path.toStdString());
@@ -271,8 +270,7 @@ void FTPModel::RemoveFile(QString path, bool local)
       LOG << "std::filesystem::remove exception : " << err.what();
     }
   }
-  else
-  {
+  else {
     m_ftp->RemoveFile(path.toStdString());
     RefreshRemoteView();
   }
@@ -280,8 +278,7 @@ void FTPModel::RemoveFile(QString path, bool local)
 
 void FTPModel::RemoveDirectory(QString path, bool local)
 {
-  if (local)
-  {
+  if (local) {
     try
     {
       std::filesystem::remove_all(path.toStdString());
@@ -291,20 +288,16 @@ void FTPModel::RemoveDirectory(QString path, bool local)
       LOG << "std::filesystem::remove_all exception : " << err.what();
     }
   }
-  else
-  {
+  else {
     m_ftp->RemoveDirectory(path.toStdString(),
-      [](const std::string& res) {
-        STATUS(1) << res;
-      });    
+      [](const std::string& res) { STATUS(1) << res; });
     RefreshRemoteView();
   }
 }
 
 void FTPModel::CreateDirectory(QString path, bool local)
 {
-  if (local)
-  {
+  if (local) {
     try
     {
       std::filesystem::create_directory(path.toStdString());
@@ -314,20 +307,16 @@ void FTPModel::CreateDirectory(QString path, bool local)
       LOG << e.what();
     }
   }
-  else
-  {
+  else {
     m_ftp->CreateDirectory(path.toStdString(),
-      [](const std::string& res) {
-        STATUS(1) << res;
-      });
+      [](const std::string& res) { STATUS(1) << res; });
     RefreshRemoteView();
   }
 }
 
 void FTPModel::Rename(QString from, QString to, bool local)
 {
-  if (local)
-  {
+  if (local) {
     try
     {
       std::filesystem::rename(from.toStdString(), to.toStdString());
@@ -337,8 +326,7 @@ void FTPModel::Rename(QString from, QString to, bool local)
       LOG << e.what();
     }
   }
-  else
-  {
+  else {
     m_ftp->Rename(from.toStdString(), to.toStdString(),
       [](const std::string& res) {
         if (res[0] == '4' || res[0] == '5')

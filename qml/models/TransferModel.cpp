@@ -133,6 +133,8 @@ void TransferModel::ProcessTransfer(int row, int sid)
 
     t.m_status = Transfer::status::processing;
 
+    emit transferStarted(t.m_index);
+
     if (t.m_direction == npl::ProtocolFTP::EDirection::Download)
     {
       DownloadTransfer(t, t.m_sid);

@@ -20,7 +20,7 @@ Rectangle {
     anchors.right: parent.right
     anchors.topMargin: 3
     anchors.rightMargin: 15
-    checked: true
+    checked: false
     text: qsTr("Enable")
   }
 
