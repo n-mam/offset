@@ -11,9 +11,10 @@
     <file>upload.png</file>
     <file>download.png</file>
     <file>run.png</file>
+    <file>stop.png</file>
     <file>delete.png</file>
-    <file>remove.png</file> 
-    <file>refresh.png</file> 
+    <file>remove.png</file>
+    <file>refresh.png</file>
     <file>filedelete.png</file>
     <file>app.ico</file>
   </qresource>

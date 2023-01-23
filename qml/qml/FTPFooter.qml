@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Shapes
 import QtQuick.Controls
+import Qt5Compat.GraphicalEffects
 
 Item {
 
@@ -29,11 +30,13 @@ Item {
     text: currentStatus
     color: "white"
     width: parent.width * 0.55
+    height: parent.height
     elide: Text.ElideRight
     anchors.bottom: parent.bottom
     anchors.left: parent.left
-    anchors.margins: 5
+    anchors.leftMargin: 5
     verticalAlignment: Text.AlignVCenter
+    anchors.verticalCenter: parent.verticalCenter
   }
 
   Rectangle {
@@ -89,32 +92,68 @@ Item {
     }
 
     Image {
-      width: 20; height: 20
+      id: queue
+      width: 24; height: 24
       source: "qrc:/queue.png"
-      anchors.right: clear.left
-      anchors.rightMargin: 10
+      anchors.right: stop.left
+      anchors.rightMargin: 5
       anchors.verticalCenter: parent.verticalCenter
       MouseArea {
         hoverEnabled: true
         anchors.fill: parent
         onClicked: ftpModel.transferManager.ProcessAllTransfers()
         cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
+        onContainsMouseChanged: queue.scale = 1 + (containsMouse ? 0.4 : 0)
+        ToolTip.visible: true
+        ToolTip.text: qsTr("Process queue")
       }
+    }
+    ColorOverlay {
+      anchors.fill: queue
+      source: queue
+      color: "#0099DD"
+    }
+
+    Image {
+      id: stop
+      width: 24; height: 24
+      source: "qrc:/stop.png"
+      anchors.right: clear.left
+      anchors.rightMargin: 5
+      anchors.verticalCenter: parent.verticalCenter
+      MouseArea {
+        hoverEnabled: true
+        anchors.fill: parent
+        onClicked: ftpModel.transferManager.StopAllTransfers()
+        cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
+        onContainsMouseChanged: stop.scale = 1 + (containsMouse ? 0.4 : 0)
+      }
+    }
+    ColorOverlay {
+      anchors.fill: stop
+      source: stop
+      color: "#FF4858"
     }
 
     Image {
       id: clear
-      width: 20; height: 20
+      width: 24; height: 24
       source: "qrc:/delete.png"
       anchors.right: parent.right
-      anchors.rightMargin: 10
+      anchors.rightMargin: 5
       anchors.verticalCenter: parent.verticalCenter
       MouseArea {
         hoverEnabled: true
         anchors.fill: parent
         onClicked: ftpModel.transferManager.RemoveAllTransfers()
         cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
+        onContainsMouseChanged: clear.scale = 1 + (containsMouse ? 0.4 : 0)
       }
     }
+    // ColorOverlay {
+    //   anchors.fill: clear
+    //   source: clear
+    //   color: "#FFAB4D"
+    // }
   }
 }
