@@ -77,7 +77,7 @@ Rectangle {
     MouseArea {
       anchors.fill: parent
       cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
-      onClicked: ftpModel.transferModel.ProcessTransfer(index, -1)
+      onClicked: ftpModel.transferManager.ProcessTransfer(index, -1)
     }
   }
 
@@ -95,7 +95,7 @@ Rectangle {
       cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
       onClicked: () => {
         delegateRect.ListView.view.currentIndex = -1
-        ftpModel.transferModel.RemoveTransfer(index)
+        ftpModel.transferManager.RemoveTransfer(index)
       }
     }          
   }

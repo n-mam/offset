@@ -1,19 +1,19 @@
 #include <FTPModel.h>
-#include <TransferModel.h>
+#include <TransferManager.h>
 
-TransferModel::TransferModel(FTPModel *ftpModel)
+TransferManager::TransferManager(FTPModel *ftpModel)
 {
   m_ftpModel = ftpModel;
   m_queue.reserve(4096);
-  connect(this, &TransferModel::transferFailed, this, &TransferModel::TransferFinished);
-  connect(this, &TransferModel::transferSuccessful, this, &TransferModel::TransferFinished);
+  connect(this, &TransferManager::transferFailed, this, &TransferManager::TransferFinished);
+  connect(this, &TransferManager::transferSuccessful, this, &TransferManager::TransferFinished);
 }
 
-TransferModel::~TransferModel()
+TransferManager::~TransferManager()
 {
 }
 
-QHash<int, QByteArray> TransferModel::roleNames() const
+QHash<int, QByteArray> TransferManager::roleNames() const
 {
   auto roles = QAbstractListModel::roleNames();
 
@@ -26,12 +26,12 @@ QHash<int, QByteArray> TransferModel::roleNames() const
   return roles;
 }
 
-int TransferModel::rowCount(const QModelIndex& parent) const
+int TransferManager::rowCount(const QModelIndex& parent) const
 {
   return static_cast<int>(m_queue.size());
 }
 
-QVariant TransferModel::data(const QModelIndex& index, int role) const
+QVariant TransferManager::data(const QModelIndex& index, int role) const
 {
   if (!index.isValid())
     return QVariant();
@@ -67,7 +67,7 @@ QVariant TransferModel::data(const QModelIndex& index, int role) const
   return QVariant();
 }
 
-void TransferModel::AddToTransferQueue(const Transfer& transfer)
+void TransferManager::AddToTransferQueue(const Transfer& transfer)
 {
   QMetaObject::invokeMethod(this,
     [=, t = std::move(transfer)]() mutable {
@@ -79,7 +79,7 @@ void TransferModel::AddToTransferQueue(const Transfer& transfer)
     });
 }
 
-int TransferModel::GetSessionWithLeastQueueDepth(void)
+int TransferManager::GetSessionWithLeastQueueDepth(void)
 {
   int sid, minimum = INT_MAX;
 
@@ -94,7 +94,7 @@ int TransferModel::GetSessionWithLeastQueueDepth(void)
   return sid;
 }
 
-void TransferModel::TransferFinished(int i)
+void TransferManager::TransferFinished(int i)
 {
   --m_activeTransfers;
 
@@ -106,7 +106,7 @@ void TransferModel::TransferFinished(int i)
   }
 }
 
-void TransferModel::ProcessAllTransfers(void)
+void TransferManager::ProcessAllTransfers(void)
 {
   auto limit = std::min(MAX_SESSIONS, m_queue.size());
   for (int i = 0; i < limit; i++) {
@@ -115,7 +115,7 @@ void TransferModel::ProcessAllTransfers(void)
   }
 }
 
-void TransferModel::ProcessTransfer(int row, int sid)
+void TransferManager::ProcessTransfer(int row, int sid)
 {
   Transfer& t = m_queue[row];
 
@@ -135,18 +135,18 @@ void TransferModel::ProcessTransfer(int row, int sid)
 
     emit transferStarted(t.m_index);
 
-    if (t.m_direction == npl::ProtocolFTP::EDirection::Download)
+    if (t.m_direction == npl::ftp::download)
     {
       DownloadTransfer(t, t.m_sid);
     }
-    else if (t.m_direction == npl::ProtocolFTP::EDirection::Upload)
+    else if (t.m_direction == npl::ftp::upload)
     {
       UploadTransfer(t, t.m_sid);
     }
   }
 }
 
-void TransferModel::DownloadTransfer(const Transfer& t, int sid)
+void TransferManager::DownloadTransfer(const Transfer& t, int sid)
 {
   std::filesystem::path path = t.m_local;
 
@@ -201,7 +201,7 @@ void TransferModel::DownloadTransfer(const Transfer& t, int sid)
     m_ftpModel->m_protection);
 }
 
-void TransferModel::UploadTransfer(const Transfer& t, int sid)
+void TransferManager::UploadTransfer(const Transfer& t, int sid)
 {
   std::filesystem::path path = t.m_remote;
 
@@ -268,7 +268,7 @@ void TransferModel::UploadTransfer(const Transfer& t, int sid)
     m_ftpModel->m_protection);
 }
 
-void TransferModel::RemoveAllTransfers(void)
+void TransferManager::RemoveAllTransfers(void)
 {
   if (!m_activeTransfers)
   {
@@ -279,7 +279,7 @@ void TransferModel::RemoveAllTransfers(void)
   }
 }
 
-void TransferModel::RemoveTransfer(int row)
+void TransferManager::RemoveTransfer(int row)
 {
   if (!m_activeTransfers)
   {
@@ -290,7 +290,7 @@ void TransferModel::RemoveTransfer(int row)
   }
 }
 
-bool TransferModel::InitializeFTPSessions(void)
+bool TransferManager::InitializeFTPSessions(void)
 {
   while(m_sessions.size() != MAX_SESSIONS)
   {
@@ -312,7 +312,7 @@ bool TransferModel::InitializeFTPSessions(void)
   return true;
 }
 
-void TransferModel::CheckAndReconnectSessions(void)
+void TransferManager::CheckAndReconnectSessions(void)
 {
   for (size_t i = 0; i < MAX_SESSIONS; i++)
   {

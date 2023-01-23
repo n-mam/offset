@@ -5,7 +5,7 @@
 
 #include <QAbstractListModel>
 
-#include <TransferModel.h>
+#include <TransferManager.h>
 
 struct FileElement
 {
@@ -45,7 +45,7 @@ class FTPModel : public QAbstractListModel
   Q_PROPERTY(bool connected READ getConnected WRITE setConnected NOTIFY connected);
   Q_PROPERTY(QString localDirectory READ getLocalDirectory WRITE setLocalDirectory);
   Q_PROPERTY(QString remoteDirectory READ getRemoteDirectory WRITE setRemoteDirectory);
-  Q_PROPERTY(TransferModel* transferModel READ getTransferModel NOTIFY transferModelchanged)
+  Q_PROPERTY(TransferManager* transferManager READ getTransferManager NOTIFY transferManagerchanged)
 
   Q_INVOKABLE QVariant get(int index, QString role);
   Q_INVOKABLE bool Connect(QString host, QString port, QString user, QString password, QString protocol);
@@ -68,13 +68,13 @@ class FTPModel : public QAbstractListModel
 
   void connected(bool);
   void directoryList(void);
-  void transferModelchanged(void);
+  void transferManagerchanged(void);
 
   public slots:
 
   bool getConnected(void);
   void setConnected(bool);
-  TransferModel* getTransferModel(void);
+  TransferManager* getTransferManager(void);
   QString getTotalFilesAndFolder(void);
   QString getLocalDirectory(void);
   void setLocalDirectory(QString dir);
@@ -107,7 +107,7 @@ class FTPModel : public QAbstractListModel
 
   std::vector<FileElement> m_model;
 
-  TransferModel *m_transferManager = nullptr;
+  TransferManager *m_transferManager = nullptr;
 };
 
 #endif

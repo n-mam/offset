@@ -1,5 +1,5 @@
-#ifndef PROTOCOLFTP_HPP
-#define PROTOCOLFTP_HPP
+#ifndef FTP_HPP
+#define FTP_HPP
 
 #include <list>
 #include <tuple>
@@ -23,7 +23,7 @@ class FTPMessage : public Message
   FTPMessage(const std::vector<uint8_t>& m) : Message(m) {}
 };
 
-class ProtocolFTP : public Protocol<uint8_t, uint8_t>
+class ftp : public Protocol<uint8_t, uint8_t>
 {
   public:
 
@@ -47,17 +47,16 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
     EStateGEN
   };
 
-  enum EDirection : uint8_t
-  {
-    None,
-    List,
-    Upload,
-    Download
+  enum Direction : uint8_t {
+    none,
+    list,
+    upload,
+    download
   };
 
-  ProtocolFTP(const std::string& name) : Protocol(name) {}
+  ftp(const std::string& name) : Protocol(name) {}
 
-  virtual ~ProtocolFTP() {}
+  virtual ~ftp() {}
 
   std::mutex mux;
   std::condition_variable cv;
@@ -92,7 +91,7 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
     return iDataChannel->Write(b, l);
   }
 
-  virtual void Transfer(EDirection direction, const std::string& remote, TTransferCbk tcbk, TResponseCbk rcbk = nullptr, tls P = tls::no)
+  virtual void Transfer(Direction direction, const std::string& remote, TTransferCbk tcbk, TResponseCbk rcbk = nullptr, tls P = tls::no)
   {
     std::lock_guard<std::mutex> lg(iQLock);
 
@@ -104,12 +103,12 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
 
     std::string command;
 
-    if (direction == EDirection::List) {
+    if (direction == ftp::list) {
       HasFeature("MLSD") ?
         command = "MLSD" : command = "LIST";
-    } else if (direction == EDirection::Upload) {
+    } else if (direction == ftp::upload) {
       command = "STOR";
-    } else if (direction == EDirection::Download) {
+    } else if (direction == ftp::download) {
       command = "RETR";
     }
 
@@ -438,13 +437,13 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
   auto GetTransferDirection(const std::string& cmd)
   {
     if (cmd == "LIST" || cmd == "MLSD") {
-      return EDirection::Download;
+      return ftp::download;
     } else if (cmd == "RETR") {
-      return EDirection::Download;
+      return ftp::download;
     } else if (cmd == "STOR") {
-      return EDirection::Upload;
+      return ftp::upload;
     } else {
-      return EDirection::None;
+      return ftp::none;
     }
   }
 
@@ -487,7 +486,7 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
 
       auto cmd = iCmdQ.front().m_name;
 
-      if (GetTransferDirection(cmd) == EDirection::Upload)
+      if (GetTransferDirection(cmd) == ftp::upload)
       {
         NotifyUploadChannelReady();
       }
@@ -549,11 +548,11 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
       },
       [this](const uint8_t *b, size_t n) {
         if (!iDataChannel->IsStopped()) 
-          OnDataChannelIoCompletion(b, n, EDirection::Download);
+          OnDataChannelIoCompletion(b, n, ftp::download);
       },
       [this](const uint8_t *b, size_t n) {
         if (!iDataChannel->IsStopped()) 
-          OnDataChannelIoCompletion(b, n, EDirection::Upload);
+          OnDataChannelIoCompletion(b, n, ftp::upload);
       },
       [this](){
         OnDataChannelDisconnect();
@@ -566,7 +565,7 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
   {
   }
 
-  virtual void OnDataChannelIoCompletion(const uint8_t *b, size_t n, EDirection direction)
+  virtual void OnDataChannelIoCompletion(const uint8_t *b, size_t n, Direction direction)
   {
     auto cmd = iCmdQ.front().m_name;
 
@@ -583,7 +582,7 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
           std::dynamic_pointer_cast<SocketDevice>(iDataChannel)->StopSocket();
         }
 
-        if (direction == EDirection::Upload)
+        if (direction == ftp::upload)
         {
           NotifyUploadChannelReady();
         }
@@ -611,7 +610,7 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
 
     auto cmd = iCmdQ.front().m_name;
 
-    if (GetTransferDirection(cmd) == EDirection::Upload)
+    if (GetTransferDirection(cmd) == ftp::upload)
     {
       if (iCmdQ.front().m_tcbk)
       {
@@ -719,7 +718,7 @@ class ProtocolFTP : public Protocol<uint8_t, uint8_t>
   }
 };
 
-using SPProtocolFTP = std::shared_ptr<ProtocolFTP>;
+using SPProtocolFTP = std::shared_ptr<ftp>;
 
 } //namespace npl
 

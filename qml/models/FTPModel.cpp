@@ -97,11 +97,11 @@ bool FTPModel::setData(const QModelIndex &index, const QVariant &value, int role
   return true;
 }
 
-TransferModel * FTPModel::getTransferModel(void)
+TransferManager * FTPModel::getTransferManager(void)
 {
   if (!m_transferManager)
   {
-    m_transferManager = new TransferModel(this);
+    m_transferManager = new TransferManager(this);
   }
 
   return m_transferManager;
@@ -182,7 +182,7 @@ void FTPModel::UploadInternal(const std::string& file, const std::string& localF
           m_transferManager->AddToTransferQueue({
             entry.path().string(),
             remotePath + "/" + entry.path().filename().string(),
-            npl::ProtocolFTP::EDirection::Upload,
+            npl::ftp::upload,
             'I', entry.file_size()
           });
         }
@@ -191,7 +191,7 @@ void FTPModel::UploadInternal(const std::string& file, const std::string& localF
       m_transferManager->AddToTransferQueue({
         localPath,
         remotePath,
-        npl::ProtocolFTP::EDirection::Upload,
+        npl::ftp::upload,
         'I', size
       });
     }
@@ -223,7 +223,7 @@ void FTPModel::DownloadInternal(const std::string& file, const std::string& fold
         m_transferManager->AddToTransferQueue({
           localPath + path_sep + fe.m_name,
           remotePath + "/" + fe.m_name,
-          npl::ProtocolFTP::EDirection::Download,
+          npl::ftp::download,
           'I', std::stoull(fe.m_size)
         });
       }});
@@ -233,7 +233,7 @@ void FTPModel::DownloadInternal(const std::string& file, const std::string& fold
     m_transferManager->AddToTransferQueue({
       localPath,
       remotePath,
-      npl::ProtocolFTP::EDirection::Download,
+      npl::ftp::download,
       'I', size
     });
   }
@@ -241,7 +241,7 @@ void FTPModel::DownloadInternal(const std::string& file, const std::string& fold
 
 void FTPModel::WalkRemoteDirectory(const std::string& path, TFileElementCallback callback)
 {
-  m_ftp->Transfer(npl::ProtocolFTP::EDirection::List, path,
+  m_ftp->Transfer(npl::ftp::list, path,
     [=, list = std::string()] (const char *b, size_t n) mutable {
       if (b)
       {
@@ -368,7 +368,7 @@ void FTPModel::setRemoteDirectory(QString directory)
 
   m_ftp->SetCurrentDirectory(directory.toStdString());
 
-  m_ftp->Transfer(npl::ProtocolFTP::EDirection::List, directory.toStdString(),
+  m_ftp->Transfer(npl::ftp::list, directory.toStdString(),
     [=, list = std::string()] (const char *b, size_t n) mutable {
       if (!b)
       {

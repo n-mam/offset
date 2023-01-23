@@ -1,5 +1,5 @@
-#ifndef TRANSFERMODEL
-#define TRANSFERMODEL
+#ifndef TRANSFERMANAGER
+#define TRANSFERMANAGER
 
 #include <npl/npl>
 
@@ -9,7 +9,7 @@ struct Transfer
 {
   std::string m_local;
   std::string m_remote;
-  npl::ProtocolFTP::EDirection m_direction;
+  npl::ftp::Direction m_direction;
   char m_type;
   uint64_t m_size = 0;
 
@@ -30,7 +30,7 @@ class FTPModel;
 
 constexpr size_t MAX_SESSIONS = 2;
 
-class TransferModel : public QAbstractListModel
+class TransferManager : public QAbstractListModel
 {
   Q_OBJECT
 
@@ -45,8 +45,8 @@ class TransferModel : public QAbstractListModel
     EProgress
   };
 
-  TransferModel(FTPModel *ftpModel);
-  ~TransferModel();
+  TransferManager(FTPModel *ftpModel);
+  ~TransferManager();
 
   QHash<int, QByteArray> roleNames() const override;
   int rowCount(const QModelIndex& parent = QModelIndex()) const override;

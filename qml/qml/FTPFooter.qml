@@ -51,7 +51,7 @@ Item {
       verticalAlignment: Text.AlignVCenter
       anchors.verticalCenter: parent.verticalCenter
       Connections {
-        target: ftpModel.transferModel
+        target: ftpModel.transferManager
         function onTransferQueueSize(n) {
           queueCount.text = "Q:" + n
         }
@@ -66,7 +66,7 @@ Item {
       verticalAlignment: Text.AlignVCenter
       anchors.verticalCenter: parent.verticalCenter
       Connections {
-        target: ftpModel.transferModel
+        target: ftpModel.transferManager
         function onTransferSuccessful(i, n) {
           successCount.text = "T:" + n
         }
@@ -81,7 +81,7 @@ Item {
       verticalAlignment: Text.AlignVCenter
       anchors.verticalCenter: parent.verticalCenter
       Connections {
-        target: ftpModel.transferModel
+        target: ftpModel.transferManager
         function onTransferFailed(i, n) {
           failedCount.text = "F:" + n
         }
@@ -97,7 +97,7 @@ Item {
       MouseArea {
         hoverEnabled: true
         anchors.fill: parent
-        onClicked: ftpModel.transferModel.ProcessAllTransfers()
+        onClicked: ftpModel.transferManager.ProcessAllTransfers()
         cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
       }
     }
@@ -112,7 +112,7 @@ Item {
       MouseArea {
         hoverEnabled: true
         anchors.fill: parent
-        onClicked: ftpModel.transferModel.RemoveAllTransfers()
+        onClicked: ftpModel.transferManager.RemoveAllTransfers()
         cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
       }
     }
