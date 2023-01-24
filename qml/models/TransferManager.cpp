@@ -6,7 +6,8 @@ TransferManager::TransferManager(FTPModel *ftpModel)
   m_ftpModel = ftpModel;
   m_queue.reserve(4096);
   connect(this, &TransferManager::transferFailed, this, &TransferManager::TransferFinished);
-  connect(this, &TransferManager::transferSuccessful, this, &TransferManager::TransferFinished);
+  connect(this, &TransferManager::transferCancelled, this, &TransferManager::TransferFinished);   
+  connect(this, &TransferManager::transferSuccessful, this, &TransferManager::TransferFinished); 
 }
 
 TransferManager::~TransferManager()
@@ -94,13 +95,43 @@ int TransferManager::GetSessionWithLeastQueueDepth(void)
   return sid;
 }
 
+bool TransferManager::UserCancelled(void)
+{
+  return m_stop.load(std::memory_order_relaxed);
+}
+
+bool TransferManager::OneOffTransfer(void)
+{
+  return m_one_off;
+}
+
+void TransferManager::StopAllTransfers(void)
+{
+  if (m_activeTransfers) {
+    STATUS(1) << "Stopping all transfers..";
+    m_stop.store(true, std::memory_order_relaxed);
+  }
+  else {
+    STATUS(1) << "No active transfers";
+  }
+}
+
 void TransferManager::TransferFinished(int i)
 {
-  --m_activeTransfers;
+  emit activeTransfers(--m_activeTransfers);
 
-  for (int j = i; j < m_queue.size(); j++) {
-    if (m_queue[j].m_status == Transfer::status::queued) {
-      ProcessTransfer(j, m_queue[i].m_sid);
+  if (UserCancelled() || OneOffTransfer()) {
+    if (!m_activeTransfers) {
+      auto status = UserCancelled() ?
+        "Transfer cancelled" : "Transfer finished";
+      STATUS(1) << status;
+    }
+    return;
+  }
+
+  for (int j = i + 1; j < m_queue.size(); j++) {
+    if (m_queue[j].m_state == Transfer::state::queued) {
+      ProcessTransfer(j, m_queue[i].m_sid, false);
       break;
     }
   }
@@ -109,17 +140,18 @@ void TransferManager::TransferFinished(int i)
 void TransferManager::ProcessAllTransfers(void)
 {
   auto limit = std::min(MAX_SESSIONS, m_queue.size());
+  if (!limit) STATUS(1) << "Transfer queue empty";
   for (int i = 0; i < limit; i++) {
-    ProcessTransfer(i, m_next_session);
+    ProcessTransfer(i, m_next_session, false);
     m_next_session = (m_next_session + 1) % MAX_SESSIONS;
   }
 }
 
-void TransferManager::ProcessTransfer(int row, int sid)
+void TransferManager::ProcessTransfer(int row, int sid, bool oneoff)
 {
   Transfer& t = m_queue[row];
 
-  if (t.m_status == Transfer::status::queued)
+  if (t.m_state == Transfer::state::queued)
   {
     static bool b = InitializeFTPSessions();
 
@@ -129,11 +161,17 @@ void TransferManager::ProcessTransfer(int row, int sid)
 
     t.m_index = row;
 
-    m_activeTransfers++;
-
-    t.m_status = Transfer::status::processing;
+    m_one_off = oneoff;
 
     emit transferStarted(t.m_index);
+
+    emit activeTransfers(++m_activeTransfers);
+
+    t.m_state = Transfer::state::processing;
+
+    m_stop.store(false, std::memory_order_relaxed);
+
+    STATUS(1) << "Transfer in progress..";
 
     if (t.m_direction == npl::ftp::download)
     {
@@ -159,6 +197,16 @@ void TransferManager::DownloadTransfer(const Transfer& t, int sid)
   ftp->Transfer(t.m_direction, t.m_remote,
     [=, i = t.m_index, offset = 0ULL]
     (const char *b, size_t n) mutable {
+      if (UserCancelled()) {
+        if (!b) {
+          QMetaObject::invokeMethod(this, [=](){
+            m_queue[i].m_state = Transfer::state::cancelled;
+            emit transferCancelled(i);
+          });
+        }
+        return false;
+      }
+
       if (b)
       {
         file->Write((uint8_t *)b, n, offset);
@@ -166,11 +214,11 @@ void TransferManager::DownloadTransfer(const Transfer& t, int sid)
       }
       else
       {
-        if (m_queue[i].m_status != Transfer::status::successful)
+        if (m_queue[i].m_state != Transfer::state::successful)
         {
           file.reset();
           QMetaObject::invokeMethod(this, [=](){
-            m_queue[i].m_status = Transfer::status::successful;
+            m_queue[i].m_state = Transfer::state::successful;
             emit transferSuccessful(i, ++m_successful_transfers);
           });
         }
@@ -193,7 +241,7 @@ void TransferManager::DownloadTransfer(const Transfer& t, int sid)
     [=, i = t.m_index](const auto& res) {
       if (res[0] == '4' || res[0] == '5') {
         QMetaObject::invokeMethod(this, [=](){
-          m_queue[i].m_status = Transfer::status::failed;
+          m_queue[i].m_state = Transfer::state::failed;
           emit transferFailed(i, ++m_failed_transfers);
         });
       }
@@ -224,6 +272,15 @@ void TransferManager::UploadTransfer(const Transfer& t, int sid)
   ftp->Transfer(t.m_direction, t.m_remote,
     [=, i = t.m_index, offset = 0ULL]
     (const char *b, size_t l) mutable {
+      if (UserCancelled()) {
+        if (!b) {
+          QMetaObject::invokeMethod(this, [=](){
+            m_queue[i].m_state = Transfer::state::cancelled;
+            emit transferCancelled(i);
+          });
+        }
+        return false;
+      }
 
       auto n = file->ReadSync(buf, _1M, offset);
 
@@ -234,10 +291,10 @@ void TransferManager::UploadTransfer(const Transfer& t, int sid)
       }
       else
       {
-        if (m_queue[i].m_status != Transfer::status::successful)
+        if (m_queue[i].m_state != Transfer::state::successful)
         {
           QMetaObject::invokeMethod(this, [=](){
-            m_queue[i].m_status = Transfer::status::successful;
+            m_queue[i].m_state = Transfer::state::successful;
             emit transferSuccessful(i, ++m_successful_transfers);
           });
         }
@@ -260,7 +317,7 @@ void TransferManager::UploadTransfer(const Transfer& t, int sid)
     [=, i = t.m_index](const auto& res) {
       if (res[0] == '4' || res[0] == '5') {
         QMetaObject::invokeMethod(this, [=](){
-          m_queue[i].m_status = Transfer::status::failed;
+          m_queue[i].m_state = Transfer::state::failed;
           emit transferFailed(i, ++m_failed_transfers);
         });
       }
@@ -272,10 +329,16 @@ void TransferManager::RemoveAllTransfers(void)
 {
   if (!m_activeTransfers)
   {
-    beginResetModel();
-    m_queue.clear();
-    emit transferQueueSize(0);
-    endResetModel();
+    if (m_queue.size())
+    {
+      beginResetModel();
+      m_queue.clear();
+      emit transferQueueSize(0);
+      m_activeTransfers = 0;
+      m_failed_transfers = 0;
+      m_successful_transfers = 0;
+      endResetModel();
+    }
   }
 }
 

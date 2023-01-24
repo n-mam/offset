@@ -62,9 +62,24 @@ Item {
     }
 
     Text {
-      id: successCount
+      id: activeCount
       color: "#2EDE79"
       anchors.left: queueCount.right
+      anchors.leftMargin: 10
+      verticalAlignment: Text.AlignVCenter
+      anchors.verticalCenter: parent.verticalCenter
+      Connections {
+        target: ftpModel.transferManager
+        function onActiveTransfers(n) {
+          activeCount.text = "A:" + n
+        }
+      }
+    }
+
+    Text {
+      id: successCount
+      color: "#2EDE79"
+      anchors.left: activeCount.right
       anchors.leftMargin: 10
       verticalAlignment: Text.AlignVCenter
       anchors.verticalCenter: parent.verticalCenter
@@ -96,7 +111,7 @@ Item {
       width: 24; height: 24
       source: "qrc:/queue.png"
       anchors.right: stop.left
-      anchors.rightMargin: 5
+      anchors.rightMargin: 3
       anchors.verticalCenter: parent.verticalCenter
       MouseArea {
         hoverEnabled: true
@@ -104,14 +119,12 @@ Item {
         onClicked: ftpModel.transferManager.ProcessAllTransfers()
         cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
         onContainsMouseChanged: queue.scale = 1 + (containsMouse ? 0.4 : 0)
-        ToolTip.visible: true
-        ToolTip.text: qsTr("Process queue")
       }
     }
     ColorOverlay {
       anchors.fill: queue
       source: queue
-      color: "#0099DD"
+      color: "#69BAE8"
     }
 
     Image {
@@ -119,7 +132,7 @@ Item {
       width: 24; height: 24
       source: "qrc:/stop.png"
       anchors.right: clear.left
-      anchors.rightMargin: 5
+      anchors.rightMargin: 3
       anchors.verticalCenter: parent.verticalCenter
       MouseArea {
         hoverEnabled: true
@@ -132,7 +145,7 @@ Item {
     ColorOverlay {
       anchors.fill: stop
       source: stop
-      color: "#FF4858"
+      color: "#FF7471"
     }
 
     Image {
@@ -145,15 +158,13 @@ Item {
       MouseArea {
         hoverEnabled: true
         anchors.fill: parent
-        onClicked: ftpModel.transferManager.RemoveAllTransfers()
+        onClicked: () => {
+          ftpModel.transferManager.RemoveAllTransfers()
+          successCount.text = failedCount.text = ""
+        }
         cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
         onContainsMouseChanged: clear.scale = 1 + (containsMouse ? 0.4 : 0)
       }
     }
-    // ColorOverlay {
-    //   anchors.fill: clear
-    //   source: clear
-    //   color: "#FFAB4D"
-    // }
   }
 }

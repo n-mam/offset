@@ -46,7 +46,7 @@ Item {
   Rectangle {
     id: toolBar
     width: 26
-    height: 137
+    height: 125
     radius: 2
     border.width: 1
     border.color: borderColor
@@ -57,7 +57,7 @@ Item {
 
     Image {
       id: uploadTool
-      width: 20; height: 20
+      width: 18; height: 18
       source: "qrc:/upload.png"
       anchors.top: parent.top
       anchors.horizontalCenter: parent.horizontalCenter
@@ -65,13 +65,14 @@ Item {
       MouseArea {
         anchors.fill: parent
         hoverEnabled: true
-        cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
         onClicked: processToolBarAction("Upload")
+        cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
+        onContainsMouseChanged: uploadTool.scale = 1 + (containsMouse ? 0.2 : 0)
       }
     }
     Image {
       id: queueTool
-      width: 20; height: 20
+      width: 18; height: 18
       source: "qrc:/addq.png"
       anchors.top: uploadTool.bottom
       anchors.horizontalCenter: parent.horizontalCenter
@@ -79,13 +80,14 @@ Item {
       MouseArea {
         anchors.fill: parent
         hoverEnabled: true
-        cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
         onClicked: processToolBarAction("Queue")
+        cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
+        onContainsMouseChanged: queueTool.scale = 1 + (containsMouse ? 0.2 : 0)
       }
     }
     Image {
       id: newTool
-      width: 20; height: 20
+      width: 18; height: 18
       source: "qrc:/new.png"
       anchors.top: queueTool.bottom
       anchors.horizontalCenter: parent.horizontalCenter
@@ -93,13 +95,14 @@ Item {
       MouseArea {
         anchors.fill: parent
         hoverEnabled: true
-        cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor        
         onClicked: processToolBarAction("New folder")
+        cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
+        onContainsMouseChanged: newTool.scale = 1 + (containsMouse ? 0.2 : 0)
       }
     }
     Image {
       id: renameTool
-      width: 20; height: 20
+      width: 18; height: 18
       source: "qrc:/rename.png"
       anchors.top: newTool.bottom
       anchors.horizontalCenter: parent.horizontalCenter
@@ -107,13 +110,14 @@ Item {
       MouseArea {
         anchors.fill: parent
         hoverEnabled: true
-        cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor        
         onClicked: processToolBarAction("Rename")
+        cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
+        onContainsMouseChanged: renameTool.scale = 1 + (containsMouse ? 0.2 : 0)
       }
     }
     Image {
       id: deleteTool
-      width: 20; height: 20
+      width: 18; height: 18
       source: "qrc:/filedelete.png"
       anchors.top: renameTool.bottom
       anchors.horizontalCenter: parent.horizontalCenter
@@ -121,8 +125,9 @@ Item {
       MouseArea {
         anchors.fill: parent
         hoverEnabled: true
-        cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor        
         onClicked: processToolBarAction("Delete")
+        cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
+        onContainsMouseChanged: deleteTool.scale = 1 + (containsMouse ? 0.2 : 0)
       }
     }
   }

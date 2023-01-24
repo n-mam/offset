@@ -1,6 +1,8 @@
 #ifndef TRANSFERMANAGER
 #define TRANSFERMANAGER
 
+#include <atomic>
+
 #include <npl/npl>
 
 #include <QAbstractListModel>
@@ -13,9 +15,10 @@ struct Transfer
   char m_type;
   uint64_t m_size = 0;
 
-  enum status : uint8_t {
+  enum state : uint8_t {
     queued = 0,
     processing,
+    cancelled,
     failed,
     successful
   };
@@ -23,7 +26,7 @@ struct Transfer
   int m_sid = 0;
   int m_index = -1;
   int m_progress = 0;
-  mutable status m_status = queued;
+  mutable state m_state = queued;
 };
 
 class FTPModel;
@@ -54,8 +57,9 @@ class TransferManager : public QAbstractListModel
 
   void AddToTransferQueue(const Transfer& transfer);
 
+  Q_INVOKABLE void StopAllTransfers(void);
   Q_INVOKABLE void ProcessAllTransfers(void);
-  Q_INVOKABLE void ProcessTransfer(int row, int sid);
+  Q_INVOKABLE void ProcessTransfer(int row, int sid, bool oneoff);
   Q_INVOKABLE void RemoveAllTransfers(void);
   Q_INVOKABLE void RemoveTransfer(int row);
 
@@ -65,6 +69,8 @@ class TransferManager : public QAbstractListModel
 
   signals:
 
+  void activeTransfers(int count);
+  void transferCancelled(int index);
   void transferStarted(int index);
   void transferQueueSize(int count);
   void transferSuccessful(int index, int count);
@@ -72,6 +78,8 @@ class TransferManager : public QAbstractListModel
 
   private:
 
+  bool UserCancelled(void);
+  bool OneOffTransfer(void);
   bool InitializeFTPSessions(void);
   void CheckAndReconnectSessions(void);
   int GetSessionWithLeastQueueDepth(void);
@@ -91,6 +99,10 @@ class TransferManager : public QAbstractListModel
   int m_failed_transfers = 0;
 
   int m_successful_transfers = 0;
+
+  bool m_one_off = false;
+
+  std::atomic<bool> m_stop{false};
 };
 
 #if defined _WIN32

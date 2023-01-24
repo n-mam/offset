@@ -64,7 +64,7 @@ Item {
   Rectangle {
     id: toolBar
     width: 24
-    height: 187
+    height: 175
     radius: 2
     border.width: 1
     border.color: borderColor
@@ -76,7 +76,7 @@ Item {
 
     Image {
       id: downloadTool
-      width: 20; height: 20
+      width: 18; height: 18
       source: "qrc:/download.png"
       anchors.top: parent.top
       anchors.horizontalCenter: parent.horizontalCenter
@@ -84,13 +84,14 @@ Item {
       MouseArea {
         anchors.fill: parent
         hoverEnabled: true
-        cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
         onClicked: processToolBarAction("Download")
+        cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
+        onContainsMouseChanged: downloadTool.scale = 1 + (containsMouse ? 0.2 : 0)
       }
     }
     Image {
       id: queueTool
-      width: 20; height: 20
+      width: 18; height: 18
       source: "qrc:/addq.png"
       anchors.top: downloadTool.bottom
       anchors.horizontalCenter: parent.horizontalCenter
@@ -98,13 +99,14 @@ Item {
       MouseArea {
         anchors.fill: parent
         hoverEnabled: true
-        cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor        
         onClicked: processToolBarAction("Queue")
+        cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
+        onContainsMouseChanged: queueTool.scale = 1 + (containsMouse ? 0.2 : 0)
       }
     }
     Image {
       id: newTool
-      width: 20; height: 20
+      width: 18; height: 18
       source: "qrc:/new.png"
       anchors.top: queueTool.bottom
       anchors.horizontalCenter: parent.horizontalCenter
@@ -112,13 +114,14 @@ Item {
       MouseArea {
         anchors.fill: parent
         hoverEnabled: true
-        cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor        
         onClicked: processToolBarAction("New folder")
+        cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
+        onContainsMouseChanged: newTool.scale = 1 + (containsMouse ? 0.2 : 0)
       }
     }
     Image {
       id: renameTool
-      width: 20; height: 20
+      width: 18; height: 18
       source: "qrc:/rename.png"
       anchors.top: newTool.bottom
       anchors.horizontalCenter: parent.horizontalCenter
@@ -126,13 +129,14 @@ Item {
       MouseArea {
         anchors.fill: parent
         hoverEnabled: true
-        cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor        
         onClicked: processToolBarAction("Rename")
+        cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
+        onContainsMouseChanged: renameTool.scale = 1 + (containsMouse ? 0.2 : 0)
       }
     }
     Image {
       id: deleteTool
-      width: 20; height: 20
+      width: 18; height: 18
       source: "qrc:/filedelete.png"
       anchors.top: renameTool.bottom
       anchors.horizontalCenter: parent.horizontalCenter
@@ -140,13 +144,14 @@ Item {
       MouseArea {
         anchors.fill: parent
         hoverEnabled: true
-        cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor        
         onClicked: processToolBarAction("Delete")
+        cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
+        onContainsMouseChanged: deleteTool.scale = 1 + (containsMouse ? 0.2 : 0)
       }
     }
     Image {
-      id: refresh
-      width: 20; height: 20
+      id: refreshTool
+      width: 18; height: 18
       source: "qrc:/refresh.png"
       anchors.top: deleteTool.bottom
       anchors.horizontalCenter: parent.horizontalCenter
@@ -154,22 +159,24 @@ Item {
       MouseArea {
         anchors.fill: parent
         hoverEnabled: true
-        cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor        
         onClicked: processToolBarAction("Refresh")
+        cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
+        onContainsMouseChanged: refreshTool.scale = 1 + (containsMouse ? 0.2 : 0)
       }
     }
     Image {
-      id: quit
-      width: 20; height: 20
+      id: quitTool
+      width: 18; height: 18
       source: "qrc:/exit.png"
-      anchors.top: refresh.bottom
+      anchors.top: refreshTool.bottom
       anchors.horizontalCenter: parent.horizontalCenter
       anchors.margins: 7
       MouseArea {
         anchors.fill: parent
         hoverEnabled: true
-        cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor        
         onClicked: ftpModel.Quit()
+        cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
+        onContainsMouseChanged: quitTool.scale = 1 + (containsMouse ? 0.2 : 0)
       }
     }
   }

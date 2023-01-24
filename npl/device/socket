@@ -91,7 +91,7 @@ class SocketDevice : public FileDevice
     }
   }
 
-  virtual void StopSocket(void)
+  virtual void StopSocket(bool stopWrite = false)
   {
     if (!IsStopped())
     {
@@ -110,6 +110,9 @@ class SocketDevice : public FileDevice
       FileDevice::MarkStopped(true);
 
       shutdown((SOCKET)iFD, 1); //sd_send
+
+      if (stopWrite)
+        shutdown((SOCKET)iFD, 0); //sd_recv
 
       //DBG << GetName() << " shutdown(sd_send)";
     }

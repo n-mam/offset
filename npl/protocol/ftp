@@ -579,7 +579,7 @@ class ftp : public Protocol<uint8_t, uint8_t>
 
         if (!continueTransfer)
         {
-          std::dynamic_pointer_cast<SocketDevice>(iDataChannel)->StopSocket();
+          std::dynamic_pointer_cast<SocketDevice>(iDataChannel)->StopSocket(true);
         }
 
         if (direction == ftp::upload)
