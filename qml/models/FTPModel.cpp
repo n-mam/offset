@@ -8,8 +8,10 @@ FTPModel::FTPModel()
 
 FTPModel::~FTPModel()
 {
-  if (m_transferManager)
-    delete m_transferManager;
+  if (m_transferManager) {
+    m_transferManager->deleteLater();
+    m_transferManager = nullptr;
+  }
 }
 
 QHash<int, QByteArray> FTPModel::roleNames() const

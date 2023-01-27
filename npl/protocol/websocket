@@ -108,11 +108,11 @@ class WSMessage : public Message
 
 using SPWSMessage = std::shared_ptr<WSMessage>;
 
-class ProtocolWS : public ProtocolHTTP
+class websocket_server : public http_client
 {
   public:
 
-  ProtocolWS(const std::string& name) : ProtocolHTTP(name) {}
+  websocket_server(const std::string& name) : http_client(name) {}
 
   virtual void SendProtocolMessage(const uint8_t *data, size_t len) override
   {
@@ -190,7 +190,7 @@ class ProtocolWS : public ProtocolHTTP
       if (iClientMessageCallback)
       {
         iClientMessageCallback(
-          std::dynamic_pointer_cast<Protocol>(
+          std::dynamic_pointer_cast<protocol>(
             shared_from_this()
           ),
           m->GetPayloadString()
@@ -207,7 +207,7 @@ class ProtocolWS : public ProtocolHTTP
     }
     else
     {
-      return ProtocolHTTP::IsMessageComplete(b);
+      return http_client::IsMessageComplete(b);
     }
   }
 
@@ -282,11 +282,11 @@ class ProtocolWS : public ProtocolHTTP
 
     if (sock)
     {
-      auto aso = std::make_shared<ProtocolWS>("DC-AS");
+      auto aso = std::make_shared<websocket_server>("DC-AS");
 
       aso->SetClientMessageCallback(iClientMessageCallback);
 
-      sock->iConnectedClient->AddEventListener(aso);
+      sock->GetConnectedClient()->AddEventListener(aso);
     }
   }
 

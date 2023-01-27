@@ -43,7 +43,7 @@ struct Event
   #endif
 };
 
-class Dispatcher : public Subject<uint8_t, uint8_t>
+class Dispatcher : public subject<uint8_t, uint8_t>
 {
   private:
 
@@ -59,7 +59,7 @@ class Dispatcher : public Subject<uint8_t, uint8_t>
 
   public:
 
-  Dispatcher(const std::string& name = "D") : Subject(name)
+  Dispatcher(const std::string& name = "D") : subject(name)
   {
     #if __has_include(<sys/event.h>)
     iEventPort = kqueue();
@@ -101,7 +101,7 @@ class Dispatcher : public Subject<uint8_t, uint8_t>
   {
     m_target = weak_from_this();
 
-    iDServer = std::make_shared<SocketDevice>("DC-LS");
+    iDServer = std::make_shared<socket_device>("DC-LS");
 
     iDServer->SetHostAndPort("0.0.0.0", 12345);
 
@@ -118,12 +118,12 @@ class Dispatcher : public Subject<uint8_t, uint8_t>
             {
               Context *ctx = (Context *) calloc(1, sizeof(Context));
               memmove(ctx, m.data(), sizeof(Context));
-              ProcessContext((Subject *) ctx->k, ctx);
+              ProcessContext((subject *) ctx->k, ctx);
               m.clear();
             }
           }
         );
-        this->iDServer->iConnectedClient->AddEventListener(aso);
+        this->iDServer->GetConnectedClient()->AddEventListener(aso);
       }
     );
 
@@ -131,7 +131,7 @@ class Dispatcher : public Subject<uint8_t, uint8_t>
 
     iDServer->StartSocketServer();
 
-    iDClient = std::make_shared<SocketDevice>("DC-CT");
+    iDClient = std::make_shared<socket_device>("DC-CT");
 
     iDClient->SetHostAndPort("127.0.0.1", 12345);
 
@@ -142,7 +142,7 @@ class Dispatcher : public Subject<uint8_t, uint8_t>
 
   virtual void AddSubjectToEventPort(SPSubject subject) override
   {
-    auto device = std::dynamic_pointer_cast<FileDevice>(subject);
+    auto device = std::dynamic_pointer_cast<file_device>(subject);
 
     assert(device);
 
@@ -171,7 +171,7 @@ class Dispatcher : public Subject<uint8_t, uint8_t>
 
   virtual const SPSubject& AddEventListener(const SPSubject& observer) override
   {
-    Subject::AddEventListener(observer);
+    subject::AddEventListener(observer);
 
   #ifdef _WIN32
     AddSubjectToEventPort(observer);
@@ -202,7 +202,7 @@ class Dispatcher : public Subject<uint8_t, uint8_t>
       {
         error = GetLastError();
         DBG << "GQCS failed : " << error << " " << 
-                ((Subject<uint8_t, uint8_t> *) k)->GetName();
+                ((subject<uint8_t, uint8_t> *) k)->GetName();
       }
 
       if (n == 0 && k == 0 && ol == 0)
@@ -222,7 +222,7 @@ class Dispatcher : public Subject<uint8_t, uint8_t>
       {
         error = errno;
         DBG << "epoll_wait failed : " << strerror(error) << " " <<
-                ((Subject<uint8_t, uint8_t> *) k)->GetName();
+                ((subject<uint8_t, uint8_t> *) k)->GetName();
 
         if (errno == EINTR)
         {
@@ -246,7 +246,7 @@ class Dispatcher : public Subject<uint8_t, uint8_t>
       {
         error = errno;
         DBG << "kevent failed : " << strerror(error) << " " <<
-                ((Subject<uint8_t, uint8_t> *) k)->GetName();
+                ((subject<uint8_t, uint8_t> *) k)->GetName();
         break;
       }
 
@@ -290,7 +290,7 @@ class Dispatcher : public Subject<uint8_t, uint8_t>
 
   void ProcessContext(void *key, Context *ctx, int fRet = 1, int error = 0)
   {
-    auto k = (Subject<uint8_t, uint8_t> *) key;
+    auto k = (subject<uint8_t, uint8_t> *) key;
 
     // DBG << k->GetName() << " " << (uint64_t)k << " "
     //         <<  npl::EIOToString(ctx->type) << ", n " << ctx->n;
@@ -341,7 +341,7 @@ class Dispatcher : public Subject<uint8_t, uint8_t>
   {
     std::vector<Context *> contexts;
 
-    auto dev = std::dynamic_pointer_cast<SocketDevice> (o);
+    auto dev = std::dynamic_pointer_cast<socket_device> (o);
 
     if (e.IsWrite())
     {

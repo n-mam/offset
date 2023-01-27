@@ -271,13 +271,13 @@ class VirtualHardDisk : public BaseDisk
       }
       else // existing data block
       {
-        auto fRet = Subject::ReadSync(f.buffer, f.length, (batentry * 512ULL) + 512ULL + blockoff);
+        auto fRet = subject::ReadSync(f.buffer, f.length, (batentry * 512ULL) + 512ULL + blockoff);
         assert(fRet == f.length);
       }
     }
     else if (IsFixed())
     {
-      auto fRet = Subject::ReadSync(f.buffer, f.length, f.offset);
+      auto fRet = subject::ReadSync(f.buffer, f.length, f.offset);
       assert(fRet == f.length);
     }
     else
@@ -320,7 +320,7 @@ class VirtualHardDisk : public BaseDisk
         iBAT[batindex] = osl::endian_reverse((uint32_t)(fileoffset / 512));
 
         // write the new payload block
-        auto fRet = Subject::WriteSync(iPayloadBlock.get(), 512 + GetBlockSize(), fileoffset);
+        auto fRet = subject::WriteSync(iPayloadBlock.get(), 512 + GetBlockSize(), fileoffset);
 
         assert(fRet == 512 + GetBlockSize());
 
@@ -334,28 +334,28 @@ class VirtualHardDisk : public BaseDisk
           memset(iPayloadBlock.get(), 0, 512 + GetBlockSize());
 
           // read the complete data block (sb + data) off the disk.
-          Subject::ReadSync(iPayloadBlock.get(), 512 + GetBlockSize(), batentry * 512);
+          subject::ReadSync(iPayloadBlock.get(), 512 + GetBlockSize(), batentry * 512);
 
           SetSectorBitmap(iPayloadBlock.get(), blockoff, f.length, GetBlockSize());
 
           // position fragment buffer inside the payload block we just read
           memmove(iPayloadBlock.get() + 512 + blockoff, f.buffer, f.length);
 
-          auto fRet = Subject::WriteSync(iPayloadBlock.get(), 512 + GetBlockSize(), batentry * 512ULL);
+          auto fRet = subject::WriteSync(iPayloadBlock.get(), 512 + GetBlockSize(), batentry * 512ULL);
 
           assert(fRet == 512 + GetBlockSize());
         }
         else
         {
           memset(iPayloadBlock.get(), 0xff, 512); // ??
-          auto fRet = Subject::WriteSync(f.buffer, f.length, (batentry * 512ULL) + 512ULL + blockoff);
+          auto fRet = subject::WriteSync(f.buffer, f.length, (batentry * 512ULL) + 512ULL + blockoff);
           assert(fRet == f.length);
         }
       }
     }
     else if (IsFixed())
     {
-      auto fRet = Subject::WriteSync(f.buffer, f.length, f.offset);
+      auto fRet = subject::WriteSync(f.buffer, f.length, f.offset);
       assert(fRet == f.length);
     }
     else

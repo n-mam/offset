@@ -508,7 +508,7 @@ class VirtualHardDisk2 : public BaseDisk
       if (state == VHDX_BAT_ENTRY_PAYLOAD_BLOCK_FULLY_PRESENT ||
           state == VHDX_BAT_ENTRY_PAYLOAD_BLOCK_PARTIALLY_PRESENT) 
       {
-        auto fRet = Subject::ReadSync(f.buffer, f.length, ((((VHDX_BAT_ENTRY *) &batentry)->FileOffsetMB) * _1M) + blockoff);
+        auto fRet = subject::ReadSync(f.buffer, f.length, ((((VHDX_BAT_ENTRY *) &batentry)->FileOffsetMB) * _1M) + blockoff);
         assert(fRet == f.length);
       }
 
@@ -541,7 +541,7 @@ class VirtualHardDisk2 : public BaseDisk
         iBAT[batindex] = *((uint64_t *) &batentry);
 
         // write the new payload block
-        auto fRet = Subject::WriteSync(iPayloadBlock.get(), GetBlockSize(), (((VHDX_BAT_ENTRY *) &batentry)->FileOffsetMB) * _1M);
+        auto fRet = subject::WriteSync(iPayloadBlock.get(), GetBlockSize(), (((VHDX_BAT_ENTRY *) &batentry)->FileOffsetMB) * _1M);
 
         assert(fRet == GetBlockSize());
 

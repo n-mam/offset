@@ -29,15 +29,13 @@ namespace npl {
 
 constexpr uint32_t DEVICE_BUFFER_SIZE = 65536;
 
-enum EDeviceType : uint8_t
-{
+enum EDeviceType : uint8_t {
   None = 0,
   File,
   Socket
 };
 
-enum EIOType : uint8_t
-{
+enum EIOType : uint8_t {
   CONNECT = 0,
   ACCEPT,
   READ,
@@ -80,7 +78,7 @@ inline auto EIOToString(EIOType t)
   }
 }
 
-class FileDevice : public Subject<uint8_t, uint8_t>
+class file_device : public subject<uint8_t, uint8_t>
 {
   public:
 
@@ -94,11 +92,11 @@ class FileDevice : public Subject<uint8_t, uint8_t>
 
   public:
 
-  FileDevice(){};
+  file_device(){};
 
-  FileDevice(const std::string& name) : Subject(name) {};
+  file_device(const std::string& name) : subject(name) {};
 
-  FileDevice(const std::string& file, bool bCreateNew) : Subject("file")
+  file_device(const std::string& file, bool create) : subject("file")
   {
     MarkConnected(true);
 
@@ -108,7 +106,7 @@ class FileDevice : public Subject<uint8_t, uint8_t>
       GENERIC_READ|GENERIC_WRITE,
       FILE_SHARE_READ|FILE_SHARE_WRITE,
       NULL,
-      (bCreateNew ? CREATE_ALWAYS : OPEN_EXISTING),
+      (create ? CREATE_ALWAYS : OPEN_EXISTING),
       FILE_FLAG_OVERLAPPED|FILE_FLAG_SEQUENTIAL_SCAN,
       NULL);
 
@@ -135,7 +133,7 @@ class FileDevice : public Subject<uint8_t, uint8_t>
     #else
     int flags = 0|O_RDWR ;
 
-    if (bCreateNew)
+    if (create)
     {
       flags |= O_CREAT;
     }
@@ -153,7 +151,7 @@ class FileDevice : public Subject<uint8_t, uint8_t>
   }
 
   #ifdef _WIN32
-  FileDevice(const std::wstring& file, bool bCreateNew)
+  file_device(const std::wstring& file, bool create)
   {
     MarkConnected(true);
 
@@ -162,7 +160,7 @@ class FileDevice : public Subject<uint8_t, uint8_t>
       GENERIC_READ|GENERIC_WRITE,
       FILE_SHARE_READ|FILE_SHARE_WRITE,
       NULL,
-      (bCreateNew ? CREATE_ALWAYS : OPEN_EXISTING),
+      (create ? CREATE_ALWAYS : OPEN_EXISTING),
       FILE_FLAG_OVERLAPPED|FILE_FLAG_SEQUENTIAL_SCAN,
       NULL);
 
@@ -191,7 +189,7 @@ class FileDevice : public Subject<uint8_t, uint8_t>
   }
   #endif
 
-  virtual ~FileDevice()
+  virtual ~file_device()
   {
     if (iDevicetype == EDeviceType::File)
     {
@@ -214,7 +212,7 @@ class FileDevice : public Subject<uint8_t, uint8_t>
   {
     if (!IsConnected())
     {
-      LOG << GetName() << " FileDevice::Read() not connected";
+      LOG << GetName() << " file_device::Read() not connected";
       return nullptr;
     }
 
@@ -273,13 +271,13 @@ class FileDevice : public Subject<uint8_t, uint8_t>
   {
     if (!IsConnected())
     {
-      LOG << GetName() << " FileDevice::Write() not connected";
+      LOG << GetName() << " file_device::Write() not connected";
       return false;
     }
 
     if (!b || !l)
     {
-      LOG << GetName() << " FileDevice::Write() invalid arguments";
+      LOG << GetName() << " file_device::Write() invalid arguments";
       return false;
     }
 
@@ -356,7 +354,7 @@ class FileDevice : public Subject<uint8_t, uint8_t>
   {
     if (!b || !l)
     {
-      LOG << GetName() << " FileDevice::Write() invalid arguments";
+      LOG << GetName() << " file_device::Write() invalid arguments";
       return false;
     }
 
@@ -381,9 +379,9 @@ class FileDevice : public Subject<uint8_t, uint8_t>
   #endif
 };
 
-using SPFileDevice = std::shared_ptr<FileDevice>;
-using WPFileDevice = std::weak_ptr<FileDevice>;
+using SPFileDevice = std::shared_ptr<file_device>;
+using WPFileDevice = std::weak_ptr<file_device>;
 
-} // namespace
+} //namespace npl
 
 #endif //FILE_DEVICE_HPP

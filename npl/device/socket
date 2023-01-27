@@ -1,5 +1,5 @@
-#ifndef DEVICE_SOCKET_HPP
-#define DEVICE_SOCKET_HPP
+#ifndef SOCKET_DEVICE_HPP
+#define SOCKET_DEVICE_HPP
 
 #include <device/file>
 
@@ -22,10 +22,10 @@ inline std::map<SSL *, std::vector<SSL_SESSION *>> ssl_session_map;
 
 using TOnHandshake = std::function<void (void)>;
 
-class SocketDevice : public FileDevice
+class socket_device : public file_device
 {
-  using SPSocketDevice = std::shared_ptr<SocketDevice>;
-  using WPSocketDevice = std::weak_ptr<SocketDevice>;
+  using SPSocketDevice = std::shared_ptr<socket_device>;
+  using WPSocketDevice = std::weak_ptr<socket_device>;
 
   enum socketType {
     invalid,
@@ -34,60 +34,32 @@ class SocketDevice : public FileDevice
     listening,
   };
 
-  protected:
-
-  FD iAS;
-
-  int iPort = 0;
-
-  std::string iHost;
-
-  tls iTLS = tls::no;
-
-  SSL_CTX *ctx = nullptr;
-
-  BIO *rbio = nullptr;
-
-  BIO *wbio = nullptr;
-
-  bool iHandshakeDone = false;
-
-  std::string iTlsVersion;
-
-  TOnHandshake iOnHandShake = nullptr;
-
-  uint32_t iSocketType = socketType::invalid;
-
   public:
 
-  SSL *ssl = nullptr;
-
-  SPSocketDevice iConnectedClient = nullptr;
-
-  SocketDevice(const std::string& name) : FileDevice(name)
+  socket_device(const std::string& name) : file_device(name)
   {
     iFD = (FD) socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     iDevicetype = EDeviceType::Socket;
   }
 
-  SocketDevice(FD aSocket)
+  socket_device(FD aSocket)
   {
     iFD = aSocket;
     iDevicetype = EDeviceType::Socket;
   }
 
-  ~SocketDevice()
+  ~socket_device()
   {
     StopSocket();
     shutdown((SOCKET)iFD, 0); //sd_recv
     closesocket((SOCKET)iFD);
-    //DBG << "~SocketDevice() <-- " << GetName() << " shutdown(sd_recv)";
+    //DBG << "~socket_device() <-- " << GetName() << " shutdown(sd_recv)";
 
-    if (ssl) {
-      if (ssl_session_map[ssl].size()) {
-        ssl_session_map[ssl].clear();
+    if (m_ssl) {
+      if (ssl_session_map[m_ssl].size()) {
+        ssl_session_map[m_ssl].clear();
       }
-      SSL_free(ssl);
+      SSL_free(m_ssl);
     }
   }
 
@@ -95,19 +67,19 @@ class SocketDevice : public FileDevice
   {
     if (!IsStopped())
     {
-      if (ssl)
+      if (m_ssl)
       {
-        int flag = SSL_get_shutdown(ssl);
+        int flag = SSL_get_shutdown(m_ssl);
 
         if (!(flag & SSL_SENT_SHUTDOWN))
         {
-          int rc = SSL_shutdown(ssl);
+          int rc = SSL_shutdown(m_ssl);
           //DBG << GetName() << " ssl_shutdown() rc : " << rc;
           UpdateWriteBIO();
         }
       }
 
-      FileDevice::MarkStopped(true);
+      file_device::MarkStopped(true);
 
       shutdown((SOCKET)iFD, 1); //sd_send
 
@@ -120,9 +92,9 @@ class SocketDevice : public FileDevice
 
   virtual void StartSocketClient(void)
   {
-    assert(iHost.size() && iPort);
+    assert(m_host.size() && m_port);
 
-    iSocketType = socketType::client;
+    m_socket_type = socketType::client;
 
     #ifdef _WIN32
 
@@ -144,9 +116,9 @@ class SocketDevice : public FileDevice
     memset(&sa, 0, sizeof(sa));
     sa.sin_family = AF_INET;
 
-    inet_pton(AF_INET, iHost.c_str(), &sa.sin_addr);
+    inet_pton(AF_INET, m_host.c_str(), &sa.sin_addr);
 
-    sa.sin_port = htons(iPort);
+    sa.sin_port = htons(m_port);
 
     auto ConnectEx = GetExtentionPfn(WSAID_CONNECTEX, iFD);
 
@@ -181,9 +153,9 @@ class SocketDevice : public FileDevice
     memset(&sa, 0, sizeof(sa));
     sa.sin_family = AF_INET;
 
-    inet_pton(AF_INET, iHost.c_str(), &sa.sin_addr);
+    inet_pton(AF_INET, m_host.c_str(), &sa.sin_addr);
 
-    sa.sin_port = htons(iPort);
+    sa.sin_port = htons(m_port);
 
     int rc = connect((SOCKET)iFD, (const sockaddr *) &sa, sizeof(sa));
 
@@ -194,15 +166,15 @@ class SocketDevice : public FileDevice
 
   virtual void StartSocketServer(void)
   {
-    assert(iPort);
+    assert(m_port);
 
     sockaddr_in sa;
     memset(&sa, 0, sizeof(sa));
     sa.sin_family = AF_INET;
 
-    inet_pton(AF_INET, iHost.c_str(), &sa.sin_addr);
+    inet_pton(AF_INET, m_host.c_str(), &sa.sin_addr);
 
-    sa.sin_port = htons(iPort);
+    sa.sin_port = htons(m_port);
 
     int fRet = bind((SOCKET)iFD, (const sockaddr *) &sa, sizeof(sa));
 
@@ -227,7 +199,7 @@ class SocketDevice : public FileDevice
     GetDispatcher()->AddSubjectToEventPort(shared_from_this());
     #endif
 
-    iSocketType = socketType::listening;
+    m_socket_type = socketType::listening;
 
     #ifdef _WIN32
     AcceptNewConnection();
@@ -243,13 +215,13 @@ class SocketDevice : public FileDevice
 
     ((Context *)b)->type = EIOType::ACCEPT;
 
-    iAS = (FD) socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    m_accepted_socket = (FD) socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
     DWORD bytesReceived;
 
     bool rc = ((LPFN_ACCEPTEX)AcceptEx)(
                     (SOCKET)iFD,
-                    (SOCKET)iAS,
+                    (SOCKET)m_accepted_socket,
                     b + sizeof(Context),
                     0,
                     sizeof(SOCKADDR_STORAGE) + 16,
@@ -274,38 +246,28 @@ class SocketDevice : public FileDevice
     #endif
   }
 
-  virtual tls GetTLS(void)
-  {
-    return iTLS;
-  }
-
-  virtual void SetTLS(tls tls)
-  {
-    iTLS = tls;
-  }
-
   virtual bool IsClientSocket(void)
   {
-    return (iSocketType == socketType::client);
+    return (m_socket_type == socketType::client);
   }
 
   virtual bool IsListeningSocket(void)
   {
-    return (iSocketType == socketType::listening);
+    return (m_socket_type == socketType::listening);
   }
 
   virtual bool IsAcceptedSocket(void)
   {
-    return (iSocketType == socketType::accepted);
+    return (m_socket_type == socketType::accepted);
   }
 
   virtual void SetHostAndPort(const std::string& host, int port)
   {
-    iPort = port;
+    m_port = port;
 
     if (!std::isalpha(host[0]))
     {
-      iHost = host;
+      m_host = host;
     }
     else
     {
@@ -331,7 +293,7 @@ class SocketDevice : public FileDevice
               break;
           case AF_INET:
               sockaddr_ipv4 = (struct sockaddr_in *) ptr->ai_addr;
-              iHost = std::string(inet_ntoa(sockaddr_ipv4->sin_addr));
+              m_host = std::string(inet_ntoa(sockaddr_ipv4->sin_addr));
               break;
           case AF_INET6:
               break;
@@ -346,7 +308,7 @@ class SocketDevice : public FileDevice
 
   virtual void CheckPeerSSLShutdown()
   {
-    int flag = SSL_get_shutdown(ssl);
+    int flag = SSL_get_shutdown(m_ssl);
 
     if (flag & SSL_RECEIVED_SHUTDOWN)
     {
@@ -363,20 +325,20 @@ class SocketDevice : public FileDevice
   {
     bool fRet = true;
 
-    int pending = BIO_pending(wbio);
+    int pending = BIO_pending(m_write_bio);
 
     uint8_t buf[DEVICE_BUFFER_SIZE];
 
     while (pending)
     {
-      auto rc = BIO_read(wbio, buf, DEVICE_BUFFER_SIZE);
+      auto rc = BIO_read(m_write_bio, buf, DEVICE_BUFFER_SIZE);
 
       if (rc > 0)
       {
-        fRet = FileDevice::Write(buf, rc);
+        fRet = file_device::Write(buf, rc);
       }
 
-      pending = BIO_pending(wbio);
+      pending = BIO_pending(m_write_bio);
 
       if (rc <= 0) break;
     }
@@ -386,13 +348,13 @@ class SocketDevice : public FileDevice
 
   virtual void InitializeSSL(SSL *cc_ssl, TOnHandshake cbk = nullptr)
   {
-    iOnHandShake = cbk;
+    m_onHandShake = cbk;
 
-    ctx = SSL_CTX_new(TLS_client_method());
+    m_ssl_ctx = SSL_CTX_new(TLS_client_method());
 
-    SSL_CTX_set_verify(ctx, SSL_VERIFY_NONE, NULL);
+    SSL_CTX_set_verify(m_ssl_ctx, SSL_VERIFY_NONE, NULL);
 
-    SSL_CTX_set_session_cache_mode(ctx, SSL_SESS_CACHE_CLIENT);
+    SSL_CTX_set_session_cache_mode(m_ssl_ctx, SSL_SESS_CACHE_CLIENT);
     /**
      * In TLSv1.3, sessions are established after the main handshake has completed. 
      * The server decides when to send the client the session information and this 
@@ -403,36 +365,36 @@ class SocketDevice : public FileDevice
      * single connection. In these case the new_session_cb() function will be invoked 
      * multiple times.
      */
-    SSL_CTX_sess_set_new_cb(ctx,
+    SSL_CTX_sess_set_new_cb(m_ssl_ctx,
       [](SSL *ssl, SSL_SESSION *session) {
         ssl_session_map[ssl].push_back(session);
         //DBG << "new session callback " << SSL_get_version(ssl);
         return 0;
       });
 
-    ssl = SSL_new(ctx);
+    m_ssl = SSL_new(m_ssl_ctx);
 
-    if (ssl_session_map[cc_ssl ? cc_ssl : ssl].size())
+    if (ssl_session_map[cc_ssl ? cc_ssl : m_ssl].size())
     {
-      SSL_set_session(ssl, ssl_session_map[cc_ssl].back());
+      SSL_set_session(m_ssl, ssl_session_map[cc_ssl].back());
     }
 
-    rbio = BIO_new(BIO_s_mem());
-    wbio = BIO_new(BIO_s_mem());
+    m_read_bio = BIO_new(BIO_s_mem());
+    m_write_bio = BIO_new(BIO_s_mem());
 
-    SSL_set_bio(ssl, rbio, wbio);
+    SSL_set_bio(m_ssl, m_read_bio, m_write_bio);
 
     if (IsClientSocket())
     {
-      SSL_set_connect_state(ssl);
+      SSL_set_connect_state(m_ssl);
 
-      SSL_do_handshake(ssl);
+      SSL_do_handshake(m_ssl);
 
       UpdateWriteBIO();
     }
     else
     {
-      SSL_set_accept_state(ssl);
+      SSL_set_accept_state(m_ssl);
     }
   }
 
@@ -445,40 +407,40 @@ class SocketDevice : public FileDevice
     struct sockaddr_storage ca;
     socklen_t alen = sizeof(struct sockaddr_storage);
 
-    iAS = (FD) accept((SOCKET)iFD, (struct sockaddr *) &ca, &alen);
+    m_accepted_socket = (FD) accept((SOCKET)iFD, (struct sockaddr *) &ca, &alen);
 
-    if (iAS == -1)
+    if (m_accepted_socket == -1)
     {
-      DBG << "accept failed, error : " << strerror(errno) << " " << iSocketType;
+      DBG << "accept failed, error : " << strerror(errno) << " " << m_socket_type;
       return;
     }
 
-    SetSocketBlockingEnabled(iAS, false);
+    SetSocketBlockingEnabled(m_accepted_socket, false);
 
     #endif
 
-    iConnectedClient.reset();
+    m_connected_client.reset();
 
-    iConnectedClient = std::make_shared<SocketDevice>(iAS);
+    m_connected_client = std::make_shared<socket_device>(m_accepted_socket);
 
-    iConnectedClient->iSocketType = socketType::accepted;
+    m_connected_client->m_socket_type = socketType::accepted;
 
-    iConnectedClient->MarkConnected(true);
+    m_connected_client->MarkConnected(true);
 
-    GetDispatcher()->AddEventListener(iConnectedClient);
+    GetDispatcher()->AddEventListener(m_connected_client);
 
-    FileDevice::OnAccept();
+    file_device::OnAccept();
 
     #ifdef _WIN32
-    iConnectedClient->Read();
-    setsockopt((SOCKET)iAS, SOL_SOCKET, SO_UPDATE_ACCEPT_CONTEXT, (char*)&(iFD), sizeof(iFD));
+    m_connected_client->Read();
+    setsockopt((SOCKET)m_accepted_socket, SOL_SOCKET, SO_UPDATE_ACCEPT_CONTEXT, (char*)&(iFD), sizeof(iFD));
     AcceptNewConnection();
     #endif
   }
 
   virtual void OnError(uint64_t error)
   {
-    FileDevice::OnError(error);
+    file_device::OnError(error);
   }
 
   virtual void OnConnect() override
@@ -487,71 +449,71 @@ class SocketDevice : public FileDevice
 
     //DBG << GetName() << " OnConnect()";
 
-    FileDevice::OnConnect();
+    file_device::OnConnect();
 
     #ifdef _WIN32
-    FileDevice::Read();
+    file_device::Read();
     setsockopt((SOCKET)iFD, SOL_SOCKET, SO_UPDATE_CONNECT_CONTEXT, NULL, 0 );
     #endif
   }
 
   virtual void OnDisconnect() override
   {
-    if (ssl) {
+    if (m_ssl) {
       // DBG << GetName() <<
-      // " shutdown mode : " << SSL_get_shutdown(ssl);
+      // " shutdown mode : " << SSL_get_shutdown(m_ssl);
       CheckPeerSSLShutdown();
     }
 
-    FileDevice::OnDisconnect();
+    file_device::OnDisconnect();
   }
 
   virtual void OnRead(const uint8_t *b, size_t n) override
   {
     #ifdef _WIN32
-    FileDevice::Read();
+    file_device::Read();
     #endif
 
     size_t _n = n;
     std::string msg;
     const uint8_t *_b = b;
 
-    if (ssl)
+    if (m_ssl)
     {
-      int rc = BIO_write(rbio, b, static_cast<int>(n));
+      int rc = BIO_write(m_read_bio, b, static_cast<int>(n));
 
       assert(rc == n);
 
-      if (!iHandshakeDone)
+      if (!m_handshake_done)
       {
-        rc = SSL_do_handshake(ssl);
+        rc = SSL_do_handshake(m_ssl);
 
         if (rc == 1)
         {
-          iHandshakeDone = true;
+          m_handshake_done = true;
 
-          iTlsVersion = SSL_get_version(ssl);
+          m_tls_version = SSL_get_version(m_ssl);
 
-          //DBG << GetName() << " " << iTlsVersion << " handshake done, session reused : " << SSL_session_reused(ssl);
+          //DBG << GetName() << " " << m_tls_version << " handshake done, session reused : " << SSL_session_reused(m_ssl);
 
-          if (iOnHandShake)
+          if (m_onHandShake)
           {
-            iOnHandShake();
+            m_onHandShake();
           }
         }
         else
         {
-          //DBG << GetName() << " SSL_do_handshake : " << rc << " " << SSL_get_error(ssl, rc);
+          //DBG << GetName() << " SSL_do_handshake : " << rc << " " << SSL_get_error(m_ssl, rc);
         }
       }
 
-      if (iHandshakeDone)
+      if (m_handshake_done)
       {
         while (true)
         {
           char buf[DEVICE_BUFFER_SIZE];
 
-          rc = SSL_read(ssl, buf, DEVICE_BUFFER_SIZE);
+          rc = SSL_read(m_ssl, buf, DEVICE_BUFFER_SIZE);
 
           if (rc > 0)
           {
@@ -576,30 +538,30 @@ class SocketDevice : public FileDevice
       }
     }
 
-    FileDevice::OnRead(_b, _n);
+    file_device::OnRead(_b, _n);
   }
 
   virtual void OnWrite(const uint8_t *b, size_t n) override
   {
-    if (ssl && !iHandshakeDone)
+    if (m_ssl && !m_handshake_done)
     {
-      SSL_do_handshake(ssl);
+      SSL_do_handshake(m_ssl);
       return;
     }
 
-    FileDevice::OnWrite(b, n);
+    file_device::OnWrite(b, n);
   }
 
   virtual void * Read(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override
   {
-    return FileDevice::Read(b, l, o);
+    return file_device::Read(b, l, o);
   }
 
   virtual bool Write(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override
   {
-    if (ssl)
+    if (m_ssl)
     {
-      auto rc = SSL_write(ssl, b, static_cast<int>(l));
+      auto rc = SSL_write(m_ssl, b, static_cast<int>(l));
 
       if (rc)
       {
@@ -608,13 +570,59 @@ class SocketDevice : public FileDevice
     }
     else
     {
-      return FileDevice::Write(b, l);
+      return file_device::Write(b, l);
     }
 
     return false;
   }
   
+  virtual tls GetTLS(void)
+  {
+    return m_tls;
+  }
+
+  virtual void SetTLS(tls tls)
+  {
+    m_tls = tls;
+  }
+
+  auto GetConnectedClient(void)
+  {
+    return m_connected_client;
+  }
+
+  auto GetSslObject(void)
+  {
+    return m_ssl;
+  }
+
   protected:
+
+  FD m_accepted_socket;
+
+  int m_port = 0;
+
+  std::string m_host;
+
+  tls m_tls = tls::no;
+
+  SSL *m_ssl = nullptr;
+
+  SSL_CTX *m_ssl_ctx = nullptr;
+
+  BIO *m_read_bio = nullptr;
+
+  BIO *m_write_bio = nullptr;
+
+  bool m_handshake_done = false;
+
+  std::string m_tls_version;
+
+  TOnHandshake m_onHandShake = nullptr;
+
+  uint32_t m_socket_type = socketType::invalid;
+
+  SPSocketDevice m_connected_client = nullptr;
 
   #ifdef _WIN32
   void * GetExtentionPfn(GUID guid, FD fd)
@@ -636,8 +644,8 @@ class SocketDevice : public FileDevice
   #endif
 };
 
-using SPSocketDevice = std::shared_ptr<SocketDevice>;
-using WPDeviceSocket = std::weak_ptr<SocketDevice>;
+using SPSocketDevice = std::shared_ptr<socket_device>;
+using WPDeviceSocket = std::weak_ptr<socket_device>;
 
 } // namespace npl
 

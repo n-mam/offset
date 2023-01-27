@@ -1,5 +1,5 @@
-#ifndef PROTOCOLHTTP_HPP
-#define PROTOCOLHTTP_HPP
+#ifndef HTTP_CLIENT_HPP
+#define HTTP_CLIENT_HPP
 
 #include <protocol/protocol>
 
@@ -175,11 +175,11 @@ class HTTPMessage : public Message
 
 using SPHTTPMessage = std::shared_ptr<HTTPMessage>;
 
-class ProtocolHTTP : public Protocol<uint8_t, uint8_t>
+class http_client : public protocol<uint8_t, uint8_t>
 {
   public:
 
-  ProtocolHTTP(const std::string& name) : Protocol(name) {}
+  http_client(const std::string& name) : protocol(name) {}
 
   void Post(const std::string& url, const std::string& body, TResponseCbk cbk = nullptr)
   {
@@ -220,7 +220,7 @@ class ProtocolHTTP : public Protocol<uint8_t, uint8_t>
   }
 };
 
-using SPProtocolHTTP = std::shared_ptr<ProtocolHTTP>;
+using SPProtocolHTTP = std::shared_ptr<http_client>;
 
 } //namespace npl
 

@@ -190,7 +190,7 @@ void TransferManager::DownloadTransfer(const Transfer& t, int sid)
 
   std::filesystem::create_directories(path.parent_path());
 
-  auto file = std::make_shared<npl::FileDevice>(t.m_local, true);
+  auto file = std::make_shared<npl::file_device>(t.m_local, true);
 
   auto& ftp = m_sessions[sid];
 
@@ -265,7 +265,7 @@ void TransferManager::UploadTransfer(const Transfer& t, int sid)
     }
   }
 
-  auto file = std::make_shared<npl::FileDevice>(t.m_local, false);
+  auto file = std::make_shared<npl::file_device>(t.m_local, false);
 
   uint8_t *buf = (uint8_t *) calloc(1, _1M);
 

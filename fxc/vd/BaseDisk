@@ -30,7 +30,7 @@ enum EPartitionType
 
 using TProgressCallback = std::function<bool (std::wstring, int)>;
 
-class BaseDisk : public npl::Subject<uint8_t, uint8_t>
+class BaseDisk : public npl::subject<uint8_t, uint8_t>
 {
   public:
 

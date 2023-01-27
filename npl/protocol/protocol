@@ -58,29 +58,28 @@ using TResponseCbk = std::function<void (const std::string&)>;
 using TTransferCbk = std::function<bool (const char *, size_t)>;
 
 template <typename T1, typename T2>
-class Protocol : public Subject<T1, T2>
+class protocol : public subject<T1, T2>
 {
   public:
 
-  using SPProtocol = std::shared_ptr<Protocol<T1, T2>>;
+  using SPProtocol = std::shared_ptr<protocol<T1, T2>>;
 
   using TOnConnectCbk = std::function<void (SPProtocol, bool)>;
 
   using TOnClientMessageCbk = std::function<void (SPProtocol, const std::string&)>;
 
-  enum : uint8_t
-  {
+  enum : uint8_t {
     EStateConnecting = 0x00,
     EStateConnected = 0x01,
     // protocol specific
     EStateDisconnected = 0xFF
   };
 
-  Protocol(){};
+  protocol(){};
 
-  Protocol(const std::string& name) : Subject<T1, T2>(name) {}
+  protocol(const std::string& name) : subject<T1, T2>(name) {}
 
-  virtual ~Protocol() {}
+  virtual ~protocol() {}
 
   virtual void StartClient(TOnConnectCbk cbk = nullptr)
   {
@@ -143,7 +142,7 @@ class Protocol : public Subject<T1, T2>
 
   virtual tls GetChannelTLS(npl::SPSubject<T1, T2> channel)
   {
-    auto sock = std::dynamic_pointer_cast<SocketDevice>(channel);
+    auto sock = std::dynamic_pointer_cast<socket_device>(channel);
 
     if (sock)
     {
@@ -174,7 +173,7 @@ class Protocol : public Subject<T1, T2>
   {
     if (iConnectCbk)
     {
-      iConnectCbk(std::dynamic_pointer_cast<Protocol<T1, T2>>(this->shared_from_this()), true);
+      iConnectCbk(std::dynamic_pointer_cast<protocol<T1, T2>>(this->shared_from_this()), true);
     }
 
     iCurrentState = EStateConnected;
@@ -184,7 +183,7 @@ class Protocol : public Subject<T1, T2>
   {   
     if (iConnectCbk)
     {
-      iConnectCbk(std::dynamic_pointer_cast<Protocol<T1, T2>>(this->shared_from_this()), false);
+      iConnectCbk(std::dynamic_pointer_cast<protocol<T1, T2>>(this->shared_from_this()), false);
     }
 
     iCurrentState = EStateDisconnected;    
@@ -202,7 +201,7 @@ class Protocol : public Subject<T1, T2>
       {
         iMessages.push_back(message);
         StateMachine(message);
-        Subject<T1, T2>::OnRead(
+        subject<T1, T2>::OnRead(
           iBuffer.data(),
           iBuffer.size());
         iBuffer.clear();
@@ -224,7 +223,7 @@ class Protocol : public Subject<T1, T2>
 
     if (target)
     {
-      return std::dynamic_pointer_cast<SocketDevice>(target);
+      return std::dynamic_pointer_cast<socket_device>(target);
     }
 
     return nullptr;
@@ -249,7 +248,7 @@ class Protocol : public Subject<T1, T2>
   TOnClientMessageCbk iClientMessageCallback = nullptr;
 };
 
-using SPProtocol = std::shared_ptr<Protocol<uint8_t, uint8_t>>;
+using SPProtocol = std::shared_ptr<protocol<uint8_t, uint8_t>>;
 
 using TOnConnectCbk = std::function<void (SPProtocol)>;
 

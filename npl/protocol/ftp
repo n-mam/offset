@@ -23,7 +23,7 @@ class FTPMessage : public Message
   FTPMessage(const std::vector<uint8_t>& m) : Message(m) {}
 };
 
-class ftp : public Protocol<uint8_t, uint8_t>
+class ftp : public protocol<uint8_t, uint8_t>
 {
   public:
 
@@ -54,7 +54,7 @@ class ftp : public Protocol<uint8_t, uint8_t>
     download
   };
 
-  ftp(const std::string& name) : Protocol(name) {}
+  ftp(const std::string& name) : protocol(name) {}
 
   virtual ~ftp() {}
 
@@ -79,7 +79,7 @@ class ftp : public Protocol<uint8_t, uint8_t>
       }
       else
       {
-        std::dynamic_pointer_cast<SocketDevice>(iDataChannel)->StopSocket();
+        std::dynamic_pointer_cast<socket_device>(iDataChannel)->StopSocket();
       }
     }
 
@@ -453,11 +453,11 @@ class ftp : public Protocol<uint8_t, uint8_t>
     {
       if (iDCProt == tls::yes)
       {
-        auto cc = std::dynamic_pointer_cast<SocketDevice>(m_target.lock());
+        auto cc = std::dynamic_pointer_cast<socket_device>(m_target.lock());
 
-        std::dynamic_pointer_cast<SocketDevice>
+        std::dynamic_pointer_cast<socket_device>
           (iDataChannel)->InitializeSSL(
-            cc->ssl,
+            cc->GetSslObject(),
             [this] () {
               TriggerDataTransfer();
             });
@@ -480,7 +480,7 @@ class ftp : public Protocol<uint8_t, uint8_t>
     {
       if (iDataChannel)
       {
-        std::dynamic_pointer_cast<SocketDevice>(iDataChannel)->StopSocket();
+        std::dynamic_pointer_cast<socket_device>(iDataChannel)->StopSocket();
         iDataChannel.reset();
       }
 
@@ -529,11 +529,11 @@ class ftp : public Protocol<uint8_t, uint8_t>
 
   virtual void OpenDataChannel(const std::string& host, int port)
   {
-    iDataChannel = std::make_shared<SocketDevice>("sock-dc");
+    iDataChannel = std::make_shared<socket_device>("sock-dc");
 
     GetDispatcher()->AddEventListener(iDataChannel);
 
-    auto dc = std::dynamic_pointer_cast<SocketDevice>(iDataChannel);
+    auto dc = std::dynamic_pointer_cast<socket_device>(iDataChannel);
 
     dc->SetHostAndPort(host, port);
 
@@ -579,7 +579,7 @@ class ftp : public Protocol<uint8_t, uint8_t>
 
         if (!continueTransfer)
         {
-          std::dynamic_pointer_cast<SocketDevice>(iDataChannel)->StopSocket(true);
+          std::dynamic_pointer_cast<socket_device>(iDataChannel)->StopSocket(true);
         }
 
         if (direction == ftp::upload)
@@ -674,12 +674,12 @@ class ftp : public Protocol<uint8_t, uint8_t>
 
   virtual void OnDisconnect(void) override
   {
-    Protocol::OnDisconnect();
+    protocol::OnDisconnect();
   }
 
   virtual void OnConnect(void) override
   {
-    Protocol::OnConnect();
+    protocol::OnConnect();
 
     auto tls = GetChannelTLS(m_target.lock());
 
