@@ -76,7 +76,7 @@ Rectangle {
     anchors.verticalCenter: parent.verticalCenter
     MouseArea {
       anchors.fill: parent
-      cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
+      cursorShape: Qt.PointingHandCursor
       onClicked: ftpModel.transferManager.ProcessTransfer(index, -1, true)
     }
   }
@@ -92,7 +92,7 @@ Rectangle {
     anchors.verticalCenter: parent.verticalCenter
     MouseArea {
       anchors.fill: parent
-      cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
+      cursorShape: Qt.PointingHandCursor
       onClicked: () => {
         delegateRect.ListView.view.currentIndex = -1
         ftpModel.transferManager.RemoveTransfer(index)

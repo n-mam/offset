@@ -46,9 +46,9 @@ if (WIN32)
   target_link_libraries(offset PRIVATE Ws2_32.lib VssApi.lib)
 endif(WIN32)
 
-SET_TARGET_PROPERTIES(
-  offset
-  PROPERTIES
-  LINK_FLAGS
-  "/MANIFESTUAC:\"level='requireAdministrator' uiAccess='false'\" /SUBSYSTEM:WINDOWS"
-)
+#SET_TARGET_PROPERTIES(
+#  offset
+#  PROPERTIES
+#  LINK_FLAGS
+#  "/MANIFESTUAC:\"level='requireAdministrator' uiAccess='false'\" /SUBSYSTEM:WINDOWS"
+#)

@@ -56,7 +56,7 @@ Rectangle {
         }
         MouseArea {
           anchors.fill: parent
-          cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
+          cursorShape: Qt.PointingHandCursor
           onClicked: { 
             diskListModel.refreshModel()
           }

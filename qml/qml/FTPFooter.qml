@@ -117,7 +117,7 @@ Item {
         hoverEnabled: true
         anchors.fill: parent
         onClicked: ftpModel.transferManager.ProcessAllTransfers()
-        cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
+        cursorShape: Qt.PointingHandCursor
         onContainsMouseChanged: queue.scale = 1 + (containsMouse ? 0.4 : 0)
       }
     }
@@ -138,7 +138,7 @@ Item {
         hoverEnabled: true
         anchors.fill: parent
         onClicked: ftpModel.transferManager.StopAllTransfers()
-        cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
+        cursorShape: Qt.PointingHandCursor
         onContainsMouseChanged: stop.scale = 1 + (containsMouse ? 0.4 : 0)
       }
     }
@@ -162,7 +162,7 @@ Item {
           ftpModel.transferManager.RemoveAllTransfers()
           successCount.text = failedCount.text = ""
         }
-        cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
+        cursorShape: Qt.PointingHandCursor
         onContainsMouseChanged: clear.scale = 1 + (containsMouse ? 0.4 : 0)
       }
     }

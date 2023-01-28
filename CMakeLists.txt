@@ -24,6 +24,7 @@ set_property(TARGET Test PROPERTY CXX_STANDARD 17)
 
 target_link_libraries(
   Test
+  PRIVATE
   rapidjson
   ZLIB::ZLIB
   OpenSSL::SSL
@@ -32,5 +33,5 @@ target_link_libraries(
 )
 
 if (WIN32)
-  target_link_libraries(Test Ws2_32.lib VssApi.lib)
+  target_link_libraries(Test PRIVATE Ws2_32.lib VssApi.lib)
 endif(WIN32)

@@ -85,7 +85,7 @@ Item {
         anchors.fill: parent
         hoverEnabled: true
         onClicked: processToolBarAction("Download")
-        cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
+        cursorShape: Qt.PointingHandCursor
         onContainsMouseChanged: downloadTool.scale = 1 + (containsMouse ? 0.2 : 0)
       }
     }
@@ -100,7 +100,7 @@ Item {
         anchors.fill: parent
         hoverEnabled: true
         onClicked: processToolBarAction("Queue")
-        cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
+        cursorShape: Qt.PointingHandCursor
         onContainsMouseChanged: queueTool.scale = 1 + (containsMouse ? 0.2 : 0)
       }
     }
@@ -115,7 +115,7 @@ Item {
         anchors.fill: parent
         hoverEnabled: true
         onClicked: processToolBarAction("New folder")
-        cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
+        cursorShape: Qt.PointingHandCursor
         onContainsMouseChanged: newTool.scale = 1 + (containsMouse ? 0.2 : 0)
       }
     }
@@ -130,7 +130,7 @@ Item {
         anchors.fill: parent
         hoverEnabled: true
         onClicked: processToolBarAction("Rename")
-        cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
+        cursorShape: Qt.PointingHandCursor
         onContainsMouseChanged: renameTool.scale = 1 + (containsMouse ? 0.2 : 0)
       }
     }
@@ -145,7 +145,7 @@ Item {
         anchors.fill: parent
         hoverEnabled: true
         onClicked: processToolBarAction("Delete")
-        cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
+        cursorShape: Qt.PointingHandCursor
         onContainsMouseChanged: deleteTool.scale = 1 + (containsMouse ? 0.2 : 0)
       }
     }
@@ -160,7 +160,7 @@ Item {
         anchors.fill: parent
         hoverEnabled: true
         onClicked: processToolBarAction("Refresh")
-        cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
+        cursorShape: Qt.PointingHandCursor
         onContainsMouseChanged: refreshTool.scale = 1 + (containsMouse ? 0.2 : 0)
       }
     }
@@ -175,7 +175,7 @@ Item {
         anchors.fill: parent
         hoverEnabled: true
         onClicked: ftpModel.Quit()
-        cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
+        cursorShape: Qt.PointingHandCursor
         onContainsMouseChanged: quitTool.scale = 1 + (containsMouse ? 0.2 : 0)
       }
     }

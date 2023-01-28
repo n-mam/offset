@@ -40,7 +40,7 @@ Rectangle {
     MouseArea {
       hoverEnabled: true
       anchors.fill: parent
-      cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
+      cursorShape: Qt.PointingHandCursor
       onClicked: {
         model.expanded = !model.expanded
         toggleTreeNode(index, model.expanded)
@@ -136,7 +136,7 @@ Rectangle {
         MouseArea {
           hoverEnabled: true
           anchors.fill: parent
-          cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
+          cursorShape: Qt.PointingHandCursor
           onClicked: {
             model.formatIndex = (model.formatIndex + 1) % model.formatOptions.length
           }
@@ -164,7 +164,7 @@ Rectangle {
         MouseArea {
           hoverEnabled: true
           anchors.fill: parent
-          cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
+          cursorShape: Qt.PointingHandCursor
           onClicked: {
             model.sourceIndex = (model.sourceIndex + 1) % model.sourceOptions.length
           }
@@ -221,7 +221,7 @@ Rectangle {
         MouseArea {
           hoverEnabled: true
           anchors.fill: parent
-          cursorShape: containsMouse ? Qt.PointingHandCursor : Qt.ArrowCursor
+          cursorShape: Qt.PointingHandCursor
           onClicked: popup.open()
         }
         ExcludeListPopup{
