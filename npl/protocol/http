@@ -5,7 +5,7 @@
 
 namespace npl {
 
-class HTTPMessage : public Message
+class http_message : public message
 {
   protected:
 
@@ -130,7 +130,7 @@ class HTTPMessage : public Message
 
   public:
 
-  HTTPMessage(const std::vector<uint8_t>& m) : Message(m)
+  http_message(const std::vector<uint8_t>& m) : message(m)
   {
     ParseMessage();
   }
@@ -173,7 +173,7 @@ class HTTPMessage : public Message
   }
 };
 
-using SPHTTPMessage = std::shared_ptr<HTTPMessage>;
+using SPHTTPMessage = std::shared_ptr<http_message>;
 
 class http_client : public protocol<uint8_t, uint8_t>
 {
@@ -209,7 +209,7 @@ class http_client : public protocol<uint8_t, uint8_t>
 
   virtual SPMessage IsMessageComplete(const std::vector<uint8_t>& b) override
   {
-    auto m = std::make_shared<HTTPMessage>(b);
+    auto m = std::make_shared<http_message>(b);
 
     if (m->HeaderCount())
     {

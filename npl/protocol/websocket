@@ -5,7 +5,7 @@
 
 namespace npl {
 
-class WSMessage : public Message
+class ws_message : public message
 {
   protected:
 
@@ -75,7 +75,7 @@ class WSMessage : public Message
 
   public:
 
-  WSMessage(const uint8_t *b, size_t l) : Message(b, l)
+  ws_message(const uint8_t *b, size_t l) : message(b, l)
   {
     ParseMessage();
   }
@@ -106,7 +106,7 @@ class WSMessage : public Message
   }
 };
 
-using SPWSMessage = std::shared_ptr<WSMessage>;
+using SPWSMessage = std::shared_ptr<ws_message>;
 
 class websocket_server : public http_client
 {
@@ -215,7 +215,7 @@ class websocket_server : public http_client
   {
     if (l < 2) return nullptr;
 
-    auto m = std::make_shared<WSMessage>(b, l);
+    auto m = std::make_shared<ws_message>(b, l);
 
     if (m->GetPayloadLength())
     {
@@ -242,7 +242,7 @@ class websocket_server : public http_client
 
   virtual bool SendServerHello(SPMessage m)
   {
-    auto cHello = std::dynamic_pointer_cast<HTTPMessage>(m);
+    auto cHello = std::dynamic_pointer_cast<http_message>(m);
 
     auto key = cHello->GetHeader("Sec-WebSocket-Key");
 

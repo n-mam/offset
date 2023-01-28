@@ -321,7 +321,7 @@ Item {
       Image {
         id: listItemIcon
         x: 3
-        width: 18; height: 18
+        width: 20; height: 20
         anchors.verticalCenter: parent.verticalCenter
         source: fileIsDir ? (fileName !== "." ? "qrc:/folder.png" : "") : "qrc:/file.png"
       }
