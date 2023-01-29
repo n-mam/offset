@@ -579,7 +579,8 @@ class ftp : public protocol<uint8_t, uint8_t>
 
         if (!continueTransfer)
         {
-          std::static_pointer_cast<socket_device>(m_data_channel)->StopSocket(true);
+          std::static_pointer_cast<socket_device>(m_data_channel)->StopSocket
+            (direction == ftp::download ? true : false);
         }
 
         if (direction == ftp::upload)
@@ -614,7 +615,7 @@ class ftp : public protocol<uint8_t, uint8_t>
     {
       if (m_queue.front().c_tcbk)
       {
-        m_queue.front().c_tcbk(nullptr, 0);
+        m_queue.front().c_tcbk((char *)0xDEADBEEF, 0);
       }
     }
   }

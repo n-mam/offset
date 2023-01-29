@@ -282,12 +282,16 @@ void TransferManager::UploadTransfer(const Transfer& t, int sid)
         return false;
       }
 
-      auto n = file->ReadSync(buf, _1M, offset);
+      int32_t n = 0;
 
-      if (n)
+      if (b)
       {
-        ftp->Write(buf, n);
-        offset += n;
+        n = file->ReadSync(buf, _1M, offset);
+
+        if (n) {
+          ftp->Write(buf, n);
+          offset += n;
+        }
       }
       else
       {
