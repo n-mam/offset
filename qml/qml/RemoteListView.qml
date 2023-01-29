@@ -245,9 +245,14 @@ Item {
         }
         else if (context.startsWith("Delete"))
         {
-          var path = ftpModel.remoteDirectory + "/" + userInput
-          elementIsDir ? ftpModel.RemoveDirectory(path) :
+          var path = ftpModel.remoteDirectory +
+            (ftpModel.remoteDirectory.endsWith("/") ? userInput : ("/" + userInput))
+          if (elementIsDir) {
+            ftpModel.RemoveDirectory(path)
+          } else {
             ftpModel.RemoveFile(path)
+            ftpModel.remoteDirectory = ftpModel.remoteDirectory
+          }
         }
       }
     }

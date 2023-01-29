@@ -193,6 +193,11 @@ class ftp : public protocol<uint8_t, uint8_t>
     return m_pending_transfers;
   }
 
+  virtual void SetIdleCallback(std::function<void ()> callback)
+  {
+    m_idle_callback = callback;
+  }
+
   protected:
 
   std::string m_feat;
@@ -204,6 +209,8 @@ class ftp : public protocol<uint8_t, uint8_t>
   SPSubject m_data_channel = nullptr;
 
   int m_pending_transfers = 0;
+
+  std::function<void ()> m_idle_callback;
 
   struct Command
   {
@@ -320,6 +327,12 @@ class ftp : public protocol<uint8_t, uint8_t>
 
         break;
       }
+    }
+
+    if (m_queue.empty())
+    {
+      if (m_idle_callback)
+        m_idle_callback();
     }
   }
 

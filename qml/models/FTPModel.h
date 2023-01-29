@@ -17,6 +17,7 @@ struct FileElement
 };
 
 using TFileElementCallback = std::function<void (const FileElement&)>;
+using TFileElementListCallback = std::function<void (const std::vector<FileElement>&)>;
 
 class FTPModel : public QAbstractListModel
 {
@@ -84,7 +85,7 @@ class FTPModel : public QAbstractListModel
   protected:
 
   void RefreshRemoteView(void);
-  void WalkRemoteDirectory(const std::string& path, TFileElementCallback callback);
+  void WalkRemoteDirectory(const std::string& path, TFileElementListCallback callback);
   void DownloadInternal(const std::string& file, const std::string& folder, const std::string& localFolder, bool isFolder, uint64_t size = 0);
   void UploadInternal(const std::string& file, const std::string& folder, const std::string& localFolder, bool isFolder, uint64_t size = 0);
 
@@ -108,6 +109,8 @@ class FTPModel : public QAbstractListModel
   std::vector<FileElement> m_model;
 
   TransferManager *m_transferManager = nullptr;
+
+  std::vector<std::string> m_directories_to_remove;
 };
 
 #endif
