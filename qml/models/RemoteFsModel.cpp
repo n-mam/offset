@@ -84,12 +84,9 @@ void RemoteFsModel::DownloadInternal(const std::string& file, const std::string&
   auto remotePath = folder + ((folder.back() == '/') ? file : ("/" + file));
   auto localPath = localFolder + ((localFolder.back() == path_sep) ? file : (path_sep + file));
 
-  //LOG << file << " " << folder << " " << localFolder << " " << localPath << " " << remotePath;
-
-  if (isFolder)
-  {
-    WalkRemoteDirectory(remotePath, [=](const std::vector<FileElement>& feList){
-      for (const auto& fe : feList)
+  if (isFolder) {
+    WalkRemoteDirectory(remotePath, [=](const std::vector<FileElement>& fe_list){
+      for (const auto& fe : fe_list)
         if (fe.m_attributes[0] == 'd') {
           DownloadInternal(
             fe.m_name,
@@ -107,8 +104,7 @@ void RemoteFsModel::DownloadInternal(const std::string& file, const std::string&
         }
     });
   }
-  else
-  {
+  else {
     TransferManager::getInstance()->AddToTransferQueue({
       localPath,
       remotePath,
@@ -214,24 +210,24 @@ void RemoteFsModel::setCurrentDirectory(QString directory)
     [=, list = std::string()] (const char *b, size_t n) mutable {
       if (!b)
       {
-        std::vector<FileElement> feList;
+        std::vector<FileElement> fe_list;
 
-        if (directory.toStdString() != "/") 
-          feList.push_back({"..", "", "", "d"});
+        if (directory.toStdString() != "/")
+          fe_list.push_back({"..", "", "", "d"});
 
         int fileCount = 0, folderCount = 0;
-        ParseDirectoryList(list, feList, &fileCount, &folderCount);
+        ParseDirectoryList(list, fe_list, &fileCount, &folderCount);
         m_fileCount = fileCount, m_folderCount = folderCount;
 
-        std::partition(feList.begin(), feList.end(),
-          [](const FileElement& e){ 
-            return e.m_attributes[0] != '-';
+        std::partition(fe_list.begin(), fe_list.end(),
+          [](const auto& e){
+            return e.m_attributes[0] == 'd';
           });
 
         QMetaObject::invokeMethod(this, [=](){
           beginResetModel();
           m_model.clear();
-          m_model = feList;
+          m_model = fe_list;
           endResetModel();
           m_currentDirectory = directory.toStdString();
           emit directoryList();
@@ -257,19 +253,19 @@ void RemoteFsModel::RefreshRemoteView(void)
   setCurrentDirectory(QString::fromStdString(m_currentDirectory));
 }
 
-void RemoteFsModel::ParseDirectoryList(const std::string& list, std::vector<FileElement>& feList, int *pfc, int *pdc)
+void RemoteFsModel::ParseDirectoryList(const std::string& list, std::vector<FileElement>& fe_list, int *pfc, int *pdc)
 {
   if (m_ftp->HasFeature("MLSD"))
-    ParseMLSDList(list, feList, pfc, pdc);
+    ParseMLSDList(list, fe_list, pfc, pdc);
   else if (m_ftp->SystemType().find("UNIX") != std::string::npos)
-    ParseLinuxList(list, feList, pfc, pdc);
+    ParseLinuxList(list, fe_list, pfc, pdc);
   else if (m_ftp->SystemType().find("Windows") != std::string::npos)
-    ParseWindowsList(list, feList, pfc, pdc);
+    ParseWindowsList(list, fe_list, pfc, pdc);
 }
 
 // type=file;size=8192;modify=20221219022112.389;perms=awr; DumpStack.log
 // type=dir;modify=20221015170330.792;perms=cple; Intel
-void RemoteFsModel::ParseMLSDList(const std::string& list, std::vector<FileElement>& feList, int *pfc, int *pdc)
+void RemoteFsModel::ParseMLSDList(const std::string& list, std::vector<FileElement>& fe_list, int *pfc, int *pdc)
 {
   auto lines = osl::split(list, "\r\n");
 
@@ -306,14 +302,14 @@ void RemoteFsModel::ParseMLSDList(const std::string& list, std::vector<FileEleme
 
     if (pfc && pdc) isDir ? (*pdc += 1) : (*pfc += 1);
 
-    feList.push_back({
+    fe_list.push_back({
       name, size, "",
       isDir ? "d" : "-", false});
   }
 }
 
 // -rw-rw-rw- 1 ftp    ftp       1468320 Oct 15 17:37 a b c
-void RemoteFsModel::ParseLinuxList(const std::string& list, std::vector<FileElement>& feList, int *pfc, int *pdc)
+void RemoteFsModel::ParseLinuxList(const std::string& list, std::vector<FileElement>& fe_list, int *pfc, int *pdc)
 {
   auto lines = osl::split(list, "\r\n");
 
@@ -358,13 +354,13 @@ void RemoteFsModel::ParseLinuxList(const std::string& list, std::vector<FileElem
 
     fe.m_name.append(p);
 
-    feList.push_back(fe);
+    fe_list.push_back(fe);
 
     if (pfc && pdc) isDir ? (*pdc += 1) : (*pfc += 1);
   }
 }
 
-void RemoteFsModel::ParseWindowsList(const std::string& list, std::vector<FileElement>& feList, int *pfc, int *pdc)
+void RemoteFsModel::ParseWindowsList(const std::string& list, std::vector<FileElement>& fe_list, int *pfc, int *pdc)
 {
   LOG << list;
 
@@ -396,7 +392,7 @@ void RemoteFsModel::ParseWindowsList(const std::string& list, std::vector<FileEl
 
     if (pfc && pdc) isDir ? (*pdc += 1) : (*pfc += 1);
 
-    feList.push_back({
+    fe_list.push_back({
       name, size, "",
       isDir ? "d" : "-", false});
   }

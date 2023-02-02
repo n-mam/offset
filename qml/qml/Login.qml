@@ -24,7 +24,7 @@ Rectangle {
         width: parent.width * 0.81
         height: parent.height * 0.90
         placeholderText: qsTr("Host")
-        text: "127.0.0.1"
+        text: "ftp.gnu.org"
         anchors.bottom: parent.bottom        
         horizontalAlignment: TextInput.AlignHCenter
       }
@@ -51,7 +51,7 @@ Rectangle {
         width: parent.width
         height: parent.height * 0.90
         placeholderText: qsTr("User")
-        text: "nmam"
+        text: "anonymous"
         anchors.bottom: parent.bottom        
         horizontalAlignment: TextInput.AlignHCenter
       }

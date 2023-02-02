@@ -22,10 +22,7 @@ void LocalFsModel::UploadInternal(const std::string& file, const std::string& lo
   auto localPath = localFolder + ((localFolder.back() == path_sep) ? file : (path_sep + file));
   auto remotePath = remoteFolder + ((remoteFolder.back() == '/') ? file : ("/" + file));
 
-  //LOG << file << " " << localFolder << " " << remoteFolder << " " << localPath << " " << remotePath;
-
-  try
-  {
+  try {
     if (isFolder) {
       for (auto const& entry : std::filesystem::directory_iterator(localPath)) {
         if (entry.is_directory()) {
@@ -53,8 +50,7 @@ void LocalFsModel::UploadInternal(const std::string& file, const std::string& lo
       });
     }
   }
-  catch(const std::exception& e)
-  {
+  catch(const std::exception& e) {
     LOG << e.what();
   }
 }
@@ -141,8 +137,8 @@ void LocalFsModel::setCurrentDirectory(QString directory)
     });
 
     std::partition(m_model.begin(), m_model.end(),
-      [](const FileElement& e){ 
-        return e.m_attributes[0] != '-';
+      [](const auto& e){ 
+        return e.m_attributes[0] == 'd';
       });
 
     emit directoryList();

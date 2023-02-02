@@ -244,18 +244,18 @@ class ftp : public protocol<uint8_t, uint8_t>
     // AUTH TLS states
     { EStateAUTH , '2', EStateTLS   , [this] () { DoCCHandshake();                       },     1   },
     { EStateAUTH , '3', EStateADAT  , nullptr                                             ,     1   },
-    { EStateAUTH , '4', EStateUSER  , [this] () { m_queue.push_front({"USER", m_user}); }, NEXT|1  },
-    { EStateAUTH , '5', EStateUSER  , [this] () { m_queue.push_front({"USER", m_user}); }, NEXT|1  },
+    { EStateAUTH , '4', EStateUSER  , [this] () { m_queue.push_front({"USER", m_user});  }, NEXT|1  },
+    { EStateAUTH , '5', EStateUSER  , [this] () { m_queue.push_front({"USER", m_user});  }, NEXT|1  },
     // USER states
     { EStateUSER , '1', EStateUSER  , nullptr                                            },
-    { EStateUSER , '2', EStateUSER  , nullptr                                            },
+    { EStateUSER , '2', EStateUSER  , [this] () { ProcessLoginEvent(true);               },    NEXT|1  },
     { EStateUSER , '3', EStatePASS  , [this] () { m_queue.push_front({"PASS", m_password}); }, NEXT|1  },
     { EStateUSER , '4', EStateUSER  , nullptr                                            },
     { EStateUSER , '5', EStateUSER  , nullptr                                            },
     // PASS states
     { EStatePASS , '1', EStateUSER  , [this] () { ProcessLoginEvent(false);              },         },
     { EStatePASS , '2', EStateREADY , [this] () { ProcessLoginEvent(true);               }, NEXT|1  },
-    { EStatePASS , '3', EStateACCT  , [this] () { m_queue.push_back({"ACCT"});             },         },
+    { EStatePASS , '3', EStateACCT  , [this] () { m_queue.push_back({"ACCT"});           },         },
     { EStatePASS , '4', EStateUSER  , [this] () { ProcessLoginEvent(false);              },         },
     { EStatePASS , '5', EStateUSER  , [this] () { ProcessLoginEvent(false);              },         },
     // PASV states
