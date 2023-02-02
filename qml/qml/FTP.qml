@@ -68,7 +68,7 @@ Rectangle {
         anchors.topMargin: 5
         anchors.leftMargin: 3
         anchors.rightMargin: 3
-        model: ftpModel.transferManager
+        model: transferManager
         currentIndex: -1
         boundsBehavior: Flickable.StopAtBounds
         highlightMoveDuration: 100
@@ -76,7 +76,7 @@ Rectangle {
         delegate: TransferQueueDelegate{}
         highlight: Rectangle { color: "lightsteelblue"; radius: 2 }
         Connections {
-          target: ftpModel.transferManager
+          target: transferManager
           function onTransferStarted(index) {
             queue.positionViewAtIndex(index, ListView.Center)
           }

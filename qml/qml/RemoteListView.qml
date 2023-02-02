@@ -2,7 +2,6 @@ import QtQuick
 import QtQuick.Shapes
 import QtQuick.Dialogs
 import QtQuick.Controls
-import Qt.labs.folderlistmodel
 import Qt5Compat.GraphicalEffects
 
 Item {
@@ -18,9 +17,7 @@ Item {
     enabled: false
     placeholderText: qsTr("Remote Directory")
     verticalAlignment: TextInput.AlignVCenter
-    onAccepted: {
-      ftpModel.remoteDirectory = currentDirectory.text
-    }
+    onAccepted: ftpModel.currentDirectory = currentDirectory.text
     Component.onCompleted: font.pointSize = font.pointSize - 1.5
   }
 
@@ -53,7 +50,7 @@ Item {
       }
       function onDirectoryList() {
         remoteListView.currentIndex = -1
-        currentDirectory.text = ftpModel.remoteDirectory
+        currentDirectory.text = ftpModel.currentDirectory
         var files, folders
         [files, folders] = ftpModel.totalFilesAndFolders.split(":")
         status.text = files + " files " + folders + " folders "
@@ -187,13 +184,13 @@ Item {
     var fileIsDir = ftpModel.get(remoteListView.currentIndex, "fileIsDir")
     var fileSize = ftpModel.get(remoteListView.currentIndex, "fileSize")
 
-    if (action === "Download" && ftpModel.connected && remoteListView.currentIndex >= 0)
+    if (action === "Download" && ftpModel.connected)
     {
 
     }
-    else if (action === "Queue" && ftpModel.connected && remoteListView.currentIndex >= 0)
+    else if (action === "Queue" && ftpModel.connected)
     {
-      ftpModel.Transfer(fileName, ftpModel.remoteDirectory, ftpModel.localDirectory, fileIsDir, false, fileSize)
+      ftpModel.QueueTransfer(remoteListView.currentIndex)
     }
     else if (action === "Delete" && remoteListView.currentIndex >= 0)
     {
@@ -221,7 +218,7 @@ Item {
     }
     else if (action === "Refresh")
     {
-      ftpModel.remoteDirectory = ftpModel.remoteDirectory
+      ftpModel.currentDirectory = ftpModel.currentDirectory
     }
   }
 
@@ -245,13 +242,13 @@ Item {
         }
         else if (context.startsWith("Delete"))
         {
-          var path = ftpModel.remoteDirectory +
-            (ftpModel.remoteDirectory.endsWith("/") ? userInput : ("/" + userInput))
+          var path = ftpModel.currentDirectory +
+            (ftpModel.currentDirectory.endsWith("/") ? userInput : ("/" + userInput))
           if (elementIsDir) {
             ftpModel.RemoveDirectory(path)
           } else {
             ftpModel.RemoveFile(path)
-            ftpModel.remoteDirectory = ftpModel.remoteDirectory
+            ftpModel.currentDirectory = ftpModel.currentDirectory
           }
         }
       }
@@ -347,10 +344,10 @@ Item {
         onDoubleClicked: {
           if (fileIsDir) {
             if (fileName === "..")
-              ftpModel.remoteDirectory = getParentFolder()
+              ftpModel.currentDirectory = ftpModel.getParentDirectory()
             else
-              ftpModel.remoteDirectory = ftpModel.remoteDirectory + 
-                (ftpModel.remoteDirectory.endsWith("/") ? fileName : ("/" + fileName))
+              ftpModel.currentDirectory = ftpModel.currentDirectory + 
+                (ftpModel.currentDirectory.endsWith("/") ? fileName : ("/" + fileName))
           }
         }
         onClicked: (mouse) => {
@@ -358,24 +355,6 @@ Item {
         }
       }
     }
-  }
-
-  function getParentFolder() {
-    var tokens = ftpModel.remoteDirectory.split("/");
-    tokens.pop()
-    var parentFolder = "";
-    for (var e of tokens) {
-      if (e.length) 
-        parentFolder += ("/" + e)
-    }
-    if (!parentFolder.length) parentFolder = "/"
-    return parentFolder
-  }
-
-  function urlToPath(url) {
-    var path = url.toString();
-    path = path.replace(/^(file:\/{3})|(qrc:\/{2})|(http:\/{2})/,"");
-    return decodeURIComponent(path).replace(/\//g, "\\") 
   }
 
   Component.onCompleted: {}

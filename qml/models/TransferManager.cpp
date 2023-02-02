@@ -1,10 +1,10 @@
-#include <FTPModel.h>
+#include <RemoteFsModel.h>
 #include <TransferManager.h>
 
-TransferManager::TransferManager(FTPModel *ftpModel)
+TransferManager::TransferManager()
 {
-  m_ftpModel = ftpModel;
   m_queue.reserve(4096);
+  m_ftpModel = RemoteFsModel::getInstance();
   connect(this, &TransferManager::transferFailed, this, &TransferManager::TransferFinished);
   connect(this, &TransferManager::transferCancelled, this, &TransferManager::TransferFinished);   
   connect(this, &TransferManager::transferSuccessful, this, &TransferManager::TransferFinished); 
@@ -12,6 +12,12 @@ TransferManager::TransferManager(FTPModel *ftpModel)
 
 TransferManager::~TransferManager()
 {
+}
+
+TransferManager * TransferManager::getInstance(void)
+{
+  static TransferManager * s_instance = new TransferManager();
+  return s_instance;
 }
 
 QHash<int, QByteArray> TransferManager::roleNames() const

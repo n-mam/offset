@@ -5,7 +5,8 @@
 #include <QQmlApplicationEngine>
 
 #include <Logger.h>
-#include <FTPModel.h>
+#include <LocalFsModel.h>
+#include <RemoteFsModel.h>
 #include <DiskListModel.h>
 
 #include <Windows.h>
@@ -38,7 +39,9 @@ int main(int argc, char *argv[])
 
   engine.rootContext()->setContextProperty("logger", new Logger());
   engine.rootContext()->setContextProperty("diskListModel", new DiskListModel());
-  engine.rootContext()->setContextProperty("ftpModel", new FTPModel());
+  engine.rootContext()->setContextProperty("fsModel", LocalFsModel::getInstance());
+  engine.rootContext()->setContextProperty("ftpModel", RemoteFsModel::getInstance());
+  engine.rootContext()->setContextProperty("transferManager", TransferManager::getInstance());
 
   engine.load(url);
 

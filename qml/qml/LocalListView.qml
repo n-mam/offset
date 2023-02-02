@@ -2,7 +2,6 @@ import QtQuick
 import QtQuick.Shapes
 import QtQuick.Dialogs
 import QtQuick.Controls
-import Qt.labs.folderlistmodel
 import Qt5Compat.GraphicalEffects
 
 Item {
@@ -17,9 +16,7 @@ Item {
     height: 43
     placeholderText: qsTr("Local Directory")
     verticalAlignment: TextInput.AlignVCenter
-    onAccepted: {
-      folderModel.folder = "file:///" + currentDirectory.text
-    }
+    onAccepted: fsModel.currentDirectory = currentDirectory.text
     Component.onCompleted: font.pointSize = font.pointSize - 1.5
   }
 
@@ -33,7 +30,7 @@ Item {
     boundsBehavior: Flickable.StopAtBounds
     height: parent.height - currentDirectory.height - spacer.height - statusRect.height - 2
     clip: true
-    model: folderModel
+    model: fsModel
     delegate: listItemDelegate
     currentIndex: -1
     cacheBuffer: 1024
@@ -41,12 +38,22 @@ Item {
     highlightMoveDuration: 100
     highlightMoveVelocity: 800
     highlight: Rectangle { color: "lightsteelblue"; radius: 2 }
+    Connections {
+      target: fsModel
+      function onDirectoryList() {
+        localListView.currentIndex = -1
+        currentDirectory.text = fsModel.currentDirectory
+        var files, folders
+        [files, folders] = fsModel.totalFilesAndFolders.split(":")
+        status.text = files + " files " + folders + " folders "
+      }
+    }
   }
 
   Rectangle {
     id: toolBar
     width: 26
-    height: 125
+    height: 147
     radius: 2
     border.width: 1
     border.color: borderColor
@@ -116,10 +123,25 @@ Item {
       }
     }
     Image {
+      id: refreshTool
+      width: 18; height: 18
+      source: "qrc:/refresh.png"
+      anchors.top: renameTool.bottom
+      anchors.horizontalCenter: parent.horizontalCenter
+      anchors.margins: 5
+      MouseArea {
+        anchors.fill: parent
+        hoverEnabled: true
+        onClicked: processToolBarAction("Refresh")
+        cursorShape: Qt.PointingHandCursor
+        onContainsMouseChanged: refreshTool.scale = 1 + (containsMouse ? 0.2 : 0)
+      }
+    }
+    Image {
       id: deleteTool
       width: 18; height: 18
       source: "qrc:/filedelete.png"
-      anchors.top: renameTool.bottom
+      anchors.top: refreshTool.bottom
       anchors.horizontalCenter: parent.horizontalCenter
       anchors.margins: 5
       MouseArea {
@@ -134,17 +156,17 @@ Item {
 
   function processToolBarAction(action) {
 
-    var fileName = folderModel.get(localListView.currentIndex, "fileName")
-    var fileIsDir = folderModel.get(localListView.currentIndex, "fileIsDir")
-    var fileSize = folderModel.get(localListView.currentIndex, "fileSize")
+    var fileName = fsModel.get(localListView.currentIndex, "fileName")
+    var fileIsDir = fsModel.get(localListView.currentIndex, "fileIsDir")
+    var fileSize = fsModel.get(localListView.currentIndex, "fileSize")
 
-    if (action === "Upload" && ftpModel.connected && remoteListView.currentIndex >= 0)
+    if (action === "Upload" && ftpModel.connected)
     {
 
     }
-    else if (action === "Queue" && ftpModel.connected && localListView.currentIndex >= 0)
+    else if (action === "Queue" && ftpModel.connected)
     {
-      ftpModel.Transfer(fileName, ftpModel.localDirectory, ftpModel.remoteDirectory, fileIsDir, true, fileSize)
+      fsModel.QueueTransfer(localListView.currentIndex)
     }
     else if (action === "Delete" && localListView.currentIndex >= 0)
     {
@@ -170,6 +192,10 @@ Item {
       newRenamePopup.inputValue = ""      
       newRenamePopup.open()
     }
+    else if (action === "Refresh")
+    {
+      fsModel.currentDirectory = fsModel.currentDirectory
+    }
   }
 
   RenameNewPopup {
@@ -184,20 +210,21 @@ Item {
       {
         if (context.startsWith("New folder"))
         {
-          ftpModel.CreateDirectory(currentDirectory.text + "/" + userInput, true)
+          fsModel.CreateDirectory(currentDirectory.text + "/" + userInput, true)
         }
         else if (context.startsWith("Rename"))
         {
-          ftpModel.Rename(
+          fsModel.Rename(
             currentDirectory.text + "/" + elementName,
             currentDirectory.text + "/" + userInput, true)
         }
         else if (context.startsWith("Delete"))
         {
           var path = currentDirectory.text + "/" + elementName
-          elementIsDir ? ftpModel.RemoveDirectory(path, true) :
-            ftpModel.RemoveFile(path, true)          
+          elementIsDir ? fsModel.RemoveDirectory(path, true) :
+            fsModel.RemoveFile(path, true)          
         }
+        fsModel.currentDirectory = fsModel.currentDirectory
       }
     }
   }
@@ -238,24 +265,9 @@ Item {
     Text {
       id: status
       color: "white"
-      text: "Total Items : " + (folderModel.count - 2)
       verticalAlignment: Text.AlignVCenter
       anchors.verticalCenter: parent.verticalCenter
       anchors.left: parent.left
-    }
-  }
-
-  FolderListModel {
-    id: folderModel
-    showDirs: true
-    showDirsFirst: true
-    showDotAndDotDot: true
-    onStatusChanged: () => {
-      if (folderModel.status == FolderListModel.Ready) {
-        localListView.currentIndex = -1
-        currentDirectory.text = urlToPath(folderModel.folder)
-        ftpModel.setLocalDirectory(currentDirectory.text);
-      }
     }
   }
 
@@ -300,10 +312,10 @@ Item {
         onDoubleClicked: {
           if (fileIsDir) {
             if (fileName === "..")
-              folderModel.folder = folderModel.parentFolder
+              fsModel.currentDirectory = fsModel.getParentDirectory()
             else
-              folderModel.folder = "file:///" + currentDirectory.text +
-                (currentDirectory.text.endsWith("\\") ? fileName : ("\\" + fileName))
+              fsModel.currentDirectory = fsModel.currentDirectory +
+                (fsModel.currentDirectory.endsWith("\\") ? fileName : ("\\" + fileName))
           }
         }
         onClicked: (mouse) => {
@@ -313,11 +325,5 @@ Item {
     }
   }
 
-  function urlToPath(url) {
-    var path = url.toString();
-    path = path.replace(/^(file:\/{3})|(qrc:\/{2})|(http:\/{2})/,"");
-    return decodeURIComponent(path).replace(/\//g, "\\") 
-  }
-
-  Component.onCompleted: {}
+  Component.onCompleted: fsModel.currentDirectory = ""
 }

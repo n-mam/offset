@@ -29,7 +29,7 @@ struct Transfer
   mutable state m_state = queued;
 };
 
-class FTPModel;
+class RemoteFsModel;
 
 constexpr size_t MAX_SESSIONS = 2;
 
@@ -48,8 +48,10 @@ class TransferManager : public QAbstractListModel
     EProgress
   };
 
-  TransferManager(FTPModel *ftpModel);
+  TransferManager();
   ~TransferManager();
+
+  static TransferManager * getInstance(void);
 
   QHash<int, QByteArray> roleNames() const override;
   int rowCount(const QModelIndex& parent = QModelIndex()) const override;
@@ -86,7 +88,7 @@ class TransferManager : public QAbstractListModel
   void DownloadTransfer(const Transfer& t, int sid);
   void UploadTransfer(const Transfer& t, int sid);
 
-  FTPModel *m_ftpModel;
+  RemoteFsModel *m_ftpModel;
 
   std::vector<Transfer> m_queue;
 

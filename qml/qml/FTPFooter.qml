@@ -54,7 +54,7 @@ Item {
       verticalAlignment: Text.AlignVCenter
       anchors.verticalCenter: parent.verticalCenter
       Connections {
-        target: ftpModel.transferManager
+        target: transferManager
         function onTransferQueueSize(n) {
           queueCount.text = "Q:" + n
         }
@@ -69,7 +69,7 @@ Item {
       verticalAlignment: Text.AlignVCenter
       anchors.verticalCenter: parent.verticalCenter
       Connections {
-        target: ftpModel.transferManager
+        target: transferManager
         function onActiveTransfers(n) {
           activeCount.text = "A:" + n
         }
@@ -84,7 +84,7 @@ Item {
       verticalAlignment: Text.AlignVCenter
       anchors.verticalCenter: parent.verticalCenter
       Connections {
-        target: ftpModel.transferManager
+        target: transferManager
         function onTransferSuccessful(i, n) {
           successCount.text = "T:" + n
         }
@@ -99,7 +99,7 @@ Item {
       verticalAlignment: Text.AlignVCenter
       anchors.verticalCenter: parent.verticalCenter
       Connections {
-        target: ftpModel.transferManager
+        target: transferManager
         function onTransferFailed(i, n) {
           failedCount.text = "F:" + n
         }
@@ -116,7 +116,7 @@ Item {
       MouseArea {
         hoverEnabled: true
         anchors.fill: parent
-        onClicked: ftpModel.transferManager.ProcessAllTransfers()
+        onClicked: transferManager.ProcessAllTransfers()
         cursorShape: Qt.PointingHandCursor
         onContainsMouseChanged: queue.scale = 1 + (containsMouse ? 0.4 : 0)
       }
@@ -137,7 +137,7 @@ Item {
       MouseArea {
         hoverEnabled: true
         anchors.fill: parent
-        onClicked: ftpModel.transferManager.StopAllTransfers()
+        onClicked: transferManager.StopAllTransfers()
         cursorShape: Qt.PointingHandCursor
         onContainsMouseChanged: stop.scale = 1 + (containsMouse ? 0.4 : 0)
       }
@@ -159,7 +159,7 @@ Item {
         hoverEnabled: true
         anchors.fill: parent
         onClicked: () => {
-          ftpModel.transferManager.RemoveAllTransfers()
+          transferManager.RemoveAllTransfers()
           successCount.text = failedCount.text = ""
         }
         cursorShape: Qt.PointingHandCursor
