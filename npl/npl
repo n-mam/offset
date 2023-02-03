@@ -25,11 +25,16 @@ inline auto make_ftp(const std::string& host, int port, tls ftps = tls::no)
 
   auto cc = std::make_shared<socket_device>("sock-cc");
 
-  cc->SetHostAndPort(host, port);
+  auto success = cc->SetHostAndPort(host, port);
 
-  cc->SetTLS(ftps);
-
-  D->AddEventListener(cc)->AddEventListener(ftp);
+  if (success) {
+    cc->SetTLS(ftps);
+    D->AddEventListener(cc)->AddEventListener(ftp);
+  }
+  else {
+    cc.reset();
+    ftp.reset();
+  }
 
   return ftp;
 }

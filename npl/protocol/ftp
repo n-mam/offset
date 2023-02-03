@@ -377,7 +377,7 @@ class ftp : public protocol<uint8_t, uint8_t>
 
   virtual void SetDCProtLevel(tls P)
   {
-    auto tls = GetChannelTLS(m_target.lock());
+    auto tls = GetChannelTLS();
 
     if (tls == tls::yes || tls == tls::implicit)
     {
@@ -435,11 +435,16 @@ class ftp : public protocol<uint8_t, uint8_t>
 
   virtual void CheckExplicitFTPS(void)
   {
-    auto tls = GetChannelTLS(m_target.lock());
+    auto tls = GetChannelTLS();
 
     if (tls == tls::yes)
     {
-      m_queue.push_front({"AUTH", "TLS"});
+      m_queue.push_front({"AUTH", "TLS",
+        [this](const auto& res){
+          if (!IsPositiveCompletionReply(res[0]))
+            SetChannelTLS(tls::no);
+        }
+      });
     }
     else
     {
@@ -683,7 +688,7 @@ class ftp : public protocol<uint8_t, uint8_t>
 
   virtual void OnError(uint64_t error) override
   {
-    STATUS(1) << "Control channel error " << error;
+    STATUS(1) << "control channel error " << error;
   }
 
   virtual void OnDisconnect(void) override
@@ -695,7 +700,7 @@ class ftp : public protocol<uint8_t, uint8_t>
   {
     protocol::OnConnect();
 
-    auto tls = GetChannelTLS(m_target.lock());
+    auto tls = GetChannelTLS();
 
     if (tls == tls::implicit)
     {
@@ -712,7 +717,7 @@ class ftp : public protocol<uint8_t, uint8_t>
       sock->InitializeSSL(
         nullptr,
         [this]() {
-          auto tls = GetChannelTLS(m_target.lock()); 
+          auto tls = GetChannelTLS(); 
           if (tls == tls::yes)
           {
             m_queue.push_front({"USER", m_user});

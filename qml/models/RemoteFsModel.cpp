@@ -26,46 +26,50 @@ bool RemoteFsModel::Connect(QString host, QString port, QString user, QString pa
 
   m_ftp = npl::make_ftp(m_host, m_port , m_protection);
 
-  if (!m_ftp) return false;
-
-  m_ftp->SetIdleCallback([this](){
-    QMetaObject::invokeMethod(this, [=](){
-      for (auto rit = m_directories_to_remove.rbegin(); 
-            rit != m_directories_to_remove.rend(); rit++)
-        m_ftp->RemoveDirectory(*rit);
-      if (!m_directories_to_remove.empty()) {
-        m_directories_to_remove.clear();
-        RefreshRemoteView();
-      }
-    });
-  });
-
-  m_ftp->SetCredentials(m_user, m_password,
-    [this](bool success){
+  if (m_ftp) {
+    m_ftp->SetIdleCallback([this](){
       QMetaObject::invokeMethod(this, [=](){
-        if (success) {
-          setCurrentDirectory("/");
-          STATUS(1) << "User " << m_user << " logged in";
-        } else {
-          STATUS(1) << "Login failed";
+        for (auto rit = m_directories_to_remove.rbegin(); 
+              rit != m_directories_to_remove.rend(); rit++)
+          m_ftp->RemoveDirectory(*rit);
+        if (!m_directories_to_remove.empty()) {
+          m_directories_to_remove.clear();
+          RefreshRemoteView();
         }
-      }, Qt::QueuedConnection);
+      });
     });
 
-  m_ftp->StartClient(
-    [this](auto p, bool isConnected){
-      QMetaObject::invokeMethod(this, [=](){
-        setConnected(isConnected);
-        if(!isConnected)
-        {
-          beginResetModel();
-          m_model.clear();
-          endResetModel();
-        }
-      }, Qt::QueuedConnection);
-    });
+    m_ftp->SetCredentials(m_user, m_password,
+      [this](bool success){
+        QMetaObject::invokeMethod(this, [=](){
+          if (success) {
+            setCurrentDirectory("/");
+            STATUS(1) << "User " << m_user << " logged in";
+          } else {
+            STATUS(1) << "Login failed";
+          }
+        }, Qt::QueuedConnection);
+      });
 
-  return true;
+    m_ftp->StartClient(
+      [this](auto p, bool isConnected){
+        QMetaObject::invokeMethod(this, [=](){
+          setConnected(isConnected);
+          if(!isConnected)
+          {
+            beginResetModel();
+            m_model.clear();
+            endResetModel();
+          }
+        }, Qt::QueuedConnection);
+      });
+
+    return true;
+  }
+
+  STATUS(1) << "Failed to connect to " << m_host;
+
+  return false;
 }
 
 void RemoteFsModel::QueueTransfer(int index)
@@ -202,8 +206,6 @@ void RemoteFsModel::setConnected(bool isConnected)
 
 void RemoteFsModel::setCurrentDirectory(QString directory)
 {
-  STATUS(1) << "Directory listing in progress..";
-
   m_ftp->SetCurrentDirectory(directory.toStdString());
 
   m_ftp->Transfer(npl::ftp::list, directory.toStdString(),
@@ -240,10 +242,11 @@ void RemoteFsModel::setCurrentDirectory(QString directory)
       }
       return true;
     },
-    [](const std::string& res) {
-      if (res[0] == '4' || res[0] == '5') {
-        STATUS(1) << "Error: " << res;
-      }
+    [this](const std::string& res) {
+      QMetaObject::invokeMethod(this, [=](){
+        if (res[0] == '4' || res[0] == '5')
+          STATUS(1) << "Error: " << res;
+      }, Qt::QueuedConnection);
     },
     m_protection);
 }

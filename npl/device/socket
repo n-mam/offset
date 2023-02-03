@@ -261,13 +261,14 @@ class socket_device : public file_device
     return (m_socket_type == socketType::accepted);
   }
 
-  virtual void SetHostAndPort(const std::string& host, int port)
+  virtual bool SetHostAndPort(const std::string& host, int port)
   {
-    m_port = port;
+    int fRet = 0;
 
     if (!std::isalpha(host[0]))
     {
       m_host = host;
+      m_port = port;
     }
     else
     {
@@ -281,29 +282,32 @@ class socket_device : public file_device
       hints.ai_socktype = SOCK_STREAM;
       hints.ai_protocol = IPPROTO_TCP;
 
-      int dwRetval = getaddrinfo(host.c_str(), nullptr, &hints, &result);
-      
-      if (dwRetval != 0) return;
+      fRet = getaddrinfo(host.c_str(), nullptr, &hints, &result);
 
-      for (ptr = result; ptr != nullptr; ptr = ptr->ai_next)
-      {
-        switch (ptr->ai_family)
-        {
-          case AF_UNSPEC:
-              break;
-          case AF_INET:
-              sockaddr_ipv4 = (struct sockaddr_in *) ptr->ai_addr;
-              m_host = std::string(inet_ntoa(sockaddr_ipv4->sin_addr));
-              break;
-          case AF_INET6:
-              break;
-          default:
-              break;
+      if (fRet == 0) {
+        m_port = port;
+        for (ptr = result; ptr != nullptr; ptr = ptr->ai_next) {
+          switch (ptr->ai_family) {
+            case AF_UNSPEC:
+                break;
+            case AF_INET:
+                sockaddr_ipv4 = (struct sockaddr_in *) ptr->ai_addr;
+                m_host = std::string(inet_ntoa(sockaddr_ipv4->sin_addr));
+                break;
+            case AF_INET6:
+                break;
+            default:
+                break;
+          }
         }
+      } else {
+        LOG << "getaddrinfo failed " << fRet;
       }
 
       freeaddrinfo(result);
     }
+
+    return fRet == 0;
   }
 
   virtual void CheckPeerSSLShutdown()

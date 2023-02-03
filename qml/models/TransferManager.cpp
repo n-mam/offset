@@ -370,7 +370,11 @@ bool TransferManager::InitializeFTPSessions(void)
     auto ftp = npl::make_ftp(
       m_ftpModel->m_host, m_ftpModel->m_port, m_ftpModel->m_protection);
 
-    if (!ftp) return false;
+    if (!ftp)
+    {
+      STATUS(1) << "Failed to connect to " << m_ftpModel->m_host;
+      return false;
+    }
 
     ftp->SetCredentials(m_ftpModel->m_user, m_ftpModel->m_password);
 
