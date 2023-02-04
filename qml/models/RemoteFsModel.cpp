@@ -185,9 +185,7 @@ void RemoteFsModel::Rename(QString from, QString to)
 
 void RemoteFsModel::Quit()
 {
-  m_ftp->Quit([](const std::string& res) {
-    STATUS(1) << res;
-  });
+  m_ftp->Quit();
 }
 
 bool RemoteFsModel::getConnected(void)
@@ -201,6 +199,8 @@ void RemoteFsModel::setConnected(bool isConnected)
   {
     m_connected = isConnected;
     emit connected(m_connected);
+    STATUS(1) << (isConnected ? "Connected to " : 
+      "Disconnected from ") << m_host;
   }
 }
 

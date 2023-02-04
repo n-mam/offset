@@ -200,11 +200,19 @@ class ftp : public protocol<uint8_t, uint8_t>
 
   protected:
 
+  int m_dc_port;
+
+  std::string m_dc_host;
+
   std::string m_feat;
 
   std::string m_syst;
 
-  tls m_dc_prot = tls::no;
+  tls m_dc_tls = tls::no;
+
+  uint8_t m_triggerFlags;
+
+  Direction m_currentDirection;
 
   SPSubject m_data_channel = nullptr;
 
@@ -363,6 +371,8 @@ class ftp : public protocol<uint8_t, uint8_t>
 
   virtual void SendCommand(const std::string& c, const std::string& arg = "")
   {
+    SetCurrentDirection(c);
+
     auto cmd = c + " " + arg + "\r\n";
 
     LOG << "Command  : " << cmd;
@@ -372,6 +382,11 @@ class ftp : public protocol<uint8_t, uint8_t>
     if (target)
     {
       target->Write((uint8_t *)cmd.c_str(), cmd.size(), 0);
+
+      if (IsTransferCommand(cmd))
+      {
+        OpenDataChannel();
+      }
     }
   }
 
@@ -387,9 +402,8 @@ class ftp : public protocol<uint8_t, uint8_t>
 
       m_queue.push_back({"PROT", level,
         [this, P](const std::string& res){
-          if (res[0] == '2')
-          {
-            m_dc_prot = P;
+          if (res[0] == '2') {
+            m_dc_tls = P;
           }
         }, nullptr});
     }
@@ -452,16 +466,16 @@ class ftp : public protocol<uint8_t, uint8_t>
     }
   }
 
-  auto GetTransferDirection(const std::string& cmd)
+  void SetCurrentDirection(const std::string& cmd)
   {
     if (cmd == "LIST" || cmd == "MLSD") {
-      return ftp::download;
+      m_currentDirection = ftp::download;
     } else if (cmd == "RETR") {
-      return ftp::download;
+      m_currentDirection = ftp::download;
     } else if (cmd == "STOR") {
-      return ftp::upload;
+      m_currentDirection = ftp::upload;
     } else {
-      return ftp::none;
+      m_currentDirection = ftp::none;
     }
   }
 
@@ -469,21 +483,7 @@ class ftp : public protocol<uint8_t, uint8_t>
   {
     if (IsPositivePreliminaryReply(code))
     {
-      if (m_dc_prot == tls::yes)
-      {
-        auto cc = std::static_pointer_cast<socket_device>(m_target.lock());
-
-        std::static_pointer_cast<socket_device>
-          (m_data_channel)->InitializeSSL(
-            cc->GetSslObject(),
-            [this] () {
-              TriggerDataTransfer();
-            });
-      }
-      else
-      {
-        TriggerDataTransfer();
-      }
+      TriggerDataTransfer(3);
     }
     else if (IsPositiveCompletionReply(code))
     {
@@ -502,18 +502,9 @@ class ftp : public protocol<uint8_t, uint8_t>
         m_data_channel.reset();
       }
 
-      auto cmd = m_queue.front().c_name;
-
-      if (GetTransferDirection(cmd) == ftp::upload)
+      if (m_currentDirection == ftp::upload)
       {
         NotifyUploadChannelReady();
-      }
-
-      if (iCurrentState == EStateXYZ)
-      {
-        m_queue.pop_front();
-        iCurrentState = EStateREADY;
-        TriggerNextCommand();
       }
     }
   }
@@ -535,17 +526,15 @@ class ftp : public protocol<uint8_t, uint8_t>
       LOG << "Faled to parse PASV response";
     }
 
-    auto host = std::to_string(h1) + "." +
+    m_dc_host = std::to_string(h1) + "." +
                 std::to_string(h2) + "." +
                 std::to_string(h3) + "." +
                 std::to_string(h4);
 
-    auto port = (p1 << 8) + p2;
-
-    OpenDataChannel(host, port);
+    m_dc_port = (p1 << 8) + p2;
   }
 
-  virtual void OpenDataChannel(const std::string& host, int port)
+  virtual void OpenDataChannel()
   {
     m_data_channel = std::make_shared<socket_device>("sock-dc");
 
@@ -553,7 +542,11 @@ class ftp : public protocol<uint8_t, uint8_t>
 
     auto dc = std::static_pointer_cast<socket_device>(m_data_channel);
 
-    dc->SetHostAndPort(host, port);
+    dc->SetHostAndPort(m_dc_host, m_dc_port);
+
+    AttachDataChannelObserver();
+
+    m_triggerFlags = 0; 
 
     dc->StartSocketClient();
   }
@@ -574,6 +567,9 @@ class ftp : public protocol<uint8_t, uint8_t>
       },
       [this](){
         OnDataChannelDisconnect();
+      },
+      [this](){
+        OnDataChannelDisconnect();
       });
 
     m_data_channel->AddEventListener(observer);
@@ -581,13 +577,12 @@ class ftp : public protocol<uint8_t, uint8_t>
 
   virtual void OnDataChannelConnect(void)
   {
+    TriggerDataTransfer(2);
   }
 
   virtual void OnDataChannelIoCompletion(const uint8_t *b, size_t n, Direction direction)
   {
-    auto cmd = m_queue.front().c_name;
-
-    if (direction == GetTransferDirection(cmd))
+    if (direction == m_currentDirection)
     {
       auto& transferCallback = m_queue.front().c_tcbk;
 
@@ -621,20 +616,37 @@ class ftp : public protocol<uint8_t, uint8_t>
     }
 
     ProcessDataCmdResponse('0');
+
+    if (iCurrentState == EStateXYZ)
+    {
+      m_queue.pop_front();
+      iCurrentState = EStateREADY;
+      TriggerNextCommand();
+    }
   }
 
-  virtual void TriggerDataTransfer(void)
+  virtual void TriggerDataTransfer(int source)
   {
-    AttachDataChannelObserver();
+    osl::set_bit(m_triggerFlags, source);
 
-    auto cmd = m_queue.front().c_name;
-
-    if (GetTransferDirection(cmd) == ftp::upload)
-    {
-      if (m_queue.front().c_tcbk)
-      {
-        m_queue.front().c_tcbk((char *)0xABCDEF, 0);
+    if (!osl::is_bit_set(m_triggerFlags, 1) &&
+         osl::is_bit_set(m_triggerFlags, 2) &&
+         osl::is_bit_set(m_triggerFlags, 3)) {
+      if (m_dc_tls == tls::yes) {
+        auto cc = std::static_pointer_cast<socket_device>(m_target.lock());
+        std::static_pointer_cast<socket_device>
+          (m_data_channel)->InitializeSSL(
+            cc->GetSslObject(),
+            [this](){
+              if (m_currentDirection == ftp::upload)
+                m_queue.front().c_tcbk((char *)0xABCDEF, 0);
+            });
       }
+      else {
+        if (m_currentDirection == ftp::upload)
+          m_queue.front().c_tcbk((char *)0xABCDEF, 0);
+      }
+      osl::set_bit(m_triggerFlags, 1);
     }
   }
 
@@ -668,12 +680,14 @@ class ftp : public protocol<uint8_t, uint8_t>
     }
   }
 
-  virtual bool IsTransferCommand(const std::string& cmd)
+  virtual bool IsTransferCommand(const std::string& command)
   {
-    return (cmd == "RETR" || 
-            cmd == "LIST" ||
-            cmd == "MLSD" ||
-            cmd == "STOR");
+    std::string_view view(command.c_str(), 4);
+
+    return (view == "RETR" ||
+            view == "STOR" ||
+            view == "MLSD" ||
+            view == "LIST");
   }
 
   virtual bool IsPositiveCompletionReply(char c)
