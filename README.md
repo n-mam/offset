@@ -1,4 +1,4 @@
-[Download](https://github.com/n-mam/offset/releases/download/1.9/Offset-1.9.zip)
+[Download](https://github.com/n-mam/offset/releases/download/2.0/offset-2.0.zip)
 <p align="center">
  <img src="https://drive.google.com/uc?id=1u-tsnDwuQPH6OXepCAEoARDSgAWCqNT2" width="45%">
  <img src="https://drive.google.com/uc?id=1RpPvy074uBcxyvaE7RI3M91AXgtzr1Qz" width="45%">
