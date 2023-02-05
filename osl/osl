@@ -1,7 +1,9 @@
 #ifndef OSL_HPP
 #define OSL_HPP
 
+#ifdef _WIN32
 #include <windows.h>
+#endif
 
 #include <string>
 #include <vector>
@@ -17,7 +19,9 @@
 #include <rapidjson/document.h>
 #include <rapidjson/stringbuffer.h>
 
+#ifdef _WIN32
 #include <osl/fs>
+#endif
 #include <osl/str>
 
 #define _1K    1024
@@ -149,87 +153,6 @@ inline auto GetDirectoryList(std::string& dir)
   }
 }
 
-inline auto WideToString(const std::wstring& src)
-{
-  std::vector<CHAR> chBuffer;
-
-  int iChars = WideCharToMultiByte(CP_ACP, 0, src.c_str(), -1, NULL, 0, NULL, NULL);
-
-  if (iChars > 0)
-  {
-    chBuffer.resize(iChars);
-    WideCharToMultiByte(CP_ACP, 0, src.c_str(), -1, &chBuffer.front(), (int)chBuffer.size(), NULL, NULL);
-  }
-
-  return std::string(&chBuffer.front());
-}
-
-inline auto SetRegistry(HKEY hKey, std::wstring subKey, DWORD dwType, std::wstring valueName, std::wstring value)
-{
-  HKEY hkResult;
-  LSTATUS status;
-
-  status = RegCreateKeyExW(
-              hKey,
-              subKey.c_str(),
-              0,
-              NULL,
-              REG_OPTION_NON_VOLATILE,
-              KEY_ALL_ACCESS,
-              NULL,
-              &hkResult,
-              NULL);
-
-  if (status != ERROR_SUCCESS)
-  {
-    LOG << "RegCreateKeyExW() failed " << status;
-    return false;
-  }
-
-  status = RegSetValueExW(
-              hkResult,
-              valueName.c_str(),
-              0,
-              dwType,
-              (BYTE*)value.c_str(),
-              (DWORD)value.length() * sizeof(WCHAR));
-
-  if (status != ERROR_SUCCESS)
-  {
-    LOG << "RegSetValueExW() failed " << status;
-  }
-
-  RegCloseKey(hkResult);
-
-  return (status == ERROR_SUCCESS);
-}
-
-inline BSTR ReadFileAsBSTR(const std::wstring& fileName)
-{
-  HANDLE hFile = GetFileHandle(fileName);
-
-  if (hFile == INVALID_HANDLE_VALUE)
-  {
-    LOG << "CreateFile failed : "<< GetLastError();
-    return NULL;
-  }
-
-  DWORD dwFileSize = GetFileSize(hFile, 0);
-  auto buf = std::make_unique<uint8_t []>(dwFileSize);
-
-  DWORD dwRead;
-  BOOL fRet = ReadFile(hFile, buf.get(), dwFileSize, &dwRead, NULL);
-
-  if (fRet == FALSE)
-  {
-    return NULL;
-  }
-
-  BSTR bstrContents = SysAllocStringLen((OLECHAR *)buf.get(), dwRead);
-
-  return bstrContents;
-}
-
 template<typename T>
 inline auto endian_reverse(T x)
 {
@@ -250,7 +173,7 @@ inline auto endian_reverse(T x)
 inline auto DumpBufferToFile(const std::string& path, const uint8_t *b, uint64_t l)
 {
   FILE *file = nullptr;
-  fopen_s(&file, path.c_str(), "wb");
+  file = fopen(path.c_str(), "wb");
   fwrite(b, 1, l, file);
   fclose(file);
 }

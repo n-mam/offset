@@ -7,9 +7,11 @@
 #include <Logger.h>
 #include <LocalFsModel.h>
 #include <RemoteFsModel.h>
-#include <DiskListModel.h>
 
-#include <Windows.h>
+#ifdef _WIN32
+#include <DiskListModel.h>
+#include <windows.h>
+#endif
 
 void q_logger(QtMsgType, const QMessageLogContext&, const QString&);
 
@@ -38,10 +40,12 @@ int main(int argc, char *argv[])
   }, Qt::QueuedConnection);
 
   engine.rootContext()->setContextProperty("logger", new Logger());
-  engine.rootContext()->setContextProperty("diskListModel", new DiskListModel());
   engine.rootContext()->setContextProperty("fsModel", LocalFsModel::getInstance());
   engine.rootContext()->setContextProperty("ftpModel", RemoteFsModel::getInstance());
   engine.rootContext()->setContextProperty("transferManager", TransferManager::getInstance());
+  #ifdef _WIN32
+  engine.rootContext()->setContextProperty("diskListModel", new DiskListModel());
+  #endif
 
   engine.load(url);
 
@@ -55,22 +59,26 @@ void q_logger(QtMsgType type, const QMessageLogContext &context, const QString &
   switch (type)
   {
     case QtDebugMsg:
-      sprintf_s(buffer, "q_logger: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
+      sprintf(buffer, "q_logger: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
       break;
     case QtInfoMsg:
-      sprintf_s(buffer, "q_logger Info: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
+      sprintf(buffer, "q_logger Info: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
       break;
     case QtWarningMsg:
-      sprintf_s(buffer, "q_logger Warning: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
+      sprintf(buffer, "q_logger Warning: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
       break;
     case QtCriticalMsg:
-      sprintf_s(buffer, "q_logger Critical: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
+      sprintf(buffer, "q_logger Critical: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
       break;
     case QtFatalMsg:
-      sprintf_s(buffer, "q_logger Fatal: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
+      sprintf(buffer, "q_logger Fatal: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
+      #ifdef _WIN32
       //OutputDebugStringA(buffer);
+      #endif
       abort();
   }
+  #ifdef _WIN32
   OutputDebugStringA(buffer);
+  #endif
   LOG << buffer;
 }

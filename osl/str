@@ -134,8 +134,8 @@ inline auto parseUrl(const std::string& url)
   char directory[256] = { '\0' };
 
   // ftps://nmam:welcome123@127.0.0.1:21/a/b/c
-  sscanf_s(url.c_str(), "%32[^:]://%128[^:]:%128[^@]@%256[^:]:%32[^/]/%256[^\n]",
-      protocol, 32, username, 128, password, 128, hostname, 256, port, 32, directory, 256);
+  sscanf(url.c_str(), "%32[^:]://%128[^:]:%128[^@]@%256[^:]:%32[^/]/%256[^\n]",
+      protocol, username, password, hostname, port, directory);
 
   return std::make_tuple(
     std::string(protocol),

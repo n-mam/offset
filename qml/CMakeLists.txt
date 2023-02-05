@@ -10,20 +10,21 @@ qt6_add_resources(QT_RESOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/icons/icons.qrc
 )
 
-add_executable(
-  offset
-  WIN32
-  main.cpp
-  ${QT_RESOURCES}
-  ${CMAKE_CURRENT_SOURCE_DIR}/icons/resource.rc
+add_executable(offset WIN32 ${QT_RESOURCES})
+
+target_sources(offset PRIVATE main.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/models/Logger.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/models/FsModel.cpp  
   ${CMAKE_CURRENT_SOURCE_DIR}/models/LocalFsModel.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/models/RemoteFsModel.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/models/BaseModel.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/models/TransferManager.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/models/DiskListModel.cpp
 )
+
+if(WIN32)
+  target_sources(offset PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/icons/resource.rc)
+  target_sources(offset PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/models/DiskListModel.cpp)
+endif(WIN32)
 
 set_property(TARGET offset PROPERTY CXX_STANDARD 17)
 
@@ -42,11 +43,11 @@ target_link_libraries(
   Crc32c::crc32c
 )
 
-#set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DQT_QML_DEBUG")
-
-if (WIN32)
+if(WIN32)
   target_link_libraries(offset PRIVATE Ws2_32.lib VssApi.lib)
 endif(WIN32)
+
+#set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DQT_QML_DEBUG")
 
 #SET_TARGET_PROPERTIES(
 #  offset
