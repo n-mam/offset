@@ -55,7 +55,6 @@ Rectangle {
             line: new Date().toLocaleTimeString(Qt.locale(), 
             "hh:" + "mm:" + "ss:" + "zzz") + " " + l
           })
-        traceList.positionViewAtEnd()
       }
     }
   }
@@ -93,5 +92,9 @@ Rectangle {
       anchors.verticalCenter: parent.verticalCenter
       onClicked: {}
     }
+  }
+  onVisibleChanged: {
+    if (visible)
+      traceList.positionViewAtEnd()
   }
 }

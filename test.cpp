@@ -6,16 +6,11 @@
 
 #include <npl/npl>
 
-#ifdef _WIN32
-int wmain(int argc, wchar_t *argv[])
-#else
 int main(int argc, char *argv[])
-#endif
 {
   auto arguments = osl::GetArgumentsVector(argc, argv);
 
-  if (!arguments.size())
-    return 0;
+  if (!arguments.size()) return 0;
 
   osl::log::SetLogSink<std::string>(
     [](auto level, int key, auto log){
@@ -28,20 +23,13 @@ int main(int argc, char *argv[])
 
   auto ns = arguments[0];
 
+  #ifdef _WIN32
   if (ns == "fxc")
-  {
-    #ifdef _WIN32
     fxc::entry(arguments);
-    #endif
-  }
-  else if (ns == "npl")
-  {
-    //npl::entry(arguments);
-  }
-  else
-  {
-    LOG << "unknown namespace";
-  }
+  #endif
+  
+  if (ns == "npl")
+    npl::entry(arguments);
 
   return 0;
 }
