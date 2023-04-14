@@ -184,41 +184,86 @@ Item {
     var fileIsDir = ftpModel.get(remoteListView.currentIndex, "fileIsDir")
     var fileSize = ftpModel.get(remoteListView.currentIndex, "fileSize")
 
-    if (action === "Download" && ftpModel.connected)
+    switch (action)
     {
+      case "Queue":
+      case "Download":
+      {
+        if (!ftpModel.connected) {
+          logger.updateStatus(1, "Please connect to a server first")
+          return;
+        }
 
-    }
-    else if (action === "Queue" && ftpModel.connected)
-    {
-      ftpModel.QueueTransfer(remoteListView.currentIndex)
-    }
-    else if (action === "Delete" && remoteListView.currentIndex >= 0)
-    {
-      newRenamePopup.context = "Delete \"" + fileName + "\""
-      newRenamePopup.elementName = fileName
-      newRenamePopup.elementIsDir = fileIsDir
-      newRenamePopup.inputHint = "Folder name"
-      newRenamePopup.inputValue = fileName
-      newRenamePopup.open()
-    }
-    else if (action === "Rename" && remoteListView.currentIndex >= 0)
-    {
-      newRenamePopup.context = "Rename \"" + fileName + "\""
-      newRenamePopup.elementName = fileName
-      newRenamePopup.inputHint = "New name"
-      newRenamePopup.inputValue = ""
-      newRenamePopup.open()
-    }
-    else if (action === "New folder")
-    {
-      newRenamePopup.context = "New folder"
-      newRenamePopup.inputHint = "Folder name"
-      newRenamePopup.inputValue = ""      
-      newRenamePopup.open()
-    }
-    else if (action === "Refresh")
-    {
-      ftpModel.currentDirectory = ftpModel.currentDirectory
+        if (remoteListView.currentIndex < 0) {
+          logger.updateStatus(1, "Please select a file to " + action.toLowerCase())
+          return;
+        }
+
+        ftpModel.QueueTransfer(remoteListView.currentIndex, action === "Download")
+
+        return;
+      }
+
+      case "Delete":
+      {
+        if (!ftpModel.connected) {
+          logger.updateStatus(1, "Please connect to a server first")
+          return;
+        }
+
+        if (remoteListView.currentIndex < 0) {
+          logger.updateStatus(1, "Please select a file to delete")
+          return;
+        }
+
+        newRenamePopup.context = "Delete \"" + fileName + "\""
+        newRenamePopup.elementName = fileName
+        newRenamePopup.elementIsDir = fileIsDir
+        newRenamePopup.inputHint = "Folder name"
+        newRenamePopup.inputValue = fileName
+        newRenamePopup.open()
+
+        return;
+      }
+
+      case "New folder":
+      {
+        if (!ftpModel.connected) {
+          logger.updateStatus(1, "Please connect to a server first")
+          return;
+        }
+
+        newRenamePopup.context = "New folder"
+        newRenamePopup.inputHint = "Folder name"
+        newRenamePopup.inputValue = ""      
+        newRenamePopup.open()
+        return;
+      }
+
+      case "Rename":
+      {
+        if (!ftpModel.connected) {
+          logger.updateStatus(1, "Please connect to a server first")
+          return;
+        }
+
+        if (remoteListView.currentIndex < 0) {
+          logger.updateStatus(1, "Please select a file to rename")
+          return;
+        }
+
+        newRenamePopup.context = "Rename \"" + fileName + "\""
+        newRenamePopup.elementName = fileName
+        newRenamePopup.inputHint = "New name"
+        newRenamePopup.inputValue = ""
+        newRenamePopup.open()
+        return;
+      }
+
+      case "Refresh":
+      {
+        ftpModel.currentDirectory = ftpModel.currentDirectory
+      }
     }
   }
 

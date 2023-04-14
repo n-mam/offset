@@ -173,7 +173,7 @@ class Dispatcher : public subject<uint8_t, uint8_t>
   {
     subject::AddEventListener(observer);
 
-  #ifdef _WIN32
+    #ifdef _WIN32
     AddSubjectToEventPort(observer);
     #endif
 

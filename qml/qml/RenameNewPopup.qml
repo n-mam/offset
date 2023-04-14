@@ -47,14 +47,13 @@ Popup {
         Component.onCompleted: font.pointSize = font.pointSize - 1.5
       }
       Rectangle {
-        width: parent.width * 0.65
+        width: parent.width * 0.75
         height: 40
         anchors.top: userInput.bottom
         anchors.margins: 10
         anchors.horizontalCenter: parent.horizontalCenter
         color: Qt.darker(Material.background)
         Button {
-          id: okButton
           width: parent.width * 0.4
           height: parent.height
           text: "OK"

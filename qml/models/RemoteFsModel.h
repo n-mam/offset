@@ -25,7 +25,7 @@ class RemoteFsModel : public FsModel
   Q_INVOKABLE void Quit();
   Q_INVOKABLE bool Connect(QString host, QString port, QString user, QString password, QString protocol);
 
-  Q_INVOKABLE virtual void QueueTransfer(int index) override;
+  Q_INVOKABLE virtual void QueueTransfer(int index, bool start = false) override;
   Q_INVOKABLE virtual void RemoveFile(QString path) override;
   Q_INVOKABLE virtual void RemoveDirectory(QString path) override;
   Q_INVOKABLE virtual void CreateDirectory(QString path) override;

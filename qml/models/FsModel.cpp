@@ -95,7 +95,13 @@ bool FsModel::setData(const QModelIndex &index, const QVariant &value, int role)
 
 bool FsModel::IsElementDirectory(int index) const
 {
-  return ((m_model[index].m_attributes)[0] == 'd');
+  return m_model[index].m_attributes[0] == 'd';
+}
+
+uint64_t FsModel::GetElementSize(int index) const
+{
+  return IsElementDirectory(index) ? 0 :
+    std::stoll(m_model[index].m_size);
 }
 
 QString FsModel::getCurrentDirectory(void)

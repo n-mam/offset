@@ -41,7 +41,7 @@ class FsModel : public QAbstractListModel
   Q_PROPERTY(QString currentDirectory READ getCurrentDirectory WRITE setCurrentDirectory);
 
   Q_INVOKABLE virtual QVariant get(int index, QString role);
-  Q_INVOKABLE virtual void QueueTransfer(int index) = 0;
+  Q_INVOKABLE virtual void QueueTransfer(int index, bool start = false) = 0;
   Q_INVOKABLE virtual void RemoveFile(QString path) = 0;
   Q_INVOKABLE virtual void RemoveDirectory(QString path) = 0;
   Q_INVOKABLE virtual void CreateDirectory(QString path) = 0;
@@ -61,6 +61,8 @@ class FsModel : public QAbstractListModel
   protected:
 
   bool IsElementDirectory(int index) const;
+
+  uint64_t GetElementSize(int index) const;
 
   int m_fileCount = 0;
 

@@ -16,7 +16,7 @@ class LocalFsModel : public FsModel
 
   static LocalFsModel * getInstance(void);
 
-  Q_INVOKABLE virtual void QueueTransfer(int index) override;
+  Q_INVOKABLE virtual void QueueTransfer(int index, bool start = false) override;
   Q_INVOKABLE virtual void RemoveFile(QString path) override;
   Q_INVOKABLE virtual void RemoveDirectory(QString path) override;
   Q_INVOKABLE virtual void CreateDirectory(QString path) override;

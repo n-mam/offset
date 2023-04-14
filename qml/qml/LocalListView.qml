@@ -160,42 +160,73 @@ Item {
     var fileIsDir = fsModel.get(localListView.currentIndex, "fileIsDir")
     var fileSize = fsModel.get(localListView.currentIndex, "fileSize")
 
-    if (action === "Upload" && ftpModel.connected)
+    switch (action)
     {
+      case "Queue":
+      case "Upload":
+      {
+        if (!ftpModel.connected) {
+          logger.updateStatus(1, "Please connect to a server first")
+          return;
+        }
 
+        if (localListView.currentIndex < 0) {
+          logger.updateStatus(1, "Please select a file to upload")
+          return;
+        }
+
+        fsModel.QueueTransfer(localListView.currentIndex, action === "Upload")
+
+        return;
+      }
+
+      case "Delete":
+      {
+        if (localListView.currentIndex < 0) {
+          logger.updateStatus(1, "Please select a file to delete")
+          return;
+        }
+
+        newRenamePopup.context = "Delete \"" + fileName + "\""
+        newRenamePopup.elementName = fileName
+        newRenamePopup.elementIsDir = fileIsDir
+        newRenamePopup.inputHint = "Folder name"
+        newRenamePopup.inputValue = fileName
+        newRenamePopup.open()
+
+        return;
+      }
+
+      case "New folder":
+      {
+        newRenamePopup.context = "New folder"
+        newRenamePopup.inputHint = "Folder name"
+        newRenamePopup.inputValue = ""      
+        newRenamePopup.open()
+        return;
+      }
+
+      case "Rename":
+      {
+        if (localListView.currentIndex < 0) {
+          logger.updateStatus(1, "Please select a file to rename")
+          return;
+        }
+
+        newRenamePopup.context = "Rename \"" + fileName + "\""
+        newRenamePopup.elementName = fileName
+        newRenamePopup.inputHint = "New name"
+        newRenamePopup.inputValue = ""
+        newRenamePopup.open()
+        return;
+      }
+
+      case "Refresh":
+      {
+        fsModel.currentDirectory = fsModel.currentDirectory
+      }
     }
-    else if (action === "Queue" && ftpModel.connected)
-    {
-      fsModel.QueueTransfer(localListView.currentIndex)
-    }
-    else if (action === "Delete" && localListView.currentIndex >= 0)
-    {
-      newRenamePopup.context = "Delete \"" + fileName + "\""
-      newRenamePopup.elementName = fileName
-      newRenamePopup.elementIsDir = fileIsDir
-      newRenamePopup.inputHint = "Folder name"
-      newRenamePopup.inputValue = fileName
-      newRenamePopup.open()
-    }
-    else if (action === "Rename" && localListView.currentIndex >= 0)
-    {
-      newRenamePopup.context = "Rename \"" + fileName + "\""
-      newRenamePopup.elementName = fileName
-      newRenamePopup.inputHint = "New name"
-      newRenamePopup.inputValue = ""
-      newRenamePopup.open()
-    }
-    else if (action === "New folder")
-    {
-      newRenamePopup.context = "New folder"
-      newRenamePopup.inputHint = "Folder name"
-      newRenamePopup.inputValue = ""      
-      newRenamePopup.open()
-    }
-    else if (action === "Refresh")
-    {
-      fsModel.currentDirectory = fsModel.currentDirectory
-    }
+
   }
 
   RenameNewPopup {

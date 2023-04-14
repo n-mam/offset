@@ -17,6 +17,20 @@ LocalFsModel * LocalFsModel::getInstance(void)
   return s_instance;
 }
 
+void LocalFsModel::QueueTransfer(int index, bool start)
+{
+  auto fileName = m_model[index].m_name;
+  auto fileIsDir = IsElementDirectory(index);
+  auto fileSize = GetElementSize(index);
+
+  UploadInternal(
+    fileName,
+    m_currentDirectory, 
+    RemoteFsModel::getInstance()->getCurrentDirectory().toStdString(), 
+    fileIsDir, 
+    fileSize);
+}
+
 void LocalFsModel::UploadInternal(const std::string& file, const std::string& localFolder, const std::string& remoteFolder, bool isFolder, uint64_t size)
 {
   auto localPath = localFolder + ((localFolder.back() == path_sep) ? file : (path_sep + file));
@@ -31,8 +45,7 @@ void LocalFsModel::UploadInternal(const std::string& file, const std::string& lo
             localPath,
             remotePath,
             true);
-        }
-        else if(entry.is_regular_file()) {
+        } else if(entry.is_regular_file()) {
           TransferManager::getInstance()->AddToTransferQueue({
             entry.path().string(),
             remotePath + "/" + entry.path().filename().string(),
@@ -52,17 +65,6 @@ void LocalFsModel::UploadInternal(const std::string& file, const std::string& lo
   }
   catch(const std::exception& e) {
     LOG << e.what();
-  }
-}
-
-void LocalFsModel::QueueTransfer(int index)
-{
-  if (index >= 0)
-  {
-    const auto& fileName = m_model[index].m_name;
-    auto fileIsDir = IsElementDirectory(index);
-    auto fileSize = fileIsDir ? 0 : std::stoll(m_model[index].m_size);
-    UploadInternal(fileName, m_currentDirectory, RemoteFsModel::getInstance()->getCurrentDirectory().toStdString(), fileIsDir, fileSize);
   }
 }
 

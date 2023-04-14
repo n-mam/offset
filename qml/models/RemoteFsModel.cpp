@@ -72,15 +72,18 @@ bool RemoteFsModel::Connect(QString host, QString port, QString user, QString pa
   return false;
 }
 
-void RemoteFsModel::QueueTransfer(int index)
+void RemoteFsModel::QueueTransfer(int index, bool start)
 {
-  if (index >= 0)
-  {
-    const auto& fileName = m_model[index].m_name;
-    auto fileIsDir = IsElementDirectory(index);
-    auto fileSize = fileIsDir ? 0 : std::stoll(m_model[index].m_size);
-    DownloadInternal(fileName, m_currentDirectory, LocalFsModel::getInstance()->getCurrentDirectory().toStdString(), fileIsDir, fileSize);
-  }
+  auto fileName = m_model[index].m_name;
+  auto fileIsDir = IsElementDirectory(index);
+  auto fileSize = GetElementSize(index);
+
+  DownloadInternal(
+    fileName,
+    m_currentDirectory,
+    LocalFsModel::getInstance()->getCurrentDirectory().toStdString(),
+    fileIsDir,
+    fileSize);
 }
 
 void RemoteFsModel::DownloadInternal(const std::string& file, const std::string& folder, const std::string& localFolder, bool isFolder, uint64_t size)
@@ -97,8 +100,7 @@ void RemoteFsModel::DownloadInternal(const std::string& file, const std::string&
             remotePath,
             localPath,
             true);
-        }
-        else {
+        } else {
           TransferManager::getInstance()->AddToTransferQueue({
             localPath + path_sep + fe.m_name,
             remotePath + "/" + fe.m_name,
@@ -107,8 +109,7 @@ void RemoteFsModel::DownloadInternal(const std::string& file, const std::string&
           });
         }
     });
-  }
-  else {
+  } else {
     TransferManager::getInstance()->AddToTransferQueue({
       localPath,
       remotePath,
