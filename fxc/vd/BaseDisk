@@ -270,9 +270,7 @@ class BaseDisk : public npl::subject<uint8_t, uint8_t>
 
   virtual void DumpStructure(void)
     {
-      LOG;
       LOG << "Master Boot Record : ";
-      
       LOG << "DiskID                       : ";
       
       DumpBytes(iMBR.DiskID, 4, true);

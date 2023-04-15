@@ -12,14 +12,15 @@ int main(int argc, char *argv[])
 
   if (!arguments.size()) return 0;
 
-  osl::log::SetLogSink<std::string>(
-    [](auto level, int key, auto log){
-      if (level >= 0) {
-        std::cout << log << std::endl;
-      }
-    });
-
   npl::make_dispatcher();
+
+  osl::log::SetLogSink<std::string>(
+    [](int key, auto log){
+      std::cout << log << std::endl;
+    }
+  );
+
+  osl::log::SetLogLevel(osl::log::info);
 
   auto ns = arguments[0];
 

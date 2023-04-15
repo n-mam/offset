@@ -288,7 +288,7 @@ class Dispatcher : public subject<uint8_t, uint8_t>
     DBG << "Dispatcher thread returning, observers : " << m_observers.size();
   }
 
-  void ProcessContext(void *key, Context *ctx, int fRet = 1, int error = 0)
+  void ProcessContext(void *key, Context *ctx, int fRet = 1, uint64_t error = 0)
   {
     auto k = (subject<uint8_t, uint8_t> *) key;
 

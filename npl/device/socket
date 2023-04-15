@@ -53,7 +53,7 @@ class socket_device : public file_device
     StopSocket();
     shutdown((SOCKET)iFD, 0); //sd_recv
     closesocket((SOCKET)iFD);
-    //DBG << "~socket_device() <-- " << GetName() << " shutdown(sd_recv)";
+    DBG << "~socket_device() <-- " << GetName() << " shutdown(sd_recv)";
 
     if (m_ssl) {
       if (ssl_session_map[m_ssl].size()) {
@@ -74,7 +74,7 @@ class socket_device : public file_device
         if (!(flag & SSL_SENT_SHUTDOWN))
         {
           int rc = SSL_shutdown(m_ssl);
-          //DBG << GetName() << " ssl_shutdown() rc : " << rc;
+          DBG << GetName() << " ssl_shutdown() rc : " << rc;
           UpdateWriteBIO();
         }
       }
@@ -86,7 +86,7 @@ class socket_device : public file_device
       if (stopWrite)
         shutdown((SOCKET)iFD, 0); //sd_recv
 
-      //DBG << GetName() << " shutdown(sd_send)";
+      DBG << GetName() << " shutdown(sd_send)";
     }
   }
 
@@ -276,6 +276,7 @@ class socket_device : public file_device
       struct addrinfo *ptr = NULL;
       struct addrinfo *result = NULL;
       struct sockaddr_in *sockaddr_ipv4;
+      struct sockaddr_in6 * sockaddr_ipv6;
 
       memset(&hints, 0, sizeof(hints));
       hints.ai_family = AF_UNSPEC;
@@ -291,11 +292,21 @@ class socket_device : public file_device
             case AF_UNSPEC:
                 break;
             case AF_INET:
-                sockaddr_ipv4 = (struct sockaddr_in *) ptr->ai_addr;
-                m_host = std::string(inet_ntoa(sockaddr_ipv4->sin_addr));
-                break;
+            {
+              sockaddr_ipv4 = (struct sockaddr_in *) ptr->ai_addr;
+              char ipaddr[INET_ADDRSTRLEN] = {'\0'};
+              auto ip = inet_ntop(AF_INET, &sockaddr_ipv4->sin_addr, ipaddr, INET_ADDRSTRLEN);
+              m_host = std::string(ip); 
+              break;
+            }
             case AF_INET6:
-                break;
+            {
+              sockaddr_ipv6 = (struct sockaddr_in6 *) ptr->ai_addr;
+              char ipaddr[INET6_ADDRSTRLEN] = {'\0'};
+              auto ip = inet_ntop(AF_INET6, &sockaddr_ipv6->sin6_addr, ipaddr, INET6_ADDRSTRLEN);
+              m_host = std::string(ip);
+              break;
+            }
             default:
                 break;
           }
@@ -316,7 +327,7 @@ class socket_device : public file_device
 
     if (flag & SSL_RECEIVED_SHUTDOWN)
     {
-      //DBG << GetName() << " SSL_RECEIVED_SHUTDOWN, flags : " << flag;
+      DBG << GetName() << " SSL_RECEIVED_SHUTDOWN, flags : " << flag;
 
       if (!(flag & SSL_SENT_SHUTDOWN))
       {
@@ -372,7 +383,7 @@ class socket_device : public file_device
     SSL_CTX_sess_set_new_cb(m_ssl_ctx,
       [](SSL *ssl, SSL_SESSION *session) {
         ssl_session_map[ssl].push_back(session);
-        //DBG << "new session callback " << SSL_get_version(ssl);
+        DBG << "new session callback " << SSL_get_version(ssl);
         return 0;
       });
 
@@ -451,7 +462,7 @@ class socket_device : public file_device
   {
     assert(IsClientSocket());
 
-    //DBG << GetName() << " OnConnect()";
+    DBG << GetName() << " OnConnect()";
 
     file_device::OnConnect();
 
@@ -498,7 +509,7 @@ class socket_device : public file_device
 
           m_tls_version = SSL_get_version(m_ssl);
 
-          //DBG << GetName() << " " << m_tls_version << " handshake done, session reused : " << SSL_session_reused(m_ssl);
+          DBG << GetName() << " " << m_tls_version << " handshake done, session reused : " << SSL_session_reused(m_ssl);
 
           if (m_onHandShake)
           {
@@ -507,7 +518,7 @@ class socket_device : public file_device
         }
         else
         {
-          //DBG << GetName() << " SSL_do_handshake : " << rc << " " << SSL_get_error(m_ssl, rc);
+          DBG << GetName() << " SSL_do_handshake : " << rc << " " << SSL_get_error(m_ssl, rc);
         }
       }
 

@@ -8,6 +8,7 @@ find_package(ZLIB REQUIRED)
 find_package(OpenSSL REQUIRED)
 find_package(RapidJSON CONFIG REQUIRED)
 find_package(Crc32c CONFIG REQUIRED)
+find_package(Qt6 COMPONENTS Quick QuickControls2 Gui QUIET)
 
 include_directories(
   ${CMAKE_SOURCE_DIR}
@@ -16,7 +17,15 @@ include_directories(
   ${CMAKE_SOURCE_DIR}/fxc
 )
 
-add_subdirectory(qml)
+if(MSVC)
+  add_definitions(
+    -D_CRT_SECURE_NO_WARNINGS 
+    -D_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING)
+endif()
+
+if(Qt6_FOUND)
+  add_subdirectory(qml)
+endif()
 
 add_executable(Test test.cpp)
 
