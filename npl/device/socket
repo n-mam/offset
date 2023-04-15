@@ -246,6 +246,11 @@ class socket_device : public file_device
     #endif
   }
 
+  virtual uint32_t GetSocketType(void)
+  {
+    return m_socket_type;
+  }
+
   virtual bool IsClientSocket(void)
   {
     return (m_socket_type == socketType::client);

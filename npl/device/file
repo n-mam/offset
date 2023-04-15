@@ -212,7 +212,7 @@ class file_device : public subject<uint8_t, uint8_t>
   {
     if (!IsConnected())
     {
-      LOG << GetName() << " file_device::Read() not connected";
+      ERR << GetName() << " file_device::Read() not connected";
       return nullptr;
     }
 
@@ -241,7 +241,7 @@ class file_device : public subject<uint8_t, uint8_t>
 
     if (!fRet && GetLastError() != ERROR_IO_PENDING)
     {
-      LOG << GetName() << " ReadFile failed : " << GetLastError();
+      ERR << GetName() << " ReadFile failed : " << GetLastError();
     }
 
     return nullptr;
@@ -271,13 +271,13 @@ class file_device : public subject<uint8_t, uint8_t>
   {
     if (!IsConnected())
     {
-      LOG << GetName() << " file_device::Write() not connected";
+      ERR << GetName() << " file_device::Write() not connected";
       return false;
     }
 
     if (!b || !l)
     {
-      LOG << GetName() << " file_device::Write() invalid arguments";
+      ERR << GetName() << " file_device::Write() invalid arguments";
       return false;
     }
 
@@ -307,8 +307,8 @@ class file_device : public subject<uint8_t, uint8_t>
         fRet = true;
       }
       else
-      { 
-        LOG << GetName() << " WriteFile() failed : " << GetLastError();
+      {
+        ERR << GetName() << " WriteFile() failed : " << GetLastError();
       }
     }
 
@@ -318,7 +318,7 @@ class file_device : public subject<uint8_t, uint8_t>
 
     if (rc == -1)
     {
-      LOG << GetName() << " write() failed : " << strerror(errno);
+      ERR << GetName() << " write() failed : " << strerror(errno);
       fRet = false;
     }
 
@@ -354,7 +354,7 @@ class file_device : public subject<uint8_t, uint8_t>
   {
     if (!b || !l)
     {
-      LOG << GetName() << " file_device::Write() invalid arguments";
+      ERR << GetName() << " file_device::Write() invalid arguments";
       return false;
     }
 
