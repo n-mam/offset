@@ -349,7 +349,7 @@ class Dispatcher : public subject<uint8_t, uint8_t>
 
     if (e.IsWrite())
     {
-      DBG << "Event::IsWrite, socket type " << dev.GetSocketType() 
+      DBG << "Event::IsWrite, socket type " << dev->GetSocketType() 
         << " isConnected : " << isConnected;
       if (isClientSocket && !isConnected)
       {
@@ -372,9 +372,9 @@ class Dispatcher : public subject<uint8_t, uint8_t>
     }
     else if (e.IsRead())
     {
-      DBG << "Event::IsRead, socket type " << dev.GetSocketType() 
+      DBG << "Event::IsRead, socket type " << dev->GetSocketType() 
         << " isConnected : " << isConnected;
-      if (listentingSocket)
+      if (isListentingSocket)
       {
         auto ctx = (Context *) calloc(1, sizeof(Context));
         ctx->type = EIOType::ACCEPT;
@@ -400,7 +400,7 @@ class Dispatcher : public subject<uint8_t, uint8_t>
     #ifdef linux
     else if (e.IsError() || e.IsHangUp())
     {
-      DBG << "Event::IsHangUp, socket type " << dev.GetSocketType() 
+      DBG << "Event::IsHangUp, socket type " << dev->GetSocketType() 
         << " isConnected : " << isConnected << " error " <<  strerror(errno);
       auto ctx = (Context *) calloc(1, sizeof(Context));
       ctx->type = EIOType::READ;
@@ -413,7 +413,7 @@ class Dispatcher : public subject<uint8_t, uint8_t>
     #if __has_include(<sys/event.h>)
     else if (e.IsEOF())
     {
-      DBG << "Event::IsEOF, socket type " << dev.GetSocketType() 
+      DBG << "Event::IsEOF, socket type " << dev->GetSocketType() 
         << " isConnected : " << isConnected << " error " <<  strerror(errno);
     }
     #endif
