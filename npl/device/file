@@ -210,13 +210,12 @@ class file_device : public subject<uint8_t, uint8_t>
 
   virtual void * Read(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override
   {
-    if (!IsConnected())
-    {
+    if (!IsConnected()) {
       ERR << GetName() << " file_device::Read() not connected";
       return nullptr;
     }
 
-    Context *ctx = (Context *)calloc(1, sizeof(Context));
+    Context *ctx = (Context *) calloc(1, sizeof(Context));
 
     ctx->type = EIOType::READ;
 
@@ -250,15 +249,13 @@ class file_device : public subject<uint8_t, uint8_t>
 
     ctx->n = read(iFD, (void *) ctx->b, l);
 
-    if ((int)ctx->n == -1)
-    {
-      LOG << GetName() << " read() failed, error : " << strerror(errno);
+    DBG << GetName() << " read() " << (ssize_t) ctx->n
+      << ", error : " << strerror(errno);
 
-      if (!b)
-      {
+    if ((ssize_t)ctx->n == -1) {
+      if (!b) {
         free ((void *)ctx->b);
       }
-
       free (ctx), ctx = nullptr;
     }
 
@@ -269,14 +266,12 @@ class file_device : public subject<uint8_t, uint8_t>
 
   virtual bool Write(const uint8_t *b = nullptr , size_t l = 0, uint64_t o = 0) override
   {
-    if (!IsConnected())
-    {
+    if (!IsConnected()) {
       ERR << GetName() << " file_device::Write() not connected";
       return false;
     }
 
-    if (!b || !l)
-    {
+    if (!b || !l) {
       ERR << GetName() << " file_device::Write() invalid arguments";
       return false;
     }
@@ -308,7 +303,7 @@ class file_device : public subject<uint8_t, uint8_t>
       }
       else
       {
-        ERR << GetName() << " WriteFile() failed : " << GetLastError();
+        ERR << GetName() << " file_device::Write() WriteFile() failed : " << GetLastError();
       }
     }
 
@@ -316,9 +311,8 @@ class file_device : public subject<uint8_t, uint8_t>
 
     auto rc = write(iFD, b, l);
 
-    if (rc == -1)
-    {
-      ERR << GetName() << " write() failed : " << strerror(errno);
+    if (rc == -1) {
+      ERR << GetName() << " file_device::Write() write() failed : " << strerror(errno);
       fRet = false;
     }
 
@@ -352,9 +346,8 @@ class file_device : public subject<uint8_t, uint8_t>
 
   virtual int32_t WriteSync(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override
   {
-    if (!b || !l)
-    {
-      ERR << GetName() << " file_device::Write() invalid arguments";
+    if (!b || !l) {
+      ERR << GetName() << " file_device::WriteSync() invalid arguments";
       return false;
     }
 

@@ -292,8 +292,8 @@ class Dispatcher : public subject<uint8_t, uint8_t>
   {
     auto k = (subject<uint8_t, uint8_t> *) key;
 
-    DBG << k->GetName() << " " << (uint64_t)k << " "
-            <<  npl::EIOToString(ctx->type) << ", n " << ctx->n;
+    DBG << k->GetName() << " ProcessContext " << (uint64_t) k << " "
+            <<  npl::EIOToString(ctx->type) << ", n " << (ssize_t) ctx->n;
 
     if (fRet <= 0)
     {

@@ -20,7 +20,7 @@ int main(int argc, char *argv[])
     }
   );
 
-  osl::log::SetLogLevel(osl::log::info);
+  osl::log::SetLogLevel(osl::log::debug);
 
   auto ns = arguments[0];
 
