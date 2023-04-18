@@ -250,7 +250,7 @@ class file_device : public subject<uint8_t, uint8_t>
     ctx->n = read(iFD, (void *) ctx->b, l);
 
     DBG << GetName() << " read() " << (ssize_t) ctx->n
-      << ", error : " << strerror(errno);
+      << " error : " << strerror(errno);
 
     if ((ssize_t)ctx->n == -1) {
       if (!b) {

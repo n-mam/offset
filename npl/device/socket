@@ -180,7 +180,7 @@ class socket_device : public file_device
 
     if (fRet == -1)
     {
-      DBG << "bind failed, error : " << strerror(errno);
+      DBG << "bind failed. error : " << strerror(errno);
     }
 
     assert(fRet == 0);
@@ -189,7 +189,7 @@ class socket_device : public file_device
 
     if (fRet == -1)
     {
-      DBG << "listen failed, error : " << strerror(errno);
+      DBG << "listen failed. error : " << strerror(errno);
     }
 
     assert(fRet == 0);
@@ -431,7 +431,7 @@ class socket_device : public file_device
 
     if (m_accepted_socket == -1)
     {
-      DBG << "accept failed, error : " << strerror(errno) << " " << m_socket_type;
+      DBG << "accept failed. error : " << strerror(errno) << " " << m_socket_type;
       return;
     }
 

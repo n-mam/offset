@@ -14,8 +14,8 @@ inline auto make_dispatcher(void)
   WSADATA wsaData;
   int winsockinit = WSAStartup(MAKEWORD(2, 2), &wsaData);
   #endif
-  D = std::make_shared<Dispatcher>();
-  D->InitializeControl();
+  D = std::make_shared<dispatcher>();
+  D->initialize_control();
   return D;
 }
 
@@ -233,23 +233,23 @@ inline void tests_dispatcher()
 {
   for (int i = 0; i < 100; i++)
   {
-    auto D = std::make_unique<Dispatcher>();
+    auto D = std::make_unique<dispatcher>();
   }
 
   for (int i = 0; i < 100; i++)
   {
-    auto D = std::make_shared<Dispatcher>();
+    auto D = std::make_shared<dispatcher>();
   }
 
   for (int i = 0; i < 100; i++)
   {
-    auto D = new Dispatcher();
+    auto D = new dispatcher();
 
     delete D;
   }
 
-  auto D1 = std::make_unique<Dispatcher>();
-  auto D2 = std::make_unique<Dispatcher>();
+  auto D1 = std::make_unique<dispatcher>();
+  auto D2 = std::make_unique<dispatcher>();
 }
 
 inline auto usage(void)

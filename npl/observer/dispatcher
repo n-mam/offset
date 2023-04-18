@@ -43,67 +43,69 @@ struct Event
   #endif
 };
 
-class Dispatcher : public subject<uint8_t, uint8_t>
+class dispatcher : public subject<uint8_t, uint8_t>
 {
   private:
 
-  FD iEventPort;
+  FD _event_port;
 
-  std::thread iWorker;
+  bool _exit_event_loop = false;
 
-  bool iExitWorker = false;
+  std::thread _event_loop_thread;
 
-  SPSocketDevice iDServer;
+  SPSocketDevice _ctrl_server;
 
-  SPSocketDevice iDClient;
+  SPSocketDevice _ctrl_client;
 
   public:
 
-  Dispatcher(const std::string& name = "D") : subject(name)
+  dispatcher(const std::string& name = "D") : subject(name)
   {
     #if __has_include(<sys/event.h>)
-    iEventPort = kqueue();
+    _event_port = kqueue();
+    DBG << "kqueue _event_port " << _event_port << ", " << strerror(errno);
     #elif linux
-    iEventPort = epoll_create1(0);
+    _event_port = epoll_create1(0);
+    DBG << "epoll _event_port " << _event_port << ", " << strerror(errno);
     #elif WIN32
-    iEventPort = CreateIoCompletionPort(INVALID_HANDLE_VALUE, 0, 0, 0);
+    _event_port = CreateIoCompletionPort(INVALID_HANDLE_VALUE, 0, 0, 0);
+    DBG << "iocp _event_port " << _event_port << ", " << GetLastError();
     #endif
 
-    if (!iWorker.joinable())
+    if (!_event_loop_thread.joinable())
     {
-      iWorker = std::thread(&Dispatcher::Worker, this);
+      _event_loop_thread = std::thread(&dispatcher::event_loop, this);
     }
   }
 
-  ~Dispatcher()
+  ~dispatcher()
   {
-    iExitWorker = true;
+    _ctrl_client->StopSocket();
+    _ctrl_server->StopSocket();
 
-    iDClient->StopSocket();
-    iDServer->StopSocket();
-
-    iWorker.join();
+    _exit_event_loop = true;
+    _event_loop_thread.join();
 
     #ifndef WIN32
-    if (iEventPort >= 0)
+    if (_event_port >= 0)
     {
-      close(iEventPort), iEventPort = 0;
+      close(_event_port), _event_port = 0;
     }
     #else
-    if (iEventPort != INVALID_HANDLE_VALUE)
+    if (_event_port != INVALID_HANDLE_VALUE)
     {
-      CloseHandle(iEventPort), iEventPort = INVALID_HANDLE_VALUE;
+      CloseHandle(_event_port), _event_port = INVALID_HANDLE_VALUE;
     }
     #endif
   }
 
-  void InitializeControl(void)
+  void initialize_control(void)
   {
     m_target = weak_from_this();
 
-    iDServer = std::make_shared<socket_device>("DC-LS");
+    _ctrl_server = std::make_shared<socket_device>("DC-LS");
 
-    iDServer->SetHostAndPort("0.0.0.0", 12345);
+    _ctrl_server->SetHostAndPort("0.0.0.0", 12345);
 
     auto ls = std::make_shared<Listener>(
       nullptr, nullptr, nullptr, nullptr,
@@ -116,28 +118,28 @@ class Dispatcher : public subject<uint8_t, uint8_t>
             m.append((char *)b, n);
             if (m.size() == sizeof(Context))
             {
-              Context *ctx = (Context *) calloc(1, sizeof(Context));
-              memmove(ctx, m.data(), sizeof(Context));
-              ProcessContext((subject *) ctx->k, ctx);
+              Context ctx;
+              memmove(&ctx, m.data(), sizeof(Context));
+              process_event_context((subject *) ctx.k, &ctx);
               m.clear();
             }
           }
         );
-        this->iDServer->GetConnectedClient()->AddEventListener(aso);
+        this->_ctrl_server->GetConnectedClient()->AddEventListener(aso);
       }
     );
 
-    GetDispatcher()->AddEventListener(iDServer)->AddEventListener(ls);
+    GetDispatcher()->AddEventListener(_ctrl_server)->AddEventListener(ls);
 
-    iDServer->StartSocketServer();
+    _ctrl_server->StartSocketServer();
 
-    iDClient = std::make_shared<socket_device>("DC-CT");
+    _ctrl_client = std::make_shared<socket_device>("DC-CT");
 
-    iDClient->SetHostAndPort("127.0.0.1", 12345);
+    _ctrl_client->SetHostAndPort("127.0.0.1", 12345);
 
-    GetDispatcher()->AddEventListener(iDClient);
+    GetDispatcher()->AddEventListener(_ctrl_client);
 
-    iDClient->StartSocketClient();
+    _ctrl_client->StartSocketClient();
   }
 
   virtual void AddSubjectToEventPort(SPSubject subject) override
@@ -155,14 +157,14 @@ class Dispatcher : public subject<uint8_t, uint8_t>
     struct kevent kevt[2];
     EV_SET(&kevt[0], device->iFD, EVFILT_READ, EV_ADD, 0, 0, device.get());
     EV_SET(&kevt[1], device->iFD, EVFILT_WRITE, EV_ADD, 0, 0, device.get());
-    auto rc = kevent(iEventPort, kevt, 2, NULL, 0, NULL);
+    auto rc = kevent(_event_port, kevt, 2, NULL, 0, NULL);
     assert(rc != -1);
     #endif
 
     #ifdef _WIN32
     HANDLE port = CreateIoCompletionPort(
       device->iFD,
-      iEventPort,
+      _event_port,
       (ULONG_PTR) device.get(),
       0);
     assert(port);
@@ -182,10 +184,11 @@ class Dispatcher : public subject<uint8_t, uint8_t>
 
   private:
 
-  void Worker(void)
+  void event_loop(void)
   {
-    while (!iExitWorker)
+    while (!_exit_event_loop)
     {
+      int rc = 0;
       void *k = nullptr;
       uint64_t error = 0;
 
@@ -194,40 +197,32 @@ class Dispatcher : public subject<uint8_t, uint8_t>
       LPOVERLAPPED ol;
       unsigned long n;
 
-      auto fRet = GetQueuedCompletionStatus(iEventPort, &n, (PULONG_PTR) &k, &ol, INFINITE);
+      rc = GetQueuedCompletionStatus(_event_port, &n, (PULONG_PTR) &k, &ol, INFINITE);
 
-      if (iExitWorker) break;
+      if (_exit_event_loop) break;
 
-      if (!fRet)
-      {
+      if (!rc) {
         error = GetLastError();
-        DBG << "GQCS failed : " << error << " " << 
+        DBG << "GQCS failed : " << error << " " <<
                 ((subject<uint8_t, uint8_t> *) k)->GetName();
       }
 
-      if (n == 0 && k == 0 && ol == 0)
-      {
-        break;
-      }
+      if (n == 0 && k == 0 && ol == 0) break;
 
       #elif linux
 
       struct epoll_event ee;
 
-      int fRet = epoll_wait(iEventPort, &ee, 1, -1);
+      rc = epoll_wait(_event_port, &ee, 1, -1);
 
-      if (iExitWorker) break;
+      if (_exit_event_loop) break;
 
-      if (fRet < 0)
-      {
+      if (rc < 0) {
         error = errno;
         DBG << "epoll_wait failed : " << strerror(error) << " " <<
                 ((subject<uint8_t, uint8_t> *) k)->GetName();
-
         if (errno == EINTR)
-        {
           continue;
-        }
       }
 
       k = ee.data.ptr;
@@ -238,12 +233,11 @@ class Dispatcher : public subject<uint8_t, uint8_t>
 
       struct kevent	ke;
 
-      auto fRet = kevent(iEventPort, NULL, 0, &ke,	1, nullptr);
+      rc = kevent(_event_port, NULL, 0, &ke,	1, nullptr);
 
-      if (iExitWorker) break;
+      if (_exit_event_loop) break;
 
-      if (fRet < 0)
-      {
+      if (rc < 0) {
         error = errno;
         DBG << "kevent failed : " << strerror(error) << " " <<
                 ((subject<uint8_t, uint8_t> *) k)->GetName();
@@ -264,16 +258,16 @@ class Dispatcher : public subject<uint8_t, uint8_t>
         {
           #ifdef _WIN32
           ((Context *)ol)->n = n;
-          std::vector<Context *> contexts{ (Context *)ol };
+          std::vector<Context *> contexts { (Context *)ol };
           #else
-          std::vector<Context *> contexts = GetEventContext(o, e);
+          std::vector<Context *> contexts = get_event_context(o, e);
           #endif
 
           ul.unlock();
 
           for (auto ctx : contexts)
           {
-            ProcessContext(o.get(), ctx, fRet, error);
+            process_event_context(o.get(), ctx, rc, error);
           }
 
           ul.lock();
@@ -285,17 +279,17 @@ class Dispatcher : public subject<uint8_t, uint8_t>
       ProcessListenersMarkedForRemoval();
     }
 
-    DBG << "Dispatcher thread returning, observers : " << m_observers.size();
+    DBG << "event_loop thread returning, observers : " << m_observers.size();
   }
 
-  void ProcessContext(void *key, Context *ctx, int fRet = 1, uint64_t error = 0)
+  void process_event_context(void *key, Context *ctx, int rc = 1, uint64_t error = 0)
   {
     auto k = (subject<uint8_t, uint8_t> *) key;
 
-    DBG << k->GetName() << " ProcessContext " << (uint64_t) k << " "
-            <<  npl::EIOToString(ctx->type) << ", n " << (ssize_t) ctx->n;
+    DBG << k->GetName() << " process_event_context " << std::hex << (uint64_t) k << " "
+            <<  npl::EIOToString(ctx->type) << " n " << std::dec << (ssize_t) ctx->n;
 
-    if (fRet <= 0)
+    if (rc <= 0)
     {
       k->OnError(error);
     }
@@ -337,7 +331,7 @@ class Dispatcher : public subject<uint8_t, uint8_t>
 
   #ifndef WIN32
 
-  std::vector<Context *> GetEventContext(SPSubject o, Event& e)
+  std::vector<Context *> get_event_context(SPSubject o, Event& e)
   {
     std::vector<Context *> contexts;
 
@@ -366,7 +360,7 @@ class Dispatcher : public subject<uint8_t, uint8_t>
       struct kevent kevt[1];
       //EV_SET(&kevt[0], dev->iFD, EVFILT_READ, EV_ADD, 0, 0, dev.get());
       EV_SET(&kevt[0], dev->iFD, EVFILT_WRITE, EV_DELETE, 0, 0, dev.get());
-      auto rc = kevent(iEventPort, kevt, 1, NULL, 0, NULL);
+      auto rc = kevent(_event_port, kevt, 1, NULL, 0, NULL);
       assert(rc != -1);
       #endif
     }
@@ -430,7 +424,7 @@ class Dispatcher : public subject<uint8_t, uint8_t>
 
     e.data.ptr = device.get();
 
-    int rc = epoll_ctl(iEventPort, op, device->iFD, &e);
+    int rc = epoll_ctl(_event_port, op, device->iFD, &e);
 
     if (rc == -1)
     {
@@ -447,7 +441,7 @@ class Dispatcher : public subject<uint8_t, uint8_t>
   {
     ((Context *)c)->k = s.get();
 
-    iDClient->Write((const uint8_t *)c, sizeof(Context));
+    _ctrl_client->Write((const uint8_t *)c, sizeof(Context));
 
     free(c);
   }
@@ -458,8 +452,8 @@ class Dispatcher : public subject<uint8_t, uint8_t>
   }
 };
 
-using SPDispatcher = std::shared_ptr<Dispatcher>;
-using UPDispatcher = std::unique_ptr<Dispatcher>;
+using SPDispatcher = std::shared_ptr<dispatcher>;
+using UPDispatcher = std::unique_ptr<dispatcher>;
 
 inline SPDispatcher D = nullptr;
 
