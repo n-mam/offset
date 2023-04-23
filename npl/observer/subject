@@ -64,16 +64,6 @@ class subject : public std::enable_shared_from_this<subject<T1, T2>>
     m_target = target;
   }
 
-  virtual void QueuePendingContext(SPSubject s, void *c)
-  {
-    auto target = m_target.lock();
-
-    if (target)
-    {
-      return target->QueuePendingContext(s, c);
-    }
-  }
-
   virtual void * Read(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0)
   {
     std::lock_guard<std::mutex> lg(m_lock);
@@ -174,10 +164,6 @@ class subject : public std::enable_shared_from_this<subject<T1, T2>>
   {
     std::lock_guard<std::mutex> lg(m_lock);
     NotifyEvent(e);
-  }
-
-  virtual void AddSubjectToEventPort(SPSubject device)
-  {
   }
 
   virtual const SPSubject& AddEventListener(const SPSubject& observer)

@@ -108,7 +108,7 @@ class socket_device : public file_device
 
     assert(rc == 0);
 
-    Context *ctx = (Context *) calloc(1, sizeof(Context));
+    context *ctx = (context *) calloc(1, sizeof(context));
 
     ctx->type = EIOType::CONNECT;
 
@@ -159,7 +159,7 @@ class socket_device : public file_device
 
     int rc = connect((SOCKET)iFD, (const sockaddr *) &sa, sizeof(sa));
 
-    GetDispatcher()->AddSubjectToEventPort(shared_from_this());
+    GetDispatcher()->add_subject(shared_from_this());
 
     #endif
   }
@@ -196,7 +196,7 @@ class socket_device : public file_device
 
     #ifndef WIN32
     SetSocketBlockingEnabled(iFD, false);
-    GetDispatcher()->AddSubjectToEventPort(shared_from_this());
+    GetDispatcher()->add_subject(shared_from_this());
     #endif
 
     m_socket_type = socketType::listening;
@@ -211,9 +211,9 @@ class socket_device : public file_device
   {
     auto AcceptEx = GetExtentionPfn(WSAID_ACCEPTEX, iFD);
 
-    uint8_t *b = (uint8_t *) calloc(1, 2 * (sizeof(SOCKADDR_STORAGE) + 16) + sizeof(Context));
+    uint8_t *b = (uint8_t *) calloc(1, 2 * (sizeof(SOCKADDR_STORAGE) + 16) + sizeof(context));
 
-    ((Context *)b)->type = EIOType::ACCEPT;
+    ((context *)b)->type = EIOType::ACCEPT;
 
     m_accepted_socket = (FD) socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
@@ -222,7 +222,7 @@ class socket_device : public file_device
     bool rc = ((LPFN_ACCEPTEX)AcceptEx)(
                     (SOCKET)iFD,
                     (SOCKET)m_accepted_socket,
-                    b + sizeof(Context),
+                    b + sizeof(context),
                     0,
                     sizeof(SOCKADDR_STORAGE) + 16,
                     sizeof(SOCKADDR_STORAGE) + 16,
@@ -317,7 +317,7 @@ class socket_device : public file_device
           }
         }
       } else {
-        LOG << "getaddrinfo failed " << fRet;
+        ERR << "getaddrinfo failed " << fRet;
       }
 
       freeaddrinfo(result);

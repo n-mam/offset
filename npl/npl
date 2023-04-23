@@ -19,21 +19,21 @@ inline auto make_dispatcher(void)
   return D;
 }
 
-inline auto make_ftp(const std::string& host, int port, tls ftps = tls::no)
+inline auto make_ftp(const std::string& host, int port, tls tls = tls::no)
 {
-  auto ftp = std::make_shared<npl::ftp>("prot-ftp");    
+  SPProtocolFTP ftp;    
 
   auto cc = std::make_shared<socket_device>("sock-cc");
 
   auto success = cc->SetHostAndPort(host, port);
 
   if (success) {
-    cc->SetTLS(ftps);
+    cc->SetTLS(tls);
+    ftp = std::make_shared<npl::ftp>("prot-ftp");
     D->AddEventListener(cc)->AddEventListener(ftp);
   }
   else {
     cc.reset();
-    ftp.reset();
   }
 
   return ftp;
@@ -41,28 +41,38 @@ inline auto make_ftp(const std::string& host, int port, tls ftps = tls::no)
 
 inline auto make_ws_server(const std::string& host, int port, tls tls = tls::no, TOnClientMessageCbk cbk = nullptr)
 {
+  SPProtocolWSServer ls;
+
   auto cc = std::make_shared<socket_device>("ws-cc");
-  auto ls = std::make_shared<websocket_server>("ws-ls");
 
-  cc->SetTLS(tls);
+  auto success = cc->SetHostAndPort(host, port);
 
-  cc->SetHostAndPort(host, port);
-
-  ls->SetClientMessageCallback(cbk);
-
-  D->AddEventListener(cc)->AddEventListener(ls);
+  if (success) {
+    cc->SetTLS(tls);
+    ls = std::make_shared<websocket_server>("ws-ls");
+    ls->SetClientMessageCallback(cbk);
+    D->AddEventListener(cc)->AddEventListener(ls);
+  } else {
+    cc.reset();
+  }
 
   return ls;
 }
 
 inline auto make_http_client(const std::string& host, int port)
 {
-  auto sock = std::make_shared<socket_device>("http-socket");
-  auto http = std::make_shared<http_client>("http-protocol");    
+  SPProtocolHttpClient http;
 
-  sock->SetHostAndPort(host, port);
+  auto sock = std::make_shared<socket_device>("http-socket");   
 
-  D->AddEventListener(sock)->AddEventListener(http);
+  auto success = sock->SetHostAndPort(host, port);
+
+  if (success) {
+    http = std::make_shared<http_client>("http-protocol");
+    D->AddEventListener(sock)->AddEventListener(http);
+  } else {
+    sock.reset();
+  }
 
   return http;
 }

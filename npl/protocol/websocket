@@ -296,6 +296,8 @@ class websocket_server : public http_client
   }
 };
 
+using SPProtocolWSServer = std::shared_ptr<websocket_server>;
+
 } //namespace npl
 
 #endif //PROTOCOLWS_HPP

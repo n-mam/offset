@@ -33,18 +33,18 @@ struct Event
 {
   #ifdef linux
   uint32_t e;
-  bool IsRead() { return e & EPOLLIN; }
-  bool IsWrite() { return e & EPOLLOUT; }
-  bool IsError() { return e & EPOLLERR; }
-  bool IsHangUp() { return e & EPOLLHUP; }
+  bool is_read() { return e & EPOLLIN; }
+  bool is_write() { return e & EPOLLOUT; }
+  bool is_error() { return e & EPOLLERR; }
+  bool is_hangup() { return e & EPOLLHUP; }
   #endif
 
   #if __has_include(<sys/event.h>)
   short filter;
   u_short flags;
-  bool IsRead() { return filter == EVFILT_READ; }
-  bool IsWrite() { return filter == EVFILT_WRITE; }
-  bool IsEOF() { return flags & EV_EOF; }
+  bool is_read() { return filter == EVFILT_READ; }
+  bool is_write() { return filter == EVFILT_WRITE; }
+  bool Is_eof() { return flags & EV_EOF; }
   #endif
 };
 
@@ -54,9 +54,9 @@ class dispatcher : public subject<uint8_t, uint8_t>
 
   FD _event_port;
 
-  bool _exit_event_loop = false;
+  bool _exit_loop = false;
 
-  std::thread _event_loop_thread;
+  std::thread _event_thread;
 
   SPSocketDevice _ctrl_server;
 
@@ -77,9 +77,9 @@ class dispatcher : public subject<uint8_t, uint8_t>
     DBG << "iocp _event_port " << _event_port << ", " << GetLastError();
     #endif
 
-    if (!_event_loop_thread.joinable())
+    if (!_event_thread.joinable())
     {
-      _event_loop_thread = std::thread(&dispatcher::event_loop, this);
+      _event_thread = std::thread(&dispatcher::event_loop, this);
     }
   }
 
@@ -88,8 +88,8 @@ class dispatcher : public subject<uint8_t, uint8_t>
     _ctrl_client->StopSocket();
     _ctrl_server->StopSocket();
 
-    _exit_event_loop = true;
-    _event_loop_thread.join();
+    _exit_loop = true;
+    _event_thread.join();
 
     #ifndef WIN32
     if (_event_port >= 0)
@@ -121,11 +121,11 @@ class dispatcher : public subject<uint8_t, uint8_t>
           [this, m = std::string()]
           (const uint8_t *b, size_t n) mutable {
             m.append((char *)b, n);
-            if (m.size() == sizeof(Context))
+            if (m.size() == sizeof(context))
             {
-              Context ctx;
-              memmove(&ctx, m.data(), sizeof(Context));
-              process_event_context((subject *) ctx.k, &ctx);
+              context *ctx = (context *) calloc(1, sizeof(context));
+              memmove(ctx, m.data(), sizeof(context));
+              process_event_context((subject *) ctx->k, ctx);
               m.clear();
             }
           }
@@ -147,7 +147,7 @@ class dispatcher : public subject<uint8_t, uint8_t>
     _ctrl_client->StartSocketClient();
   }
 
-  virtual void AddSubjectToEventPort(SPSubject subject) override
+  virtual void add_subject(SPSubject subject)
   {
     auto device = std::dynamic_pointer_cast<file_device>(subject);
 
@@ -181,7 +181,7 @@ class dispatcher : public subject<uint8_t, uint8_t>
     subject::AddEventListener(observer);
 
     #ifdef _WIN32
-    AddSubjectToEventPort(observer);
+    add_subject(observer);
     #endif
 
     return observer;
@@ -191,7 +191,7 @@ class dispatcher : public subject<uint8_t, uint8_t>
 
   void event_loop(void)
   {
-    while (!_exit_event_loop)
+    while (!_exit_loop)
     {
       int rc = 0;
       void *k = nullptr;
@@ -204,7 +204,7 @@ class dispatcher : public subject<uint8_t, uint8_t>
 
       rc = GetQueuedCompletionStatus(_event_port, &n, (PULONG_PTR) &k, &ol, INFINITE);
 
-      if (_exit_event_loop) break;
+      if (_exit_loop) break;
 
       if (!rc) {
         error = GetLastError();
@@ -220,14 +220,13 @@ class dispatcher : public subject<uint8_t, uint8_t>
 
       rc = epoll_wait(_event_port, &ee, 1, -1);
 
-      if (_exit_event_loop) break;
+      if (_exit_loop) break;
 
       if (rc < 0) {
         error = errno;
         DBG << "epoll_wait failed : " << strerror(error) << " " <<
-                ((subject<uint8_t, uint8_t> *) k)->GetName();
-        if (errno == EINTR)
-          continue;
+          ((subject<uint8_t, uint8_t> *) k)->GetName();
+        if (errno == EINTR) continue;
       }
 
       k = ee.data.ptr;
@@ -240,7 +239,7 @@ class dispatcher : public subject<uint8_t, uint8_t>
 
       rc = kevent(_event_port, NULL, 0, &ke,	1, nullptr);
 
-      if (_exit_event_loop) break;
+      if (_exit_loop) break;
 
       if (rc < 0) {
         error = errno;
@@ -262,10 +261,10 @@ class dispatcher : public subject<uint8_t, uint8_t>
         if (k == (void *)o.get())
         {
           #ifdef _WIN32
-          ((Context *)ol)->n = n;
-          std::vector<Context *> contexts { (Context *)ol };
+          ((context *)ol)->n = n;
+          std::vector<context *> contexts { (context *)ol };
           #else
-          std::vector<Context *> contexts = get_event_context(o, e);
+          std::vector<context *> contexts = get_event_context(o, e);
           #endif
 
           ul.unlock();
@@ -287,7 +286,7 @@ class dispatcher : public subject<uint8_t, uint8_t>
     DBG << "event_loop thread returning, observers : " << m_observers.size();
   }
 
-  void process_event_context(void *key, Context *ctx, int rc = 1, uint64_t error = 0)
+  void process_event_context(void *key, context *ctx, int rc = 1, uint64_t error = 0)
   {
     auto k = (subject<uint8_t, uint8_t> *) key;
 
@@ -335,10 +334,9 @@ class dispatcher : public subject<uint8_t, uint8_t>
   }
 
   #ifndef WIN32
-
-  std::vector<Context *> get_event_context(SPSubject o, Event& e)
+  std::vector<context *> get_event_context(SPSubject o, Event& e)
   {
-    std::vector<Context *> contexts;
+    std::vector<context *> contexts;
 
     auto dev = std::dynamic_pointer_cast<socket_device> (o);
 
@@ -346,13 +344,13 @@ class dispatcher : public subject<uint8_t, uint8_t>
     auto isClientSocket = dev->IsClientSocket();
     auto isListentingSocket = dev->IsListeningSocket();
 
-    if (e.IsWrite())
+    if (e.is_write())
     {
-      DBG << "Event::IsWrite, socket type " << dev->GetSocketType() 
+      DBG << "Event::is_write, socket type " << dev->GetSocketType() 
         << " isConnected : " << isConnected;
       if (isClientSocket && !isConnected)
       {
-        auto ctx = (Context *) calloc(1, sizeof(Context));
+        auto ctx = (context *) calloc(1, sizeof(context));
         ctx->type = EIOType::CONNECT;
         ctx->k = dev.get();
         contexts.push_back(ctx);
@@ -369,24 +367,24 @@ class dispatcher : public subject<uint8_t, uint8_t>
       assert(rc != -1);
       #endif
     }
-    else if (e.IsRead())
+    else if (e.is_read())
     {
-      DBG << "Event::IsRead, socket type " << dev->GetSocketType() 
+      DBG << "Event::is_read, socket type " << dev->GetSocketType() 
         << " isConnected : " << isConnected;
       if (isListentingSocket)
       {
-        auto ctx = (Context *) calloc(1, sizeof(Context));
+        auto ctx = (context *) calloc(1, sizeof(context));
         ctx->type = EIOType::ACCEPT;
         ctx->k = dev.get();
         contexts.push_back(ctx);
       }
       else if (isConnected)
       {
-        Context *ctx = nullptr;
+        context *ctx = nullptr;
 
         do
         {
-          ctx = (Context *) dev->Read();
+          ctx = (context *) dev->Read();
 
           if (ctx)
           {
@@ -397,11 +395,11 @@ class dispatcher : public subject<uint8_t, uint8_t>
       }
     }
     #ifdef linux
-    else if (e.IsError() || e.IsHangUp())
+    else if (e.is_error() || e.is_hangup())
     {
-      DBG << "Event::IsHangUp, socket type " << dev->GetSocketType() 
+      DBG << "Event::is_hangup, socket type " << dev->GetSocketType() 
         << " isConnected : " << isConnected << " error " <<  strerror(errno);
-      auto ctx = (Context *) calloc(1, sizeof(Context));
+      auto ctx = (context *) calloc(1, sizeof(context));
       ctx->type = EIOType::READ;
       ctx->k = dev.get();
       ctx->n = 0;
@@ -410,9 +408,9 @@ class dispatcher : public subject<uint8_t, uint8_t>
     }
     #endif
     #if __has_include(<sys/event.h>)
-    else if (e.IsEOF())
+    else if (e.Is_eof())
     {
-      DBG << "Event::IsEOF, socket type " << dev->GetSocketType() 
+      DBG << "Event::Is_eof, socket type " << dev->GetSocketType() 
         << " isConnected : " << isConnected << " error " <<  strerror(errno);
     }
     #endif
@@ -442,11 +440,11 @@ class dispatcher : public subject<uint8_t, uint8_t>
 
   #endif
 
-  virtual void QueuePendingContext(SPSubject s, void *c) override
+  virtual void queue_pending_context(SPSubject s, void *c)
   {
-    ((Context *)c)->k = s.get();
+    ((context *)c)->k = s.get();
 
-    _ctrl_client->Write((const uint8_t *)c, sizeof(Context));
+    _ctrl_client->Write((const uint8_t *)c, sizeof(context));
 
     free(c);
   }

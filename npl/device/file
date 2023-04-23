@@ -43,13 +43,12 @@ enum EIOType : uint8_t {
   IOCTL
 };
 
-struct Context
+struct context
 {
   #ifdef _WIN32
   OVERLAPPED      ol;
-  #else
-
   #endif
+
   EIOType         type;
   void          * k;
   const uint8_t * b;
@@ -215,7 +214,7 @@ class file_device : public subject<uint8_t, uint8_t>
       return nullptr;
     }
 
-    Context *ctx = (Context *) calloc(1, sizeof(Context));
+    context *ctx = (context *) calloc(1, sizeof(context));
 
     ctx->type = EIOType::READ;
 
@@ -280,7 +279,7 @@ class file_device : public subject<uint8_t, uint8_t>
 
     #ifdef _WIN32
 
-    Context *ctx = (Context *) calloc(1, sizeof(Context));
+    context *ctx = (context *) calloc(1, sizeof(context));
 
     ctx->type = EIOType::WRITE;
 

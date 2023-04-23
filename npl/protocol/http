@@ -220,7 +220,7 @@ class http_client : public protocol<uint8_t, uint8_t>
   }
 };
 
-using SPProtocolHTTP = std::shared_ptr<http_client>;
+using SPProtocolHttpClient = std::shared_ptr<http_client>;
 
 } //namespace npl
 
