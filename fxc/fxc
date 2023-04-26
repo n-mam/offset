@@ -45,7 +45,7 @@ auto GetTargetForDestination(const std::wstring& destination, const std::wstring
 
   if (std::filesystem::is_directory(destinationPath))
   {
-    target = npl::make_file(destination + L"\\" + name + L"." + GetExtentionForFormat(format), true);
+    target = npl::make_file(destination + L"\\" + name + L"." + osl::get_timestamp() + L"." + GetExtentionForFormat(format), true);
   }
   else
   {
