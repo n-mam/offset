@@ -539,7 +539,7 @@ class ftp : public protocol<uint8_t, uint8_t>
   {
     m_data_channel = std::make_shared<socket_device>("sock-dc");
 
-    GetDispatcher()->AddEventListener(m_data_channel);
+    get_last_target(shared_from_this())->AddEventListener(m_data_channel);
 
     auto dc = std::static_pointer_cast<socket_device>(m_data_channel);
 

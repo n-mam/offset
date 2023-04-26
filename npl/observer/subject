@@ -58,6 +58,13 @@ class subject : public std::enable_shared_from_this<subject<T1, T2>>
     return m_name;
   }
 
+  static SPSubject get_last_target(SPSubject s)
+  {
+    while (s && s->m_target.lock())
+      s = s->m_target.lock();
+    return s;
+  }
+
   virtual void SetTarget(const WPSubject& target)
   {
     std::lock_guard<std::mutex> lg(m_lock);
@@ -226,30 +233,9 @@ class subject : public std::enable_shared_from_this<subject<T1, T2>>
     return false;
   }
 
-  SPSubject GetDispatcher(void)
+  virtual void add_subject(SPSubject subject)
   {
-    auto target = m_target;
 
-    while (true)
-    {
-      auto sp = target.lock();
-
-      if (sp)
-      {
-        if (sp->IsDispatcher())
-        {
-          return sp;
-        }
-        else
-        {
-          target = sp->m_target;
-        }
-      }
-      else
-      {
-        return nullptr;
-      }
-    }
   }
 
   virtual void SetProperty(const std::string& key, const std::string& value)

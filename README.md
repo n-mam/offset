@@ -34,6 +34,7 @@ git clone https://github.com/microsoft/vcpkg.git
 cd vcpkg
 bootstrap-vcpkg.bat
 vcpkg.exe install openssl:x64-windows crc32c:x64-windows rapidjson:x64-windows zlib:x64-windows
+./vcpkg install openssl:x64-linux crc32c:x64-linux rapidjson:x64-linux zlib:x64-linux
 vcpkg.exe integrate install
 
 use the resulting toolchain file in cmake configure step as highlited under the build section
@@ -53,7 +54,7 @@ Adapt paths in the above SET command accordingly
 
 Qt is now configured for building. Just run 'cmake --build . --parallel'
 Once everything is built, you must run 'cmake --install .'
-Qt will be installed into 'D:/QT-6.4.0/INSTALL'
+Qt will be installed into 'D:/QT-6.4.0/INSTALL.DBG'
 
 ```
 
@@ -64,8 +65,9 @@ git clone https://github.com/n-mam/offset.git
 cd offset
 mkdir build
 cd build
-SET PATH=%PATH%;D:\QT-6.4.2\INSTALL\bin
+SET PATH=%PATH%;D:\QT-6.4.2\INSTALL.DBG\bin
 cmake -DCMAKE_TOOLCHAIN_FILE=D:/vcpkg/scripts/buildsystems/vcpkg.cmake ..
+cmake -DCMAKE_TOOLCHAIN_FILE=~/vcpkg/scripts/buildsystems/vcpkg.cmake ..
 cmake --build . --config Release
 
 Run as admin (needed for FXC):

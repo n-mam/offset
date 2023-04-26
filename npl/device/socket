@@ -159,7 +159,7 @@ class socket_device : public file_device
 
     int rc = connect((SOCKET)iFD, (const sockaddr *) &sa, sizeof(sa));
 
-    GetDispatcher()->add_subject(shared_from_this());
+    get_last_target(shared_from_this())->add_subject(shared_from_this());
 
     #endif
   }
@@ -196,7 +196,7 @@ class socket_device : public file_device
 
     #ifndef WIN32
     SetSocketBlockingEnabled(iFD, false);
-    GetDispatcher()->add_subject(shared_from_this());
+    get_last_target(shared_from_this())->add_subject(shared_from_this());
     #endif
 
     m_socket_type = socketType::listening;
@@ -447,7 +447,7 @@ class socket_device : public file_device
 
     m_connected_client->MarkConnected(true);
 
-    GetDispatcher()->AddEventListener(m_connected_client);
+    get_last_target(shared_from_this())->AddEventListener(m_connected_client);
 
     file_device::OnAccept();
 

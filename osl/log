@@ -12,7 +12,7 @@
 namespace osl {
 
 template<typename T>
-using TLogCallback = std::function<void (int, const T&)>;
+using TLogCallback = std::function<void (int, int, const T&)>;
 
 class log
 {
@@ -30,12 +30,12 @@ class log
   {
     if (a_sink && a_ss.str().size())
     {
-      a_sink(m_key, a_ss.str());
+      a_sink(m_level, m_key, a_ss.str());
       //OutputDebugStringA(a_ss.str().c_str());
     }
     if (w_sink && w_ss.str().size())
     {
-      w_sink(m_key, w_ss.str());
+      w_sink(m_level, m_key, w_ss.str());
       //OutputDebugStringW(w_ss.str().c_str());
     }
   }

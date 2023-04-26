@@ -106,8 +106,6 @@ class dispatcher : public subject<uint8_t, uint8_t>
 
   void initialize_control(void)
   {
-    m_target = weak_from_this();
-
     _ctrl_server = std::make_shared<socket_device>("DC-LS");
 
     _ctrl_server->SetHostAndPort("0.0.0.0", 12345);
@@ -134,7 +132,7 @@ class dispatcher : public subject<uint8_t, uint8_t>
       }
     );
 
-    GetDispatcher()->AddEventListener(_ctrl_server)->AddEventListener(ls);
+    this->AddEventListener(_ctrl_server)->AddEventListener(ls);
 
     _ctrl_server->StartSocketServer();
 
@@ -142,12 +140,12 @@ class dispatcher : public subject<uint8_t, uint8_t>
 
     _ctrl_client->SetHostAndPort("127.0.0.1", 12345);
 
-    GetDispatcher()->AddEventListener(_ctrl_client);
+    this->AddEventListener(_ctrl_client);
 
     _ctrl_client->StartSocketClient();
   }
 
-  virtual void add_subject(SPSubject subject)
+  virtual void add_subject(SPSubject subject) override
   {
     auto device = std::dynamic_pointer_cast<file_device>(subject);
 

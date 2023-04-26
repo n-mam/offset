@@ -89,7 +89,7 @@ class BaseDisk : public npl::subject<uint8_t, uint8_t>
   {
     if (iFile)
     {
-      iFile->GetDispatcher()->RemoveEventListener(iFile);
+      get_last_target(iFile)->RemoveEventListener(iFile);
     }
   }
 
