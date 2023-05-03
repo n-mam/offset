@@ -1,6 +1,7 @@
-#include <Logger.h>
+#include <npl/npl>
+#include <osl/log>
 
-#include <QVariant>
+#include <Logger.h>
 
 Logger::Logger()
 {
@@ -28,6 +29,8 @@ Logger::Logger()
         }, Qt::QueuedConnection);
       }
     });
+
+  npl::make_dispatcher();
 }
 
 Logger::~Logger()

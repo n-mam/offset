@@ -220,14 +220,14 @@ class dispatcher : public subject<uint8_t, uint8_t>
 
       if (_exit_loop) break;
 
+      k = ee.data.ptr;
+
       if (rc < 0) {
         error = errno;
         DBG << "epoll_wait failed : " << strerror(error) << " " <<
           ((subject<uint8_t, uint8_t> *) k)->GetName();
         if (errno == EINTR) continue;
       }
-
-      k = ee.data.ptr;
 
       Event e { ee.events };
 

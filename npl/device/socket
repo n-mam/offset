@@ -284,6 +284,7 @@ class socket_device : public file_device
       struct sockaddr_in6 * sockaddr_ipv6;
 
       memset(&hints, 0, sizeof(hints));
+      hints.ai_flags = AI_ALL;
       hints.ai_family = AF_UNSPEC;
       hints.ai_socktype = SOCK_STREAM;
       hints.ai_protocol = IPPROTO_TCP;
@@ -312,9 +313,9 @@ class socket_device : public file_device
               m_host = std::string(ip);
               break;
             }
-            default:
-                break;
+            default: break;
           }
+          break;
         }
       } else {
         ERR << "getaddrinfo failed " << fRet;

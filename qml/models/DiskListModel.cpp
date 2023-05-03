@@ -5,7 +5,6 @@
 DiskListModel::DiskListModel()
 {
   refreshModel();
-  npl::make_dispatcher();
   fxc::startExcludeListWriterThread();
 }
 
