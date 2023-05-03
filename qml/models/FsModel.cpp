@@ -114,6 +114,11 @@ void FsModel::setCurrentDirectory(QString directory)
   m_currentDirectory = directory.toStdString();
 }
 
+QString FsModel::getPathSeperator(void)
+{
+  return QString(path_sep);
+}
+
 QString FsModel::getTotalFilesAndFolder(void)
 {
   return QString::number(m_fileCount) + ":" + QString::number(m_folderCount);

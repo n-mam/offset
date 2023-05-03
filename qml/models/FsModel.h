@@ -37,6 +37,7 @@ class FsModel : public QAbstractListModel
   QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
   bool setData(const QModelIndex& index, const QVariant& value, int role = Qt::EditRole) override;
 
+  Q_PROPERTY(QString pathSeperator READ getPathSeperator);
   Q_PROPERTY(QString totalFilesAndFolders READ getTotalFilesAndFolder);
   Q_PROPERTY(QString currentDirectory READ getCurrentDirectory WRITE setCurrentDirectory);
 
@@ -53,6 +54,7 @@ class FsModel : public QAbstractListModel
 
   public slots:
 
+  virtual QString getPathSeperator(void);
   virtual QString getTotalFilesAndFolder(void);
   virtual QString getCurrentDirectory(void);
   virtual void setCurrentDirectory(QString);

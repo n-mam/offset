@@ -346,7 +346,8 @@ Item {
               fsModel.currentDirectory = fsModel.getParentDirectory()
             else
               fsModel.currentDirectory = fsModel.currentDirectory +
-                (fsModel.currentDirectory.endsWith("\\") ? fileName : ("\\" + fileName))
+                (fsModel.currentDirectory.endsWith(fsModel.pathSeperator) ? 
+                  fileName : (fsModel.pathSeperator + fileName))
           }
         }
         onClicked: (mouse) => {

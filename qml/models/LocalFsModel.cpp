@@ -137,14 +137,14 @@ void LocalFsModel::setCurrentDirectory(QString directory)
       (isDir ? "d" : "-"),
       false
     });
-
-    std::partition(m_model.begin(), m_model.end(),
-      [](const auto& e){ 
-        return e.m_attributes[0] == 'd';
-      });
-
-    emit directoryList();
   }
+
+  std::partition(m_model.begin(), m_model.end(),
+    [](const auto& e){ 
+      return e.m_attributes[0] == 'd';
+    });
+
+  emit directoryList();
 
   endResetModel();
 }
