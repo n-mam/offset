@@ -239,27 +239,33 @@ inline void test_file_copy(const std::string& source, const std::string& dest)
   getchar();
 }
 
-inline void tests_dispatcher()
+inline void test_dispatcher()
 {
-  for (int i = 0; i < 100; i++)
-  {
-    auto D = std::make_unique<dispatcher>();
-  }
+  // commented tests dont work as dispatcher 
+  // needs to be a shared pointer for the subsequent
+  // weak_from_this to work
+  // for (int i = 0; i < 100; i++)
+  // {
+  //   auto d = std::make_unique<dispatcher>();
+  //   d->initialize_control();
+  // }
+  //return;
 
   for (int i = 0; i < 100; i++)
   {
-    auto D = std::make_shared<dispatcher>();
+    auto d = std::make_shared<dispatcher>();
+    d->initialize_control();
   }
 
-  for (int i = 0; i < 100; i++)
-  {
-    auto D = new dispatcher();
+  // for (int i = 0; i < 100; i++)
+  // {
+  //   delete new dispatcher();
+  // }
 
-    delete D;
-  }
+  // auto d1 = std::make_unique<dispatcher>();
+  // auto d2 = std::make_unique<dispatcher>();
 
-  auto D1 = std::make_unique<dispatcher>();
-  auto D2 = std::make_unique<dispatcher>();
+  std::cout << "Done" << std::endl;
 }
 
 inline auto usage(void)
@@ -289,6 +295,8 @@ inline void entry(std::vector<std::string> arguments)
       arguments[3]);
   } else if (cmd == "http") {
 
+  } else if (cmd == "test") {
+    test_dispatcher();
   } else {
     usage();
   }

@@ -85,10 +85,16 @@ class dispatcher : public subject<uint8_t, uint8_t>
 
   ~dispatcher()
   {
+    _exit_loop = true;
+
+    if (_ctrl_client) {
+      if (_ctrl_client->IsConnected())
     _ctrl_client->StopSocket();
+    }
+
+    if (_ctrl_server)
     _ctrl_server->StopSocket();
 
-    _exit_loop = true;
     _event_thread.join();
 
     #ifndef WIN32
@@ -108,7 +114,7 @@ class dispatcher : public subject<uint8_t, uint8_t>
   {
     _ctrl_server = std::make_shared<socket_device>("DC-LS");
 
-    _ctrl_server->SetHostAndPort("0.0.0.0", 12345);
+    _ctrl_server->SetHostAndPort("0.0.0.0", 0);
 
     auto ls = std::make_shared<Listener>(
       nullptr, nullptr, nullptr, nullptr,
@@ -224,9 +230,9 @@ class dispatcher : public subject<uint8_t, uint8_t>
 
       if (rc < 0) {
         error = errno;
-        DBG << "epoll_wait failed : " << strerror(error) << " " <<
-          ((subject<uint8_t, uint8_t> *) k)->GetName();
         if (errno == EINTR) continue;
+        DBG << "epoll_wait failed : " << strerror(error) << " " << (k ? 
+          ((subject<uint8_t, uint8_t> *) k)->GetName() : "");
       }
 
       Event e { ee.events };
@@ -427,10 +433,7 @@ class dispatcher : public subject<uint8_t, uint8_t>
 
     int rc = epoll_ctl(_event_port, op, device->iFD, &e);
 
-    if (rc == -1)
-    {
-      DBG << "epoll_ctl failed, error : " << strerror(errno);
-    }
+    DBG << "epoll_ctl rc " << rc << " error : " << strerror(errno);
 
     assert(rc == 0);
   }

@@ -166,8 +166,6 @@ class socket_device : public file_device
 
   virtual void StartSocketServer(void)
   {
-    assert(m_port);
-
     sockaddr_in sa;
     memset(&sa, 0, sizeof(sa));
     sa.sin_family = AF_INET;
@@ -180,10 +178,17 @@ class socket_device : public file_device
 
     if (fRet == -1)
     {
-      DBG << "bind failed. error : " << strerror(errno);
+      DBG << GetName() << " bind failed. error : " << strerror(errno);
     }
 
     assert(fRet == 0);
+
+    memset(&sa, 0, sizeof(sa));
+    socklen_t len = sizeof(sa);
+    getsockname((SOCKET)iFD, (struct sockaddr *) &sa, &len);
+    m_port = ntohs(sa.sin_port);
+
+    DBG << GetName() << " server bound to " << m_port << " port";
 
     fRet = listen((SOCKET)iFD, SOMAXCONN);
 
@@ -605,6 +610,11 @@ class socket_device : public file_device
   virtual void SetTLS(tls tls)
   {
     m_tls = tls;
+  }
+
+  virtual int get_port(void)
+  {
+    return m_port;
   }
 
   auto GetConnectedClient(void)
