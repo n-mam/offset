@@ -92,7 +92,7 @@ class socket_device : public file_device
 
   virtual void StartSocketClient(void)
   {
-    assert(m_host.size() && m_port);
+    DBG << "StartSocketClient " << m_host << ":" << m_port;
 
     m_socket_type = socketType::client;
 

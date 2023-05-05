@@ -89,13 +89,13 @@ class dispatcher : public subject<uint8_t, uint8_t>
 
     if (_ctrl_client) {
       if (_ctrl_client->IsConnected())
-    _ctrl_client->StopSocket();
+        _ctrl_client->StopSocket(true);
     }
+
+    _event_thread.join();
 
     if (_ctrl_server)
     _ctrl_server->StopSocket();
-
-    _event_thread.join();
 
     #ifndef WIN32
     if (_event_port >= 0)
@@ -144,7 +144,7 @@ class dispatcher : public subject<uint8_t, uint8_t>
 
     _ctrl_client = std::make_shared<socket_device>("DC-CT");
 
-    _ctrl_client->SetHostAndPort("127.0.0.1", 12345);
+    _ctrl_client->SetHostAndPort("127.0.0.1", _ctrl_server->get_port());
 
     this->AddEventListener(_ctrl_client);
 
