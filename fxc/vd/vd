@@ -10,12 +10,12 @@ namespace fxc {
 //create a raw image from source at ofset o and write to target
 auto image_copy_from(npl::SPFileDevice source, npl::SPSubject<uint8_t, uint8_t> target, TProgressCallback cbk =nullptr)
 {
-  if (!osl::AllowExtendedDasdIO(source->iFDsync))
+  if (!osl::AllowExtendedDasdIO(source->_fd_sync))
   {
     LOG << "AllowExtendedDasdIO failed, error : " << GetLastError();
   }
 
-  auto length = osl::GetBlockDeviceLength(source->iFDsync);
+  auto length = osl::GetBlockDeviceLength(source->_fd_sync);
 
   LOG << "Total length " << length;
 
@@ -94,9 +94,9 @@ auto create_base_vhd(const std::wstring& volume, npl::SPSubject<uint8_t, uint8_t
 
   assert(source);
 
-  auto nvdb = osl::GetNTFSVolumeData(source->iFDsync);
+  auto nvdb = osl::GetNTFSVolumeData(source->_fd_sync);
 
-  uint64_t length = osl::GetBlockDeviceLength(source->iFDsync);
+  uint64_t length = osl::GetBlockDeviceLength(source->_fd_sync);
 
   LOG << "source volume length " << length;
 
@@ -132,7 +132,7 @@ auto create_base_vhd(const std::wstring& volume, npl::SPSubject<uint8_t, uint8_t
 
   auto blockInUse = false;
 
-  auto bitmap = osl::GetVolumeInUseBitmap(source->iFDsync);
+  auto bitmap = osl::GetVolumeInUseBitmap(source->_fd_sync);
 
   for (int64_t i = 1; i <= nvdb.TotalClusters.QuadPart; i++)
   {
@@ -407,7 +407,7 @@ auto create_fixed_vhd(const std::wstring& device, npl::SPSubject<uint8_t, uint8_
 
   assert(source);
 
-  uint64_t length = osl::GetBlockDeviceLength(source->iFDsync);
+  uint64_t length = osl::GetBlockDeviceLength(source->_fd_sync);
 
   LOG << "source device length " << length;
 
@@ -445,7 +445,7 @@ auto create_raw_image(const std::wstring& device, npl::SPSubject<uint8_t, uint8_
 
   assert(source);
 
-  uint64_t length = osl::GetBlockDeviceLength(source->iFDsync);
+  uint64_t length = osl::GetBlockDeviceLength(source->_fd_sync);
 
   LOG << "source device length " << length;
 
@@ -469,9 +469,9 @@ void create_base_vhdx(const std::wstring& volume, npl::SPSubject<uint8_t, uint8_
 
   assert(source);
 
-  auto nvdb = osl::GetNTFSVolumeData(source->iFDsync);
+  auto nvdb = osl::GetNTFSVolumeData(source->_fd_sync);
 
-  uint64_t length = osl::GetBlockDeviceLength(source->iFDsync);
+  uint64_t length = osl::GetBlockDeviceLength(source->_fd_sync);
 
   LOG << "source volume length " << length;
 
@@ -537,7 +537,7 @@ void create_base_vhdx(const std::wstring& volume, npl::SPSubject<uint8_t, uint8_
 
   auto blockInUse = false;
 
-  auto bitmap = osl::GetVolumeInUseBitmap(source->iFDsync);
+  auto bitmap = osl::GetVolumeInUseBitmap(source->_fd_sync);
 
   for (int64_t i = 1; i <= nvdb.TotalClusters.QuadPart; i++)
   {

@@ -164,15 +164,15 @@ class dispatcher : public subject<uint8_t, uint8_t>
 
     #if __has_include(<sys/event.h>)
     struct kevent kevt[2];
-    EV_SET(&kevt[0], device->iFD, EVFILT_READ, EV_ADD, 0, 0, device.get());
-    EV_SET(&kevt[1], device->iFD, EVFILT_WRITE, EV_ADD, 0, 0, device.get());
+    EV_SET(&kevt[0], device->_fd_async, EVFILT_READ, EV_ADD, 0, 0, device.get());
+    EV_SET(&kevt[1], device->_fd_async, EVFILT_WRITE, EV_ADD, 0, 0, device.get());
     auto rc = kevent(_event_port, kevt, 2, NULL, 0, NULL);
     assert(rc != -1);
     #endif
 
     #ifdef _WIN32
     HANDLE port = CreateIoCompletionPort(
-      device->iFD,
+      device->_fd_async,
       _event_port,
       (ULONG_PTR) device.get(),
       0);
@@ -365,8 +365,8 @@ class dispatcher : public subject<uint8_t, uint8_t>
 
       #if __has_include(<sys/event.h>)
       struct kevent kevt[1];
-      //EV_SET(&kevt[0], dev->iFD, EVFILT_READ, EV_ADD, 0, 0, dev.get());
-      EV_SET(&kevt[0], dev->iFD, EVFILT_WRITE, EV_DELETE, 0, 0, dev.get());
+      //EV_SET(&kevt[0], dev->_fd_async, EVFILT_READ, EV_ADD, 0, 0, dev.get());
+      EV_SET(&kevt[0], dev->_fd_async, EVFILT_WRITE, EV_DELETE, 0, 0, dev.get());
       auto rc = kevent(_event_port, kevt, 1, NULL, 0, NULL);
       assert(rc != -1);
       #endif
@@ -431,7 +431,7 @@ class dispatcher : public subject<uint8_t, uint8_t>
 
     e.data.ptr = device.get();
 
-    int rc = epoll_ctl(_event_port, op, device->iFD, &e);
+    int rc = epoll_ctl(_event_port, op, device->_fd_async, &e);
 
     DBG << "epoll_ctl rc " << rc << " error : " << strerror(errno);
 

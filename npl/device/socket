@@ -27,7 +27,7 @@ class socket_device : public file_device
   using SPSocketDevice = std::shared_ptr<socket_device>;
   using WPSocketDevice = std::weak_ptr<socket_device>;
 
-  enum socketType {
+  enum ESocketType {
     invalid,
     client,
     accepted,
@@ -38,21 +38,21 @@ class socket_device : public file_device
 
   socket_device(const std::string& name) : file_device(name)
   {
-    iFD = (FD) socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    iDevicetype = EDeviceType::Socket;
+    _fd_async = (FD) socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    _device_type = EDeviceType::Socket;
   }
 
-  socket_device(FD aSocket)
+  socket_device(FD socket)
   {
-    iFD = aSocket;
-    iDevicetype = EDeviceType::Socket;
+    _fd_async = socket;
+    _device_type = EDeviceType::Socket;
   }
 
   ~socket_device()
   {
     StopSocket();
-    shutdown((SOCKET)iFD, 0); //sd_recv
-    closesocket((SOCKET)iFD);
+    shutdown((SOCKET)_fd_async, 0); //sd_recv
+    closesocket((SOCKET)_fd_async);
     DBG << "~socket_device() <-- " << GetName() << " shutdown(sd_recv)";
 
     if (m_ssl) {
@@ -81,10 +81,10 @@ class socket_device : public file_device
 
       file_device::MarkStopped(true);
 
-      shutdown((SOCKET)iFD, 1); //sd_send
+      shutdown((SOCKET)_fd_async, 1); //sd_send
 
       if (stopWrite)
-        shutdown((SOCKET)iFD, 0); //sd_recv
+        shutdown((SOCKET)_fd_async, 0); //sd_recv
 
       DBG << GetName() << " shutdown(sd_send)";
     }
@@ -94,7 +94,7 @@ class socket_device : public file_device
   {
     DBG << "StartSocketClient " << m_host << ":" << m_port;
 
-    m_socket_type = socketType::client;
+    m_type = ESocketType::client;
 
     #ifdef _WIN32
 
@@ -104,7 +104,7 @@ class socket_device : public file_device
     addr.sin_family = AF_INET;
     addr.sin_port = 0;
 
-    int rc = bind((SOCKET)iFD, (SOCKADDR*) &addr, sizeof(addr));
+    int rc = bind((SOCKET)_fd_async, (SOCKADDR*) &addr, sizeof(addr));
 
     assert(rc == 0);
 
@@ -120,10 +120,10 @@ class socket_device : public file_device
 
     sa.sin_port = htons(m_port);
 
-    auto ConnectEx = GetExtentionPfn(WSAID_CONNECTEX, iFD);
+    auto ConnectEx = GetExtentionPfn(WSAID_CONNECTEX, _fd_async);
 
     bool fRet = ((LPFN_CONNECTEX)ConnectEx)(
-      (SOCKET)iFD,
+      (SOCKET)_fd_async,
       (SOCKADDR*) &sa,
       sizeof(sa), 
       NULL, 0, NULL,
@@ -132,7 +132,7 @@ class socket_device : public file_device
     if (fRet)
     {
       #ifdef _WIN32
-      setsockopt((SOCKET)iFD, SOL_SOCKET, SO_UPDATE_CONNECT_CONTEXT, NULL, 0 );
+      setsockopt((SOCKET)_fd_async, SOL_SOCKET, SO_UPDATE_CONNECT_CONTEXT, NULL, 0 );
       #endif          
       OnConnect();
     }
@@ -147,7 +147,7 @@ class socket_device : public file_device
 
     #else
 
-    SetSocketBlockingEnabled(iFD, false);
+    SetSocketBlockingEnabled(_fd_async, false);
 
     sockaddr_in sa;
     memset(&sa, 0, sizeof(sa));
@@ -157,7 +157,7 @@ class socket_device : public file_device
 
     sa.sin_port = htons(m_port);
 
-    int rc = connect((SOCKET)iFD, (const sockaddr *) &sa, sizeof(sa));
+    int rc = connect((SOCKET)_fd_async, (const sockaddr *) &sa, sizeof(sa));
 
     get_last_target(shared_from_this())->add_subject(shared_from_this());
 
@@ -174,7 +174,7 @@ class socket_device : public file_device
 
     sa.sin_port = htons(m_port);
 
-    int fRet = bind((SOCKET)iFD, (const sockaddr *) &sa, sizeof(sa));
+    int fRet = bind((SOCKET)_fd_async, (const sockaddr *) &sa, sizeof(sa));
 
     if (fRet == -1)
     {
@@ -185,12 +185,12 @@ class socket_device : public file_device
 
     memset(&sa, 0, sizeof(sa));
     socklen_t len = sizeof(sa);
-    getsockname((SOCKET)iFD, (struct sockaddr *) &sa, &len);
+    getsockname((SOCKET)_fd_async, (struct sockaddr *) &sa, &len);
     m_port = ntohs(sa.sin_port);
 
     DBG << GetName() << " server bound to " << m_port << " port";
 
-    fRet = listen((SOCKET)iFD, SOMAXCONN);
+    fRet = listen((SOCKET)_fd_async, SOMAXCONN);
 
     if (fRet == -1)
     {
@@ -200,11 +200,11 @@ class socket_device : public file_device
     assert(fRet == 0);
 
     #ifndef WIN32
-    SetSocketBlockingEnabled(iFD, false);
+    SetSocketBlockingEnabled(_fd_async, false);
     get_last_target(shared_from_this())->add_subject(shared_from_this());
     #endif
 
-    m_socket_type = socketType::listening;
+    m_type = ESocketType::listening;
 
     #ifdef _WIN32
     AcceptNewConnection();
@@ -214,7 +214,7 @@ class socket_device : public file_device
   #ifdef _WIN32
   virtual void AcceptNewConnection(void)
   {
-    auto AcceptEx = GetExtentionPfn(WSAID_ACCEPTEX, iFD);
+    auto AcceptEx = GetExtentionPfn(WSAID_ACCEPTEX, _fd_async);
 
     uint8_t *b = (uint8_t *) calloc(1, 2 * (sizeof(SOCKADDR_STORAGE) + 16) + sizeof(context));
 
@@ -225,7 +225,7 @@ class socket_device : public file_device
     DWORD bytesReceived;
 
     bool rc = ((LPFN_ACCEPTEX)AcceptEx)(
-                    (SOCKET)iFD,
+                    (SOCKET)_fd_async,
                     (SOCKET)m_accepted_socket,
                     b + sizeof(context),
                     0,
@@ -253,22 +253,22 @@ class socket_device : public file_device
 
   virtual uint32_t GetSocketType(void)
   {
-    return m_socket_type;
+    return m_type;
   }
 
   virtual bool IsClientSocket(void)
   {
-    return (m_socket_type == socketType::client);
+    return (m_type == ESocketType::client);
   }
 
   virtual bool IsListeningSocket(void)
   {
-    return (m_socket_type == socketType::listening);
+    return (m_type == ESocketType::listening);
   }
 
   virtual bool IsAcceptedSocket(void)
   {
-    return (m_socket_type == socketType::accepted);
+    return (m_type == ESocketType::accepted);
   }
 
   virtual bool SetHostAndPort(const std::string& host, int port)
@@ -433,11 +433,11 @@ class socket_device : public file_device
     struct sockaddr_storage ca;
     socklen_t alen = sizeof(struct sockaddr_storage);
 
-    m_accepted_socket = (FD) accept((SOCKET)iFD, (struct sockaddr *) &ca, &alen);
+    m_accepted_socket = (FD) accept((SOCKET)_fd_async, (struct sockaddr *) &ca, &alen);
 
     if (m_accepted_socket == -1)
     {
-      DBG << "accept failed. error : " << strerror(errno) << " " << m_socket_type;
+      DBG << "accept failed. error : " << strerror(errno) << " " << m_type;
       return;
     }
 
@@ -449,7 +449,7 @@ class socket_device : public file_device
 
     m_connected_client = std::make_shared<socket_device>(m_accepted_socket);
 
-    m_connected_client->m_socket_type = socketType::accepted;
+    m_connected_client->m_type = ESocketType::accepted;
 
     m_connected_client->MarkConnected(true);
 
@@ -459,7 +459,7 @@ class socket_device : public file_device
 
     #ifdef _WIN32
     m_connected_client->Read();
-    setsockopt((SOCKET)m_accepted_socket, SOL_SOCKET, SO_UPDATE_ACCEPT_CONTEXT, (char*)&(iFD), sizeof(iFD));
+    setsockopt((SOCKET)m_accepted_socket, SOL_SOCKET, SO_UPDATE_ACCEPT_CONTEXT, (char*)&(_fd_async), sizeof(_fd_async));
     AcceptNewConnection();
     #endif
   }
@@ -479,7 +479,7 @@ class socket_device : public file_device
 
     #ifdef _WIN32
     file_device::Read();
-    setsockopt((SOCKET)iFD, SOL_SOCKET, SO_UPDATE_CONNECT_CONTEXT, NULL, 0 );
+    setsockopt((SOCKET)_fd_async, SOL_SOCKET, SO_UPDATE_CONNECT_CONTEXT, NULL, 0 );
     #endif
   }
 
@@ -651,7 +651,7 @@ class socket_device : public file_device
 
   TOnHandshake m_onHandShake = nullptr;
 
-  uint32_t m_socket_type = socketType::invalid;
+  int m_type = ESocketType::invalid;
 
   SPSocketDevice m_connected_client = nullptr;
 

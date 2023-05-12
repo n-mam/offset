@@ -78,6 +78,11 @@ void RemoteFsModel::QueueTransfer(int index, bool start)
   auto fileIsDir = IsElementDirectory(index);
   auto fileSize = GetElementSize(index);
 
+  if (fileName.find("->") != std::string::npos)
+  {
+    fileName = osl::trim(osl::split(fileName, "->")[1], " ");
+  }
+
   DownloadInternal(
     fileName,
     m_currentDirectory,
@@ -259,6 +264,7 @@ void RemoteFsModel::RefreshRemoteView(void)
 
 void RemoteFsModel::ParseDirectoryList(const std::string& list, std::vector<FileElement>& fe_list, int *pfc, int *pdc)
 {
+  DBG << list;
   if (m_ftp->HasFeature("MLSD"))
     ParseMLSDList(list, fe_list, pfc, pdc);
   else if (m_ftp->SystemType().find("UNIX") != std::string::npos)

@@ -81,13 +81,13 @@ class file_device : public subject<uint8_t, uint8_t>
 {
   public:
 
-  FD iFD;
+  FD _fd_async;
 
-  FD iFDsync;
+  FD _fd_sync;
 
   protected:
 
-  EDeviceType iDevicetype = EDeviceType::None;
+  EDeviceType _device_type = EDeviceType::None;
 
   public:
 
@@ -100,7 +100,7 @@ class file_device : public subject<uint8_t, uint8_t>
     MarkConnected(true);
 
     #ifdef _WIN32
-    iFD = CreateFileA(
+    _fd_async = CreateFileA(
       file.c_str(),
       GENERIC_READ|GENERIC_WRITE,
       FILE_SHARE_READ|FILE_SHARE_WRITE,
@@ -109,13 +109,13 @@ class file_device : public subject<uint8_t, uint8_t>
       FILE_FLAG_OVERLAPPED|FILE_FLAG_SEQUENTIAL_SCAN,
       NULL);
 
-    if (iFD == INVALID_HANDLE_VALUE)
+    if (_fd_async == INVALID_HANDLE_VALUE)
     {
       MarkConnected(false);
-      ERR << file << ", iFD CreateFile failed : " << GetLastError();
+      ERR << file << ", _fd_async CreateFile failed : " << GetLastError();
     }
 
-    iFDsync = CreateFileA(
+    _fd_sync = CreateFileA(
       file.c_str(),
       GENERIC_READ|GENERIC_WRITE,
       FILE_SHARE_READ|FILE_SHARE_WRITE,
@@ -124,10 +124,10 @@ class file_device : public subject<uint8_t, uint8_t>
       FILE_ATTRIBUTE_NORMAL,
       NULL);
 
-    if (iFDsync == INVALID_HANDLE_VALUE)
+    if (_fd_sync == INVALID_HANDLE_VALUE)
     {
       MarkConnected(false);
-      ERR << file << ", iFDsync CreateFile failed : " << GetLastError();
+      ERR << file << ", _fd_sync CreateFile failed : " << GetLastError();
     }
     #else
     int flags = 0|O_RDWR ;
@@ -137,16 +137,16 @@ class file_device : public subject<uint8_t, uint8_t>
       flags |= O_CREAT;
     }
 
-    iFD = open(file.c_str(), flags, 0640);
+    _fd_async = open(file.c_str(), flags, 0640);
 
-    if (iFD < 0)
+    if (_fd_async < 0)
     {
       MarkConnected(false);
       ERR << file << ", error : " << strerror(errno);
     }
     #endif
 
-    iDevicetype = EDeviceType::File;
+    _device_type = EDeviceType::File;
   }
 
   #ifdef _WIN32
@@ -154,7 +154,7 @@ class file_device : public subject<uint8_t, uint8_t>
   {
     MarkConnected(true);
 
-    iFD = CreateFileW(
+    _fd_async = CreateFileW(
       file.c_str(),
       GENERIC_READ|GENERIC_WRITE,
       FILE_SHARE_READ|FILE_SHARE_WRITE,
@@ -163,13 +163,13 @@ class file_device : public subject<uint8_t, uint8_t>
       FILE_FLAG_OVERLAPPED|FILE_FLAG_SEQUENTIAL_SCAN,
       NULL);
 
-    if (iFD == INVALID_HANDLE_VALUE)
+    if (_fd_async == INVALID_HANDLE_VALUE)
     {
       MarkConnected(false);
-      ERR << L"Device() " << file << L", iFD error : " << GetLastError();
+      ERR << L"Device() " << file << L", _fd_async error : " << GetLastError();
     }
 
-    iFDsync = CreateFileW(
+    _fd_sync = CreateFileW(
       file.c_str(),
       GENERIC_READ|GENERIC_WRITE,
       FILE_SHARE_READ|FILE_SHARE_WRITE,
@@ -178,33 +178,33 @@ class file_device : public subject<uint8_t, uint8_t>
       FILE_ATTRIBUTE_NORMAL,
       NULL);
 
-    if (iFDsync == INVALID_HANDLE_VALUE)
+    if (_fd_sync == INVALID_HANDLE_VALUE)
     {
       MarkConnected(false);
-      ERR << L"Device() " << file << L", iFDsync CreateFile failed : " << GetLastError();
+      ERR << L"Device() " << file << L", _fd_sync CreateFile failed : " << GetLastError();
     }
 
-    iDevicetype = EDeviceType::File;
+    _device_type = EDeviceType::File;
   }
   #endif
 
   virtual ~file_device()
   {
-    if (iDevicetype == EDeviceType::File)
+    if (_device_type == EDeviceType::File)
     {
       #ifdef _WIN32
-      CloseHandle(iFD);
-      CloseHandle(iFDsync);
+      CloseHandle(_fd_async);
+      CloseHandle(_fd_sync);
       #else
-      close(iFD);
-      close(iFDsync);
+      close(_fd_async);
+      close(_fd_sync);
       #endif
     }
   }
 
   virtual EDeviceType GetDeviceType(void)
   {
-    return iDevicetype;
+    return _device_type;
   }
 
   virtual void * Read(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override
@@ -235,7 +235,7 @@ class file_device : public subject<uint8_t, uint8_t>
     (ctx->ol).Offset = o & 0x00000000FFFFFFFF;
     (ctx->ol).OffsetHigh = (o & 0xFFFFFFFF00000000) >> 32;
 
-    BOOL fRet = ReadFile(iFD, (LPVOID) ctx->b, static_cast<DWORD>(l), NULL, &ctx->ol);
+    BOOL fRet = ReadFile(_fd_async, (LPVOID) ctx->b, static_cast<DWORD>(l), NULL, &ctx->ol);
 
     if (!fRet && GetLastError() != ERROR_IO_PENDING)
     {
@@ -246,7 +246,7 @@ class file_device : public subject<uint8_t, uint8_t>
 
     #else
 
-    ctx->n = read(iFD, (void *) ctx->b, l);
+    ctx->n = read(_fd_async, (void *) ctx->b, l);
 
     DBG << GetName() << " read() " << (ssize_t) ctx->n
       << " error : " << strerror(errno);
@@ -292,7 +292,7 @@ class file_device : public subject<uint8_t, uint8_t>
     (ctx->ol).Offset = o & 0x00000000FFFFFFFF;
     (ctx->ol).OffsetHigh = (o & 0xFFFFFFFF00000000) >> 32;
 
-    auto rc = WriteFile(iFD, (LPVOID) ctx->b, static_cast<DWORD>(l), NULL, &ctx->ol);
+    auto rc = WriteFile(_fd_async, (LPVOID) ctx->b, static_cast<DWORD>(l), NULL, &ctx->ol);
 
     if (!rc)
     {
@@ -308,7 +308,7 @@ class file_device : public subject<uint8_t, uint8_t>
 
     #else
 
-    auto rc = write(iFD, b, l);
+    auto rc = write(_fd_async, b, l);
 
     if (rc == -1) {
       ERR << GetName() << " file_device::Write() write() failed : " << strerror(errno);
@@ -328,11 +328,11 @@ class file_device : public subject<uint8_t, uint8_t>
     LARGE_INTEGER offset;
     offset.QuadPart = o;
 
-    BOOL fRet = SetFilePointerEx(iFDsync, offset, NULL, FILE_BEGIN);
+    BOOL fRet = SetFilePointerEx(_fd_sync, offset, NULL, FILE_BEGIN);
 
     if (fRet)
     {
-      fRet = ReadFile(iFDsync, (LPVOID) b, static_cast<DWORD>(l), &nBytesRead, NULL);
+      fRet = ReadFile(_fd_sync, (LPVOID) b, static_cast<DWORD>(l), &nBytesRead, NULL);
 
       if (fRet == FALSE)
       {
@@ -354,11 +354,11 @@ class file_device : public subject<uint8_t, uint8_t>
     LARGE_INTEGER offset;
     offset.QuadPart = o;
 
-    BOOL fRet = SetFilePointerEx(iFDsync, offset, NULL, FILE_BEGIN);
+    BOOL fRet = SetFilePointerEx(_fd_sync, offset, NULL, FILE_BEGIN);
 
     if (fRet)
     {
-      fRet = WriteFile(iFDsync, (LPVOID) b, static_cast<DWORD>(l), &nBytesWritten, NULL);
+      fRet = WriteFile(_fd_sync, (LPVOID)b, static_cast<DWORD>(l), &nBytesWritten, NULL);
 
       if (fRet == FALSE)
       {
