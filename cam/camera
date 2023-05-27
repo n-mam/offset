@@ -1,0 +1,51 @@
+#ifndef SOURCE_H
+#define SOURCE_H
+
+#include <opencv2/videoio.hpp>
+#include <opencv2/highgui.hpp>
+
+class camera
+{
+  public:
+
+  camera(const std::string& source)
+  {
+    _source = source;
+  }
+
+  ~camera()
+  {
+
+  }
+
+  void start(void)
+  {
+    if (!_thread.joinable()) {
+      _thread = std::thread(&camera::camera_thread, this);
+    }
+  }
+
+  bool stop(void)
+  {
+    return false;
+  }
+
+  private:
+
+  bool _stop = false;
+  std::string _source;
+  std::thread _thread;
+
+  void camera_thread(void)
+  {
+    while(!_stop)
+    {
+
+    }
+  }
+};
+
+using SPCamera = std::shared_ptr<camera>;
+using UPCamera = std::unique_ptr<camera>;
+
+#endif

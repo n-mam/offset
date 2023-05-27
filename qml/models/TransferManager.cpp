@@ -16,8 +16,8 @@ TransferManager::~TransferManager()
 
 TransferManager * TransferManager::getInstance(void)
 {
-  static TransferManager * s_instance = new TransferManager();
-  return s_instance;
+  static TransferManager s_instance;
+  return &s_instance;
 }
 
 QHash<int, QByteArray> TransferManager::roleNames() const

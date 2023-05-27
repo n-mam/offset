@@ -2,10 +2,13 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
+#SET(CMAKE_VERBOSE_MAKEFILE ON)
+
+find_package(OpenCV QUIET)
 find_package(ZLIB REQUIRED)
 find_package(Qt6 REQUIRED COMPONENTS Quick QuickControls2 Gui)
 
-qt6_add_resources(QT_RESOURCES 
+qt6_add_resources(QT_RESOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/qml/qml.qrc
   ${CMAKE_CURRENT_SOURCE_DIR}/icons/icons.qrc
 )
@@ -20,6 +23,11 @@ target_sources(offset PRIVATE main.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/models/BaseModel.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/models/TransferManager.cpp
 )
+
+if(OpenCV_FOUND)
+  target_compile_definitions(offset PUBLIC OpenCV_FOUND)
+  target_sources(offset PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/models/VideoRenderer.cpp)
+endif(OpenCV_FOUND)
 
 if(WIN32)
   target_sources(offset PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/icons/resource.rc)
@@ -42,6 +50,10 @@ target_link_libraries(
   OpenSSL::Crypto
   Crc32c::crc32c
 )
+
+if(OpenCV_FOUND)
+  target_link_libraries(offset PRIVATE ${OpenCV_LIBS})
+endif(OpenCV_FOUND)
 
 if(WIN32)
   target_link_libraries(offset PRIVATE Ws2_32.lib VssApi.lib)

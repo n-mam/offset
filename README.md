@@ -66,6 +66,7 @@ cd offset
 mkdir build
 cd build
 SET PATH=%PATH%;D:\QT-6.4.2\INSTALL.DBG\bin
+SET OpenCV_Dir=D:\CV\build\install
 cmake -DCMAKE_TOOLCHAIN_FILE=D:/vcpkg/scripts/buildsystems/vcpkg.cmake ..
 cmake -DCMAKE_TOOLCHAIN_FILE=~/vcpkg/scripts/buildsystems/vcpkg.cmake ..
 cmake --build . --config Release

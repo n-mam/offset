@@ -8,15 +8,23 @@
 #include <LocalFsModel.h>
 #include <RemoteFsModel.h>
 
+#ifdef OpenCV_FOUND
+#include <VideoRenderer.h>
+#endif
+
 #ifdef _WIN32
 #include <DiskListModel.h>
-#include <windows.h>
+#include <Windows.h>
 #endif
 
 void q_logger(QtMsgType, const QMessageLogContext&, const QString&);
 
 int main(int argc, char *argv[])
 {
+  #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+    QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
+  #endif
+
   qInstallMessageHandler(q_logger);
 
   qputenv("QT_QUICK_CONTROLS_STYLE", QByteArray("Material"));
@@ -28,16 +36,21 @@ int main(int argc, char *argv[])
 
   QFont font("Consolas", 10);
   app.setFont(font);
-  
+
   QQmlApplicationEngine engine;
 
   const QUrl url(u"qrc:/main.qml"_qs);
 
-  QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,
-                      &app, [url](QObject *obj, const QUrl &objUrl) {
+  QObject::connect(&engine, &QQmlApplicationEngine::objectCreated, &app,
+    [url](QObject *obj, const QUrl &objUrl) {
       if (!obj && url == objUrl)
           QCoreApplication::exit(-1);
-  }, Qt::QueuedConnection);
+    }, 
+    Qt::QueuedConnection);
+
+  #ifdef OpenCV_FOUND
+  qmlRegisterType<VideoRenderer>("CustomElements", 1, 0, "VideoPlayer");
+  #endif
 
   engine.rootContext()->setContextProperty("logger", new Logger());
   engine.rootContext()->setContextProperty("fsModel", LocalFsModel::getInstance());

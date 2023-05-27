@@ -15,6 +15,7 @@ include_directories(
   ${CMAKE_SOURCE_DIR}/osl
   ${CMAKE_SOURCE_DIR}/npl
   ${CMAKE_SOURCE_DIR}/fxc
+  ${CMAKE_SOURCE_DIR}/cam
 )
 
 if(MSVC)

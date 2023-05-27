@@ -16,12 +16,15 @@ ApplicationWindow {
   TabBar {
     id: bar
     width: parent.width
-    currentIndex: 1
+    currentIndex: 2
     TabButton {
       text: qsTr("FXC")
     }
     TabButton {
       text: qsTr("FTP")
+    }
+    TabButton {
+      text: qsTr("CAM")
     }
     TabButton {
       text: qsTr("LOG")
@@ -38,6 +41,7 @@ ApplicationWindow {
 
     Fxc {}
     FTP {}
+    Cam {}
     Trace {}
   }
 

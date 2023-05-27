@@ -1,5 +1,6 @@
 <RCC>
   <qresource prefix="/">
+    <file>Cam.qml</file>
     <file>Fxc.qml</file>
     <file>FTP.qml</file>
     <file>main.qml</file>
@@ -7,6 +8,7 @@
     <file>Trace.qml</file>
     <file>Login.qml</file>
     <file>Element.qml</file>
+    <file>Player.qml</file>
     <file>FTPFooter.qml</file>
     <file>FxcFooter.qml</file>
     <file>RowDelegate.qml</file>

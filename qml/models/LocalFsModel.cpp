@@ -13,8 +13,8 @@ LocalFsModel::~LocalFsModel()
 
 LocalFsModel * LocalFsModel::getInstance(void)
 {
-  static LocalFsModel * s_instance = new LocalFsModel();
-  return s_instance;
+  static LocalFsModel s_instance;
+  return &s_instance;
 }
 
 void LocalFsModel::QueueTransfer(int index, bool start)
