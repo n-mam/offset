@@ -15,7 +15,10 @@ class camera
 
   ~camera()
   {
-
+    if (_thread.joinable()) {
+      _stop = true;
+      _thread.join();
+    }
   }
 
   void start(void)
