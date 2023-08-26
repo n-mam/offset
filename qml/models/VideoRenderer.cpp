@@ -8,6 +8,9 @@
 VideoRenderer::VideoRenderer(QQuickItem *parent): QQuickItem(parent)
 {
   setFlag(QQuickItem::ItemHasContents, true);
+  QTimer *timer = new QTimer(this);
+  connect(timer, &QTimer::timeout, this, &VideoRenderer::updateFrame);
+  timer->start(100);
 }
 
 VideoRenderer::~VideoRenderer()

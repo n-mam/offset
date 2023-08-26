@@ -12,12 +12,13 @@ Item {
     id: currentDirectory
     anchors.left: parent.left
     anchors.right: parent.right
+    anchors.top: parent.top
+    anchors.topMargin: 12
     anchors.margins: 5
     height: 43
     placeholderText: qsTr("Local Directory")
     verticalAlignment: TextInput.AlignVCenter
     onAccepted: fsModel.currentDirectory = currentDirectory.text
-    Component.onCompleted: font.pointSize = font.pointSize - 1.5
   }
 
   ListView {
@@ -27,6 +28,7 @@ Item {
     anchors.top: currentDirectory.bottom
     anchors.leftMargin: 5
     anchors.rightMargin: 5
+    anchors.topMargin: 7
     boundsBehavior: Flickable.StopAtBounds
     height: parent.height - currentDirectory.height - spacer.height - statusRect.height - 2
     clip: true
@@ -61,6 +63,7 @@ Item {
     anchors.right: parent.right
     anchors.top: currentDirectory.bottom
     anchors.rightMargin: 5
+    anchors.topMargin: 7
 
     Image {
       id: uploadTool
@@ -154,8 +157,8 @@ Item {
     }
   }
 
-  function processToolBarAction(action) {
-
+  function processToolBarAction(action)
+  {
     var fileName = fsModel.get(localListView.currentIndex, "fileName")
     var fileIsDir = fsModel.get(localListView.currentIndex, "fileIsDir")
     var fileSize = fsModel.get(localListView.currentIndex, "fileSize")
@@ -201,7 +204,7 @@ Item {
       {
         newRenamePopup.context = "New folder"
         newRenamePopup.inputHint = "Folder name"
-        newRenamePopup.inputValue = ""      
+        newRenamePopup.inputValue = ""
         newRenamePopup.open()
         return;
       }
@@ -226,7 +229,6 @@ Item {
         fsModel.currentDirectory = fsModel.currentDirectory
       }
     }
-
   }
 
   RenameNewPopup {
@@ -253,7 +255,7 @@ Item {
         {
           var path = currentDirectory.text + "/" + elementName
           elementIsDir ? fsModel.RemoveDirectory(path, true) :
-            fsModel.RemoveFile(path, true)          
+            fsModel.RemoveFile(path, true)
         }
         fsModel.currentDirectory = fsModel.currentDirectory
       }
@@ -274,7 +276,7 @@ Item {
         strokeWidth: 1
         strokeColor: "white"
         strokeStyle: ShapePath.SolidLine
-        startX: 0; startY: 0
+        startX: 1; startY: 0
         PathLine {x: spacer.width; y: 0}
       }
     }
@@ -346,7 +348,7 @@ Item {
               fsModel.currentDirectory = fsModel.getParentDirectory()
             else
               fsModel.currentDirectory = fsModel.currentDirectory +
-                (fsModel.currentDirectory.endsWith(fsModel.pathSeperator) ? 
+                (fsModel.currentDirectory.endsWith(fsModel.pathSeperator) ?
                   fileName : (fsModel.pathSeperator + fileName))
           }
         }

@@ -20,7 +20,7 @@ Item {
         strokeWidth: 1
         strokeColor: "white"
         strokeStyle: ShapePath.SolidLine
-        startX: 0; startY: 0
+        startX: 1; startY: 0
         PathLine {x: parent.width; y: 0}
       }
     }

@@ -12,13 +12,14 @@ Item {
     id: currentDirectory
     anchors.left: parent.left
     anchors.right: parent.right
+    anchors.top: parent.top
+    anchors.topMargin: 12
     anchors.margins: 5
     height: 43
     enabled: false
     placeholderText: qsTr("Remote Directory")
     verticalAlignment: TextInput.AlignVCenter
     onAccepted: ftpModel.currentDirectory = currentDirectory.text
-    Component.onCompleted: font.pointSize = font.pointSize - 1.5
   }
 
   ListView {
@@ -60,7 +61,7 @@ Item {
 
   Rectangle {
     id: toolBar
-    width: 24
+    width: 26
     height: 175
     radius: 2
     border.width: 1
@@ -70,6 +71,7 @@ Item {
     anchors.right: parent.right
     anchors.top: currentDirectory.bottom
     anchors.rightMargin: 5
+    anchors.topMargin: 7
 
     Image {
       id: downloadTool
@@ -235,7 +237,7 @@ Item {
 
         newRenamePopup.context = "New folder"
         newRenamePopup.inputHint = "Folder name"
-        newRenamePopup.inputValue = ""      
+        newRenamePopup.inputValue = ""
         newRenamePopup.open()
         return;
       }
@@ -325,7 +327,7 @@ Item {
         strokeWidth: 1
         strokeColor: "white"
         strokeStyle: ShapePath.SolidLine
-        startX: 0; startY: 0
+        startX: 1; startY: 0
         PathLine {x: spacer.width; y: 0}
       }
     }
@@ -391,7 +393,7 @@ Item {
             if (fileName === "..")
               ftpModel.currentDirectory = ftpModel.getParentDirectory()
             else
-              ftpModel.currentDirectory = ftpModel.currentDirectory + 
+              ftpModel.currentDirectory = ftpModel.currentDirectory +
                 (ftpModel.currentDirectory.endsWith("/") ? fileName : ("/" + fileName))
           }
         }

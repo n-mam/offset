@@ -97,26 +97,29 @@ Rectangle {
       Rectangle {
         id: destRect
         width: parent.width
-        height: 45
+        height: 40
+        anchors.top: parent.top
+        anchors.topMargin: 8
         color: "transparent"
         // radius: 5
         // border.width: 1
         // border.color: borderColor
         TextField {
           id: destination
-          width: (parent.width * 0.80) - appSpacing
+          width: (parent.width * 0.77) - (2 * appSpacing)
+          height: parent.height * 0.85
           anchors.left: parent.left
-          anchors.leftMargin: 10
-          anchors.bottom: parent.bottom
+          anchors.leftMargin: 7
           placeholderText: "Destination"
           text: folderDialog.folder
+          anchors.verticalCenter: parent.verticalCenter
         }
         Button {
-          text: "Select"
-          width: 75
-          height: parent.height * 0.80
+          text: "SELECT"
+          width: (parent.width * 0.20) - appSpacing
+          height: parent.height
           anchors.right: parent.right
-          anchors.rightMargin: 10
+          anchors.rightMargin: 7
           anchors.bottom: parent.bottom
           onClicked: folderDialog.open()
           anchors.verticalCenter: parent.verticalCenter
@@ -127,17 +130,17 @@ Rectangle {
         // radius: 5
         // border.width: 1
         // border.color: borderColor
-        anchors.top: destRect.bottom
+        anchors.bottom: parent.bottom
         anchors.horizontalCenter: parent.horizontalCenter
         color: "transparent"
-        width: 75 + 75 + 10
-        height: 45
+        width: parent.width * 0.5
+        height: 40
         Button {
           id: startButton
-          width: 75
           text: "START"
           enabled: (diskListModel.transfer === 0)
-          height: parent.height * 0.80
+          width: parent.width * 0.45
+          height: parent.height 
           anchors.left: parent.left
           anchors.margins: appSpacing
           anchors.verticalCenter: parent.verticalCenter
@@ -147,10 +150,10 @@ Rectangle {
         }
         Button {
           id: cancelbutton
-          width: 75
           text: "CANCEL"
           enabled: (diskListModel.transfer !== 0)
-          height: parent.height * 0.80
+          width: parent.width * 0.45
+          height: parent.height 
           anchors.left: startButton.right
           anchors.margins: appSpacing
           anchors.verticalCenter: parent.verticalCenter

@@ -34,8 +34,7 @@ Popup {
         TextArea {
           id: excludeListTextArea
           background: null
-          textMargin: 4               
-          Component.onCompleted: font.pointSize = font.pointSize - 1.5
+          textMargin: 4
         }
       }
     }
@@ -56,7 +55,7 @@ Popup {
         anchors.verticalCenter: parent.verticalCenter
         onClicked: function() {
           model.excludeList = []
-          model.excludeList = excludeListTextArea.text.split("\n").filter(item => 
+          model.excludeList = excludeListTextArea.text.split("\n").filter(item =>
           item && item.toString().replace(/\s+/,'') || item === 0);
           popup.close()
         }

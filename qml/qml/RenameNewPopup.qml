@@ -28,7 +28,7 @@ Popup {
         color: "white"
         text: context
         anchors.top: parent.top
-        anchors.margins: 10        
+        anchors.margins: 10
         anchors.horizontalCenter: parent.horizontalCenter
       }
       TextField {
@@ -44,7 +44,6 @@ Popup {
         onAccepted: {
 
         }
-        Component.onCompleted: font.pointSize = font.pointSize - 1.5
       }
       Rectangle {
         width: parent.width * 0.75

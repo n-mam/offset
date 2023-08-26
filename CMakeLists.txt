@@ -20,7 +20,7 @@ include_directories(
 
 if(MSVC)
   add_definitions(
-    -D_CRT_SECURE_NO_WARNINGS 
+    -D_CRT_SECURE_NO_WARNINGS
     -D_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING)
 endif()
 

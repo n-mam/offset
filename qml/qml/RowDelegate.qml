@@ -80,14 +80,12 @@ Rectangle {
           }
         }
       }
-      Component.onCompleted: font.pointSize = font.pointSize - 0.8
     }
 
     Text {
       id: secondLabel
-      color: model.textColor      
+      color: model.textColor
       text: model.display[1] !== undefined ? model.display[1] : ""
-      Component.onCompleted: font.pointSize = font.pointSize - 0.8
     }
 
     Row {
@@ -96,24 +94,21 @@ Rectangle {
       width: metadata1.width + metadata2.width + metadata3.width + formatRect.width + sourceRect.width + excludeRect.width
       Text {
         id: metadata1
-        color: "#99F6FF"        
+        color: "#99F6FF"
         text: model.metaDataRole[0].trim()
         anchors.verticalCenter: parent.verticalCenter
-        Component.onCompleted: font.pointSize = font.pointSize - 1
       }
       Text {
         id: metadata2
-        color: "#99F6FF"        
+        color: "#99F6FF"
         text: model.metaDataRole[1].trim().length ? model.metaDataRole[1].trim() : ""
         anchors.verticalCenter: parent.verticalCenter
-        Component.onCompleted: font.pointSize = font.pointSize - 1
       }
       Text {
         id: metadata3
         color: "#99F6FF"
         text: (model.metaDataRole[2] && model.metaDataRole[2].trim() !== "0") ? model.metaDataRole[2].trim() : ""
         anchors.verticalCenter: parent.verticalCenter
-        Component.onCompleted: font.pointSize = font.pointSize - 1
       }
       Rectangle {
         id: formatRect
@@ -131,7 +126,6 @@ Rectangle {
           text: model.formatOptions[model.formatIndex];
           anchors.verticalCenter: parent.verticalCenter
           anchors.horizontalCenter: parent.horizontalCenter
-          Component.onCompleted: font.pointSize = font.pointSize - 1.8
         }
         MouseArea {
           hoverEnabled: true
@@ -159,7 +153,6 @@ Rectangle {
           text: model.sourceOptions[model.sourceIndex]
           anchors.verticalCenter: parent.verticalCenter
           anchors.horizontalCenter: parent.horizontalCenter
-          Component.onCompleted: font.pointSize = font.pointSize - 1.8
         }
         MouseArea {
           hoverEnabled: true
@@ -191,7 +184,6 @@ Rectangle {
             text: "exl+"
             anchors.verticalCenter: parent.verticalCenter
             anchors.horizontalCenter: parent.horizontalCenter
-            Component.onCompleted: font.pointSize = font.pointSize - 1.8
           }
         }
         Rectangle {
@@ -215,7 +207,6 @@ Rectangle {
             text: model.excludeList.length
             anchors.verticalCenter: parent.verticalCenter
             anchors.horizontalCenter: parent.horizontalCenter
-            Component.onCompleted: font.pointSize = font.pointSize - 1.8
           }
         }
         MouseArea {
@@ -228,7 +219,7 @@ Rectangle {
           id: popup
           parent: usage
           width: usage.width
-          height: 275          
+          height: 275
         }
       }
     }

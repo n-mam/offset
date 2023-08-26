@@ -125,7 +125,7 @@ class socket_device : public file_device
     bool fRet = ((LPFN_CONNECTEX)ConnectEx)(
       (SOCKET)_fd_async,
       (SOCKADDR*) &sa,
-      sizeof(sa), 
+      sizeof(sa),
       NULL, 0, NULL,
       (LPOVERLAPPED)ctx);
 
@@ -133,7 +133,7 @@ class socket_device : public file_device
     {
       #ifdef _WIN32
       setsockopt((SOCKET)_fd_async, SOL_SOCKET, SO_UPDATE_CONNECT_CONTEXT, NULL, 0 );
-      #endif          
+      #endif
       OnConnect();
     }
     else if (WSAGetLastError() == ERROR_IO_PENDING)
@@ -290,7 +290,7 @@ class socket_device : public file_device
 
       memset(&hints, 0, sizeof(hints));
       hints.ai_flags = AI_ALL;
-      hints.ai_family = AF_UNSPEC;
+      hints.ai_family = AF_INET; //AF_UNSPEC;
       hints.ai_socktype = SOCK_STREAM;
       hints.ai_protocol = IPPROTO_TCP;
 
@@ -307,7 +307,7 @@ class socket_device : public file_device
               sockaddr_ipv4 = (struct sockaddr_in *) ptr->ai_addr;
               char ipaddr[INET_ADDRSTRLEN] = {'\0'};
               auto ip = inet_ntop(AF_INET, &sockaddr_ipv4->sin_addr, ipaddr, INET_ADDRSTRLEN);
-              m_host = std::string(ip); 
+              m_host = std::string(ip);
               break;
             }
             case AF_INET6:
@@ -382,13 +382,13 @@ class socket_device : public file_device
 
     SSL_CTX_set_session_cache_mode(m_ssl_ctx, SSL_SESS_CACHE_CLIENT);
     /**
-     * In TLSv1.3, sessions are established after the main handshake has completed. 
-     * The server decides when to send the client the session information and this 
-     * may occur some time after the end of the handshake (or not at all). This means 
-     * that applications should expect the new_session_cb() function to be invoked 
-     * during the handshake (for <= TLSv1.2) or after the handshake (for TLSv1.3). 
-     * It is also possible in TLSv1.3 for multiple sessions to be established with a 
-     * single connection. In these case the new_session_cb() function will be invoked 
+     * In TLSv1.3, sessions are established after the main handshake has completed.
+     * The server decides when to send the client the session information and this
+     * may occur some time after the end of the handshake (or not at all). This means
+     * that applications should expect the new_session_cb() function to be invoked
+     * during the handshake (for <= TLSv1.2) or after the handshake (for TLSv1.3).
+     * It is also possible in TLSv1.3 for multiple sessions to be established with a
+     * single connection. In these case the new_session_cb() function will be invoked
      * multiple times.
      */
     SSL_CTX_sess_set_new_cb(m_ssl_ctx,
@@ -464,7 +464,7 @@ class socket_device : public file_device
     #endif
   }
 
-  virtual void OnError(uint64_t error)
+  virtual void OnError(uint64_t error) override
   {
     file_device::OnError(error);
   }
@@ -601,7 +601,7 @@ class socket_device : public file_device
 
     return false;
   }
-  
+
   virtual tls GetTLS(void)
   {
     return m_tls;
@@ -681,7 +681,7 @@ using WPDeviceSocket = std::weak_ptr<socket_device>;
 } // namespace npl
 
 #ifdef _WIN32
-void * GetExtentionPfn(GUID guid, FD fd); 
+void * GetExtentionPfn(GUID guid, FD fd);
 #endif
 
 #endif //SOCKET_HPP

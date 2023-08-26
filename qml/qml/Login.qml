@@ -12,16 +12,16 @@ Rectangle {
   signal login(var host, var port, var user, var password, var protocol)
 
   Column {
+    spacing: 4
     width: parent.width
     Row {
       spacing: 5
       height: rowHeight
-      anchors.margins: 7
       anchors.left: parent.left
       anchors.right: parent.right
       TextField {
         id: hostname
-        width: parent.width * 0.81
+        width: parent.width * 0.75
         height: parent.height * 0.90
         placeholderText: qsTr("Host")
         text: "ftp.gnu.org"
@@ -30,7 +30,7 @@ Rectangle {
       }
       TextField {
         id: port
-        width: parent.width * 0.17
+        width: parent.width * 0.23
         height: parent.height * 0.90
         placeholderText: qsTr("Port")
         validator: IntValidator {bottom: 1; top: 1000}
@@ -45,7 +45,6 @@ Rectangle {
       height: rowHeight
       anchors.left: parent.left
       anchors.right: parent.right
-      anchors.margins: 7
       TextField {
         id: username
         width: parent.width
@@ -61,7 +60,6 @@ Rectangle {
       spacing: 5
       anchors.left: parent.left
       anchors.right: parent.right
-      anchors.margins: 7
       height: rowHeight
       TextField {
         id: password
@@ -100,7 +98,7 @@ Rectangle {
       anchors.right: parent.right
       color: Material.background
       Button {
-        width: parent.width * 0.38
+        width: parent.width * 0.43
         height: parent.height * 0.90
         text: "Connect"
         anchors.horizontalCenter: parent.horizontalCenter

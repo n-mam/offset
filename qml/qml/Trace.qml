@@ -36,14 +36,13 @@ Rectangle {
     ScrollBar.vertical: ScrollBar {
       width: 8
     }
-    flickableDirection: Flickable.VerticalFlick    
+    flickableDirection: Flickable.VerticalFlick
     model: traceModel
     delegate: Item {
       width: ListView.view.width;
       height: 17
-      Label { 
+      Label {
         text: line
-        Component.onCompleted: font.pointSize = font.pointSize - 2
       }
     }
     Connections {
@@ -52,7 +51,7 @@ Rectangle {
       function onAddLogLine(severity, log) {
         for (var l of log.split("\n"))
           traceModel.append({
-            line: new Date().toLocaleTimeString(Qt.locale(), 
+            line: new Date().toLocaleTimeString(Qt.locale(),
             "hh:" + "mm:" + "ss:" + "zzz") + " " + l
           })
       }
@@ -72,7 +71,6 @@ Rectangle {
     height: parent.height * 0.08
     Button {
       id: clearButton
-      width: 75
       text: "CLEAR"
       enabled: (diskListModel.transfer === 0)
       height: parent.height * 0.90
@@ -83,7 +81,6 @@ Rectangle {
     }
     Button {
       id: savebutton
-      width: 75
       text: "SAVE"
       enabled: (diskListModel.transfer !== 0)
       height: parent.height * 0.90

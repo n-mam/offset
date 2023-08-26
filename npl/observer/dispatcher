@@ -231,7 +231,7 @@ class dispatcher : public subject<uint8_t, uint8_t>
       if (rc < 0) {
         error = errno;
         if (errno == EINTR) continue;
-        DBG << "epoll_wait failed : " << strerror(error) << " " << (k ? 
+        DBG << "epoll_wait failed : " << strerror(error) << " " << (k ?
           ((subject<uint8_t, uint8_t> *) k)->GetName() : "");
       }
 
@@ -329,7 +329,7 @@ class dispatcher : public subject<uint8_t, uint8_t>
       assert(false);
     }
 
-    if (ctx->bFree) 
+    if (ctx->bFree)
     {
       free((void *)ctx->b);
     }
@@ -350,7 +350,7 @@ class dispatcher : public subject<uint8_t, uint8_t>
 
     if (e.is_write())
     {
-      DBG << "Event::is_write, socket type " << dev->GetSocketType() 
+      DBG << "event::is_write, socket type " << dev->GetSocketType()
         << " isConnected : " << isConnected;
       if (isClientSocket && !isConnected)
       {
@@ -373,7 +373,7 @@ class dispatcher : public subject<uint8_t, uint8_t>
     }
     else if (e.is_read())
     {
-      DBG << "Event::is_read, socket type " << dev->GetSocketType() 
+      DBG << "event::is_read, socket type " << dev->GetSocketType()
         << " isConnected : " << isConnected;
       if (isListentingSocket)
       {
@@ -401,7 +401,7 @@ class dispatcher : public subject<uint8_t, uint8_t>
     #ifdef linux
     else if (e.is_error() || e.is_hangup())
     {
-      DBG << "Event::is_hangup, socket type " << dev->GetSocketType() 
+      DBG << "event::is_hangup, socket type " << dev->GetSocketType()
         << " isConnected : " << isConnected << " error " <<  strerror(errno);
       auto ctx = (context *) calloc(1, sizeof(context));
       ctx->type = EIOType::READ;
@@ -414,7 +414,7 @@ class dispatcher : public subject<uint8_t, uint8_t>
     #if __has_include(<sys/event.h>)
     else if (e.Is_eof())
     {
-      DBG << "Event::Is_eof, socket type " << dev->GetSocketType() 
+      DBG << "event::is_eof, socket type " << dev->GetSocketType()
         << " isConnected : " << isConnected << " error " <<  strerror(errno);
     }
     #endif
@@ -449,7 +449,7 @@ class dispatcher : public subject<uint8_t, uint8_t>
 
     free(c);
   }
- 
+
   virtual bool IsDispatcher(void) override
   {
     return true;

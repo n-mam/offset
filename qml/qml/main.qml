@@ -4,7 +4,7 @@ import QtQuick.Controls
 import Qt.labs.platform
 
 ApplicationWindow {
-  width: 590
+  width: 610
   height: 620
   visible: true
   title: qsTr("Offset")
@@ -16,7 +16,7 @@ ApplicationWindow {
   TabBar {
     id: bar
     width: parent.width
-    currentIndex: 2
+    currentIndex: 1
     TabButton {
       text: qsTr("FXC")
     }
