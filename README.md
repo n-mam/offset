@@ -41,7 +41,7 @@ use the resulting toolchain file in cmake configure step as highlited under the 
 
 qt-6.4.2 source build
 
-In case you have pre-built QT or source builds, you can skip installing QT via vcpkg. 
+In case you have pre-built QT or source builds, you can skip installing QT via vcpkg.
 Here are the steps for building QT6 from source:
 Download and extract QT-6.4.2 src tar ball under say D:\
 Download ninja and jom under D:\
@@ -65,7 +65,8 @@ git clone https://github.com/n-mam/offset.git
 cd offset
 mkdir build
 cd build
-SET PATH=%PATH%;D:\QT-6.4.2\INSTALL.DBG\bin
+SET PATH=%PATH%;D:\qt-6.5.2\install\bin;D:\cv\build.rel\install\x64\vc17\bin
+SET Qt6_DIR=D:\qt-6.5.2\install
 SET OpenCV_Dir=D:\CV\build\install
 cmake -DCMAKE_TOOLCHAIN_FILE=D:/vcpkg/scripts/buildsystems/vcpkg.cmake ..
 cmake -DCMAKE_TOOLCHAIN_FILE=~/vcpkg/scripts/buildsystems/vcpkg.cmake ..

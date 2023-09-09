@@ -2,7 +2,9 @@ import QtQuick
 import QtQuick.Controls
 
 Rectangle {
+  id: camRoot
   radius: 3
+  clip: true
   border.width: 1
   border.color: borderColor
   color: "transparent"
@@ -11,13 +13,13 @@ Rectangle {
 
   Grid {
     id: camGrid
-    columns: 4
-    spacing: 10
+    columns: 3
+    spacing: 6
     height: parent.height * 0.90
     anchors.top: parent.top
     anchors.left: parent.left
-    anchors.right: parent.right    
-    anchors.margins: 4
+    anchors.right: parent.right
+    anchors.margins: 6
     //Player{}
   }
 
@@ -43,11 +45,11 @@ Rectangle {
         var component = Qt.createComponent("Player.qml")
         var object = component.createObject(camGrid, {
           "source": "hello",
-          "width": 100,
-          "height": 100
+          "width": (camRoot.width / 3) - 10,
+          "height": (camRoot.height / 2) - camControl.height
         });
       }
-    }      
+    }
   }
 
 }
