@@ -1,5 +1,7 @@
-#ifndef SOURCE_H
-#define SOURCE_H
+#ifndef CAMERA_H
+#define CAMERA_H
+
+#include <thread>
 
 #include <opencv2/videoio.hpp>
 #include <opencv2/highgui.hpp>

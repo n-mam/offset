@@ -1,5 +1,5 @@
-#ifndef FTPMODEL
-#define FTPMODEL
+#ifndef REMOTEFSMODEL_H
+#define REMOTEFSMODEL_H
 
 #include <npl/npl>
 
@@ -60,7 +60,7 @@ class RemoteFsModel : public FsModel
   void ParseMLSDList(const std::string& list, std::vector<FileElement>& fe_list, int *pfc = nullptr, int * pdc = nullptr);
   void ParseWindowsList(const std::string& list, std::vector<FileElement>& fe_list, int *pfc = nullptr, int *pdc = nullptr);
   void ParseLinuxList(const std::string& list, std::vector<FileElement>& fe_list, int *pfc = nullptr, int *pdc = nullptr);
-  
+
   bool m_connected = false;
 
   npl::SPProtocolFTP m_ftp;

@@ -1,5 +1,5 @@
-#ifndef LOGGER_HPP
-#define LOGGER_HPP
+#ifndef LOGGER_H
+#define LOGGER_H
 
 #include <QObject>
 

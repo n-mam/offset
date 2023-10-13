@@ -13,7 +13,7 @@ inline std::vector<std::string> split(const std::string& s, char delim)
 {
   std::vector<std::string> elems;
   std::stringstream ss(s);
-  std::string item;  
+  std::string item;
 
   while (std::getline(ss, item, delim))
   {
@@ -23,13 +23,13 @@ inline std::vector<std::string> split(const std::string& s, char delim)
   return elems;
 }
 
-inline std::vector<std::string> split(const std::string& s, const std::string& delim) 
+inline std::vector<std::string> split(const std::string& s, const std::string& delim)
 {
     size_t pos_start = 0, pos_end, delim_len = delim.length();
     std::string token;
     std::vector<std::string> res;
 
-    while ((pos_end = s.find (delim, pos_start)) != std::string::npos) 
+    while ((pos_end = s.find (delim, pos_start)) != std::string::npos)
     {
         token = s.substr (pos_start, pos_end - pos_start);
         pos_start = pos_end + delim_len;
@@ -41,13 +41,13 @@ inline std::vector<std::string> split(const std::string& s, const std::string& d
     return res;
 }
 
-inline std::vector<std::wstring> wsplit(const std::wstring& s, const std::wstring& delim) 
+inline std::vector<std::wstring> wsplit(const std::wstring& s, const std::wstring& delim)
 {
     size_t pos_start = 0, pos_end, delim_len = delim.length();
     std::wstring token;
     std::vector<std::wstring> res;
 
-    while ((pos_end = s.find (delim, pos_start)) != std::string::npos) 
+    while ((pos_end = s.find (delim, pos_start)) != std::string::npos)
     {
         token = s.substr (pos_start, pos_end - pos_start);
         pos_start = pos_end + delim_len;
@@ -80,7 +80,7 @@ inline std::string& ltrim(std::string& str, const std::string& chars)
     str.erase(0, str.find_first_not_of(chars));
     return str;
 }
- 
+
 inline std::string& rtrim(std::string& str, const std::string& chars)
 {
     str.erase(str.find_last_not_of(chars) + 1);
@@ -106,7 +106,7 @@ inline bool StartsWith(std::wstring& str, std::wstring prefix)
 
 inline void removeDuplicates(std::string& str, const char& ch)
 {
-  auto new_end = std::unique(str.begin(), str.end(), 
+  auto new_end = std::unique(str.begin(), str.end(),
     [ch](char lhs, char rhs) {
       return (lhs == rhs) && (lhs == ch);
     });

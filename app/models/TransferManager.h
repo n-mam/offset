@@ -1,5 +1,5 @@
-#ifndef TRANSFERMANAGER
-#define TRANSFERMANAGER
+#ifndef TRANSFERMANAGER_H
+#define TRANSFERMANAGER_H
 
 #include <atomic>
 
