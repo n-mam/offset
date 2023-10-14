@@ -7,8 +7,6 @@ Rectangle {
   border.width: 1
   border.color: borderColor
   color: Material.background
-  width: parent.width
-  height: parent.height
 
   SplitView {
     id: splitViewTop
@@ -57,7 +55,7 @@ Rectangle {
         MouseArea {
           anchors.fill: parent
           cursorShape: Qt.PointingHandCursor
-          onClicked: { 
+          onClicked: {
             diskListModel.refreshModel()
           }
         }
@@ -140,7 +138,7 @@ Rectangle {
           text: "START"
           enabled: (diskListModel.transfer === 0)
           width: parent.width * 0.45
-          height: parent.height 
+          height: parent.height
           anchors.left: parent.left
           anchors.margins: appSpacing
           anchors.verticalCenter: parent.verticalCenter
@@ -153,7 +151,7 @@ Rectangle {
           text: "CANCEL"
           enabled: (diskListModel.transfer !== 0)
           width: parent.width * 0.45
-          height: parent.height 
+          height: parent.height
           anchors.left: startButton.right
           anchors.margins: appSpacing
           anchors.verticalCenter: parent.verticalCenter

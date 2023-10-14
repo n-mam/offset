@@ -10,14 +10,14 @@ find_package(Qt6 REQUIRED COMPONENTS Quick QuickControls2 Gui)
 
 qt6_add_resources(QT_RESOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/qml/qml.qrc
-  ${CMAKE_CURRENT_SOURCE_DIR}/icons/icons.qrc
+  ${CMAKE_CURRENT_SOURCE_DIR}/assets/assets.qrc
 )
 
-add_executable(offset WIN32 ${QT_RESOURCES})
+add_executable(offset  ${QT_RESOURCES})
 
 target_sources(offset PRIVATE main.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/models/Logger.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/models/FsModel.cpp  
+  ${CMAKE_CURRENT_SOURCE_DIR}/models/FsModel.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/models/LocalFsModel.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/models/RemoteFsModel.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/models/BaseModel.cpp
@@ -30,7 +30,7 @@ if(OpenCV_FOUND)
 endif(OpenCV_FOUND)
 
 if(WIN32)
-  target_sources(offset PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/icons/resource.rc)
+  target_sources(offset PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/assets/resource.rc)
   target_sources(offset PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/models/DiskListModel.cpp)
 endif(WIN32)
 

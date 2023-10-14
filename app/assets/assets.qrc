@@ -17,5 +17,9 @@
     <file>refresh.png</file>
     <file>filedelete.png</file>
     <file>app.ico</file>
+    <file>fxc.png</file>
+    <file>ftp.png</file>
+    <file>camera.png</file>
+    <file>log.png</file>
   </qresource>
 </RCC>

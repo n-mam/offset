@@ -4,45 +4,47 @@ import QtQuick.Controls
 import Qt.labs.platform
 
 ApplicationWindow {
-  width: 610
-  height: 620
   visible: true
+  width: 1280 - (1280 * 0.25)
+  height: 720 - (720 * 0.25)
   title: qsTr("Offset")
 
   property var showlog: false
   property var borderColor: "white" //"#BCDCAA"
   property var appSpacing: 5
 
-  TabBar {
-    id: bar
-    width: parent.width
-    currentIndex: 1
-    TabButton {
-      text: qsTr("FXC")
-    }
-    TabButton {
-      text: qsTr("FTP")
-    }
-    TabButton {
-      text: qsTr("CAM")
-    }
-    TabButton {
-      text: qsTr("LOG")
+  ApplicationMenu {
+    id: appMenu
+    width: 70
+    startIndex: 1
+    height: parent.height - (2 * appSpacing)
+    anchors.left: parent.left
+    anchors.margins: appSpacing
+    anchors.verticalCenter: parent.verticalCenter
+    onMenuSelectionSignal: (index) => {
+      screenContainer.currentIndex = index
     }
   }
 
-  StackLayout {
-    anchors.margins: 5
-    anchors.top: bar.bottom
-    anchors.left: parent.left
-    anchors.right: parent.right
-    height: parent.height * 0.90
-    currentIndex: bar.currentIndex
-
-    Fxc {}
-    FTP {}
-    Cam {}
-    Trace {}
+  Container {
+      id: screenContainer
+      focus: true
+      currentIndex: appMenu.startIndex
+      width: parent.width - appMenu.x - appMenu.width - (2 * appSpacing)
+      height: parent.height - (2 * appSpacing)
+      anchors.left: appMenu.right
+      anchors.verticalCenter: parent.verticalCenter
+      contentItem: StackLayout {
+          id: layout
+          focus: true
+          anchors.fill: parent
+          anchors.leftMargin: appSpacing
+          currentIndex: screenContainer.currentIndex
+          Fxc {}
+          FTP {}
+          Cam {}
+          Trace {}
+      }
   }
 
   // Shortcut {

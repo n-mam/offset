@@ -1,0 +1,60 @@
+import QtQuick
+
+Rectangle {
+
+    property var startIndex: 0
+
+    radius: 3
+    border.width: 1
+    border.color: borderColor
+    color: "transparent"
+
+    signal menuSelectionSignal(var index)
+
+    ListView {
+        id: menuList
+        clip: true
+        spacing: 25
+        width: parent.width
+        currentIndex: startIndex
+        height: parent.height - (parent.height * 0.50)
+        anchors.verticalCenter: parent.verticalCenter
+        anchors.horizontalCenter: parent.horizontalCenter
+        model: ListModel {
+            ListElement {
+                name: "fxc.png"
+            }
+            ListElement {
+                name: "ftp.png"
+            }
+            ListElement {
+                name: "camera.png"
+            }
+            ListElement {
+                name: "log.png"
+            }
+        }
+        delegate: Item {
+            width: menuList.width
+            height: 42
+            Image {
+                width: 38
+                height: 38
+                source: "qrc:/" + name
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.horizontalCenter: parent.horizontalCenter
+            }
+            MouseArea {
+                anchors.fill: parent
+                onClicked: menuList.currentIndex = index
+            }
+        }
+        highlight: Rectangle {
+            radius: 3
+            color: "lightsteelblue"
+        }
+        onCurrentIndexChanged: {
+            menuSelectionSignal(currentIndex)
+        }
+    }
+}

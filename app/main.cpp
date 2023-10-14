@@ -69,8 +69,8 @@ void q_logger(QtMsgType type, const QMessageLogContext &context, const QString &
 {
   char buffer[2048];
   QByteArray localMsg = msg.toLocal8Bit();
-  switch (type)
-  {
+
+  switch (type){
     case QtDebugMsg:
       sprintf(buffer, "q_logger: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
       break;
@@ -93,5 +93,6 @@ void q_logger(QtMsgType type, const QMessageLogContext &context, const QString &
   #ifdef _WIN32
   OutputDebugStringA(buffer);
   #endif
+  qDebug() << buffer;
   LOG << buffer;
 }

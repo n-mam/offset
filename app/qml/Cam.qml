@@ -8,8 +8,6 @@ Rectangle {
   border.width: 1
   border.color: borderColor
   color: "transparent"
-  width: parent.width
-  height: parent.height
 
   Grid {
     id: camGrid

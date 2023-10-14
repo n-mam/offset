@@ -17,5 +17,6 @@
     <file>RemoteListView.qml</file>
     <file>ExcludeListPopup.qml</file>
     <file>TransferQueueDelegate.qml</file>
+    <file>ApplicationMenu.qml</file>
   </qresource>
 </RCC>

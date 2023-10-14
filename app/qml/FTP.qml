@@ -6,8 +6,6 @@ Rectangle {
   border.width: 1
   border.color: borderColor
   color: "transparent"
-  width: parent.width
-  height: parent.height
 
   SplitView {
     id: splitViewTop
@@ -59,7 +57,7 @@ Rectangle {
       // radius: 5
       // border.width: 1
       // border.color: borderColor
-    
+
       ListView {
         id: queue
         clip: true
@@ -90,7 +88,7 @@ Rectangle {
     height: 25
     anchors.left: parent.left
     anchors.right: parent.right
-    anchors.bottom: parent.bottom    
+    anchors.bottom: parent.bottom
     Connections {
       target: logger
       function onUpdateStatus(key, status) {

@@ -18,8 +18,8 @@ Popup {
       border.width: 1
       border.color: "white"
       color: Qt.darker(Material.background)
-      width: 240
-      height: 150
+      width: 284
+      height: 164
 
       Text {
         id: title
