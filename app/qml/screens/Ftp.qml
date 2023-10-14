@@ -1,5 +1,7 @@
 import QtQuick
 import QtQuick.Controls
+import "qrc:/components"
+import "qrc:/delegates"
 
 Rectangle {
   radius: 3

@@ -13,7 +13,7 @@ Rectangle {
     id: camGrid
     columns: 3
     spacing: 6
-    height: parent.height * 0.90
+    height: parent.height * 0.85
     anchors.top: parent.top
     anchors.left: parent.left
     anchors.right: parent.right

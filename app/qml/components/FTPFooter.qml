@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Shapes
 import QtQuick.Controls
 import Qt5Compat.GraphicalEffects
+import "qrc:/components"
 
 Item {
 

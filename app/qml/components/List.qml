@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Controls.Material 2.12
+import "qrc:/delegates"
 
 ListView {
   id: listView

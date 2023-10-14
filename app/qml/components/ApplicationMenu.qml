@@ -4,9 +4,9 @@ Rectangle {
 
     property var startIndex: 0
 
-    radius: 3
-    border.width: 1
-    border.color: borderColor
+    //radius: 3
+    //border.width: 1
+    //border.color: borderColor
     color: "transparent"
 
     signal menuSelectionSignal(var index)
@@ -38,8 +38,8 @@ Rectangle {
             width: menuList.width
             height: 42
             Image {
-                width: 38
-                height: 38
+                width: 34
+                height: 34
                 source: "qrc:/" + name
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.horizontalCenter: parent.horizontalCenter

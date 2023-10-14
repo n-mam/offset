@@ -1,12 +1,13 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
-import Qt.labs.platform
+import "qrc:/screens"
+import "qrc:/components"
 
 ApplicationWindow {
   visible: true
-  width: 1280 - (1280 * 0.25)
-  height: 720 - (720 * 0.25)
+  width: 1280 - (1280 * 0.40)
+  height: 720 - (720 * 0.30)
   title: qsTr("Offset")
 
   property var showlog: false
@@ -15,7 +16,7 @@ ApplicationWindow {
 
   ApplicationMenu {
     id: appMenu
-    width: 70
+    width: 60
     startIndex: 1
     height: parent.height - (2 * appSpacing)
     anchors.left: parent.left
@@ -40,9 +41,9 @@ ApplicationWindow {
           anchors.fill: parent
           anchors.leftMargin: appSpacing
           currentIndex: screenContainer.currentIndex
-          Fxc {}
-          FTP {}
-          Cam {}
+          Backup {}
+          Ftp {}
+          Camera {}
           Trace {}
       }
   }

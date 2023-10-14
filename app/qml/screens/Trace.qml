@@ -32,7 +32,7 @@ Rectangle {
     anchors.right: parent.right
     anchors.margins: 10
     anchors.topMargin: 5
-    height: parent.height * 0.90
+    height: parent.height * 0.85
     ScrollBar.vertical: ScrollBar {
       width: 8
     }
@@ -68,7 +68,7 @@ Rectangle {
     color: Material.background
     anchors.horizontalCenter: parent.horizontalCenter
     width: 75 + 75 + (3 * appSpacing)
-    height: parent.height * 0.08
+    height: parent.height * 0.10
     Button {
       id: clearButton
       text: "CLEAR"

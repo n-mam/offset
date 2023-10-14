@@ -93,6 +93,6 @@ void q_logger(QtMsgType type, const QMessageLogContext &context, const QString &
   #ifdef _WIN32
   OutputDebugStringA(buffer);
   #endif
-  qDebug() << buffer;
+  //qDebug() << buffer;
   LOG << buffer;
 }

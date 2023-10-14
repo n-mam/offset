@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import Qt.labs.platform
+import "qrc:/components"
 
 Rectangle {
   id: rowDelegate
