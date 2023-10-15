@@ -4,8 +4,8 @@ set(CMAKE_AUTORCC ON)
 
 #SET(CMAKE_VERBOSE_MAKEFILE ON)
 
-find_package(OpenCV QUIET)
 find_package(ZLIB REQUIRED)
+find_package(OpenCV CONFIG REQUIRED)
 find_package(Qt6 REQUIRED COMPONENTS Quick QuickControls2 Gui)
 
 qt6_add_resources(QT_RESOURCES
@@ -22,12 +22,8 @@ target_sources(offset PRIVATE main.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/models/RemoteFsModel.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/models/BaseModel.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/models/TransferManager.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/models/VideoRenderer.cpp
 )
-
-if(OpenCV_FOUND)
-  target_compile_definitions(offset PUBLIC OpenCV_FOUND)
-  target_sources(offset PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/models/VideoRenderer.cpp)
-endif(OpenCV_FOUND)
 
 if(WIN32)
   target_sources(offset PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/assets/resource.rc)
@@ -41,23 +37,28 @@ target_include_directories(offset PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/models)
 target_link_libraries(
   offset
   PRIVATE
+  Qt6::Gui
   Qt6::Quick
   Qt6::QuickControls2
-  Qt6::Gui
   rapidjson
   ZLIB::ZLIB
   OpenSSL::SSL
-  OpenSSL::Crypto
+  opencv_ml opencv_dnn opencv_dpm opencv_hdf opencv_face
   Crc32c::crc32c
+  OpenSSL::Crypto
 )
-
-if(OpenCV_FOUND)
-  target_link_libraries(offset PRIVATE ${OpenCV_LIBS})
-endif(OpenCV_FOUND)
 
 if(WIN32)
   target_link_libraries(offset PRIVATE Ws2_32.lib VssApi.lib)
 endif(WIN32)
+
+if (WIN32)
+  SET (CMAKE_CXX_FLAGS_RELEASE "/Zi /Od")
+  SET_TARGET_PROPERTIES(
+   offset PROPERTIES
+   LINK_FLAGS
+   "/DEBUG /OPT:REF /OPT:ICF")
+endif (WIN32)
 
 #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DQT_QML_DEBUG")
 

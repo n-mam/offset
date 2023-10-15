@@ -27,35 +27,39 @@
 - Directory listing support for Linux, Windows and MLSD.
 - FTPS supports TLS1.3
 
-#### Dependencies
+#### vcpkg dependencies
 
 ```
 git clone https://github.com/microsoft/vcpkg.git
 cd vcpkg
 bootstrap-vcpkg.bat
-vcpkg.exe install openssl:x64-windows crc32c:x64-windows rapidjson:x64-windows zlib:x64-windows
-./vcpkg install openssl:x64-linux crc32c:x64-linux rapidjson:x64-linux zlib:x64-linux
+vcpkg.exe install openssl:x64-windows crc32c:x64-windows rapidjson:x64-windows zlib:x64-windows opencv[contrib]:x64-windows
+./vcpkg install openssl:x64-linux crc32c:x64-linux rapidjson:x64-linux zlib:x64-linux opencv[contrib]:x64-linux
 vcpkg.exe integrate install
 
 use the resulting toolchain file in cmake configure step as highlited under the build section
+```
 
-qt-6.4.2 source build
+#### qt-6.5.3 source build
 
-In case you have pre-built QT or source builds, you can skip installing QT via vcpkg.
-Here are the steps for building QT6 from source:
-Download and extract QT-6.4.2 src tar ball under say D:\
-Download ninja and jom under D:\
+```
+make sure ninja nd python3.9 are under PATH
 
-SET PATH=%PATH%;D:\QT-6.4.2\ninja-win;D:\QT-6.4.2\jom_1_1_3;D:\Python39
+C:\>set PATH=D:\Python39;%PATH%
 
-Adapt paths in the above SET command accordingly
+C:\>where python
+D:\Python39\python.exe
+C:\Users\nmam\AppData\Local\Microsoft\WindowsApps\python.exe
 
-..\qt-everywhere-src-6.4.0\configure.bat -prefix D:\QT-6.4.2\INSTALL -opensource -platform win32-msvc -skip qtconnectivity -nomake examples -nomake tests -skip speech -skip scxml -skip qtsensors -skip qtserialbus -skip qtserialport -skip qtspeech -skip qtdoc -skip qtandroidextras -release
+C:\>where ninja
+C:\Windows\System32\ninja.exe
+C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\Ninja\ninja.exe
+
+\qt-everywhere-src-6.5.3\configure.bat -prefix D:\qt-6.5.3\install -skip qtconnectivity -nomake examples -nomake tests -skip speech -skip scxml -skip qtsensors -skip qtserialbus -skip qtserialport -skip qtspeech -skip qtdoc -skip qtandroidextras -release
 
 Qt is now configured for building. Just run 'cmake --build . --parallel'
 Once everything is built, you must run 'cmake --install .'
-Qt will be installed into 'D:/QT-6.4.0/INSTALL.DBG'
-
+Qt will be installed into 'D:/qt-6.5.3/install'
 ```
 
 #### Build
@@ -65,14 +69,13 @@ git clone https://github.com/n-mam/offset.git
 cd offset
 mkdir build
 cd build
-SET PATH=%PATH%;D:\qt-6.5.2\install\bin;D:\cv\build.rel\install\x64\vc17\bin
-SET Qt6_DIR=D:\qt-6.5.2\install
-SET OpenCV_Dir=D:\CV\build\install
+SET Qt6_DIR=D:\qt-6.5.3\install
 cmake -DCMAKE_TOOLCHAIN_FILE=D:/vcpkg/scripts/buildsystems/vcpkg.cmake ..
 cmake -DCMAKE_TOOLCHAIN_FILE=~/vcpkg/scripts/buildsystems/vcpkg.cmake ..
 cmake --build . --config Release
 
 Run as admin (needed for FXC):
+SET PATH=%PATH%;D:\qt-6.5.3\install\bin
 qml\Release\offset.exe
 ```
 
@@ -82,7 +85,6 @@ qml\Release\offset.exe
 windeployqt --qmldir E:\offset\qml E:\offset\build\qml\Release\offset.exe
 ```
 vc redist is bundled with package zip; in case your system does not have that installed already
-
 
 #### Contact:
 Telegram: https://t.me/neelabhm

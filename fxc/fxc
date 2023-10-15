@@ -65,7 +65,7 @@ auto GetTargetForDestination(const std::wstring& destination, const std::wstring
 
     auto file = "/" + directory + "/" + osl::ws2s(name + L"." + GetExtentionForFormat(format));
 
-    ftp->Transfer(npl::ftp::upload, 
+    ftp->Transfer(npl::ftp::upload,
         file, [&](const char *b, size_t n) { return true; }, nullptr, protect);
 
     ftp->Quit();
@@ -131,7 +131,7 @@ auto RecoverVirtualImageToPhysicalVolume(const std::wstring& source, const std::
 
     fRet = WriteFile(hTarget, buf.get(), n, &dwBytesWritten, NULL);
 
-    if(!fRet)
+    if (!fRet)
     {
       LOG << "WriteFile on target failed : " << GetLastError();
       break;
@@ -148,7 +148,7 @@ auto RecoverVirtualImageToPhysicalVolume(const std::wstring& source, const std::
   return fRet;
 }
 
-auto RecoverVolumeToVolume(const std::wstring& source, const std::wstring& target) 
+auto RecoverVolumeToVolume(const std::wstring& source, const std::wstring& target)
 {
   BOOL fRet = FALSE;
   std::unique_ptr<uint8_t[]> _buf;
@@ -156,7 +156,7 @@ auto RecoverVolumeToVolume(const std::wstring& source, const std::wstring& targe
   HANDLE hTarget = INVALID_HANDLE_VALUE;
   DWORD dwBytesWritten = 0;
   DWORD lpNumberOfBytesRead = 0;
-  
+
   hSource = osl::GetVolumeHandle(source.c_str());
 
   if (hSource == INVALID_HANDLE_VALUE)
@@ -308,7 +308,7 @@ auto MountVirtualDiskAsVolume(const std::wstring& image)
 auto TestSnapshot(std::vector<std::wstring> volumes)
 {
   fxc::EnumerateSnapshots();
-  
+
   std::vector<std::wstring> supported, unsupported;
 
   for (const auto& volume : volumes)

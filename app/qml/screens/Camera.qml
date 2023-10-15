@@ -9,29 +9,36 @@ Rectangle {
   border.color: borderColor
   color: "transparent"
 
-  Grid {
-    id: camGrid
-    columns: 3
-    spacing: 6
-    height: parent.height * 0.85
-    anchors.top: parent.top
-    anchors.left: parent.left
-    anchors.right: parent.right
-    anchors.margins: 6
-    //Player{}
+  Flickable {
+      id: flickableGrid
+      clip: true
+      height: parent.height * 0.88
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.margins: 6
+      contentHeight: camGrid.height
+      contentWidth: camGrid.width
+
+      Grid {
+        id: camGrid
+        columns: 4
+        spacing: 6
+        //Player{}
+      }
   }
 
   Row {
     id: camControl
     spacing: 10
-    anchors.top: camGrid.bottom
+    anchors.top: flickableGrid.bottom
     anchors.horizontalCenter: parent.horizontalCenter
     height: parent.height * 0.10
     TextField {
       id: cameraUrl
       width: parent.width * 0.80
       height: parent.height * 0.80
-      placeholderText: qsTr("Camera URL")
+      placeholderText: qsTr("Camera")
       text: "rtsp://user:pass@ip"
       horizontalAlignment: TextInput.AlignHCenter
     }
@@ -40,14 +47,20 @@ Rectangle {
       height: parent.height * 0.80
       text: "ADD"
       onClicked: {
-        var component = Qt.createComponent("Player.qml")
-        var object = component.createObject(camGrid, {
-          "source": "hello",
-          "width": (camRoot.width / 3) - 10,
-          "height": (camRoot.height / 2) - camControl.height
-        });
+        var component = Qt.createComponent("qrc:/components/Player.qml")
+        if (component.status == Component.Ready)
+            finishCreation(component);
+        else
+            component.statusChanged.connect(finishCreation);
       }
     }
   }
 
+  function finishCreation(component) {
+    var object = component.createObject(camGrid, {
+      "source": "D:\\videos\\overpass.mp4",
+      "width": 720 - (720 * 0.55),
+      "height": 480 - (480 * 0.55)
+    });
+  }
 }

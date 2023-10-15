@@ -6,8 +6,8 @@ TransferManager::TransferManager()
   m_queue.reserve(4096);
   m_ftpModel = RemoteFsModel::getInstance();
   connect(this, &TransferManager::transferFailed, this, &TransferManager::TransferFinished);
-  connect(this, &TransferManager::transferCancelled, this, &TransferManager::TransferFinished);   
-  connect(this, &TransferManager::transferSuccessful, this, &TransferManager::TransferFinished); 
+  connect(this, &TransferManager::transferCancelled, this, &TransferManager::TransferFinished);
+  connect(this, &TransferManager::transferSuccessful, this, &TransferManager::TransferFinished);
 }
 
 TransferManager::~TransferManager()
@@ -94,7 +94,7 @@ int TransferManager::GetSessionWithLeastQueueDepth(void)
     auto pending = m_sessions[i]->PendingTransfers();
     if (pending < minimum) {
       sid = i;
-      minimum = pending;      
+      minimum = pending;
     }
   }
 
@@ -380,7 +380,7 @@ bool TransferManager::InitializeFTPSessions(void)
 
     ftp->StartClient(
       [this](auto p, bool isConnected){
-        if(!isConnected) { }
+        if (!isConnected) { }
       });
 
     m_sessions.push_back(ftp);
@@ -402,7 +402,7 @@ void TransferManager::CheckAndReconnectSessions(void)
 
       m_sessions[i]->StartClient(
         [this](auto p, bool isConnected){
-          if(!isConnected) { }
+          if (!isConnected) { }
         });
     }
   }

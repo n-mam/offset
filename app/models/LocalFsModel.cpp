@@ -25,9 +25,9 @@ void LocalFsModel::QueueTransfer(int index, bool start)
 
   UploadInternal(
     fileName,
-    m_currentDirectory, 
-    RemoteFsModel::getInstance()->getCurrentDirectory().toStdString(), 
-    fileIsDir, 
+    m_currentDirectory,
+    RemoteFsModel::getInstance()->getCurrentDirectory().toStdString(),
+    fileIsDir,
     fileSize);
 }
 
@@ -45,7 +45,7 @@ void LocalFsModel::UploadInternal(const std::string& file, const std::string& lo
             localPath,
             remotePath,
             true);
-        } else if(entry.is_regular_file()) {
+        } else if (entry.is_regular_file()) {
           TransferManager::getInstance()->AddToTransferQueue({
             entry.path().string(),
             remotePath + "/" + entry.path().filename().string(),
@@ -110,7 +110,7 @@ void LocalFsModel::Rename(QString from, QString to)
 
 void LocalFsModel::setCurrentDirectory(QString directory)
 {
-  if (directory.isEmpty()) 
+  if (directory.isEmpty())
     directory = QString::fromStdString(
       std::filesystem::current_path().string());
 
@@ -131,7 +131,7 @@ void LocalFsModel::setCurrentDirectory(QString directory)
     isDir ? m_folderCount++ : m_fileCount++;
 
     m_model.push_back({
-      entry.path().filename().string(), 
+      entry.path().filename().string(),
       (entry.is_regular_file() ? std::to_string(entry.file_size()) : "0"),
       "",
       (isDir ? "d" : "-"),
@@ -140,7 +140,7 @@ void LocalFsModel::setCurrentDirectory(QString directory)
   }
 
   std::partition(m_model.begin(), m_model.end(),
-    [](const auto& e){ 
+    [](const auto& e){
       return e.m_attributes[0] == 'd';
     });
 

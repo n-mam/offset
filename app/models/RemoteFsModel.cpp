@@ -29,7 +29,7 @@ bool RemoteFsModel::Connect(QString host, QString port, QString user, QString pa
   if (m_ftp) {
     m_ftp->SetIdleCallback([this](){
       QMetaObject::invokeMethod(this, [=](){
-        for (auto rit = m_directories_to_remove.rbegin(); 
+        for (auto rit = m_directories_to_remove.rbegin();
               rit != m_directories_to_remove.rend(); rit++)
           m_ftp->RemoveDirectory(*rit);
         if (!m_directories_to_remove.empty()) {
@@ -55,7 +55,7 @@ bool RemoteFsModel::Connect(QString host, QString port, QString user, QString pa
       [this](auto p, bool isConnected){
         QMetaObject::invokeMethod(this, [=](){
           setConnected(isConnected);
-          if(!isConnected)
+          if (!isConnected)
           {
             beginResetModel();
             m_model.clear();
@@ -153,7 +153,7 @@ void RemoteFsModel::RemoveDirectory(QString path)
     [=](const std::vector<FileElement>& fe_list) {
       bool onlyFiles = true;
       for (const auto& fe : fe_list) {
-        auto fe_path = path + ((path.back() == '/') ? 
+        auto fe_path = path + ((path.back() == '/') ?
             QString::fromStdString(fe.m_name) : ("/" + QString::fromStdString(fe.m_name)));
         if (fe.m_attributes[0] == 'd') {
           onlyFiles = false;
@@ -205,7 +205,7 @@ void RemoteFsModel::setConnected(bool isConnected)
   {
     m_connected = isConnected;
     emit connected(m_connected);
-    STATUS(1) << (isConnected ? "Connected to " : 
+    STATUS(1) << (isConnected ? "Connected to " :
       "Disconnected from ") << m_host;
   }
 }
@@ -337,7 +337,7 @@ void RemoteFsModel::ParseLinuxList(const std::string& list, std::vector<FileElem
 
     for (int i = 0; i < 3; i++) {
       while(*p == ' ') { p++; }
-      while(*p != ' ') { p++; }      
+      while(*p != ' ') { p++; }
     }
 
     while(*p == ' ') { p++; }
@@ -389,7 +389,7 @@ void RemoteFsModel::ParseWindowsList(const std::string& list, std::vector<FileEl
 
     auto isDir = (0 == memcmp(p, "<DIR>", strlen("<DIR>")));
 
-    std::string size, name; 
+    std::string size, name;
 
     while(*p != ' ') {
       size.append(1, *p);

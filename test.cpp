@@ -5,6 +5,7 @@
 #endif
 
 #include <npl/npl>
+#include <cvl/cvl>
 
 void show_usage(void);
 
@@ -36,8 +37,11 @@ int main(int argc, char *argv[])
   #endif
   if (ns == "npl")
     npl::entry(arguments);
-  else
+  else if (ns == "cvl") {
+    cvl::entry(arguments);
+  } else {
     show_usage();
+  }
 
   return 0;
 }

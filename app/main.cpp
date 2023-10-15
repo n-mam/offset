@@ -7,10 +7,7 @@
 #include <Logger.h>
 #include <LocalFsModel.h>
 #include <RemoteFsModel.h>
-
-#ifdef OpenCV_FOUND
 #include <VideoRenderer.h>
-#endif
 
 #ifdef _WIN32
 #include <DiskListModel.h>
@@ -48,9 +45,7 @@ int main(int argc, char *argv[])
     },
     Qt::QueuedConnection);
 
-  #ifdef OpenCV_FOUND
-  qmlRegisterType<VideoRenderer>("CustomElements", 1, 0, "VideoPlayer");
-  #endif
+  qmlRegisterType<VideoRenderer>("CustomElements", 1, 0, "VideoRenderer");
 
   engine.rootContext()->setContextProperty("logger", new Logger());
   engine.rootContext()->setContextProperty("fsModel", LocalFsModel::getInstance());

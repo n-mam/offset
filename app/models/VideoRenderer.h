@@ -6,7 +6,7 @@
 #include <QSGTexture>
 #include <QQuickItem>
 
-#include <cam/camera>
+#include <cvl/cvl>
 
 #define IMAGE_WIDTH (100)
 #define IMAGE_HEIGHT (100)
@@ -25,8 +25,11 @@ class VideoRenderer : public QQuickItem
   QSGNode *updatePaintNode(QSGNode *node, UpdatePaintNodeData *) override;
   void componentComplete() override;
 
+  Q_INVOKABLE void start(void);
+  Q_INVOKABLE void stop(void);
+
   Q_PROPERTY(QString source READ getSource WRITE setSource);
-  
+
   public slots:
 
   QString getSource(void);
@@ -34,14 +37,19 @@ class VideoRenderer : public QQuickItem
 
   protected:
 
-  void createImage();
-  void updateFrame();
+  void createStatic();
+  void updateStatic();
+  void updateFrame(const cv::Mat& frame = cv::Mat());
+  void createImageFromMat(const cv::Mat& frame);
+  QImage MatToQImage(const cv::Mat& mat);
 
   private:
 
+  QTimer m_timer;
+
   QString m_source;
 
-  SPCamera m_camera;
+  cvl::SPCamera m_camera;
 
   uint32_t m_buffer[BUFFER_SIZE] = {};
 

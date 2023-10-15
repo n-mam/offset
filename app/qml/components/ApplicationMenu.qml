@@ -38,8 +38,8 @@ Rectangle {
             width: menuList.width
             height: 42
             Image {
-                width: 34
-                height: 34
+                width: 32
+                height: 32
                 source: "qrc:/" + name
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.horizontalCenter: parent.horizontalCenter

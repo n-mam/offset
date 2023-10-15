@@ -21,5 +21,7 @@
     <file>ftp.png</file>
     <file>camera.png</file>
     <file>log.png</file>
+    <file>play.png</file>
+    <file>pause.png</file>
   </qresource>
 </RCC>

@@ -6,8 +6,9 @@ project(offset)
 
 find_package(ZLIB REQUIRED)
 find_package(OpenSSL REQUIRED)
-find_package(RapidJSON CONFIG REQUIRED)
 find_package(Crc32c CONFIG REQUIRED)
+ find_package(OpenCV CONFIG REQUIRED)
+find_package(RapidJSON CONFIG REQUIRED)
 find_package(Qt6 REQUIRED COMPONENTS Quick QuickControls2 Gui)
 
 include_directories(
@@ -15,7 +16,7 @@ include_directories(
   ${CMAKE_SOURCE_DIR}/osl
   ${CMAKE_SOURCE_DIR}/npl
   ${CMAKE_SOURCE_DIR}/fxc
-  ${CMAKE_SOURCE_DIR}/cam
+  ${CMAKE_SOURCE_DIR}/cvl
 )
 
 if(MSVC)
@@ -24,9 +25,7 @@ if(MSVC)
     -D_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING)
 endif()
 
-if(Qt6_FOUND)
-  add_subdirectory(app)
-endif()
+add_subdirectory(app)
 
 add_executable(Test test.cpp)
 
@@ -38,8 +37,9 @@ target_link_libraries(
   rapidjson
   ZLIB::ZLIB
   OpenSSL::SSL
-  OpenSSL::Crypto
   Crc32c::crc32c
+  opencv_ml opencv_dnn opencv_dpm opencv_hdf opencv_face
+  OpenSSL::Crypto
 )
 
 if (WIN32)
