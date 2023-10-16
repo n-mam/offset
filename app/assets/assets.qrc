@@ -19,9 +19,11 @@
     <file>app.ico</file>
     <file>fxc.png</file>
     <file>ftp.png</file>
+    <file>back.png</file>
     <file>camera.png</file>
     <file>log.png</file>
     <file>play.png</file>
     <file>pause.png</file>
+    <file>settings.png</file>
   </qresource>
 </RCC>

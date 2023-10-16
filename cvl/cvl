@@ -38,9 +38,13 @@ class camera
 
   void start(TFrameCallback cbk)
   {
-    _frame_cbk = cbk;
     _pipeline_thread = std::thread(&camera::process_frames, this);
-    _queue_thread = std::thread(&camera::queue_frames, this);
+    if (cbk) {
+      _frame_cbk = cbk;
+      _queue_thread = std::thread(&camera::queue_frames, this);
+    } else {
+      camera::queue_frames();
+    }
   }
 
   void stop()
@@ -95,15 +99,14 @@ class camera
       auto f_out = q_out.dequeue();
 
       if (!f_out.empty()) {
-        if (0) {
-          cv::imshow("live", f_out);
+        if (_frame_cbk) {
+          _frame_cbk(f_out);
         }  else {
-          if (_frame_cbk)
-            _frame_cbk(f_out);
+          cv::imshow("live", f_out);
         }
       }
 
-      if (cv::waitKey(25) >= 0) {
+      if (cv::waitKey(20) >= 0) {
         _stop = true;
         break;
       }
@@ -138,14 +141,13 @@ inline auto entry(std::vector<std::string> arguments)
 {
   std::string source = "0";
 
-  //if (argc > 1) fixme
-    source = arguments[1];
+  source = arguments[1];
 
   auto cam = std::make_unique<cvl::camera>(source);
 
-  cam->start([](const cv::Mat& frame){
-    //cant imshow here as this is secondary thread
-  });
+  cam->start(nullptr);
+
+  getchar();
 }
 
 using SPCamera = std::shared_ptr<camera>;

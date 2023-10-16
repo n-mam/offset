@@ -47,6 +47,18 @@ Item {
                 }
             }
         }
+
+        Image {
+            width: 32
+            height: 32
+            source: "qrc:/settings.png"
+            MouseArea {
+                anchors.fill: parent
+                onClicked: {
+                    //vr.stop()
+                }
+            }
+        }
     }
   }
 

@@ -11,6 +11,7 @@
     <file>components/Player.qml</file>
     <file>components/FTPFooter.qml</file>
     <file>components/FxcFooter.qml</file>
+    <file>components/StackScreen.qml</file>
     <file>components/LocalListView.qml</file>
     <file>components/RenameNewPopup.qml</file>
     <file>components/RemoteListView.qml</file>

@@ -5,7 +5,7 @@
 #include <fstream>
 
 #include <facerec.hpp>
-#include <Detector.hpp>
+#include <detector.hpp>
 #include <geometry.hpp>
 
 #include <opencv2/core.hpp>
@@ -135,10 +135,9 @@ class pipeline
 
   inline auto execute(cv::Mat& frame)
   {
-    if (frame.empty())
-    {
-      ERR << "empty frame grabbed";
-      return;
+    if (frame.empty()) {
+        ERR << "empty frame grabbed";
+        return;
     }
 
     //auto detections = detectLength(frame);

@@ -43,5 +43,13 @@ target_link_libraries(
 )
 
 if (WIN32)
+  SET (CMAKE_CXX_FLAGS_RELEASE "/Zi /Od")
+  SET_TARGET_PROPERTIES(
+   Test PROPERTIES
+   LINK_FLAGS
+   "/DEBUG /OPT:REF /OPT:ICF")
+endif (WIN32)
+
+if (WIN32)
   target_link_libraries(Test PRIVATE Ws2_32.lib VssApi.lib)
 endif(WIN32)

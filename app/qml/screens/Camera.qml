@@ -1,13 +1,15 @@
 import QtQuick
 import QtQuick.Controls
+import "qrc:/components"
 
-Rectangle {
+StackScreen {
+
   id: camRoot
-  radius: 3
-  clip: true
-  border.width: 1
-  border.color: borderColor
-  color: "transparent"
+  //radius: 3
+  //clip: true
+  //border.width: 1
+  //border.color: borderColor
+  //color: "transparent"
 
   Flickable {
       id: flickableGrid
@@ -39,7 +41,6 @@ Rectangle {
       width: parent.width * 0.80
       height: parent.height * 0.80
       placeholderText: qsTr("Camera")
-      text: "rtsp://user:pass@ip"
       horizontalAlignment: TextInput.AlignHCenter
     }
     Button {
@@ -47,20 +48,23 @@ Rectangle {
       height: parent.height * 0.80
       text: "ADD"
       onClicked: {
-        var component = Qt.createComponent("qrc:/components/Player.qml")
-        if (component.status == Component.Ready)
-            finishCreation(component);
-        else
-            component.statusChanged.connect(finishCreation);
+        if (cameraUrl.text) {
+          var component = Qt.createComponent("qrc:/components/Player.qml")
+          if (component.status == Component.Ready)
+              finishCreation(component);
+          else
+              component.statusChanged.connect(finishCreation);
+        }
       }
     }
   }
 
   function finishCreation(component) {
     var object = component.createObject(camGrid, {
-      "source": "D:\\videos\\overpass.mp4",
-      "width": 720 - (720 * 0.55),
-      "height": 480 - (480 * 0.55)
+      "source": cameraUrl.text,
+      "width": 1280 - (1280 * 0.65),
+      "height": 720 - (720 * 0.65)
     });
+    cameraUrl.text = ""
   }
 }

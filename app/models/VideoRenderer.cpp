@@ -70,8 +70,9 @@ void VideoRenderer::createImageFromMat(const cv::Mat& frame)
     if (m_newTexture == nullptr) {
         auto img = MatToQImage(frame);
         auto wnd = window();
-        if (wnd != nullptr)
+        if (wnd != nullptr) {
             m_newTexture = wnd->createTextureFromImage(img);
+        }
     }
 }
 
@@ -82,7 +83,7 @@ QImage VideoRenderer::MatToQImage(const cv::Mat& mat)
     {
         // Set the color table (used to translate colour indexes to qRgb values)
         QVector<QRgb> colorTable;
-        for (int i=0; i<256; i++)
+        for (int i = 0; i < 256; i++)
             colorTable.push_back(qRgb(i,i,i));
         // Copy input Mat
         const uchar *qImageBuffer = (const uchar*)mat.data;

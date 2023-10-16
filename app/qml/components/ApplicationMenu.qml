@@ -17,7 +17,7 @@ Rectangle {
         spacing: 25
         width: parent.width
         currentIndex: startIndex
-        height: parent.height - (parent.height * 0.50)
+        height: parent.height - (parent.height * 0.40)
         anchors.verticalCenter: parent.verticalCenter
         anchors.horizontalCenter: parent.horizontalCenter
         model: ListModel {
