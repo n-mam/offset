@@ -6,8 +6,6 @@ Item {
 
     property var baseItem;
 
-    anchors.fill: parent
-
     Image {
         z: 100
         anchors.top: parent.top

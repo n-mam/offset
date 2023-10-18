@@ -1,11 +1,14 @@
 import QtQuick
 import QtQuick.Controls
 import CustomElements 1.0
+import "qrc:/screens"
 
 Item {
 
   id: playerRoot
   property var source
+
+  signal cameraSettingsClickedSignal(var vr)
 
   Rectangle {
     border.width: 1
@@ -55,7 +58,7 @@ Item {
             MouseArea {
                 anchors.fill: parent
                 onClicked: {
-                    //vr.stop()
+                    onClicked: cameraSettingsClickedSignal(vr)
                 }
             }
         }
