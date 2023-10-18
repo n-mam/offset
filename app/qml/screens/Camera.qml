@@ -61,9 +61,7 @@ StackScreen {
 
   function finishCreation(component) {
     var object = component.createObject(camGrid, {
-      "source": cameraUrl.text,
-      "width": 1280 - (1280 * 0.65),
-      "height": 720 - (720 * 0.65)
+      "source": cameraUrl.text
     });
     cameraUrl.text = ""
     object.cameraSettingsClickedSignal.connect(cameraSettingsClicked)

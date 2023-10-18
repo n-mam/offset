@@ -111,11 +111,11 @@ QSGNode *VideoRenderer::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *)
     if (!node) {
         if (m_newTexture != nullptr) {
             node = new QSGSimpleTextureNode();
-            node->setRect(boundingRect());
         }
     }
 
     if (node) {
+        node->setRect(boundingRect());
         if (m_newTexture != nullptr) {
             if (m_texture != nullptr) {
                 delete m_texture;

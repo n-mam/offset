@@ -5,8 +5,11 @@ import "qrc:/screens"
 
 Item {
 
-  id: playerRoot
   property var source
+
+  id: playerRoot
+  width: mainWindow.width - (mainWindow.width * 0.65)
+  height: mainWindow.height - (mainWindow.height * 0.65)
 
   signal cameraSettingsClickedSignal(var vr)
 

@@ -5,6 +5,7 @@ import "qrc:/screens"
 import "qrc:/components"
 
 ApplicationWindow {
+  id: mainWindow
   visible: true
   width: 1280 - (1280 * 0.35)
   height: 720 - (720 * 0.35)
