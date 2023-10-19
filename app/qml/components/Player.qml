@@ -8,8 +8,9 @@ Item {
   property var source
 
   id: playerRoot
-  width: mainWindow.width - (mainWindow.width * 0.65)
-  height: mainWindow.height - (mainWindow.height * 0.65)
+
+  width: mainWindow.width - (mainWindow.width * 0.72)
+  height: mainWindow.height - (mainWindow.height * 0.72)
 
   signal cameraSettingsClickedSignal(var vr)
 
@@ -37,7 +38,7 @@ Item {
             MouseArea {
                 anchors.fill: parent
                 onClicked: {
-                    vr.start()
+                    vr.start(["face"])
                 }
             }
         }

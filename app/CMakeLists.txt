@@ -43,7 +43,7 @@ target_link_libraries(
   rapidjson
   ZLIB::ZLIB
   OpenSSL::SSL
-  opencv_ml opencv_dnn opencv_dpm opencv_hdf opencv_face
+  opencv_ml opencv_dnn opencv_dpm opencv_hdf opencv_face opencv_bgsegm opencv_core
   Crc32c::crc32c
   OpenSSL::Crypto
 )

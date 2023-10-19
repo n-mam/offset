@@ -24,7 +24,7 @@ StackScreen {
 
         Grid {
           id: camGrid
-          columns: 4
+          columns: 3
           spacing: 6
           //Player{}
         }

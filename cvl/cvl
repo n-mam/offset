@@ -36,9 +36,9 @@ class camera
     stop();
   }
 
-  void start(TFrameCallback cbk)
+  void start(std::vector<std::string> stages, TFrameCallback cbk)
   {
-    _pipeline_thread = std::thread(&camera::process_frames, this);
+    _pipeline_thread = std::thread(&camera::process_frames, this, stages);
     if (cbk) {
       _frame_cbk = cbk;
       _queue_thread = std::thread(&camera::queue_frames, this);
@@ -106,7 +106,7 @@ class camera
         }
       }
 
-      if (cv::waitKey(20) >= 0) {
+      if (cv::waitKey(18) >= 0) {
         _stop = true;
         break;
       }
@@ -115,9 +115,9 @@ class camera
     DBG << "queue_frames thread returning";
   }
 
-  void process_frames()
+  void process_frames(std::vector<std::string> stages)
   {
-    cvl::pipeline pipeLine;
+    cvl::pipeline pipeLine(stages);
 
     while (!_stop) {
 
@@ -145,7 +145,7 @@ inline auto entry(std::vector<std::string> arguments)
 
   auto cam = std::make_unique<cvl::camera>(source);
 
-  cam->start(nullptr);
+  cam->start({"face"}, nullptr);
 
   getchar();
 }

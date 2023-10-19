@@ -1,6 +1,7 @@
 #ifndef PIPELINE_HPP
 #define PIPELINE_HPP
 
+#include <vector>
 #include <chrono>
 #include <fstream>
 
@@ -18,9 +19,23 @@ class pipeline
 {
   public:
 
-  pipeline()
+  pipeline(const std::vector<std::string>& stages)
   {
     //_thread = std::thread(&pipeline::pipelineThread, this);
+    _stages = stages;
+    for (const auto& stage : stages) {
+      if (stage == "face") {
+        _faceDetector = std::make_unique<cvl::FaceDetector>();
+      } else if (stage == "motion_detect") {
+        _backgroundSubtractor = std::make_unique<cvl::BackgroundSubtractor>("gmg");
+      } else if (stage == "face_rec") {
+        _faceRec = std::make_unique<cvl::facerec>("../MODELS/FaceRecognition/fr.csv");
+      } else if (stage == "object") {
+        _objectDetector = std::make_unique<cvl::ObjectDetector>("person");
+      } else {
+        WARN << "no detector created in pipeline";
+      }
+    }
   }
 
   ~pipeline()
@@ -69,9 +84,7 @@ class pipeline
 
   inline auto detectMotion(cv::Mat& frame)
   {
-    static cvl::BackgroundSubtractor backgroundSubtractor("gmg");
-
-    auto bbs = backgroundSubtractor.Detect(frame);
+    auto bbs = _backgroundSubtractor->Detect(frame);
 
     for (const auto& bb : bbs)
     {
@@ -114,23 +127,17 @@ class pipeline
 
   inline auto detectFaces(cv::Mat& frame)
   {
-    static cvl::FaceDetector faceDetector;
-
-    return faceDetector.Detect(frame);
+    return _faceDetector->Detect(frame);
   }
 
   inline auto detectObjects(cv::Mat& frame)
   {
-    static cvl::ObjectDetector objectDetector("person");
-
-    return objectDetector.Detect(frame);
+    return _objectDetector->Detect(frame);
   }
 
   inline auto faceRecognition(cv::Mat& frame)
   {
-    static cvl::facerec faceRec("../MODELS/FaceRecognition/fr.csv");
-
-    return faceRec.predict(frame);
+    return _faceRec->predict(frame);
   }
 
   inline auto execute(cv::Mat& frame)
@@ -140,10 +147,21 @@ class pipeline
         return;
     }
 
-    //auto detections = detectLength(frame);
-    //auto detections = detectFaces(frame);
-    auto detections = detectObjects(frame);
-    //auto detections = detectMotion(frame);
+    Detections detections;
+
+    //detections = detectLength(frame);
+
+    if (_faceDetector) {
+      detections = detectFaces(frame);
+    }
+
+    // if (_objectDetector) {
+    //   detections = detectObjects(frame);
+    // }
+
+    // if (_backgroundSubtractor) {
+    //   detections = detectMotion(frame);
+    // }
 
     cvl::Detector::FilterDetections(detections, frame);
 
@@ -161,7 +179,7 @@ class pipeline
       // cv::cvtColor(r._roi, gray, cv::COLOR_BGR2GRAY);
       // const auto& [tag, confidence] = faceRecognition(gray);
 
-      cv::rectangle(frame, roi, cv::Scalar(0, 255, 0), 1);
+      cv::rectangle(frame, roi, cv::Scalar(0, 255, 0), 3);
 
       // if (tag.length() && confidence > 0.0)
       //   cv::putText(frame, tag + " : " + std::to_string(confidence),
@@ -176,7 +194,17 @@ class pipeline
 
   std::thread _thread;
 
+  std::vector<std::string> _stages;
+
   cvl::queue<cvl::DetectionResult> _detectionsQueue;
+
+  std::unique_ptr<cvl::facerec> _faceRec;
+
+  std::unique_ptr<cvl::FaceDetector> _faceDetector = nullptr;
+
+  std::unique_ptr<cvl::ObjectDetector> _objectDetector = nullptr;
+
+  std::unique_ptr<cvl::BackgroundSubtractor> _backgroundSubtractor = nullptr;
 
   void pipelineThread()
   {

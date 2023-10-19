@@ -1,9 +1,9 @@
 #include <VideoRenderer.h>
 
-#include <QSGSimpleRectNode>
-#include <QRandomGenerator>
-#include <QSGSimpleTextureNode>
 #include <QMutexLocker>
+#include <QRandomGenerator>
+#include <QSGSimpleRectNode>
+#include <QSGSimpleTextureNode>
 
 VideoRenderer::VideoRenderer(QQuickItem *parent) : QQuickItem(parent)
 {
@@ -35,11 +35,15 @@ void VideoRenderer::stop()
         m_camera->stop();
 }
 
-void VideoRenderer::start()
+void VideoRenderer::start(QVariant stages)
 {
+    std::vector<std::string> s;
+    for (const auto& stage : stages.toList())
+        s.push_back(stage.toString().toStdString());
+
     if (!m_source.isEmpty()) {
         m_camera = std::make_shared<cvl::camera>(m_source.toStdString());
-        m_camera->start(
+        m_camera->start(s,
             [this](const cv::Mat& frame){
                 QMetaObject::invokeMethod(this,
                     [this, f = frame.clone()](){
