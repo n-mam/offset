@@ -49,7 +49,7 @@ Item {
                 width: 100
                 implicitHeight: rowHeight - 10
                 placeholderText: qsTr("factor")
-                text: "0.35"
+                text: "0.5"
                 horizontalAlignment: TextInput.AlignHCenter
             }
         }

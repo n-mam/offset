@@ -45,7 +45,7 @@ void VideoRenderer::start(QVariant stages)
         m_camera = std::make_shared<cvl::camera>(m_source.toStdString());
         m_camera->start(s,
             [this](const cv::Mat& f_in){
-                double scale_f = 0.35;
+                double scale_f = 0.5;
                 cv::Mat scaled_down;
                 cv::resize(f_in, scaled_down, cv::Size(), scale_f, scale_f, cv::INTER_LINEAR);
                 QMetaObject::invokeMethod(this,
@@ -122,7 +122,7 @@ QSGNode *VideoRenderer::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *)
     }
 
     if (node) {
-        node->setRect(boundingRect());
+        node->setRect(boundingRect() - QMarginsF(1,1,1,1));
         if (m_newTexture != nullptr) {
             if (m_texture != nullptr) {
                 delete m_texture;

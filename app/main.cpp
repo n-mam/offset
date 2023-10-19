@@ -18,6 +18,8 @@ void q_logger(QtMsgType, const QMessageLogContext&, const QString&);
 
 int main(int argc, char *argv[])
 {
+  qputenv("QSG_RENDER_LOOP", "threaded");
+
   #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
   #endif
