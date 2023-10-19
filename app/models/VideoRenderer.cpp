@@ -44,9 +44,12 @@ void VideoRenderer::start(QVariant stages)
     if (!m_source.isEmpty()) {
         m_camera = std::make_shared<cvl::camera>(m_source.toStdString());
         m_camera->start(s,
-            [this](const cv::Mat& frame){
+            [this](const cv::Mat& f_in){
+                double scale_f = 0.35;
+                cv::Mat scaled_down;
+                cv::resize(f_in, scaled_down, cv::Size(), scale_f, scale_f, cv::INTER_LINEAR);
                 QMetaObject::invokeMethod(this,
-                    [this, f = frame.clone()](){
+                    [this, f = scaled_down.clone()](){
                         updateFrame(f);
                     }, Qt::QueuedConnection);
             });

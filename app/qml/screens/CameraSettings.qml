@@ -38,6 +38,24 @@ Item {
         Row {
             spacing: 4
             Text {
+                text: "Scale:"
+                color: "white"
+                width: labelWidth
+                verticalAlignment: Text.AlignVCenter
+                anchors.verticalCenter: parent.verticalCenter
+            }
+            TextField {
+                id: scalefTextId
+                width: 100
+                implicitHeight: rowHeight - 10
+                placeholderText: qsTr("factor")
+                text: "0.35"
+                horizontalAlignment: TextInput.AlignHCenter
+            }
+        }
+        Row {
+            spacing: 4
+            Text {
                 text: "Detection:"
                 width: labelWidth
                 color: "white"
