@@ -29,11 +29,17 @@ class VideoRenderer : public QQuickItem
   Q_INVOKABLE void stop(void);
 
   Q_PROPERTY(QString source READ getSource WRITE setSource);
+  Q_PROPERTY(int waitKeyTimeout READ getWaitKeyTimeout WRITE setWaitKeyTimeout);
+  Q_PROPERTY(int pipelineStages READ getPipeLineStages WRITE setPipeLineStages);
 
   public slots:
 
   QString getSource(void);
   void setSource(QString source);
+  int getWaitKeyTimeout(void);
+  void setWaitKeyTimeout(int source);
+  int getPipeLineStages(void);
+  void setPipeLineStages(int stageFlags);
 
   protected:
 

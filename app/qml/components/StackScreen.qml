@@ -27,8 +27,8 @@ Item {
         initialItem: baseItem
     }
 
-    function pushComponent(qmlPath) {
-        stackview.push(qmlPath)
+    function pushComponent(qml, options) {
+        stackview.push(qml, options)
     }
 
     Component.onCompleted: {

@@ -49,7 +49,7 @@ Popup {
       anchors.top: popupText.bottom
       Button {
         text: "OK"
-        width: 75
+        width: 90
         height: parent.height * 0.90
         anchors.left: parent.left
         anchors.verticalCenter: parent.verticalCenter
@@ -62,7 +62,7 @@ Popup {
       }
       Button {
         text: "Cancel"
-        width: 75
+        width: 90
         height: parent.height * 0.90
         anchors.right: parent.right
         anchors.margins: appSpacing

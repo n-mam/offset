@@ -57,7 +57,11 @@ class camera
     _stop = false;
   }
 
-  protected:
+  int iPipelineStages = 0;
+
+  int iWaitKeyTimeout = 18;
+
+  private:
 
   bool _stop = false;
 
@@ -106,7 +110,7 @@ class camera
         }
       }
 
-      if (cv::waitKey(18) >= 0) {
+      if (cv::waitKey(iWaitKeyTimeout) >= 0) {
         _stop = true;
         break;
       }
@@ -128,7 +132,9 @@ class camera
         continue;
       }
 
-      pipeLine.execute(frame);
+      if (iPipelineStages) {
+        pipeLine.execute(frame);
+      }
 
       q_out.enqueue(frame);
     }

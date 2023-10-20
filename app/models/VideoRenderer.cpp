@@ -159,3 +159,37 @@ void VideoRenderer::setSource(QString source)
         m_source = source;
     }
 }
+
+int VideoRenderer::getWaitKeyTimeout(void)
+{
+    if (m_camera) {
+        return m_camera->iWaitKeyTimeout;
+    }
+    return 18;
+}
+
+void VideoRenderer::setWaitKeyTimeout(int timeout)
+{
+    if (m_camera) {
+        if (timeout != m_camera->iWaitKeyTimeout) {
+            m_camera->iWaitKeyTimeout = timeout;
+        }
+    }
+}
+
+int VideoRenderer::getPipeLineStages(void)
+{
+    if (m_camera) {
+        return m_camera->iPipelineStages;
+    }
+    return 0;
+}
+
+void VideoRenderer::setPipeLineStages(int stages)
+{
+    if (m_camera) {
+        if (stages != m_camera->iPipelineStages) {
+            m_camera->iPipelineStages = stages;
+        }
+    }
+}

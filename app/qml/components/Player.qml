@@ -5,68 +5,87 @@ import "qrc:/screens"
 
 Item {
 
-  property var source
+    id: playerRoot
 
-  id: playerRoot
+    property var source
 
-  width: mainWindow.width - (mainWindow.width * 0.72)
-  height: mainWindow.height - (mainWindow.height * 0.72)
+    width: mainWindow.width - (mainWindow.width * 0.72)
+    height: playerRect.height + (playerRect.height * 0.25)
 
-  signal cameraSettingsClickedSignal(var vr)
+    signal cameraSettingsClickedSignal(var vr)
+    signal cameraDeleteClickedSignal(var vr)
 
-  Rectangle {
-    border.width: 1
-    border.color: "white"
-    color: "transparent"
-    anchors.fill: parent
-
-    VideoRenderer {
-        id: vr
-        width: parent.width
-        height: parent.height
-        source: playerRoot.source
+    function hasVideoRenderer(vr) {
+        return vr === vrid
     }
 
-    Row {
-        spacing: 2
-        anchors.bottom: parent.bottom
-        anchors.horizontalCenter: parent.horizontalCenter
-        Image {
-            width: 32
-            height: 32
-            source: "qrc:/play.png"
-            MouseArea {
-                anchors.fill: parent
-                onClicked: {
-                    vr.start(["face"])
-                }
+    Column {
+        Rectangle {
+            id: playerRect
+            border.width: 1
+            border.color: "white"
+            color: "transparent"
+            width: playerRoot.width
+            height: mainWindow.height - (mainWindow.height * 0.72)
+
+            VideoRenderer {
+                id: vrid
+                width: parent.width
+                height: parent.height
+                source: playerRoot.source
             }
         }
-
-        Image {
-            width: 32
-            height: 32
-            source: "qrc:/pause.png"
-            MouseArea {
-                anchors.fill: parent
-                onClicked: {
-                    vr.stop()
+        Row {
+            spacing: 2
+            anchors.horizontalCenter: parent.horizontalCenter
+            Image {
+                width: 32
+                height: 32
+                source: "qrc:/play.png"
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: {
+                        vrid.start(["face"])
+                    }
                 }
             }
-        }
 
-        Image {
-            width: 32
-            height: 32
-            source: "qrc:/settings.png"
-            MouseArea {
-                anchors.fill: parent
-                onClicked: {
-                    onClicked: cameraSettingsClickedSignal(vr)
+            Image {
+                width: 32
+                height: 32
+                source: "qrc:/pause.png"
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: {
+                        vrid.stop()
+                    }
+                }
+            }
+
+            Image {
+                width: 32
+                height: 32
+                source: "qrc:/settings.png"
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: {
+                        onClicked: cameraSettingsClickedSignal(vrid)
+                    }
+                }
+            }
+
+            Image {
+                width: 32
+                height: 32
+                source: "qrc:/bin.png"
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: {
+                        onClicked: cameraDeleteClickedSignal(vrid)
+                    }
                 }
             }
         }
     }
-  }
 
 }

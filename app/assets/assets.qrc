@@ -1,6 +1,7 @@
 <RCC>
   <qresource prefix="/">
     <file>addq.png</file>
+    <file>bin.png</file>
     <file>new.png</file>
     <file>rename.png</file>
     <file>file.png</file>

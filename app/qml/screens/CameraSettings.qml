@@ -4,8 +4,9 @@ import QtQuick.Layouts
 
 Item {
 
-    property var labelWidth: 100
     property var rowHeight: 55
+    property var labelWidth: 100
+    required property var vr;
 
     Column {
         x: 20
@@ -25,8 +26,11 @@ Item {
                 width: 100
                 implicitHeight: rowHeight - 10
                 placeholderText: qsTr("timeout")
-                text: "20"
+                text: vr.waitKeyTimeout
                 horizontalAlignment: TextInput.AlignHCenter
+                onEditingFinished: {
+                    vr.waitKeyTimeout = parseInt(timeoutTextId.text)
+                }
             }
             Text {
                 text: "ms"
@@ -72,18 +76,26 @@ Item {
                 Row {
                     id: detectionOptions
                     anchors.verticalCenter: parent.verticalCenter
-                    RadioButton {
-                        checked: true
-                        text: qsTr("None")
-                    }
-                    RadioButton {
+                    CheckBox {
+                        checked: vr.pipelineStages & 1
                         text: qsTr("Face")
+                        onCheckedChanged: {
+                            checked ? (vr.pipelineStages |= 1) : (vr.pipelineStages &= ~1)
+                        }
                     }
-                    RadioButton {
+                    CheckBox {
+                        checked: vr.pipelineStages & 2
                         text: qsTr("Object")
+                        onCheckedChanged: {
+                            checked ? (vr.pipelineStages |= 2) : (vr.pipelineStages &= ~2)
+                        }
                     }
-                    RadioButton {
+                    CheckBox {
+                        checked: vr.pipelineStages & 4
                         text: qsTr("Motion")
+                        onCheckedChanged: {
+                            checked ? (vr.pipelineStages |= 4) : (vr.pipelineStages &= ~4)
+                        }
                     }
                 }
             }
@@ -109,7 +121,7 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     CheckBox {
                         id: saveCheckboxId
-                        checked: flase
+                        checked: false
                         text: qsTr("Save")
                     }
                     TextField {
