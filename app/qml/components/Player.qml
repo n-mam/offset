@@ -34,7 +34,7 @@ Item {
                 height: parent.height
                 source: playerRoot.cfg.source
                 waitKeyTimeout: playerRoot.cfg.waitKeyTimeout
-                pipelineStages: playerRoot.cfg.stages[0]
+                pipelineStages: playerRoot.cfg.stages
             }
         }
         Row {

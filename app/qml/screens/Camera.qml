@@ -45,7 +45,11 @@ StackScreen {
                 text: "New"
                 onClicked: {
                     if (cameraUrl.text) {
-                        createPlayerObject({"cfg": {"source": cameraUrl.text}})
+                        createPlayerObject({
+                            "cfg": {
+                                "source": cameraUrl.text,
+                                "stages": 0
+                            }})
                         cameraUrl.text = ""
                     }
                 }
@@ -78,7 +82,7 @@ StackScreen {
 
     function createPlayerObject(cfg) {
         var component = Qt.createComponent("qrc:/components/Player.qml")
-        console.log(component.errorString())
+        //console.log(component.errorString())
         if (component.status == Component.Ready) {
             finishCreation(component, cfg);
         } else {

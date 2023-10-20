@@ -168,6 +168,7 @@ void VideoRenderer::setWaitKeyTimeout(int timeout)
     if (m_camera) {
         if (timeout != m_camera->iWaitKeyTimeout) {
             m_camera->iWaitKeyTimeout = timeout;
+            emit waitKeyTimeoutChanged(timeout);
         }
     }
 }
@@ -185,6 +186,7 @@ void VideoRenderer::setPipeLineStages(int stages)
     if (m_camera) {
         if (stages != m_camera->iPipelineStages) {
             m_camera->iPipelineStages = stages;
+            emit pipelineStagesChanged(stages);
         }
     }
 }

@@ -29,8 +29,8 @@ class VideoRenderer : public QQuickItem
   Q_INVOKABLE void start();
 
   Q_PROPERTY(QString source READ getSource WRITE setSource);
-  Q_PROPERTY(int waitKeyTimeout READ getWaitKeyTimeout WRITE setWaitKeyTimeout);
-  Q_PROPERTY(int pipelineStages READ getPipeLineStages WRITE setPipeLineStages);
+  Q_PROPERTY(int waitKeyTimeout READ getWaitKeyTimeout WRITE setWaitKeyTimeout NOTIFY waitKeyTimeoutChanged);
+  Q_PROPERTY(int pipelineStages READ getPipeLineStages WRITE setPipeLineStages NOTIFY pipelineStagesChanged);
 
   public slots:
 
@@ -40,6 +40,11 @@ class VideoRenderer : public QQuickItem
   void setWaitKeyTimeout(int source);
   int getPipeLineStages(void);
   void setPipeLineStages(int stageFlags);
+
+  signals:
+
+  void waitKeyTimeoutChanged(int);
+  void pipelineStagesChanged(int);
 
   protected:
 
