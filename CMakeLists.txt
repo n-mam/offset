@@ -7,7 +7,7 @@ project(offset)
 find_package(ZLIB REQUIRED)
 find_package(OpenSSL REQUIRED)
 find_package(Crc32c CONFIG REQUIRED)
- find_package(OpenCV CONFIG REQUIRED)
+find_package(OpenCV CONFIG REQUIRED)
 find_package(RapidJSON CONFIG REQUIRED)
 find_package(Qt6 REQUIRED COMPONENTS Quick QuickControls2 Gui)
 

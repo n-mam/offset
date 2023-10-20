@@ -18,11 +18,12 @@ add_executable(offset WIN32 ${QT_RESOURCES})
 target_sources(offset PRIVATE main.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/models/Logger.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/models/FsModel.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/models/AppConfig.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/models/BaseModel.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/models/LocalFsModel.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/models/RemoteFsModel.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/models/BaseModel.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/models/TransferManager.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/models/VideoRenderer.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/models/TransferManager.cpp
 )
 
 if(WIN32)

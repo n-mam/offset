@@ -114,7 +114,7 @@ Rectangle {
           anchors.verticalCenter: parent.verticalCenter
         }
         Button {
-          text: "SELECT"
+          text: "Select"
           width: (parent.width * 0.20) - appSpacing
           height: parent.height
           anchors.right: parent.right

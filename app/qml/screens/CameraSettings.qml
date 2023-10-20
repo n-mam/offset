@@ -97,6 +97,13 @@ Item {
                             checked ? (vr.pipelineStages |= 4) : (vr.pipelineStages &= ~4)
                         }
                     }
+                    CheckBox {
+                        checked: vr.pipelineStages & 8
+                        text: qsTr("FaceRec")
+                        onCheckedChanged: {
+                            checked ? (vr.pipelineStages |= 8) : (vr.pipelineStages &= ~8)
+                        }
+                    }
                 }
             }
         }
@@ -109,29 +116,21 @@ Item {
                 verticalAlignment: Text.AlignVCenter
                 anchors.verticalCenter: parent.verticalCenter
             }
-            Rectangle {
-                radius: 3
-                border.width: 1
-                border.color: borderColor
-                color: "transparent"
-                implicitWidth: saveFolderId.width + saveCheckboxId.width + 15
-                implicitHeight: rowHeight
-                Row {
-                    spacing: 5
+            Row {
+                spacing: 5
+                anchors.verticalCenter: parent.verticalCenter
+                CheckBox {
+                    id: saveCheckboxId
+                    checked: false
+                    text: qsTr("Save")
+                }
+                TextField {
+                    id: saveFolderId
+                    width: 300
+                    height: rowHeight
+                    placeholderText: qsTr("folder")
+                    text: ""
                     anchors.verticalCenter: parent.verticalCenter
-                    CheckBox {
-                        id: saveCheckboxId
-                        checked: false
-                        text: qsTr("Save")
-                    }
-                    TextField {
-                        id: saveFolderId
-                        width: 300
-                        height: 35
-                        placeholderText: qsTr("folder")
-                        text: ""
-                        anchors.verticalCenter: parent.verticalCenter
-                    }
                 }
             }
         }

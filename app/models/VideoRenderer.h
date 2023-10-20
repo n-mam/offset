@@ -25,8 +25,8 @@ class VideoRenderer : public QQuickItem
   QSGNode *updatePaintNode(QSGNode *node, UpdatePaintNodeData *) override;
   void componentComplete() override;
 
-  Q_INVOKABLE void start(QVariant stages);
-  Q_INVOKABLE void stop(void);
+  Q_INVOKABLE void stop();
+  Q_INVOKABLE void start();
 
   Q_PROPERTY(QString source READ getSource WRITE setSource);
   Q_PROPERTY(int waitKeyTimeout READ getWaitKeyTimeout WRITE setWaitKeyTimeout);

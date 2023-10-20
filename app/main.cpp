@@ -5,6 +5,7 @@
 #include <QQmlApplicationEngine>
 
 #include <Logger.h>
+#include <AppConfig.h>
 #include <LocalFsModel.h>
 #include <RemoteFsModel.h>
 #include <VideoRenderer.h>
@@ -46,6 +47,8 @@ int main(int argc, char *argv[])
           QCoreApplication::exit(-1);
     },
     Qt::QueuedConnection);
+
+  engine.rootContext()->setContextProperty("appConfig", new AppConfig());
 
   qmlRegisterType<VideoRenderer>("CustomElements", 1, 0, "VideoRenderer");
 

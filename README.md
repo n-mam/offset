@@ -4,7 +4,9 @@
  <img src="https://drive.google.com/uc?id=1RpPvy074uBcxyvaE7RI3M91AXgtzr1Qz" width="45%">
 </p>
 
-#### Features (FXC)
+#### Features
+
+FXC
 
 - Requires elevation. Please run as admin.
 - Creates volume level images using either VSS snapshots or from live volume.
@@ -20,7 +22,7 @@
 - URI format for streaming to FTP:
   - ftps://username:password@hostname:port/a/b/c
 
-#### Features (FTPS)
+FTPS
 
 - Supports plain and secure FTPS (using openssl async bio).
 - Ability to browse while transfers are in progress.

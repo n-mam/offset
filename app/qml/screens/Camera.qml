@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Dialogs
 import "qrc:/components"
 
 StackScreen {
@@ -12,8 +13,8 @@ StackScreen {
         Flickable {
             id: flickableGrid
             clip: true
-            width: parent.width
-            height: parent.height * 0.88
+            width: camScreenRoot.width
+            height: camScreenRoot.height * 0.88
             contentHeight: camGrid.height
             contentWidth: camGrid.width
 
@@ -30,36 +31,65 @@ StackScreen {
             spacing: 10
             anchors.top: flickableGrid.bottom
             anchors.horizontalCenter: parent.horizontalCenter
-            height: parent.height * 0.10
+            width: camScreenRoot.width * 0.70
+            height: camScreenRoot.height * 0.10
             TextField {
                 id: cameraUrl
-                width: parent.width * 0.80
+                width: parent.width * 0.45
                 height: parent.height * 0.80
                 placeholderText: qsTr("Camera")
             }
             Button {
-                width: 80
+                width: parent.width * 0.18
                 height: parent.height * 0.80
-                text: "ADD"
+                text: "New"
                 onClicked: {
-                if (cameraUrl.text) {
-                    var component = Qt.createComponent("qrc:/components/Player.qml")
-                    if (component.status == Component.Ready) {
-                        finishCreation(component);
-                    } else {
-                        component.statusChanged.connect(finishCreation);
+                    if (cameraUrl.text) {
+                        createPlayerObject({"cfg": {"source": cameraUrl.text}})
+                        cameraUrl.text = ""
                     }
                 }
+            }
+            Button {
+                width: parent.width * 0.18
+                height: parent.height * 0.80
+                text: "Import"
+                onClicked: importCameraCfgDialog.open()
+            }
+            FileDialog {
+                id: importCameraCfgDialog
+                title: "Please choose the camera config file"
+                onAccepted: {
+                    var path = importCameraCfgDialog.selectedFiles.toString();
+                    path = path.replace(/^(file:\/{3})|(qrc:\/{2})|(http:\/{2})/,"");
+                    var camera_cfgs = appConfig.readCameraConfiguration(
+                        decodeURIComponent(path).replace(/\//g, "/"))
+                    var cfgs = JSON.parse(camera_cfgs);
+                    for (var i in cfgs) {
+                        createPlayerObject({"cfg": cfgs[i]})
+                    }
+                }
+                onRejected: {
+                    console.log("Canceled")
                 }
             }
         }
     }
 
-    function finishCreation(component) {
-        var object = component.createObject(camGrid, {
-        "source": cameraUrl.text
-        });
-        cameraUrl.text = ""
+    function createPlayerObject(cfg) {
+        var component = Qt.createComponent("qrc:/components/Player.qml")
+        console.log(component.errorString())
+        if (component.status == Component.Ready) {
+            finishCreation(component, cfg);
+        } else {
+            component.statusChanged.connect(()=>{
+                finishCreation(component, cfg)
+            });
+        }
+    }
+
+    function finishCreation(component, cfg) {
+        var object = component.createObject(camGrid, cfg);
         object.cameraSettingsClickedSignal.connect(cameraSettingsClicked)
         object.cameraDeleteClickedSignal.connect(cameraDeleteClicked)
     }

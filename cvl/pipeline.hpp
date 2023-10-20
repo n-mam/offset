@@ -19,23 +19,24 @@ class pipeline
 {
   public:
 
-  pipeline(const std::vector<std::string>& stages)
+  pipeline(int stages)
   {
     //_thread = std::thread(&pipeline::pipelineThread, this);
+
     _stages = stages;
-    for (const auto& stage : stages) {
-      if (stage == "face") {
-        _faceDetector = std::make_unique<cvl::FaceDetector>();
-      } else if (stage == "motion_detect") {
-        _backgroundSubtractor = std::make_unique<cvl::BackgroundSubtractor>("gmg");
-      } else if (stage == "face_rec") {
-        _faceRec = std::make_unique<cvl::facerec>("../MODELS/FaceRecognition/fr.csv");
-      } else if (stage == "object") {
-        _objectDetector = std::make_unique<cvl::ObjectDetector>("person");
-      } else {
-        WARN << "no detector created in pipeline";
-      }
+
+    if (_stages & 1) {
+      _faceDetector = std::make_unique<cvl::FaceDetector>();
+    } else if (_stages & 2) {
+      _objectDetector = std::make_unique<cvl::ObjectDetector>("person");
+    } else if (_stages & 4) {
+      _backgroundSubtractor = std::make_unique<cvl::BackgroundSubtractor>("gmg");
+    } else if (_stages & 8) {
+      _faceRec = std::make_unique<cvl::facerec>("../MODELS/FaceRecognition/fr.csv");
+    } else {
+      WARN << "no detector created in pipeline";
     }
+
   }
 
   ~pipeline()
@@ -155,13 +156,13 @@ class pipeline
       detections = detectFaces(frame);
     }
 
-    // if (_objectDetector) {
-    //   detections = detectObjects(frame);
-    // }
+    if (_objectDetector) {
+      detections = detectObjects(frame);
+    }
 
-    // if (_backgroundSubtractor) {
-    //   detections = detectMotion(frame);
-    // }
+    if (_backgroundSubtractor) {
+      detections = detectMotion(frame);
+    }
 
     cvl::Detector::FilterDetections(detections, frame);
 
@@ -190,11 +191,11 @@ class pipeline
 
   protected:
 
+  int _stages;
+
   bool _stop = false;
 
   std::thread _thread;
-
-  std::vector<std::string> _stages;
 
   cvl::queue<cvl::DetectionResult> _detectionsQueue;
 

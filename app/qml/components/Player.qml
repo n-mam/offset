@@ -7,16 +7,16 @@ Item {
 
     id: playerRoot
 
-    property var source
+    property var cfg
 
     width: mainWindow.width - (mainWindow.width * 0.72)
     height: playerRect.height + (playerRect.height * 0.25)
 
-    signal cameraSettingsClickedSignal(var vr)
-    signal cameraDeleteClickedSignal(var vr)
+    signal cameraSettingsClickedSignal(var r)
+    signal cameraDeleteClickedSignal(var r)
 
-    function hasVideoRenderer(vr) {
-        return vr === vrid
+    function hasVideoRenderer(r) {
+        return r === vr
     }
 
     Column {
@@ -29,10 +29,12 @@ Item {
             height: mainWindow.height - (mainWindow.height * 0.72)
 
             VideoRenderer {
-                id: vrid
+                id: vr
                 width: parent.width
                 height: parent.height
-                source: playerRoot.source
+                source: playerRoot.cfg.source
+                waitKeyTimeout: playerRoot.cfg.waitKeyTimeout
+                pipelineStages: playerRoot.cfg.stages[0]
             }
         }
         Row {
@@ -45,7 +47,7 @@ Item {
                 MouseArea {
                     anchors.fill: parent
                     onClicked: {
-                        vrid.start(["face"])
+                        vr.start()
                     }
                 }
             }
@@ -57,7 +59,7 @@ Item {
                 MouseArea {
                     anchors.fill: parent
                     onClicked: {
-                        vrid.stop()
+                        vr.stop()
                     }
                 }
             }
@@ -69,7 +71,7 @@ Item {
                 MouseArea {
                     anchors.fill: parent
                     onClicked: {
-                        onClicked: cameraSettingsClickedSignal(vrid)
+                        onClicked: cameraSettingsClickedSignal(vr)
                     }
                 }
             }
@@ -81,7 +83,7 @@ Item {
                 MouseArea {
                     anchors.fill: parent
                     onClicked: {
-                        onClicked: cameraDeleteClickedSignal(vrid)
+                        onClicked: cameraDeleteClickedSignal(vr)
                     }
                 }
             }

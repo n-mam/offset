@@ -8,6 +8,7 @@
 VideoRenderer::VideoRenderer(QQuickItem *parent) : QQuickItem(parent)
 {
     setFlag(QQuickItem::ItemHasContents, true);
+    m_camera = std::make_shared<cvl::camera>();
 }
 
 VideoRenderer::~VideoRenderer()
@@ -31,21 +32,15 @@ void VideoRenderer::componentComplete()
 void VideoRenderer::stop()
 {
     m_timer.stop();
-    if (m_camera)
-        m_camera->stop();
+    m_camera->stop();
 }
 
-void VideoRenderer::start(QVariant stages)
+void VideoRenderer::start()
 {
-    std::vector<std::string> s;
-    for (const auto& stage : stages.toList())
-        s.push_back(stage.toString().toStdString());
-
-    if (!m_source.isEmpty()) {
-        m_camera = std::make_shared<cvl::camera>(m_source.toStdString());
-        m_camera->start(s,
+    if (!getSource().isEmpty()) {
+        m_camera->start(
             [this](const cv::Mat& f_in){
-                double scale_f = 0.5;
+                double scale_f = 0.5;//todo
                 cv::Mat scaled_down;
                 cv::resize(f_in, scaled_down, cv::Size(), scale_f, scale_f, cv::INTER_LINEAR);
                 QMetaObject::invokeMethod(this,
@@ -150,13 +145,13 @@ void VideoRenderer::createStatic()
 
 QString VideoRenderer::getSource(void)
 {
-    return m_source;
+    return QString::fromStdString(m_camera->iSource);
 }
 
 void VideoRenderer::setSource(QString source)
 {
-    if (source != m_source) {
-        m_source = source;
+    if (source.toStdString() != m_camera->iSource) {
+        m_camera->iSource = source.toStdString();
     }
 }
 
