@@ -28,6 +28,7 @@ class VideoRenderer : public QQuickItem
   Q_INVOKABLE void stop();
   Q_INVOKABLE void start();
 
+  Q_PROPERTY(double scaleF READ getScaleF WRITE setScaleF NOTIFY scaleFChanged);
   Q_PROPERTY(QString name READ getName WRITE setName NOTIFY nameChanged);
   Q_PROPERTY(QString source READ getSource WRITE setSource NOTIFY sourceChanged);
   Q_PROPERTY(int waitKeyTimeout READ getWaitKeyTimeout WRITE setWaitKeyTimeout NOTIFY waitKeyTimeoutChanged);
@@ -35,6 +36,8 @@ class VideoRenderer : public QQuickItem
 
   public slots:
 
+  double getScaleF(void);
+  void setScaleF(double scalef);
   QString getSource(void);
   void setSource(QString source);
   QString getName(void);
@@ -48,6 +51,7 @@ class VideoRenderer : public QQuickItem
 
   void nameChanged(QString);
   void sourceChanged(QString);
+  void scaleFChanged(double);
   void waitKeyTimeoutChanged(int);
   void pipelineStagesChanged(int);
 
@@ -60,6 +64,8 @@ class VideoRenderer : public QQuickItem
   QImage MatToQImage(const cv::Mat& mat);
 
   private:
+
+  double m_scalef = 0.6;
 
   QTimer m_timer;
 

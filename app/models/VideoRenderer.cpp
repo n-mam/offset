@@ -40,9 +40,8 @@ void VideoRenderer::start()
     if (!getSource().isEmpty()) {
         m_camera->start(
             [this](const cv::Mat& f_in){
-                double scale_f = 0.5;//todo
                 cv::Mat scaled_down;
-                cv::resize(f_in, scaled_down, cv::Size(), scale_f, scale_f, cv::INTER_LINEAR);
+                cv::resize(f_in, scaled_down, cv::Size(), getScaleF(), getScaleF(), cv::INTER_LINEAR);
                 QMetaObject::invokeMethod(this,
                     [this, f = scaled_down.clone()](){
                         updateFrame(f);
@@ -202,5 +201,18 @@ void VideoRenderer::setName(QString name)
     if (name.toStdString() != m_camera->iName) {
         m_camera->iName = name.toStdString();
         emit nameChanged(name);
+    }
+}
+
+double VideoRenderer::getScaleF(void)
+{
+    return m_scalef;
+}
+
+void VideoRenderer::setScaleF(double scalef)
+{
+    if (scalef != m_scalef) {
+        m_scalef = scalef;
+        emit scaleFChanged(scalef);
     }
 }

@@ -74,8 +74,11 @@ Item {
                 width: 100
                 implicitHeight: rowHeight - 10
                 placeholderText: qsTr("factor")
-                text: "0.5"
+                text: vr.scaleF
                 horizontalAlignment: TextInput.AlignHCenter
+                onEditingFinished: {
+                    vr.scaleF = scalefTextId.text
+                }
             }
         }
         Row {
