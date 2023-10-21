@@ -9,7 +9,9 @@ StackScreen {
     baseItem: baseId
 
     Item {
+
         id: baseId
+
         Flickable {
             id: flickableGrid
             clip: true
@@ -21,7 +23,7 @@ StackScreen {
             Grid {
                 id: camGrid
                 columns: 3
-                spacing: 6
+                spacing: 8
                 //Player{}
             }
         }
@@ -31,18 +33,17 @@ StackScreen {
             spacing: 10
             anchors.top: flickableGrid.bottom
             anchors.horizontalCenter: parent.horizontalCenter
-            width: camScreenRoot.width * 0.70
             height: camScreenRoot.height * 0.10
             TextField {
                 id: cameraUrl
-                width: parent.width * 0.45
+                width: 275
                 height: parent.height * 0.80
                 placeholderText: qsTr("Camera")
             }
             Button {
-                width: parent.width * 0.18
-                height: parent.height * 0.80
-                text: "New"
+                width: 75
+                height: parent.height * 0.90
+                text: "Add"
                 onClicked: {
                     if (cameraUrl.text) {
                         createPlayerObject({
@@ -54,8 +55,11 @@ StackScreen {
                     }
                 }
             }
+            Text {
+                text: " "
+            }
             Button {
-                width: parent.width * 0.18
+                width: 100
                 height: parent.height * 0.80
                 text: "Import"
                 onClicked: importCameraCfgDialog.open()

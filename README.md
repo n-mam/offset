@@ -35,8 +35,13 @@ FTPS
 git clone https://github.com/microsoft/vcpkg.git
 cd vcpkg
 bootstrap-vcpkg.bat
-vcpkg.exe install openssl:x64-windows crc32c:x64-windows rapidjson:x64-windows zlib:x64-windows opencv[contrib]:x64-windows
-./vcpkg install openssl:x64-linux crc32c:x64-linux rapidjson:x64-linux zlib:x64-linux opencv[contrib]:x64-linux
+
+vcpkg.exe install openssl:x64-windows crc32c:x64-windows rapidjson:x64-windows zlib:x64-windows opencv4[contrib,core,default-features,dnn,ffmpeg,jpeg,png,quirc,tiff,webp]:x64-windows
+
+sudo apt-get install build-essential zip curl vim bison meson pkg-config
+
+./vcpkg install openssl:x64-linux crc32c:x64-linux rapidjson:x64-linux zlib:x64-linux opencv4[contrib,core,default-features,dnn,ffmpeg,jpeg,png,quirc,tiff,webp]:x64-linux
+
 vcpkg.exe integrate install
 
 use the resulting toolchain file in cmake configure step as highlited under the build section

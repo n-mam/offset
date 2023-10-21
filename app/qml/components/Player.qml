@@ -20,13 +20,14 @@ Item {
     }
 
     Column {
+        spacing: 5
         Rectangle {
             id: playerRect
             border.width: 1
             border.color: "white"
             color: "transparent"
             width: playerRoot.width
-            height: mainWindow.height - (mainWindow.height * 0.72)
+            height: mainWindow.height - (mainWindow.height * 0.70)
 
             VideoRenderer {
                 id: vr
@@ -39,11 +40,11 @@ Item {
             }
         }
         Row {
-            spacing: 2
+            spacing: 10
             anchors.horizontalCenter: parent.horizontalCenter
             Image {
-                width: 32
-                height: 32
+                width: 18
+                height: 18
                 source: "qrc:/play.png"
                 MouseArea {
                     anchors.fill: parent
@@ -54,8 +55,8 @@ Item {
             }
 
             Image {
-                width: 32
-                height: 32
+                width: 18
+                height: 18
                 source: "qrc:/pause.png"
                 MouseArea {
                     anchors.fill: parent
@@ -66,8 +67,8 @@ Item {
             }
 
             Image {
-                width: 32
-                height: 32
+                width: 18
+                height: 18
                 source: "qrc:/settings.png"
                 MouseArea {
                     anchors.fill: parent
@@ -78,8 +79,8 @@ Item {
             }
 
             Image {
-                width: 32
-                height: 32
+                width: 18
+                height: 18
                 source: "qrc:/bin.png"
                 MouseArea {
                     anchors.fill: parent

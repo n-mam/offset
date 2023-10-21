@@ -4,7 +4,7 @@ import QtQuick.Layouts
 
 Item {
 
-    property var rowHeight: 55
+    property var rowHeight: 45
     property var labelWidth: 100
     required property var vr;
 
@@ -23,13 +23,32 @@ Item {
             }
             TextField {
                 id: nameTextId
-                width: 100
+                width: 200
                 implicitHeight: rowHeight - 10
                 placeholderText: qsTr("name")
                 text: vr.name
-                horizontalAlignment: TextInput.AlignHCenter
                 onEditingFinished: {
                     vr.name = nameTextId.text
+                }
+            }
+        }
+        Row {
+            spacing: 4
+            Text {
+                text: "Source:"
+                color: "white"
+                width: labelWidth
+                verticalAlignment: Text.AlignVCenter
+                anchors.verticalCenter: parent.verticalCenter
+            }
+            TextField {
+                id: sourceTextId
+                width: 350
+                implicitHeight: rowHeight - 10
+                placeholderText: qsTr("url")
+                text: vr.source
+                onEditingFinished: {
+                    vr.source = sourceTextId.text
                 }
             }
         }
@@ -91,15 +110,17 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
             }
             Rectangle {
+                id: detectionGroup
                 radius: 3
                 border.width: 1
                 border.color: borderColor
                 color: "transparent"
-                implicitWidth: detectionOptions.width
+                implicitWidth: detectionOptions.width + 20
                 implicitHeight: rowHeight
                 Row {
                     id: detectionOptions
                     anchors.verticalCenter: parent.verticalCenter
+                    anchors.horizontalCenter: parent.horizontalCenter
                     CheckBox {
                         checked: vr.pipelineStages & 1
                         text: qsTr("Face")
@@ -134,6 +155,89 @@ Item {
         Row {
             spacing: 4
             Text {
+                text: "Confidence:"
+                width: labelWidth
+                color: "white"
+                verticalAlignment: Text.AlignVCenter
+                anchors.top: parent.top
+                anchors.margins: 14
+            }
+            Column {
+                anchors.top: parent.top
+                Row {
+                    Text {
+                        text: "Face"
+                        color: "white"
+                        width: labelWidth - 25
+                        verticalAlignment: Text.AlignVCenter
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                    Slider {
+                        id: faceConfidence
+                        width: 275
+                        height: rowHeight
+                        from: 0
+                        value: 0.7
+                        to: 1
+                    }
+                    Text {
+                        text: faceConfidence.value.toFixed(1)
+                        color: "white"
+                        verticalAlignment: Text.AlignVCenter
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                }
+                Row {
+                    Text {
+                        text: "Object"
+                        color: "white"
+                        width: labelWidth - 25
+                        verticalAlignment: Text.AlignVCenter
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                    Slider {
+                        id: objectConfidence
+                        width: 275
+                        height: rowHeight
+                        from: 0
+                        value: 0.7
+                        to: 1
+                    }
+                    Text {
+                        text: objectConfidence.value.toFixed(1)
+                        color: "white"
+                        verticalAlignment: Text.AlignVCenter
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                }
+                Row {
+                    Text {
+                        text: "FaceRec"
+                        color: "white"
+                        width: labelWidth - 25
+                        verticalAlignment: Text.AlignVCenter
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                    Slider {
+                        id: facerecConfidence
+                        width: 275
+                        height: rowHeight
+                        from: 0
+                        value: 0.7
+                        to: 1
+                    }
+                    Text {
+                        text: facerecConfidence.value.toFixed(1)
+                        color: "white"
+                        verticalAlignment: Text.AlignVCenter
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                }
+            }
+        }
+        Row {
+            spacing: 4
+            Text {
                 text: "Results:"
                 width: labelWidth
                 color: "white"
@@ -158,25 +262,11 @@ Item {
                 }
             }
         }
-        Row {
-            spacing: 4
-            Text {
-                text: "Object\ntype:"
-                color: "white"
-                width: labelWidth
-                verticalAlignment: Text.AlignVCenter
-                anchors.verticalCenter: parent.verticalCenter
-            }
-            ComboBox {
-                id: objectTypeId
-                implicitHeight: rowHeight
-                model: ["person", "car", "dog"]
-            }
-        }
     }
     Button {
         text: "Save"
         anchors.bottom: parent.bottom
-        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.right: parent.right
+        anchors.margins: 10
     }
 }

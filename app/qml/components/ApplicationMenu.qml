@@ -51,7 +51,7 @@ Rectangle {
         }
         highlight: Rectangle {
             radius: 3
-            color: "lightsteelblue"
+            color: "steelblue"
         }
         onCurrentIndexChanged: {
             menuSelectionSignal(currentIndex)

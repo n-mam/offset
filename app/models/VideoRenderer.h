@@ -69,8 +69,6 @@ class VideoRenderer : public QQuickItem
 
   QTimer m_timer;
 
-  QString m_source;
-
   cvl::SPCamera m_camera;
 
   uint32_t m_buffer[BUFFER_SIZE] = {};
