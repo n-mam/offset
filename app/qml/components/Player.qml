@@ -32,6 +32,7 @@ Item {
                 id: vr
                 width: parent.width
                 height: parent.height
+                name: playerRoot.cfg.name
                 source: playerRoot.cfg.source
                 waitKeyTimeout: playerRoot.cfg.waitKeyTimeout
                 pipelineStages: playerRoot.cfg.stages

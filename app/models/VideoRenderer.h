@@ -28,7 +28,8 @@ class VideoRenderer : public QQuickItem
   Q_INVOKABLE void stop();
   Q_INVOKABLE void start();
 
-  Q_PROPERTY(QString source READ getSource WRITE setSource);
+  Q_PROPERTY(QString name READ getName WRITE setName NOTIFY nameChanged);
+  Q_PROPERTY(QString source READ getSource WRITE setSource NOTIFY sourceChanged);
   Q_PROPERTY(int waitKeyTimeout READ getWaitKeyTimeout WRITE setWaitKeyTimeout NOTIFY waitKeyTimeoutChanged);
   Q_PROPERTY(int pipelineStages READ getPipeLineStages WRITE setPipeLineStages NOTIFY pipelineStagesChanged);
 
@@ -36,6 +37,8 @@ class VideoRenderer : public QQuickItem
 
   QString getSource(void);
   void setSource(QString source);
+  QString getName(void);
+  void setName(QString source);
   int getWaitKeyTimeout(void);
   void setWaitKeyTimeout(int source);
   int getPipeLineStages(void);
@@ -43,6 +46,8 @@ class VideoRenderer : public QQuickItem
 
   signals:
 
+  void nameChanged(QString);
+  void sourceChanged(QString);
   void waitKeyTimeoutChanged(int);
   void pipelineStagesChanged(int);
 

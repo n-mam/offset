@@ -15,6 +15,27 @@ Item {
         Row {
             spacing: 4
             Text {
+                text: "Camera:"
+                color: "white"
+                width: labelWidth
+                verticalAlignment: Text.AlignVCenter
+                anchors.verticalCenter: parent.verticalCenter
+            }
+            TextField {
+                id: nameTextId
+                width: 100
+                implicitHeight: rowHeight - 10
+                placeholderText: qsTr("name")
+                text: vr.name
+                horizontalAlignment: TextInput.AlignHCenter
+                onEditingFinished: {
+                    vr.name = nameTextId.text
+                }
+            }
+        }
+        Row {
+            spacing: 4
+            Text {
                 text: "WaitKey:"
                 color: "white"
                 width: labelWidth

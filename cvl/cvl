@@ -33,7 +33,10 @@ class camera
 
   void start(TFrameCallback cbk)
   {
+    stop();
+
     _pipeline_thread = std::thread(&camera::process_frames, this);
+
     if (cbk) {
       _frame_cbk = cbk;
       _queue_thread = std::thread(&camera::queue_frames, this);
@@ -53,6 +56,8 @@ class camera
   }
 
   std::string iSource;
+
+  std::string iName;
 
   int iPipelineStages = 0;
 

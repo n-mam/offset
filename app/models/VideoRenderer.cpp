@@ -152,6 +152,7 @@ void VideoRenderer::setSource(QString source)
 {
     if (source.toStdString() != m_camera->iSource) {
         m_camera->iSource = source.toStdString();
+        emit sourceChanged(source);
     }
 }
 
@@ -188,5 +189,18 @@ void VideoRenderer::setPipeLineStages(int stages)
             m_camera->iPipelineStages = stages;
             emit pipelineStagesChanged(stages);
         }
+    }
+}
+
+QString VideoRenderer::getName(void)
+{
+    return QString::fromStdString(m_camera->iName);
+}
+
+void VideoRenderer::setName(QString name)
+{
+    if (name.toStdString() != m_camera->iName) {
+        m_camera->iName = name.toStdString();
+        emit nameChanged(name);
     }
 }
