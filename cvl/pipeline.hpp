@@ -17,214 +17,205 @@ using namespace std::chrono;
 
 class pipeline
 {
-  public:
+    public:
 
-  pipeline(int stages)
-  {
-    //_thread = std::thread(&pipeline::pipelineThread, this);
+    pipeline()
+    {
+        //_thread = std::thread(&pipeline::pipelineThread, this);
 
-    _stages = stages;
+        _faceDetector = std::make_unique<cvl::FaceDetector>();
 
-    if (_stages & 1) {
-      _faceDetector = std::make_unique<cvl::FaceDetector>();
-    } else if (_stages & 2) {
-      _objectDetector = std::make_unique<cvl::ObjectDetector>("person");
-    } else if (_stages & 4) {
-      _backgroundSubtractor = std::make_unique<cvl::BackgroundSubtractor>("gmg");
-    } else if (_stages & 8) {
-      _faceRec = std::make_unique<cvl::facerec>("../MODELS/FaceRecognition/fr.csv");
-    } else {
-      WARN << "no detector created in pipeline";
+        _objectDetector = std::make_unique<cvl::ObjectDetector>("person");
+
+        _backgroundSubtractor = std::make_unique<cvl::BackgroundSubtractor>("gmg");
+
+        //_faceRec = std::make_unique<cvl::facerec>("../MODELS/FaceRecognition/fr.csv");
     }
 
-  }
-
-  ~pipeline()
-  {
-    _stop = true;
-    if (_thread.joinable())
-      _thread.join();
-  }
-
-  inline auto filterRightAngleContours(const cv::Mat& frame)
-  {
-    std::vector<cv::Vec4i> hierarchy;
-    std::vector<std::vector<cv::Point>> contours, filtered_contours;
-
-    cv::findContours(frame, contours, hierarchy, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE);
-
-    std::vector<cv::Point> poly;
-
-    for (size_t i = 0; i < contours.size(); i++)
+    ~pipeline()
     {
-      cv::approxPolyDP(contours[i], poly, arcLength(contours[i], true) * 0.02, true);
+        _stop = true;
+        if (_thread.joinable())
+        _thread.join();
+    }
 
-      if (poly.size() == 4 &&
-          cv::isContourConvex(poly) &&
-          cv::contourArea(poly) > 1000)
-      {
-        double maxCosine = 0;
-        for(int j = 2; j < 5; j++)
+    inline auto filterRightAngleContours(const cv::Mat& frame)
+    {
+        std::vector<cv::Vec4i> hierarchy;
+        std::vector<std::vector<cv::Point>> contours, filtered_contours;
+
+        cv::findContours(frame, contours, hierarchy, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE);
+
+        std::vector<cv::Point> poly;
+
+        for (size_t i = 0; i < contours.size(); i++)
         {
-          // find the maximum cosine of the angle between joint edges
-          double cosine = fabs(geometry::angle(poly[j%4], poly[j-2], poly[j-1]));
-          maxCosine = MAX(maxCosine, cosine);
+            cv::approxPolyDP(contours[i], poly, arcLength(contours[i], true) * 0.02, true);
+
+            if (poly.size() == 4 &&
+                cv::isContourConvex(poly) &&
+                cv::contourArea(poly) > 1000)
+            {
+                double maxCosine = 0;
+                for(int j = 2; j < 5; j++)
+                {
+                    // find the maximum cosine of the angle between joint edges
+                    double cosine = fabs(geometry::angle(poly[j%4], poly[j-2], poly[j-1]));
+                    maxCosine = MAX(maxCosine, cosine);
+                }
+                // if cosines of all angles are small
+                // (all angles are ~90 degree) then write quandrange
+                // vertices to resultant sequence
+                if (maxCosine < 0.25)
+                {
+                    filtered_contours.push_back(poly);
+                }
+            }
         }
-        // if cosines of all angles are small
-        // (all angles are ~90 degree) then write quandrange
-        // vertices to resultant sequence
-        if (maxCosine < 0.25)
+
+        return filtered_contours;
+    }
+
+    inline auto detectMotion(cv::Mat& frame)
+    {
+        auto bbs = _backgroundSubtractor->Detect(frame, 0);
+
+        for (const auto& bb : bbs)
         {
-          filtered_contours.push_back(poly);
+            cv::rectangle(frame, bb, cv::Scalar(0, 255, 0), 1);
+            cv::putText(frame, std::to_string((int)(bb.width * bb.height)),
+                cv::Point((int)bb.x, (int)(bb.y - 5)), cv::FONT_HERSHEY_SIMPLEX,
+                0.5, cv::Scalar(0, 0, 255), 1);
         }
-      }
+
+        return bbs;
     }
 
-    return filtered_contours;
-  }
-
-  inline auto detectMotion(cv::Mat& frame)
-  {
-    auto bbs = _backgroundSubtractor->Detect(frame);
-
-    for (const auto& bb : bbs)
+    inline auto detectLength(cv::Mat& frame)
     {
-      cv::rectangle(frame, bb, cv::Scalar(0, 255, 0), 1);
-      cv::putText(frame, std::to_string((int)(bb.width * bb.height)),
-          cv::Point((int)bb.x, (int)(bb.y - 5)), cv::FONT_HERSHEY_SIMPLEX,
-          0.5, cv::Scalar(0, 0, 255), 1);
+        auto cmpp =  cvl::Detector::detectArucoMarker(frame);
+
+        auto thresh = cvl::geometry::getBlurGreyThresholdFrame(frame);
+
+        auto filtered_contours = filterRightAngleContours(thresh);
+
+        for (const auto& contour : filtered_contours)
+        {
+            auto rect = cv::boundingRect(contour);
+
+            std::ostringstream oss;
+            oss.precision(2);
+
+            // oss << "[" << std::fixed << rect.width;
+            // oss << "," << std::fixed << rect.height;
+            oss << "[" << std::fixed << rect.width * cmpp;
+            oss << "," << std::fixed << rect.height * cmpp << "]";
+
+            cv::putText(frame, oss.str().c_str(), cv::Point(rect.x, rect.y - 2),
+                cv::FONT_HERSHEY_SIMPLEX, 0.3, {0,0,0}, 1);
+        }
+
+        // draw filtered contours on the original image
+        cv::drawContours(frame, filtered_contours, -1, cv::Scalar(0, 255, 0), 2);
     }
 
-    return bbs;
-  }
-
-  inline auto detectLength(cv::Mat& frame)
-  {
-    auto cmpp =  cvl::Detector::detectArucoMarker(frame);
-
-    auto thresh = cvl::geometry::getBlurGreyThresholdFrame(frame);
-
-    auto filtered_contours = filterRightAngleContours(thresh);
-
-    for (const auto& contour : filtered_contours)
+    inline auto detectFaces(cv::Mat& frame, double confidence)
     {
-      auto rect = cv::boundingRect(contour);
-
-      std::ostringstream oss;
-      oss.precision(2);
-
-      // oss << "[" << std::fixed << rect.width;
-      // oss << "," << std::fixed << rect.height;
-      oss << "[" << std::fixed << rect.width * cmpp;
-      oss << "," << std::fixed << rect.height * cmpp << "]";
-
-      cv::putText(frame, oss.str().c_str(), cv::Point(rect.x, rect.y - 2),
-        cv::FONT_HERSHEY_SIMPLEX, 0.3, {0,0,0}, 1);
+        return _faceDetector->Detect(frame, confidence);
     }
 
-    // draw filtered contours on the original image
-    cv::drawContours(frame, filtered_contours, -1, cv::Scalar(0, 255, 0), 2);
-  }
-
-  inline auto detectFaces(cv::Mat& frame)
-  {
-    return _faceDetector->Detect(frame);
-  }
-
-  inline auto detectObjects(cv::Mat& frame)
-  {
-    return _objectDetector->Detect(frame);
-  }
-
-  inline auto faceRecognition(cv::Mat& frame)
-  {
-    return _faceRec->predict(frame);
-  }
-
-  inline auto execute(cv::Mat& frame)
-  {
-    if (frame.empty()) {
-        ERR << "empty frame grabbed";
-        return;
-    }
-
-    Detections detections;
-
-    //detections = detectLength(frame);
-
-    if (_faceDetector) {
-      detections = detectFaces(frame);
-    }
-
-    if (_objectDetector) {
-      detections = detectObjects(frame);
-    }
-
-    if (_backgroundSubtractor) {
-      detections = detectMotion(frame);
-    }
-
-    cvl::Detector::FilterDetections(detections, frame);
-
-    for (const auto& roi : detections)
+    inline auto detectObjects(cv::Mat& frame, double confidence)
     {
-      cvl::DetectionResult r;
-
-      // r._stage = "face";
-      // r._roi = frame(roi).clone(),
-      // r._ts = duration_cast<seconds>(system_clock::now()
-      //     .time_since_epoch()).count();
-      // _detectionsQueue.enqueue(r);
-
-      // cv::Mat gray;
-      // cv::cvtColor(r._roi, gray, cv::COLOR_BGR2GRAY);
-      // const auto& [tag, confidence] = faceRecognition(gray);
-
-      cv::rectangle(frame, roi, cv::Scalar(0, 255, 0), 3);
-
-      // if (tag.length() && confidence > 0.0)
-      //   cv::putText(frame, tag + " : " + std::to_string(confidence),
-      //       cv::Point((int)roi.x, (int)(roi.y - 5)), cv::FONT_HERSHEY_SIMPLEX,
-      //       0.5, cv::Scalar(0, 0, 255), 1);
+        return _objectDetector->Detect(frame, confidence);
     }
-  }
 
-  protected:
-
-  int _stages;
-
-  bool _stop = false;
-
-  std::thread _thread;
-
-  cvl::queue<cvl::DetectionResult> _detectionsQueue;
-
-  std::unique_ptr<cvl::facerec> _faceRec;
-
-  std::unique_ptr<cvl::FaceDetector> _faceDetector = nullptr;
-
-  std::unique_ptr<cvl::ObjectDetector> _objectDetector = nullptr;
-
-  std::unique_ptr<cvl::BackgroundSubtractor> _backgroundSubtractor = nullptr;
-
-  void pipelineThread()
-  {
-    static uint32_t count = 0;
-
-    while (!_stop)
+    inline auto faceRecognition(cv::Mat& frame)
     {
-      auto d = _detectionsQueue.dequeue();
-
-      if (d.empty())
-      {
-        std::this_thread::sleep_for(milliseconds(50));
-        continue;
-      }
-
-      cvl::geometry::saveMatAsImage(
-        d._roi, std::to_string(++count) + "_" + std::to_string(d._ts), ".jpg");
+        return _faceRec->predict(frame);
     }
-  }
+
+    inline auto execute(cv::Mat& frame, int stages, double *iConfidence)
+    {
+        if (frame.empty()) {
+            ERR << "empty frame grabbed";
+            return;
+        }
+
+        Detections detections;
+
+        if (stages & 1) {
+            detections = detectFaces(frame, iConfidence[0]);
+        } else if (stages & 2) {
+            detections = detectObjects(frame, iConfidence[1]);
+        } else if (stages & 4) {
+            detections = detectMotion(frame);
+        } else if (stages & 8) {
+            // facerec iConfidence[2]
+        } else if (stages & 16) {
+            //detections = detectLength(frame);
+        }
+
+        cvl::Detector::FilterDetections(detections, frame);
+
+        for (const auto& roi : detections)
+        {
+            cvl::DetectionResult r;
+
+            // r._stage = "face";
+            // r._roi = frame(roi).clone(),
+            // r._ts = duration_cast<seconds>(system_clock::now()
+            //     .time_since_epoch()).count();
+            // _detectionsQueue.enqueue(r);
+
+            if (stages & 8) {
+                cv::Mat gray;
+                cv::cvtColor(r._roi, gray, cv::COLOR_BGR2GRAY);
+                const auto& [tag, confidence] = faceRecognition(gray);
+
+                if (tag.length() && confidence > 0.0)
+                    cv::putText(frame, tag + " : " + std::to_string(confidence),
+                        cv::Point((int)roi.x, (int)(roi.y - 5)), cv::FONT_HERSHEY_SIMPLEX,
+                        0.5, cv::Scalar(0, 0, 255), 1);
+            }
+
+            cv::rectangle(frame, roi, cv::Scalar(0, 255, 0), 3);
+        }
+    }
+
+    protected:
+
+    bool _stop = false;
+
+    std::thread _thread;
+
+    cvl::queue<cvl::DetectionResult> _detectionsQueue;
+
+    std::unique_ptr<cvl::facerec> _faceRec;
+
+    std::unique_ptr<cvl::FaceDetector> _faceDetector = nullptr;
+
+    std::unique_ptr<cvl::ObjectDetector> _objectDetector = nullptr;
+
+    std::unique_ptr<cvl::BackgroundSubtractor> _backgroundSubtractor = nullptr;
+
+    void pipelineThread()
+    {
+        static uint32_t count = 0;
+
+        while (!_stop)
+        {
+            auto d = _detectionsQueue.dequeue();
+
+            if (d.empty())
+            {
+                std::this_thread::sleep_for(milliseconds(50));
+                continue;
+            }
+
+            cvl::geometry::saveMatAsImage(
+                d._roi, std::to_string(++count) + "_" + std::to_string(d._ts), ".jpg");
+        }
+    }
 };
 
 }

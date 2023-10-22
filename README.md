@@ -29,6 +29,13 @@ FTPS
 - Directory listing support for Linux, Windows and MLSD.
 - FTPS supports TLS1.3
 
+CAMERA
+
+- Face detection, Motion detection, Face recognition.
+- Uses default opencv built-in models and DNN based detectors.
+- Detection configurability on a per camera basis.
+- Ability to save detection results.
+
 #### vcpkg dependencies
 
 ```

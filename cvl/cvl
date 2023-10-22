@@ -55,27 +55,30 @@ class camera
     _stop = false;
   }
 
-  std::string iSource;
-
   std::string iName;
+
+  std::string iSource;
 
   int iPipelineStages = 0;
 
   int iWaitKeyTimeout = 18;
 
+  // face, object, facerec
+  double iConfidence[3] = {0.5, 0.5, 0.5};
+
   private:
 
   bool _stop = false;
-
-  std::thread _queue_thread;
-
-  std::thread _pipeline_thread;
 
   cvl::queue<cv::Mat> q_in;
 
   cvl::queue<cv::Mat> q_out;
 
   TFrameCallback _frame_cbk;
+
+  std::thread _queue_thread;
+
+  std::thread _pipeline_thread;
 
   void queue_frames(void)
   {
@@ -121,7 +124,7 @@ class camera
 
   void process_frames()
   {
-    cvl::pipeline pipeLine(iPipelineStages);
+    cvl::pipeline pipeLine;
 
     while (!_stop) {
 
@@ -133,7 +136,7 @@ class camera
       }
 
       if (iPipelineStages) {
-        pipeLine.execute(frame);
+        pipeLine.execute(frame, iPipelineStages, iConfidence);
       }
 
       q_out.enqueue(frame);

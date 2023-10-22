@@ -177,8 +177,11 @@ Item {
                         width: 275
                         height: rowHeight
                         from: 0
-                        value: 0.7
+                        value: vr.faceConfidence
                         to: 1
+                        onMoved: {
+                            vr.faceConfidence = faceConfidence.value.toFixed(1)
+                        }
                     }
                     Text {
                         text: faceConfidence.value.toFixed(1)
@@ -200,8 +203,11 @@ Item {
                         width: 275
                         height: rowHeight
                         from: 0
-                        value: 0.7
+                        value: vr.objectConfidence
                         to: 1
+                        onMoved: {
+                            vr.objectConfidence = objectConfidence.value.toFixed(1)
+                        }
                     }
                     Text {
                         text: objectConfidence.value.toFixed(1)
@@ -223,8 +229,11 @@ Item {
                         width: 275
                         height: rowHeight
                         from: 0
-                        value: 0.7
+                        value: vr.facerecConfidence
                         to: 1
+                        onMoved: {
+                            vr.facerecConfidence = facerecConfidence.value.toFixed(1)
+                        }
                     }
                     Text {
                         text: facerecConfidence.value.toFixed(1)

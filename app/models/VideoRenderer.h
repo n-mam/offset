@@ -28,6 +28,9 @@ class VideoRenderer : public QQuickItem
   Q_INVOKABLE void stop();
   Q_INVOKABLE void start();
 
+  Q_PROPERTY(double faceConfidence READ getFaceConfidence WRITE setFaceConfidence NOTIFY faceConfidenceChanged);
+  Q_PROPERTY(double objectConfidence READ getObjectConfidence WRITE setObjectConfidence NOTIFY objectConfidenceChanged);
+  Q_PROPERTY(double facerecConfidence READ getFacerecConfidence WRITE setFacerecConfidence NOTIFY facerecConfidenceChanged);
   Q_PROPERTY(double scaleF READ getScaleF WRITE setScaleF NOTIFY scaleFChanged);
   Q_PROPERTY(QString name READ getName WRITE setName NOTIFY nameChanged);
   Q_PROPERTY(QString source READ getSource WRITE setSource NOTIFY sourceChanged);
@@ -36,6 +39,12 @@ class VideoRenderer : public QQuickItem
 
   public slots:
 
+  double getFaceConfidence();
+  void setFaceConfidence(double);
+  double getObjectConfidence();
+  void setObjectConfidence(double);
+  double getFacerecConfidence();
+  void setFacerecConfidence(double);
   double getScaleF(void);
   void setScaleF(double scalef);
   QString getSource(void);
@@ -49,6 +58,9 @@ class VideoRenderer : public QQuickItem
 
   signals:
 
+  void faceConfidenceChanged(double);
+  void objectConfidenceChanged(double);
+  void facerecConfidenceChanged(double);
   void nameChanged(QString);
   void sourceChanged(QString);
   void scaleFChanged(double);

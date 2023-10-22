@@ -216,3 +216,42 @@ void VideoRenderer::setScaleF(double scalef)
         emit scaleFChanged(scalef);
     }
 }
+
+double VideoRenderer::getFaceConfidence()
+{
+    return m_camera->iConfidence[0];
+}
+
+void VideoRenderer::setFaceConfidence(double confidence)
+{
+    if (confidence != m_camera->iConfidence[0]) {
+        m_camera->iConfidence[0] = confidence;
+        emit faceConfidenceChanged(confidence);
+    }
+}
+
+double VideoRenderer::getObjectConfidence()
+{
+    return m_camera->iConfidence[1];
+}
+
+void VideoRenderer::setObjectConfidence(double confidence)
+{
+    if (confidence != m_camera->iConfidence[1]) {
+        m_camera->iConfidence[1] = confidence;
+        emit objectConfidenceChanged(confidence);
+    }
+}
+
+double VideoRenderer::getFacerecConfidence()
+{
+    return m_camera->iConfidence[2];
+}
+
+void VideoRenderer::setFacerecConfidence(double confidence)
+{
+    if (confidence != m_camera->iConfidence[2]) {
+        m_camera->iConfidence[2] = confidence;
+        emit facerecConfidenceChanged(confidence);
+    }
+}

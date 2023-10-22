@@ -82,7 +82,7 @@ class Detector
 
   virtual ~Detector() {}
 
-  virtual Detections Detect(cv::Mat& frame) = 0;
+  virtual Detections Detect(cv::Mat& frame, double confidence) = 0;
 
   // auxiliary detections and filters
 
@@ -161,7 +161,7 @@ class FaceDetector : public Detector
 
   ~FaceDetector() {}
 
-  virtual Detections Detect(cv::Mat& frame) override
+  virtual Detections Detect(cv::Mat& frame, double confidence) override
   {
     Detections out;
 
@@ -181,9 +181,9 @@ class FaceDetector : public Detector
 
     for (int i = 0; i < detectionMat.rows; ++i)
     {
-      float confidence = detectionMat.at<float>(i, 2);
+      float _confidence = detectionMat.at<float>(i, 2);
 
-      if (confidence > 0.7)
+      if (_confidence > confidence)
       {
         int x1 = static_cast<int>(detectionMat.at<float>(i, 3) * frame.cols);
         int y1 = static_cast<int>(detectionMat.at<float>(i, 4) * frame.rows);
@@ -214,7 +214,7 @@ class ObjectDetector : public Detector
       _target = target;
     }
 
-    virtual Detections Detect(cv::Mat& frame) override
+    virtual Detections Detect(cv::Mat& frame, double confidence) override
     {
       Detections out;
 
@@ -234,9 +234,9 @@ class ObjectDetector : public Detector
 
       for (int i = 0; i < detectionMat.rows; ++i)
       {
-        float confidence = detectionMat.at<float>(i, 2);
+        float _confidence = detectionMat.at<float>(i, 2);
 
-        if (confidence > 0.7)
+        if (_confidence > confidence)
         {
           int idx, x1, y1, x2, y2;
 
@@ -293,7 +293,7 @@ class BackgroundSubtractor : public Detector
       }
     }
 
-    virtual Detections Detect(cv::Mat& frame) override
+    virtual Detections Detect(cv::Mat& frame, double confidence) override
     {
       cv::Mat fgMask;
 
