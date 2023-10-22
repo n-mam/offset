@@ -247,6 +247,27 @@ Item {
         Row {
             spacing: 4
             Text {
+                text: "Motion ROI\nArea:"
+                color: "white"
+                width: labelWidth
+                verticalAlignment: Text.AlignVCenter
+                anchors.verticalCenter: parent.verticalCenter
+            }
+            TextField {
+                id: areaTextId
+                width: 150
+                implicitHeight: rowHeight - 10
+                placeholderText: qsTr("threshold")
+                text: vr.areaThreshold
+                horizontalAlignment: TextInput.AlignHCenter
+                onEditingFinished: {
+                    vr.areaThreshold = parseInt(areaTextId.text)
+                }
+            }
+        }
+        Row {
+            spacing: 4
+            Text {
                 text: "Results:"
                 width: labelWidth
                 color: "white"

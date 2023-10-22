@@ -20,147 +20,147 @@ using TFrameCallback = std::function<void (const cv::Mat&)>;
 
 class camera
 {
-  public:
+    public:
 
-  camera()
-  {
-  }
-
-  ~camera()
-  {
-    stop();
-  }
-
-  void start(TFrameCallback cbk)
-  {
-    stop();
-
-    _pipeline_thread = std::thread(&camera::process_frames, this);
-
-    if (cbk) {
-      _frame_cbk = cbk;
-      _queue_thread = std::thread(&camera::queue_frames, this);
-    } else {
-      camera::queue_frames();
-    }
-  }
-
-  void stop()
-  {
-    _stop = true;
-    if (_queue_thread.joinable())
-      _queue_thread.join();
-    if (_pipeline_thread.joinable())
-      _pipeline_thread.join();
-    _stop = false;
-  }
-
-  std::string iName;
-
-  std::string iSource;
-
-  int iPipelineStages = 0;
-
-  int iWaitKeyTimeout = 18;
-
-  // face, object, facerec
-  double iConfidence[3] = {0.5, 0.5, 0.5};
-
-  private:
-
-  bool _stop = false;
-
-  cvl::queue<cv::Mat> q_in;
-
-  cvl::queue<cv::Mat> q_out;
-
-  TFrameCallback _frame_cbk;
-
-  std::thread _queue_thread;
-
-  std::thread _pipeline_thread;
-
-  void queue_frames(void)
-  {
-    cv::VideoCapture cap;
-
-    if (iSource.length() == 1 && isdigit(iSource[0]))
-      cap.open(std::stoi(iSource), cv::CAP_ANY);
-    else
-      cap.open(iSource, cv::CAP_ANY);
-
-    if (!cap.isOpened()) {
-      ERR << "queue_frames, error: unable to open camera";
-      _stop = true;
-      return;
+    camera()
+    {
     }
 
-    cv::Mat f_in;
+    ~camera()
+    {
+        stop();
+    }
 
-    while (!_stop) {
+    void start(TFrameCallback cbk)
+    {
+        stop();
 
-      cap >> f_in;
+        _pipeline_thread = std::thread(&camera::process_frames, this);
 
-      q_in.enqueue(f_in);
-
-      auto f_out = q_out.dequeue();
-
-      if (!f_out.empty()) {
-        if (_frame_cbk) {
-          _frame_cbk(f_out);
-        }  else {
-          cv::imshow("live", f_out);
+        if (cbk) {
+            _frame_cbk = cbk;
+            _queue_thread = std::thread(&camera::queue_frames, this);
+        } else {
+            camera::queue_frames();
         }
-      }
+    }
 
-      if (cv::waitKey(iWaitKeyTimeout) >= 0) {
+    void stop()
+    {
         _stop = true;
-        break;
-      }
+        if (_queue_thread.joinable())
+            _queue_thread.join();
+        if (_pipeline_thread.joinable())
+            _pipeline_thread.join();
+        _stop = false;
     }
 
-    DBG << "queue_frames thread returning";
-  }
+    std::string iName;
 
-  void process_frames()
-  {
-    cvl::pipeline pipeLine;
+    std::string iSource;
 
-    while (!_stop) {
+    int iPipelineStages = 0;
 
-      auto frame = q_in.dequeue();
+    int iWaitKeyTimeout = 18;
 
-      if (frame.empty()) {
-        std::this_thread::sleep_for(milliseconds(50));
-        continue;
-      }
+    // face, object, facerec
+    double iConfidence[4] = {0.5, 0.5, 0.5, 2000};
 
-      if (iPipelineStages) {
-        pipeLine.execute(frame, iPipelineStages, iConfidence);
-      }
+    private:
 
-      q_out.enqueue(frame);
+    bool _stop = false;
+
+    cvl::queue<cv::Mat> q_in;
+
+    cvl::queue<cv::Mat> q_out;
+
+    TFrameCallback _frame_cbk;
+
+    std::thread _queue_thread;
+
+    std::thread _pipeline_thread;
+
+    void queue_frames(void)
+    {
+        cv::VideoCapture cap;
+
+        if (iSource.length() == 1 && isdigit(iSource[0]))
+            cap.open(std::stoi(iSource), cv::CAP_ANY);
+        else
+            cap.open(iSource, cv::CAP_ANY);
+
+        if (!cap.isOpened()) {
+            ERR << "queue_frames, error: unable to open camera";
+            _stop = true;
+            return;
+        }
+
+        cv::Mat f_in;
+
+        while (!_stop) {
+
+            cap >> f_in;
+
+            q_in.enqueue(f_in);
+
+            auto f_out = q_out.dequeue();
+
+            if (!f_out.empty()) {
+                if (_frame_cbk) {
+                    _frame_cbk(f_out);
+                }  else {
+                    cv::imshow("live", f_out);
+                }
+            }
+
+            if (cv::waitKey(iWaitKeyTimeout) >= 0) {
+                _stop = true;
+                break;
+            }
+        }
+
+        DBG << "queue_frames thread returning";
     }
 
-    DBG << "process_frames thread returning";
-  }
+    void process_frames()
+    {
+        cvl::pipeline pipeLine;
+
+        while (!_stop) {
+
+            auto frame = q_in.dequeue();
+
+            if (frame.empty()) {
+                std::this_thread::sleep_for(milliseconds(50));
+                continue;
+            }
+
+            if (iPipelineStages) {
+                pipeLine.execute(frame, iPipelineStages, iConfidence);
+            }
+
+            q_out.enqueue(frame);
+        }
+
+        DBG << "process_frames thread returning";
+    }
 };
 
 inline auto entry(std::vector<std::string> arguments)
 {
-  std::string source = "0";
+    std::string source = "0";
 
-  source = arguments[1];
+    source = arguments[1];
 
-  auto cam = std::make_unique<cvl::camera>();
+    auto cam = std::make_unique<cvl::camera>();
 
-  cam->iSource = source;
+    cam->iSource = source;
 
-  cam->iPipelineStages = 1;
+    cam->iPipelineStages = 1;
 
-  cam->start(nullptr);
+    cam->start(nullptr);
 
-  getchar();
+    getchar();
 }
 
 using SPCamera = std::shared_ptr<camera>;

@@ -293,7 +293,7 @@ class BackgroundSubtractor : public Detector
       }
     }
 
-    virtual Detections Detect(cv::Mat& frame, double confidence) override
+    virtual Detections Detect(cv::Mat& frame, double areaThreshold) override
     {
       cv::Mat fgMask;
 
@@ -304,7 +304,6 @@ class BackgroundSubtractor : public Detector
       cv::findContours(fgMask, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
 
       Detections out;
-      auto areaThreshold = 1500;
 
       for (size_t i = 0; i < contours.size(); ++i)
       {

@@ -255,3 +255,16 @@ void VideoRenderer::setFacerecConfidence(double confidence)
         emit facerecConfidenceChanged(confidence);
     }
 }
+
+int VideoRenderer::getAreaThreshold()
+{
+    return (int)m_camera->iConfidence[3];
+}
+
+void VideoRenderer::setAreaThreshold(int area)
+{
+    if (area != m_camera->iConfidence[3]) {
+        m_camera->iConfidence[3] = area;
+        emit areaThresholdChanged(area);
+    }
+}

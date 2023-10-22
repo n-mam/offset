@@ -76,9 +76,9 @@ class pipeline
         return filtered_contours;
     }
 
-    inline auto detectMotion(cv::Mat& frame)
+    inline auto detectMotion(cv::Mat& frame, double areaThreshold)
     {
-        auto bbs = _backgroundSubtractor->Detect(frame, 0);
+        auto bbs = _backgroundSubtractor->Detect(frame, areaThreshold);
 
         for (const auto& bb : bbs)
         {
@@ -148,7 +148,7 @@ class pipeline
         } else if (stages & 2) {
             detections = detectObjects(frame, iConfidence[1]);
         } else if (stages & 4) {
-            detections = detectMotion(frame);
+            detections = detectMotion(frame, iConfidence[3]);
         } else if (stages & 8) {
             // facerec iConfidence[2]
         } else if (stages & 16) {

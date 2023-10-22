@@ -28,6 +28,7 @@ class VideoRenderer : public QQuickItem
   Q_INVOKABLE void stop();
   Q_INVOKABLE void start();
 
+  Q_PROPERTY(int areaThreshold READ getAreaThreshold WRITE setAreaThreshold NOTIFY areaThresholdChanged);
   Q_PROPERTY(double faceConfidence READ getFaceConfidence WRITE setFaceConfidence NOTIFY faceConfidenceChanged);
   Q_PROPERTY(double objectConfidence READ getObjectConfidence WRITE setObjectConfidence NOTIFY objectConfidenceChanged);
   Q_PROPERTY(double facerecConfidence READ getFacerecConfidence WRITE setFacerecConfidence NOTIFY facerecConfidenceChanged);
@@ -55,9 +56,12 @@ class VideoRenderer : public QQuickItem
   void setWaitKeyTimeout(int source);
   int getPipeLineStages(void);
   void setPipeLineStages(int stageFlags);
+  int getAreaThreshold(void);
+  void setAreaThreshold(int area);
 
   signals:
 
+  void areaThresholdChanged(int);
   void faceConfidenceChanged(double);
   void objectConfidenceChanged(double);
   void facerecConfidenceChanged(double);
