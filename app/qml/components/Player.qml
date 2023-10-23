@@ -51,9 +51,7 @@ Item {
                     from: -450
                     value: 0
                     to: 450
-                    onMoved: {
-                        playerRoot.increment = playerZoomSlider.value
-                    }
+                    onMoved: playerRoot.increment = playerZoomSlider.value
                 }
                 Image {
                     width: 18
@@ -84,10 +82,11 @@ Item {
                     height: 18
                     source: "qrc:/play.png"
                     MouseArea {
+                        hoverEnabled: true
                         anchors.fill: parent
-                        onClicked: {
-                            vr.start()
-                        }
+                        onClicked: vr.start()
+                        cursorShape: Qt.PointingHandCursor
+                        onContainsMouseChanged: parent.scale = 1 + (containsMouse ? 0.2 : 0)
                     }
                 }
 
@@ -96,10 +95,11 @@ Item {
                     height: 18
                     source: "qrc:/pause.png"
                     MouseArea {
+                        hoverEnabled: true
                         anchors.fill: parent
-                        onClicked: {
-                            vr.stop()
-                        }
+                        onClicked: vr.stop()
+                        cursorShape: Qt.PointingHandCursor
+                        onContainsMouseChanged: parent.scale = 1 + (containsMouse ? 0.2 : 0)
                     }
                 }
 
@@ -108,10 +108,11 @@ Item {
                     height: 18
                     source: "qrc:/settings.png"
                     MouseArea {
+                        hoverEnabled: true
                         anchors.fill: parent
-                        onClicked: {
-                            onClicked: cameraSettingsClickedSignal(vr)
-                        }
+                        onClicked: cameraSettingsClickedSignal(vr)
+                        cursorShape: Qt.PointingHandCursor
+                        onContainsMouseChanged: parent.scale = 1 + (containsMouse ? 0.2 : 0)
                     }
                 }
 
@@ -120,19 +121,18 @@ Item {
                     height: 18
                     source: "qrc:/bin.png"
                     MouseArea {
+                        hoverEnabled: true
                         anchors.fill: parent
-                        onClicked: {
-                            onClicked: cameraDeleteClickedSignal(vr)
-                        }
+                        onClicked: cameraDeleteClickedSignal(vr)
+                        cursorShape: Qt.PointingHandCursor
+                        onContainsMouseChanged: parent.scale = 1 + (containsMouse ? 0.2 : 0)
                     }
                 }
             }
 
             MouseArea {
                 anchors.fill: parent
-                onClicked: {
-                    controlsVisible = !controlsVisible;
-                }
+                onClicked: controlsVisible = !controlsVisible;
             }
         }
     }

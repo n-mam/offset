@@ -15,6 +15,13 @@ namespace cvl {
 
 using namespace std::chrono;
 
+constexpr int IDX_PIPELINE_STAGES = 0;
+constexpr int IDX_FACE_CONFIDENCE = 1;
+constexpr int IDX_OBJECT_CONFIDENCE = 2;
+constexpr int IDX_FACEREC_CONFIDENCE = 3;
+constexpr int IDX_MOCAP_EXCLUDE_AREA = 4;
+constexpr int IDX_BOUNDINGBOX_THICKNESS = 5;
+
 class pipeline
 {
     public:
@@ -134,7 +141,7 @@ class pipeline
         return _faceRec->predict(frame);
     }
 
-    inline auto execute(cv::Mat& frame, int stages, double *iConfidence)
+    inline auto execute(cv::Mat& frame, int *config)
     {
         if (frame.empty()) {
             ERR << "empty frame grabbed";
@@ -143,14 +150,16 @@ class pipeline
 
         Detections detections;
 
+        int stages = config[IDX_PIPELINE_STAGES];
+
         if (stages & 1) {
-            detections = detectFaces(frame, iConfidence[0]);
+            detections = detectFaces(frame, (double)config[IDX_FACE_CONFIDENCE] / 10);
         } else if (stages & 2) {
-            detections = detectObjects(frame, iConfidence[1]);
+            detections = detectObjects(frame, (double)config[IDX_OBJECT_CONFIDENCE] / 10);
         } else if (stages & 4) {
-            detections = detectMotion(frame, iConfidence[3]);
+            detections = detectMotion(frame, (double)config[IDX_MOCAP_EXCLUDE_AREA] / 10);
         } else if (stages & 8) {
-            // facerec iConfidence[2]
+            // facerec config[IDX_FACEREC_CONFIDENCE] /10
         } else if (stages & 16) {
             //detections = detectLength(frame);
         }
@@ -178,7 +187,7 @@ class pipeline
                         0.5, cv::Scalar(0, 0, 255), 1);
             }
 
-            cv::rectangle(frame, roi, cv::Scalar(0, 255, 0), 3);
+            cv::rectangle(frame, roi, cv::Scalar(0, 255, 0), config[IDX_BOUNDINGBOX_THICKNESS]);
         }
     }
 

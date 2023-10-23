@@ -173,24 +173,6 @@ void VideoRenderer::setWaitKeyTimeout(int timeout)
     }
 }
 
-int VideoRenderer::getPipeLineStages(void)
-{
-    if (m_camera) {
-        return m_camera->iPipelineStages;
-    }
-    return 0;
-}
-
-void VideoRenderer::setPipeLineStages(int stages)
-{
-    if (m_camera) {
-        if (stages != m_camera->iPipelineStages) {
-            m_camera->iPipelineStages = stages;
-            emit pipelineStagesChanged(stages);
-        }
-    }
-}
-
 QString VideoRenderer::getName(void)
 {
     return QString::fromStdString(m_camera->iName);
@@ -217,54 +199,85 @@ void VideoRenderer::setScaleF(double scalef)
     }
 }
 
+int VideoRenderer::getPipeLineStages(void)
+{
+    if (m_camera) {
+        return m_camera->iPipelineConfig[cvl::IDX_PIPELINE_STAGES];
+    }
+    return 0;
+}
+
+void VideoRenderer::setPipeLineStages(int stages)
+{
+    if (m_camera) {
+        if (stages != m_camera->iPipelineConfig[cvl::IDX_PIPELINE_STAGES]) {
+            m_camera->iPipelineConfig[cvl::IDX_PIPELINE_STAGES] = stages;
+            emit pipelineStagesChanged(stages);
+        }
+    }
+}
+
 double VideoRenderer::getFaceConfidence()
 {
-    return m_camera->iConfidence[0];
+    return (double)(m_camera->iPipelineConfig[cvl::IDX_FACE_CONFIDENCE]) / 10;
 }
 
 void VideoRenderer::setFaceConfidence(double confidence)
 {
-    if (confidence != m_camera->iConfidence[0]) {
-        m_camera->iConfidence[0] = confidence;
+    if (confidence != m_camera->iPipelineConfig[cvl::IDX_FACE_CONFIDENCE]) {
+        m_camera->iPipelineConfig[cvl::IDX_FACE_CONFIDENCE] = (int)(confidence * 10);
         emit faceConfidenceChanged(confidence);
     }
 }
 
 double VideoRenderer::getObjectConfidence()
 {
-    return m_camera->iConfidence[1];
+    return (double)(m_camera->iPipelineConfig[cvl::IDX_OBJECT_CONFIDENCE]) / 10;
 }
 
 void VideoRenderer::setObjectConfidence(double confidence)
 {
-    if (confidence != m_camera->iConfidence[1]) {
-        m_camera->iConfidence[1] = confidence;
+    if (confidence != m_camera->iPipelineConfig[cvl::IDX_OBJECT_CONFIDENCE]) {
+        m_camera->iPipelineConfig[cvl::IDX_OBJECT_CONFIDENCE] = (int)(confidence * 10);
         emit objectConfidenceChanged(confidence);
     }
 }
 
 double VideoRenderer::getFacerecConfidence()
 {
-    return m_camera->iConfidence[2];
+    return (double)(m_camera->iPipelineConfig[cvl::IDX_FACEREC_CONFIDENCE]) / 10;
 }
 
 void VideoRenderer::setFacerecConfidence(double confidence)
 {
-    if (confidence != m_camera->iConfidence[2]) {
-        m_camera->iConfidence[2] = confidence;
+    if (confidence != m_camera->iPipelineConfig[cvl::IDX_FACEREC_CONFIDENCE]) {
+        m_camera->iPipelineConfig[cvl::IDX_FACEREC_CONFIDENCE] = (int)(confidence * 10);
         emit facerecConfidenceChanged(confidence);
     }
 }
 
 int VideoRenderer::getAreaThreshold()
 {
-    return (int)m_camera->iConfidence[3];
+    return m_camera->iPipelineConfig[cvl::IDX_MOCAP_EXCLUDE_AREA];
 }
 
 void VideoRenderer::setAreaThreshold(int area)
 {
-    if (area != m_camera->iConfidence[3]) {
-        m_camera->iConfidence[3] = area;
+    if (area != m_camera->iPipelineConfig[cvl::IDX_MOCAP_EXCLUDE_AREA]) {
+        m_camera->iPipelineConfig[cvl::IDX_MOCAP_EXCLUDE_AREA] = area;
         emit areaThresholdChanged(area);
+    }
+}
+
+int VideoRenderer::getBboxThickness()
+{
+    return m_camera->iPipelineConfig[cvl::IDX_BOUNDINGBOX_THICKNESS];
+}
+
+void VideoRenderer::setBboxThickness(int px)
+{
+    if (px != m_camera->iPipelineConfig[cvl::IDX_BOUNDINGBOX_THICKNESS]) {
+        m_camera->iPipelineConfig[cvl::IDX_BOUNDINGBOX_THICKNESS] = px;
+        emit areaThresholdChanged(px);
     }
 }

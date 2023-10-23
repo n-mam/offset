@@ -28,18 +28,21 @@ class VideoRenderer : public QQuickItem
   Q_INVOKABLE void stop();
   Q_INVOKABLE void start();
 
+  Q_PROPERTY(QString name READ getName WRITE setName NOTIFY nameChanged);
+  Q_PROPERTY(double scaleF READ getScaleF WRITE setScaleF NOTIFY scaleFChanged);
+  Q_PROPERTY(QString source READ getSource WRITE setSource NOTIFY sourceChanged);
+  Q_PROPERTY(int bboxThickness READ getBboxThickness WRITE setBboxThickness NOTIFY bboxThicknessChanged);
   Q_PROPERTY(int areaThreshold READ getAreaThreshold WRITE setAreaThreshold NOTIFY areaThresholdChanged);
   Q_PROPERTY(double faceConfidence READ getFaceConfidence WRITE setFaceConfidence NOTIFY faceConfidenceChanged);
   Q_PROPERTY(double objectConfidence READ getObjectConfidence WRITE setObjectConfidence NOTIFY objectConfidenceChanged);
   Q_PROPERTY(double facerecConfidence READ getFacerecConfidence WRITE setFacerecConfidence NOTIFY facerecConfidenceChanged);
-  Q_PROPERTY(double scaleF READ getScaleF WRITE setScaleF NOTIFY scaleFChanged);
-  Q_PROPERTY(QString name READ getName WRITE setName NOTIFY nameChanged);
-  Q_PROPERTY(QString source READ getSource WRITE setSource NOTIFY sourceChanged);
   Q_PROPERTY(int waitKeyTimeout READ getWaitKeyTimeout WRITE setWaitKeyTimeout NOTIFY waitKeyTimeoutChanged);
   Q_PROPERTY(int pipelineStages READ getPipeLineStages WRITE setPipeLineStages NOTIFY pipelineStagesChanged);
 
   public slots:
 
+  int getBboxThickness();
+  void setBboxThickness(int);
   double getFaceConfidence();
   void setFaceConfidence(double);
   double getObjectConfidence();
@@ -61,6 +64,7 @@ class VideoRenderer : public QQuickItem
 
   signals:
 
+  void bboxThicknessChanged(int);
   void areaThresholdChanged(int);
   void faceConfidenceChanged(double);
   void objectConfidenceChanged(double);
