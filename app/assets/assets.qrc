@@ -26,7 +26,6 @@
     <file>play.png</file>
     <file>pause.png</file>
     <file>settings.png</file>
-    <file>zoom-in.png</file>
-    <file>zoom-out.png</file>
+    <file>zoom.png</file>
   </qresource>
 </RCC>

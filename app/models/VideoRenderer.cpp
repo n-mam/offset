@@ -199,7 +199,7 @@ void VideoRenderer::setScaleF(double scalef)
     }
 }
 
-int VideoRenderer::getPipeLineStages(void)
+int VideoRenderer::getStages(void)
 {
     if (m_camera) {
         return m_camera->iPipelineConfig[cvl::IDX_PIPELINE_STAGES];
@@ -207,12 +207,12 @@ int VideoRenderer::getPipeLineStages(void)
     return 0;
 }
 
-void VideoRenderer::setPipeLineStages(int stages)
+void VideoRenderer::setStages(int stages)
 {
     if (m_camera) {
         if (stages != m_camera->iPipelineConfig[cvl::IDX_PIPELINE_STAGES]) {
             m_camera->iPipelineConfig[cvl::IDX_PIPELINE_STAGES] = stages;
-            emit pipelineStagesChanged(stages);
+            emit stagesChanged(stages);
         }
     }
 }
@@ -292,5 +292,44 @@ void VideoRenderer::setMocapAlgo(int algo)
     if (algo != m_camera->iPipelineConfig[cvl::IDX_MOCAP_ALGO]) {
         m_camera->iPipelineConfig[cvl::IDX_MOCAP_ALGO] = algo;
         emit mocapAlgoChanged(algo);
+    }
+}
+
+QVariantMap VideoRenderer::getCfg()
+{
+    return m_cfg;
+}
+
+void VideoRenderer::setCfg(QVariantMap cfg)
+{
+    if (cfg != m_cfg) {
+        m_cfg = cfg;
+        for (auto i = m_cfg.cbegin(); i != m_cfg.cend(); i++) {
+            auto key = i.key();
+            if (key == "name") {
+                setName(i.value().toString());
+            } else if (key == "stages") {
+                setStages(i.value().toInt());
+            } else if (key == "scalef") {
+                setScaleF(i.value().toDouble());
+            } else if (key == "source") {
+                setSource(i.value().toString());
+            } else if (key == "waitKeyTimeout") {
+                setWaitKeyTimeout(i.value().toInt());
+            } else if (key == "bboxThickness") {
+                setBboxThickness(i.value().toInt());
+            } else if (key == "faceConfidence") {
+                setFaceConfidence(i.value().toDouble());
+            } else if (key == "objectConfidence") {
+                setObjectConfidence(i.value().toDouble());
+            } else if (key == "facerecConfidence") {
+                setFacerecConfidence(i.value().toDouble());
+            } else if (key == "mocapAlgo") {
+                setMocapAlgo(i.value().toInt());
+            } else if (key == "areaThreshold") {
+                setAreaThreshold(i.value().toInt());
+            }
+        }
+        emit cfgChanged(cfg);
     }
 }

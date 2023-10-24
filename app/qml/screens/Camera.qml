@@ -16,13 +16,13 @@ StackScreen {
             id: flickableGrid
             clip: true
             width: camScreenRoot.width
-            height: camScreenRoot.height * 0.88
+            height: camScreenRoot.height * 0.90
             contentHeight: camGrid.height
             contentWidth: camGrid.width
 
             Grid {
                 id: camGrid
-                columns: 3
+                columns: 2
                 spacing: 8
                 //Player{}
             }
@@ -31,18 +31,17 @@ StackScreen {
         Row {
             id: camControl
             spacing: 10
-            anchors.top: flickableGrid.bottom
+            anchors.bottom: baseId.bottom
             anchors.horizontalCenter: parent.horizontalCenter
-            height: camScreenRoot.height * 0.10
             TextField {
                 id: cameraUrl
                 width: 275
-                height: parent.height * 0.80
+                height: camScreenRoot.height * 0.08
                 placeholderText: qsTr("Camera")
+                anchors.verticalCenter: parent.verticalCenter
             }
             Button {
                 width: 75
-                height: parent.height * 0.90
                 text: "Add"
                 onClicked: {
                     if (cameraUrl.text) {
@@ -54,32 +53,34 @@ StackScreen {
                         cameraUrl.text = ""
                     }
                 }
+                anchors.verticalCenter: parent.verticalCenter
             }
             Text {
                 text: " "
             }
             Button {
                 width: 100
-                height: parent.height * 0.80
                 text: "Import"
                 onClicked: importCameraCfgDialog.open()
+                anchors.verticalCenter: parent.verticalCenter
             }
-            FileDialog {
-                id: importCameraCfgDialog
-                title: "Please choose the camera config file"
-                onAccepted: {
-                    var path = importCameraCfgDialog.selectedFiles.toString();
-                    path = path.replace(/^(file:\/{3})|(qrc:\/{2})|(http:\/{2})/,"");
-                    var camera_cfgs = appConfig.readCameraConfiguration(
-                        decodeURIComponent(path).replace(/\//g, "/"))
-                    var cfgs = JSON.parse(camera_cfgs);
-                    for (var i in cfgs) {
-                        createPlayerObject({"cfg": cfgs[i]})
-                    }
+        }
+
+        FileDialog {
+            id: importCameraCfgDialog
+            title: "Please choose the camera config file"
+            onAccepted: {
+                var path = importCameraCfgDialog.selectedFiles.toString();
+                path = path.replace(/^(file:\/{3})|(qrc:\/{2})|(http:\/{2})/,"");
+                var camera_cfgs = appConfig.readCameraConfiguration(
+                    decodeURIComponent(path).replace(/\//g, "/"))
+                var cfgs = JSON.parse(camera_cfgs);
+                for (var i in cfgs) {
+                    createPlayerObject({"cfg": cfgs[i]})
                 }
-                onRejected: {
-                    console.log("Canceled")
-                }
+            }
+            onRejected: {
+                console.log("Canceled")
             }
         }
     }

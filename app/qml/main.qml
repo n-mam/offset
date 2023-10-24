@@ -8,7 +8,7 @@ ApplicationWindow {
   id: mainWindow
   visible: true
   width: 1430 - (1430 * 0.35)
-  height: 860 - (860 * 0.35)
+  height: 860 - (860 * 0.30)
   title: qsTr("Offset")
 
   property var showlog: false

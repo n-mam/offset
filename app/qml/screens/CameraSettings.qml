@@ -97,10 +97,10 @@ Item {
                     width: 100
                     implicitHeight: rowHeight - 10
                     placeholderText: qsTr("factor")
-                    text: vr.scaleF
+                    text: vr.scalef
                     horizontalAlignment: TextInput.AlignHCenter
                     onEditingFinished: {
-                        vr.scaleF = scalefTextId.text
+                        vr.scalef = scalefTextId.text
                     }
                 }
             }
@@ -126,31 +126,31 @@ Item {
                         anchors.verticalCenter: parent.verticalCenter
                         anchors.horizontalCenter: parent.horizontalCenter
                         CheckBox {
-                            checked: vr.pipelineStages & 1
+                            checked: vr.stages & 1
                             text: qsTr("Face")
                             onCheckedChanged: {
-                                checked ? (vr.pipelineStages |= 1) : (vr.pipelineStages &= ~1)
+                                checked ? (vr.stages |= 1) : (vr.stages &= ~1)
                             }
                         }
                         CheckBox {
-                            checked: vr.pipelineStages & 2
+                            checked: vr.stages & 2
                             text: qsTr("Object")
                             onCheckedChanged: {
-                                checked ? (vr.pipelineStages |= 2) : (vr.pipelineStages &= ~2)
+                                checked ? (vr.stages |= 2) : (vr.stages &= ~2)
                             }
                         }
                         CheckBox {
-                            checked: vr.pipelineStages & 4
+                            checked: vr.stages & 4
                             text: qsTr("Motion")
                             onCheckedChanged: {
-                                checked ? (vr.pipelineStages |= 4) : (vr.pipelineStages &= ~4)
+                                checked ? (vr.stages |= 4) : (vr.stages &= ~4)
                             }
                         }
                         CheckBox {
-                            checked: vr.pipelineStages & 8
+                            checked: vr.stages & 8
                             text: qsTr("FaceRec")
                             onCheckedChanged: {
-                                checked ? (vr.pipelineStages |= 8) : (vr.pipelineStages &= ~8)
+                                checked ? (vr.stages |= 8) : (vr.stages &= ~8)
                             }
                         }
                     }

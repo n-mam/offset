@@ -22,14 +22,15 @@ class VideoRenderer : public QQuickItem
   VideoRenderer(QQuickItem *parent = nullptr);
   ~VideoRenderer();
 
-  QSGNode *updatePaintNode(QSGNode *node, UpdatePaintNodeData *) override;
   void componentComplete() override;
+  QSGNode *updatePaintNode(QSGNode *node, UpdatePaintNodeData *) override;
 
   Q_INVOKABLE void stop();
   Q_INVOKABLE void start();
 
+  Q_PROPERTY(QVariantMap cfg READ getCfg WRITE setCfg NOTIFY cfgChanged);
   Q_PROPERTY(QString name READ getName WRITE setName NOTIFY nameChanged);
-  Q_PROPERTY(double scaleF READ getScaleF WRITE setScaleF NOTIFY scaleFChanged);
+  Q_PROPERTY(double scalef READ getScaleF WRITE setScaleF NOTIFY scaleFChanged);
   Q_PROPERTY(QString source READ getSource WRITE setSource NOTIFY sourceChanged);
   Q_PROPERTY(int mocapAlgo READ getMocapAlgo WRITE setMocapAlgo NOTIFY mocapAlgoChanged);
   Q_PROPERTY(int bboxThickness READ getBboxThickness WRITE setBboxThickness NOTIFY bboxThicknessChanged);
@@ -38,10 +39,12 @@ class VideoRenderer : public QQuickItem
   Q_PROPERTY(double objectConfidence READ getObjectConfidence WRITE setObjectConfidence NOTIFY objectConfidenceChanged);
   Q_PROPERTY(double facerecConfidence READ getFacerecConfidence WRITE setFacerecConfidence NOTIFY facerecConfidenceChanged);
   Q_PROPERTY(int waitKeyTimeout READ getWaitKeyTimeout WRITE setWaitKeyTimeout NOTIFY waitKeyTimeoutChanged);
-  Q_PROPERTY(int pipelineStages READ getPipeLineStages WRITE setPipeLineStages NOTIFY pipelineStagesChanged);
+  Q_PROPERTY(int stages READ getStages WRITE setStages NOTIFY stagesChanged);
 
   public slots:
 
+  QVariantMap getCfg();
+  void setCfg(QVariantMap);
   int getMocapAlgo();
   void setMocapAlgo(int);
   int getBboxThickness();
@@ -60,13 +63,14 @@ class VideoRenderer : public QQuickItem
   void setName(QString source);
   int getWaitKeyTimeout(void);
   void setWaitKeyTimeout(int source);
-  int getPipeLineStages(void);
-  void setPipeLineStages(int stageFlags);
+  int getStages(void);
+  void setStages(int stageFlags);
   int getAreaThreshold(void);
   void setAreaThreshold(int area);
 
   signals:
 
+  void cfgChanged(QVariantMap);
   void mocapAlgoChanged(int);
   void bboxThicknessChanged(int);
   void areaThresholdChanged(int);
@@ -77,7 +81,7 @@ class VideoRenderer : public QQuickItem
   void sourceChanged(QString);
   void scaleFChanged(double);
   void waitKeyTimeoutChanged(int);
-  void pipelineStagesChanged(int);
+  void stagesChanged(int);
 
   protected:
 
@@ -88,6 +92,8 @@ class VideoRenderer : public QQuickItem
   QImage MatToQImage(const cv::Mat& mat);
 
   private:
+
+  QVariantMap m_cfg;
 
   QTimer m_timer;
 
