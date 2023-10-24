@@ -1,40 +1,45 @@
 [Download](https://github.com/n-mam/offset/releases/download/2.0/offset-2.0.zip)
-<p align="center">
- <img src="https://drive.google.com/uc?id=1u-tsnDwuQPH6OXepCAEoARDSgAWCqNT2" width="45%">
- <img src="https://drive.google.com/uc?id=1RpPvy074uBcxyvaE7RI3M91AXgtzr1Qz" width="45%">
-</p>
 
 #### Features
 
 FXC
+<p align="center">
+ <img src="https://lh3.googleusercontent.com/d/193lB9OfdeZ-hfUxqmythLaAwk1ExGaEE" width="45%">
+</p>
+- Requires elevation. Please run as admin.<br/>
+- Creates volume level images using either VSS snapshots or from live volume.<br/>
+- Creates volume level images of already existing persistent VSS snapshots on the system.<br/>
+- Ability to exclude files (only for VSS backups) by deleting them from the source snapshot.<br/>
+- Support for MBR and GPT partitions. Volumes > 2TB are by default saved as VHDX with GPT partitioning.<br/>
+- Supported virtual disk formats :<br/>
+  - Dynamic vhd (d-vhd)<br/>
+  - Fixed vhd (f-vhd)<br/>
+  - Dynamic vhdx (d-vhdx)<br/>
+  - Raw volume image (raw)<br/>
+- Volume images can either be generated locally or streamed to an FTP server.<br/>
+- URI format for streaming to FTP:<br/>
+  - ftps://username:password@hostname:port/a/b/c<br/><br/>
 
-- Requires elevation. Please run as admin.
-- Creates volume level images using either VSS snapshots or from live volume.
-- Creates volume level images of already existing persistent VSS snapshots on the system.
-- Ability to exclude files (only for VSS backups) by deleting them from the source snapshot.
-- Support for MBR and GPT partitions. Volumes > 2TB are by default saved as VHDX with GPT partitioning.
-- Supported virtual disk formats :
-  - Dynamic vhd (d-vhd)
-  - Fixed vhd (f-vhd)
-  - Dynamic vhdx (d-vhdx)
-  - Raw volume image (raw)
-- Volume images can either be generated locally or streamed to an FTP server.
-- URI format for streaming to FTP:
-  - ftps://username:password@hostname:port/a/b/c
+FTPS<br/>
+<p align="center">
+ <img src="https://lh3.googleusercontent.com/d/1L9AJ0i0d4H2kKGp-TRFpxCeYFjPgzDnW" width="45%">
+</p>
+- Supports plain and secure FTPS (using openssl async bio).<br/>
+- Ability to browse while transfers are in progress.<br/>
+- Directory listing support for Linux, Windows and MLSD.<br/>
+- FTPS supports TLS1.3<br/><br/>
 
-FTPS
-
-- Supports plain and secure FTPS (using openssl async bio).
-- Ability to browse while transfers are in progress.
-- Directory listing support for Linux, Windows and MLSD.
-- FTPS supports TLS1.3
-
-CAMERA
-
-- Face detection, Motion detection, Face recognition.
-- Uses default opencv built-in models and DNN based detectors.
-- Detection configurability on a per camera basis.
-- Ability to save detection results.
+CAMERA<br/>
+<p align="center">
+ <img src="https://lh3.googleusercontent.com/d/1W3Tq_WpxGhiv7i9srMxQqZBdrdDdzJIo" width="45%">
+</p>
+<p align="center">
+ <img src="https://lh3.googleusercontent.com/d/1855S5_Ia8R8GF_YiTC2Vng3xPSbg5xye" width="45%">
+</p>
+- Face detection, Motion detection, Face recognition.<br/>
+- Uses default opencv built-in models and DNN based detectors.<br/>
+- Detection configurability on a per camera basis.<br/>
+- Ability to save detection results.<br/>
 
 #### vcpkg dependencies
 
