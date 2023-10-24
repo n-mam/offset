@@ -8,6 +8,9 @@
 #include <opencv2/dnn.hpp>
 #include <opencv2/aruco.hpp>
 #include <opencv2/bgsegm.hpp>
+#ifdef HAVE_OPENCV_CUDAFEATURES2D
+#include <opencv2/core/cuda.hpp>
+#endif
 
 #include <string>
 #include <vector>
@@ -16,196 +19,202 @@
 
 namespace cvl {
 
-constexpr double marker_length_cm = 2.3;
 using Detections = std::vector<cv::Rect2d>;
+
+constexpr double marker_length_cm = 2.3;
+
+constexpr int IDX_PIPELINE_STAGES = 0;
+constexpr int IDX_FACE_CONFIDENCE = 1;
+constexpr int IDX_OBJECT_CONFIDENCE = 2;
+constexpr int IDX_FACEREC_CONFIDENCE = 3;
+constexpr int IDX_MOCAP_EXCLUDE_AREA = 4;
+constexpr int IDX_BOUNDINGBOX_THICKNESS = 5;
+constexpr int IDX_MOCAP_ALGO = 6;
 
 struct DetectionResult
 {
-  int           _age;
-  char          _gender;
-  int64_t       _ts = -1;
-  cv::Mat       _roi;
-  cv::Size      _dim;
-  std::string   _stage;
-  std::string   _frTag;
+    int           _age;
+    char          _gender;
+    int64_t       _ts = -1;
+    cv::Mat       _roi;
+    cv::Size      _dim;
+    std::string   _stage;
+    std::string   _frTag;
 
-  DetectionResult(){}
+    DetectionResult(){}
 
-  inline auto empty()
-  {
-    return (_ts == -1);
-  }
+    inline auto empty()
+    {
+        return (_ts == -1);
+    }
 
-  inline auto clone()
-  {
-    DetectionResult out = *this;
-    out._roi = this->_roi.clone();
-    return std::move(out);
-  }
+    inline auto clone()
+    {
+        DetectionResult out = *this;
+        out._roi = this->_roi.clone();
+        return std::move(out);
+    }
 };
 
 class Detector
 {
-  public:
+    public:
 
-  Detector() {}
+    Detector() {}
 
-  Detector(const std::string& config, const std::string& weight)
-  {
-    _configFile = "../cvl/MODELS/" + config;
-    _weightFile = "../cvl/MODELS/" + weight;
-
-    try
+    Detector(const std::string& config, const std::string& weight)
     {
-      _network = cv::dnn::readNetFromCaffe(_configFile, _weightFile);
-    }
-    catch(const std::exception& e)
-    {
-      ERR << "Detector, exception : " << e.what();
-    }
+        _configFile = "../cvl/MODELS/" + config;
+        _weightFile = "../cvl/MODELS/" + weight;
 
-    #ifdef HAVE_OPENCV_CUDAFEATURES2D
-    if (cv::cuda::getCudaEnabledDeviceCount())
-    {
-      _network.setPreferableBackend(cv::dnn::Backend::DNN_BACKEND_CUDA);
-      _network.setPreferableTarget(cv::dnn::Target::DNN_TARGET_CUDA);
-      LOG << "CUDA backend and target enabled for inference";
-    }
-    else
-    #endif
-    {
-      _network.setPreferableBackend(cv::dnn::Backend::DNN_BACKEND_OPENCV);
-      _network.setPreferableTarget(cv::dnn::Target::DNN_TARGET_CPU);
-      LOG << "OpenCV backend and cpu target enabled for inference";
-    }
-  }
+        try
+        {
+            _network = cv::dnn::readNetFromCaffe(_configFile, _weightFile);
+        }
+        catch(const std::exception& e)
+        {
+            ERR << "Detector, exception : " << e.what();
+        }
 
-  virtual ~Detector() {}
-
-  virtual Detections Detect(cv::Mat& frame, double confidence) = 0;
-
-  // auxiliary detections and filters
-
-  inline static auto detectArucoMarker(cv::Mat& frame)
-  {
-    double cmpp = 0;
-    std::vector<int> markerIds;
-    std::vector<std::vector<cv::Point2f>> allMarkerCorners;
-    std::vector<std::vector<cv::Point2f>> rejectedCandidates;
-
-    auto markerDictionary = new cv::aruco::Dictionary();
-
-    *markerDictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
-
-    cv::aruco::detectMarkers(frame, cv::Ptr<cv::aruco::Dictionary>(markerDictionary), allMarkerCorners, markerIds);
-
-    // cv::aruco::drawDetectedMarkers(frame, allMarkerCorners, markerIds, cv::Scalar(0, 0, 255));
-
-    if (markerIds.size() > 0)
-    {
-      // assume only one marker for now
-      auto edge_distance = geometry::distance<cv::Point2d>(allMarkerCorners[0][0], allMarkerCorners[0][1]);
-      cmpp = marker_length_cm / edge_distance;
-      DBG << "Marker Id : " << markerIds[0];
+        #ifdef HAVE_OPENCV_CUDAFEATURES2D
+        if (cv::cuda::getCudaEnabledDeviceCount())
+        {
+            _network.setPreferableBackend(cv::dnn::Backend::DNN_BACKEND_CUDA);
+            _network.setPreferableTarget(cv::dnn::Target::DNN_TARGET_CUDA);
+            LOG << "CUDA backend and target enabled for inference";
+        }
+        else
+        #endif
+        {
+            _network.setPreferableBackend(cv::dnn::Backend::DNN_BACKEND_OPENCV);
+            _network.setPreferableTarget(cv::dnn::Target::DNN_TARGET_CPU);
+            LOG << "OpenCV backend and cpu target enabled for inference";
+        }
     }
 
-    return cmpp;
-  }
+    virtual ~Detector() {}
 
-  inline static auto FilterDetections(Detections& detections, cv::Mat& m)
-  {
-    for (auto&& it = detections.begin(); it != detections.end(); )
+    virtual Detections Detect(cv::Mat& frame, int *config) = 0;
+
+    // auxiliary detections and filters
+
+    inline static auto detectArucoMarker(cv::Mat& frame)
     {
-      bool remove = false;
+        double cmpp = 0;
+        std::vector<int> markerIds;
+        std::vector<std::vector<cv::Point2f>> allMarkerCorners;
+        std::vector<std::vector<cv::Point2f>> rejectedCandidates;
 
-      auto& roi = *it;
+        auto markerDictionary = new cv::aruco::Dictionary();
 
-      remove = (roi.x < 0 || roi.x + roi.width > m.cols || roi.x < 0 || roi.y + roi.height > m.rows);
+        *markerDictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
 
-      //exclude near-to-frame detections, mark white
-      if ((roi.y < 5) || ((roi.y + roi.height) > (m.rows - 5)))
-      {
-        cv::rectangle(m, roi, cv::Scalar(255, 255, 255), 1, 1);
-        remove = true;
-      }
+        cv::aruco::detectMarkers(frame, cv::Ptr<cv::aruco::Dictionary>(markerDictionary), allMarkerCorners, markerIds);
 
-      if (remove)
-      {
-        it = detections.erase(it);
-      }
-      else
-      {
-        it++;
-      }
+        // cv::aruco::drawDetectedMarkers(frame, allMarkerCorners, markerIds, cv::Scalar(0, 0, 255));
+
+        if (markerIds.size() > 0)
+        {
+            // assume only one marker for now
+            auto edge_distance = geometry::distance<cv::Point2d>(allMarkerCorners[0][0], allMarkerCorners[0][1]);
+            cmpp = marker_length_cm / edge_distance;
+            DBG << "Marker Id : " << markerIds[0];
+        }
+
+        return cmpp;
     }
-  }
 
-  protected:
+    inline static auto FilterDetections(Detections& detections, cv::Mat& m)
+    {
+        for (auto&& it = detections.begin(); it != detections.end(); )
+        {
+            bool remove = false;
 
-  std::string _target;
+            auto& roi = *it;
 
-  std::string _configFile;
+            remove = (roi.x < 0 || roi.x + roi.width > m.cols || roi.x < 0 || roi.y + roi.height > m.rows);
 
-  std::string _weightFile;
+            //exclude near-to-frame detections, mark white
+            if ((roi.y < 5) || ((roi.y + roi.height) > (m.rows - 5)))
+            {
+                cv::rectangle(m, roi, cv::Scalar(255, 255, 255), 1, 1);
+                remove = true;
+            }
 
-  cv::dnn::Net _network;
+            if (remove) {
+                it = detections.erase(it);
+            } else {
+                it++;
+            }
+        }
+    }
+
+    protected:
+
+    std::string _target;
+
+    std::string _configFile;
+
+    std::string _weightFile;
+
+    cv::dnn::Net _network;
 };
 
 class FaceDetector : public Detector
 {
-  public:
+    public:
 
-  FaceDetector() : Detector(
-      "FaceDetection/deploy.prototxt",
-      "FaceDetection/res10_300x300_ssd_iter_140000.caffemodel") {}
+    FaceDetector() : Detector(
+        "FaceDetection/deploy.prototxt",
+        "FaceDetection/res10_300x300_ssd_iter_140000.caffemodel") {}
 
-  ~FaceDetector() {}
+    ~FaceDetector() {}
 
-  virtual Detections Detect(cv::Mat& frame, double confidence) override
-  {
-    Detections out;
-
-    cv::Mat inputBlob = cv::dnn::blobFromImage(
-          frame,
-          1.0,
-          cv::Size(300, 300),
-          cv::Scalar(104.0, 177.0, 123.0),
-          false,
-          false);
-
-    _network.setInput(inputBlob);
-
-    cv::Mat detection = _network.forward();
-
-    cv::Mat detectionMat(detection.size[2], detection.size[3], CV_32F, detection.ptr<float>());
-
-    for (int i = 0; i < detectionMat.rows; ++i)
+    virtual Detections Detect(cv::Mat& frame, int *config) override
     {
-      float _confidence = detectionMat.at<float>(i, 2);
+        Detections out;
 
-      if (_confidence > confidence)
-      {
-        int x1 = static_cast<int>(detectionMat.at<float>(i, 3) * frame.cols);
-        int y1 = static_cast<int>(detectionMat.at<float>(i, 4) * frame.rows);
-        int x2 = static_cast<int>(detectionMat.at<float>(i, 5) * frame.cols);
-        int y2 = static_cast<int>(detectionMat.at<float>(i, 6) * frame.rows);
+        cv::Mat inputBlob = cv::dnn::blobFromImage(
+            frame,
+            1.0,
+            cv::Size(300, 300),
+            cv::Scalar(104.0, 177.0, 123.0),
+            false,
+            false);
 
-        auto rect = cv::Rect2d(x1, y1, x2 - x1, y2 - y1);
+        _network.setInput(inputBlob);
 
-        if (cvl::geometry::isRectInsideMat(rect, frame))
+        cv::Mat detection = _network.forward();
+
+        cv::Mat detectionMat(detection.size[2], detection.size[3], CV_32F, detection.ptr<float>());
+
+        for (int i = 0; i < detectionMat.rows; ++i)
         {
-          out.emplace_back(cvl::geometry::resizeRect(rect, 54));
-        }
-      }
-    }
+            float _confidence = detectionMat.at<float>(i, 2);
 
-    return out;
-  }
+            if (_confidence > ((double)config[IDX_FACE_CONFIDENCE] / 10))
+            {
+                int x1 = static_cast<int>(detectionMat.at<float>(i, 3) * frame.cols);
+                int y1 = static_cast<int>(detectionMat.at<float>(i, 4) * frame.rows);
+                int x2 = static_cast<int>(detectionMat.at<float>(i, 5) * frame.cols);
+                int y2 = static_cast<int>(detectionMat.at<float>(i, 6) * frame.rows);
+
+                auto rect = cv::Rect2d(x1, y1, x2 - x1, y2 - y1);
+
+                if (cvl::geometry::isRectInsideMat(rect, frame))
+                {
+                    out.emplace_back(cvl::geometry::resizeRect(rect, 54));
+                }
+            }
+        }
+
+        return out;
+    }
 };
 
 class ObjectDetector : public Detector
 {
-  public:
+    public:
 
     ObjectDetector(const std::string& target) : Detector(
       "ObjectDetection/MobileNetSSD_deploy.prototxt",
@@ -214,52 +223,52 @@ class ObjectDetector : public Detector
       _target = target;
     }
 
-    virtual Detections Detect(cv::Mat& frame, double confidence) override
+    virtual Detections Detect(cv::Mat& frame, int *config) override
     {
-      Detections out;
+        Detections out;
 
-      cv::Mat inputBlob = cv::dnn::blobFromImage(
-                              frame,
-                              0.007843f,
-                              cv::Size(300, 300),
-                              cv::Scalar(127.5, 127.5, 127.5),
-                              false,
-                              false);
+        cv::Mat inputBlob = cv::dnn::blobFromImage(
+                                    frame,
+                                    0.007843f,
+                                    cv::Size(300, 300),
+                                    cv::Scalar(127.5, 127.5, 127.5),
+                                    false,
+                                    false);
 
-      _network.setInput(inputBlob);
+        _network.setInput(inputBlob);
 
-      cv::Mat detection = _network.forward();
+        cv::Mat detection = _network.forward();
 
-      cv::Mat detectionMat(detection.size[2], detection.size[3], CV_32F, detection.ptr<float>());
+        cv::Mat detectionMat(detection.size[2], detection.size[3], CV_32F, detection.ptr<float>());
 
-      for (int i = 0; i < detectionMat.rows; ++i)
-      {
-        float _confidence = detectionMat.at<float>(i, 2);
-
-        if (_confidence > confidence)
+        for (int i = 0; i < detectionMat.rows; ++i)
         {
-          int idx, x1, y1, x2, y2;
+            float _confidence = detectionMat.at<float>(i, 2);
 
-          idx = static_cast<int>(detectionMat.at<float>(i, 1));
-
-          if (_objectClass[idx] == _target)
-          {
-            x1 = static_cast<int>(detectionMat.at<float>(i, 3) * frame.cols);
-            y1 = static_cast<int>(detectionMat.at<float>(i, 4) * frame.rows);
-            x2 = static_cast<int>(detectionMat.at<float>(i, 5) * frame.cols);
-            y2 = static_cast<int>(detectionMat.at<float>(i, 6) * frame.rows);
-
-            auto rect = cv::Rect2d(x1, y1, x2 - x1, y2 - y1);
-
-            if (cvl::geometry::isRectInsideMat(rect, frame))
+            if (_confidence > ((double)config[IDX_OBJECT_CONFIDENCE] / 10))
             {
-              out.emplace_back(cvl::geometry::resizeRect(rect, 40));
-            }
-          }
-        }
-      }
+                int idx, x1, y1, x2, y2;
 
-      return out;
+                idx = static_cast<int>(detectionMat.at<float>(i, 1));
+
+                if (1)//_objectClass[idx] == _target)
+                {
+                    x1 = static_cast<int>(detectionMat.at<float>(i, 3) * frame.cols);
+                    y1 = static_cast<int>(detectionMat.at<float>(i, 4) * frame.rows);
+                    x2 = static_cast<int>(detectionMat.at<float>(i, 5) * frame.cols);
+                    y2 = static_cast<int>(detectionMat.at<float>(i, 6) * frame.rows);
+
+                    auto rect = cv::Rect2d(x1, y1, x2 - x1, y2 - y1);
+
+                    if (cvl::geometry::isRectInsideMat(rect, frame))
+                    {
+                        out.emplace_back(cvl::geometry::resizeRect(rect, 40));
+                    }
+                }
+            }
+        }
+
+        return out;
     }
 
   protected:
@@ -274,55 +283,49 @@ class ObjectDetector : public Detector
 
 class BackgroundSubtractor : public Detector
 {
-  public:
+    public:
 
-    BackgroundSubtractor(const std::string& algo) : Detector()
+    BackgroundSubtractor() : Detector()
     {
-      if (algo == "mog") {
-         pBackgroundSubtractor = cv::bgsegm::createBackgroundSubtractorMOG();
-      } else if (algo == "cnt") {
-         pBackgroundSubtractor = cv::bgsegm::createBackgroundSubtractorCNT();
-      } else if (algo == "gmg") {
-         pBackgroundSubtractor = cv::bgsegm::createBackgroundSubtractorGMG();
-      } else if (algo == "gsoc") {
-         pBackgroundSubtractor = cv::bgsegm::createBackgroundSubtractorGSOC();
-      } else if (algo == "lsbp") {
-         pBackgroundSubtractor = cv::bgsegm::createBackgroundSubtractorLSBP();
-      } else {
-         pBackgroundSubtractor = cv::bgsegm::createBackgroundSubtractorGMG();
-      }
+        pBackgroundSubtractor[0] = cv::bgsegm::createBackgroundSubtractorMOG();
+        pBackgroundSubtractor[1] = cv::bgsegm::createBackgroundSubtractorCNT();
+        pBackgroundSubtractor[2] = cv::bgsegm::createBackgroundSubtractorGMG();
+        pBackgroundSubtractor[3] = cv::bgsegm::createBackgroundSubtractorGSOC();
+        pBackgroundSubtractor[4] = cv::bgsegm::createBackgroundSubtractorLSBP();
     }
 
-    virtual Detections Detect(cv::Mat& frame, double areaThreshold) override
+    virtual Detections Detect(cv::Mat& frame, int *config) override
     {
-      cv::Mat fgMask;
+        cv::Mat fgMask;
 
-      pBackgroundSubtractor->apply(frame, fgMask, -1);
+        pBackgroundSubtractor[config[IDX_MOCAP_ALGO]]->apply(frame, fgMask, -1);
 
-      std::vector<std::vector<cv::Point>> contours;
+        std::vector<std::vector<cv::Point>> contours;
 
-      cv::findContours(fgMask, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+        cv::findContours(fgMask, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
 
-      Detections out;
+        Detections out;
 
-      for (size_t i = 0; i < contours.size(); ++i)
-      {
-        if (cv::contourArea(contours[i]) < areaThreshold)
+        double areaThreshold = (double)config[IDX_MOCAP_EXCLUDE_AREA] / 10;
+
+        for (size_t i = 0; i < contours.size(); i++)
         {
-          continue;
+            if (cv::contourArea(contours[i]) < areaThreshold)
+            {
+                continue;
+            }
+
+            auto bb = cv::boundingRect(contours[i]);
+
+            out.emplace_back(bb);
         }
 
-        auto bb = cv::boundingRect(contours[i]);
-
-        out.emplace_back(bb);
-      }
-
-      return out;
+        return out;
     }
 
-  protected:
+    protected:
 
-    cv::Ptr<cv::BackgroundSubtractor> pBackgroundSubtractor = nullptr;
+    cv::Ptr<cv::BackgroundSubtractor> pBackgroundSubtractor[5] = {nullptr};
 
 };
 

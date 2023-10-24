@@ -277,6 +277,40 @@ Item {
                 }
             }
             Row {
+                Text {
+                    text: "Mocap algo:"
+                    color: "white"
+                    width: labelWidth
+                    verticalAlignment: Text.AlignVCenter
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+                RadioButton {
+                    text: qsTr("MOG")
+                    checked: vr.mocapAlgo === 1
+                    onClicked: vr.mocapAlgo = 1
+                }
+                RadioButton {
+                    text: qsTr("CNT")
+                    checked: vr.mocapAlgo === 2
+                    onClicked: vr.mocapAlgo = 2
+                }
+                RadioButton {
+                    text: qsTr("GMG")
+                    checked: vr.mocapAlgo === 3
+                    onClicked: vr.mocapAlgo = 3
+                }
+                RadioButton {
+                    text: qsTr("GSOC")
+                    checked: vr.mocapAlgo === 4
+                    onClicked: vr.mocapAlgo = 4
+                }
+                RadioButton {
+                    text: qsTr("LSBP")
+                    checked: vr.mocapAlgo === 5
+                    onClicked: vr.mocapAlgo = 5
+                }
+            }
+            Row {
                 spacing: 4
                 Text {
                     text: "BBox:"

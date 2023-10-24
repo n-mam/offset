@@ -15,13 +15,6 @@ namespace cvl {
 
 using namespace std::chrono;
 
-constexpr int IDX_PIPELINE_STAGES = 0;
-constexpr int IDX_FACE_CONFIDENCE = 1;
-constexpr int IDX_OBJECT_CONFIDENCE = 2;
-constexpr int IDX_FACEREC_CONFIDENCE = 3;
-constexpr int IDX_MOCAP_EXCLUDE_AREA = 4;
-constexpr int IDX_BOUNDINGBOX_THICKNESS = 5;
-
 class pipeline
 {
     public:
@@ -34,7 +27,7 @@ class pipeline
 
         _objectDetector = std::make_unique<cvl::ObjectDetector>("person");
 
-        _backgroundSubtractor = std::make_unique<cvl::BackgroundSubtractor>("gmg");
+        _backgroundSubtractor = std::make_unique<cvl::BackgroundSubtractor>();
 
         //_faceRec = std::make_unique<cvl::facerec>("../MODELS/FaceRecognition/fr.csv");
     }
@@ -83,9 +76,9 @@ class pipeline
         return filtered_contours;
     }
 
-    inline auto detectMotion(cv::Mat& frame, double areaThreshold)
+    inline auto detectMotion(cv::Mat& frame, int *config)
     {
-        auto bbs = _backgroundSubtractor->Detect(frame, areaThreshold);
+        auto bbs = _backgroundSubtractor->Detect(frame, config);
 
         for (const auto& bb : bbs)
         {
@@ -126,14 +119,14 @@ class pipeline
         cv::drawContours(frame, filtered_contours, -1, cv::Scalar(0, 255, 0), 2);
     }
 
-    inline auto detectFaces(cv::Mat& frame, double confidence)
+    inline auto detectFaces(cv::Mat& frame, int *config)
     {
-        return _faceDetector->Detect(frame, confidence);
+        return _faceDetector->Detect(frame, config);
     }
 
-    inline auto detectObjects(cv::Mat& frame, double confidence)
+    inline auto detectObjects(cv::Mat& frame, int *config)
     {
-        return _objectDetector->Detect(frame, confidence);
+        return _objectDetector->Detect(frame, config);
     }
 
     inline auto faceRecognition(cv::Mat& frame)
@@ -153,14 +146,22 @@ class pipeline
         int stages = config[IDX_PIPELINE_STAGES];
 
         if (stages & 1) {
-            detections = detectFaces(frame, (double)config[IDX_FACE_CONFIDENCE] / 10);
-        } else if (stages & 2) {
-            detections = detectObjects(frame, (double)config[IDX_OBJECT_CONFIDENCE] / 10);
-        } else if (stages & 4) {
-            detections = detectMotion(frame, (double)config[IDX_MOCAP_EXCLUDE_AREA] / 10);
-        } else if (stages & 8) {
+            detections = detectFaces(frame, config);
+        }
+
+        if (stages & 2) {
+            detections = detectObjects(frame, config);
+        }
+
+        if (stages & 4) {
+            detections = detectMotion(frame, config);
+        }
+
+        if (stages & 8) {
             // facerec config[IDX_FACEREC_CONFIDENCE] /10
-        } else if (stages & 16) {
+        }
+
+        if (stages & 16) {
             //detections = detectLength(frame);
         }
 

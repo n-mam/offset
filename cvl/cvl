@@ -24,6 +24,7 @@ class camera
 
     camera()
     {
+        iPipelineConfig[IDX_MOCAP_ALGO] = 3;
         iPipelineConfig[IDX_PIPELINE_STAGES] = 0;
         iPipelineConfig[IDX_FACE_CONFIDENCE] = 5;
         iPipelineConfig[IDX_OBJECT_CONFIDENCE] = 5;
@@ -86,6 +87,7 @@ class camera
     void queue_frames(void)
     {
         cv::VideoCapture cap;
+        cap.set(cv::CAP_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_ANY);
 
         if (iSource.length() == 1 && isdigit(iSource[0]))
             cap.open(std::stoi(iSource), cv::CAP_ANY);
@@ -115,9 +117,11 @@ class camera
                 }
             }
 
-            if (cv::waitKey(iWaitKeyTimeout) >= 0) {
-                _stop = true;
-                break;
+            if (iWaitKeyTimeout >= 0) {
+                if (cv::waitKey(iWaitKeyTimeout) >= 0) {
+                    _stop = true;
+                    break;
+                }
             }
         }
 

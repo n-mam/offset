@@ -31,6 +31,7 @@ class VideoRenderer : public QQuickItem
   Q_PROPERTY(QString name READ getName WRITE setName NOTIFY nameChanged);
   Q_PROPERTY(double scaleF READ getScaleF WRITE setScaleF NOTIFY scaleFChanged);
   Q_PROPERTY(QString source READ getSource WRITE setSource NOTIFY sourceChanged);
+  Q_PROPERTY(int mocapAlgo READ getMocapAlgo WRITE setMocapAlgo NOTIFY mocapAlgoChanged);
   Q_PROPERTY(int bboxThickness READ getBboxThickness WRITE setBboxThickness NOTIFY bboxThicknessChanged);
   Q_PROPERTY(int areaThreshold READ getAreaThreshold WRITE setAreaThreshold NOTIFY areaThresholdChanged);
   Q_PROPERTY(double faceConfidence READ getFaceConfidence WRITE setFaceConfidence NOTIFY faceConfidenceChanged);
@@ -41,6 +42,8 @@ class VideoRenderer : public QQuickItem
 
   public slots:
 
+  int getMocapAlgo();
+  void setMocapAlgo(int);
   int getBboxThickness();
   void setBboxThickness(int);
   double getFaceConfidence();
@@ -64,6 +67,7 @@ class VideoRenderer : public QQuickItem
 
   signals:
 
+  void mocapAlgoChanged(int);
   void bboxThicknessChanged(int);
   void areaThresholdChanged(int);
   void faceConfidenceChanged(double);
@@ -85,9 +89,9 @@ class VideoRenderer : public QQuickItem
 
   private:
 
-  double m_scalef = 0.6;
-
   QTimer m_timer;
+
+  double m_scalef = 0.6;
 
   cvl::SPCamera m_camera;
 

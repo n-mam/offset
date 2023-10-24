@@ -281,3 +281,16 @@ void VideoRenderer::setBboxThickness(int px)
         emit areaThresholdChanged(px);
     }
 }
+
+int VideoRenderer::getMocapAlgo()
+{
+    return m_camera->iPipelineConfig[cvl::IDX_MOCAP_ALGO];
+}
+
+void VideoRenderer::setMocapAlgo(int algo)
+{
+    if (algo != m_camera->iPipelineConfig[cvl::IDX_MOCAP_ALGO]) {
+        m_camera->iPipelineConfig[cvl::IDX_MOCAP_ALGO] = algo;
+        emit mocapAlgoChanged(algo);
+    }
+}

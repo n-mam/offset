@@ -43,11 +43,11 @@ git clone https://github.com/microsoft/vcpkg.git
 cd vcpkg
 bootstrap-vcpkg.bat
 
-vcpkg.exe install openssl:x64-windows crc32c:x64-windows rapidjson:x64-windows zlib:x64-windows opencv4[contrib,core,default-features,dnn,ffmpeg,jpeg,png,quirc,tiff,webp]:x64-windows
+vcpkg.exe install openssl:x64-windows crc32c:x64-windows rapidjson:x64-windows zlib:x64-windows opencv4[contrib,core,default-features,dnn,ffmpeg]:x64-windows --recurse
 
 sudo apt-get install build-essential zip curl vim bison meson pkg-config
 
-./vcpkg install openssl:x64-linux crc32c:x64-linux rapidjson:x64-linux zlib:x64-linux opencv4[contrib,core,default-features,dnn,ffmpeg,jpeg,png,quirc,tiff,webp]:x64-linux
+./vcpkg install openssl:x64-linux crc32c:x64-linux rapidjson:x64-linux zlib:x64-linux opencv4[contrib,core,default-features,dnn,ffmpeg]:x64-linux --recurse
 
 vcpkg.exe integrate install
 
@@ -57,7 +57,7 @@ use the resulting toolchain file in cmake configure step as highlited under the 
 #### qt-6.5.3 source build
 
 ```
-make sure ninja nd python3.9 are under PATH
+make sure ninja and python3.9 are under PATH
 
 C:\>set PATH=D:\Python39;%PATH%
 
@@ -80,9 +80,7 @@ Qt will be installed into 'D:/qt-6.5.3/install'
 
 ```sh
 git clone https://github.com/n-mam/offset.git
-cd offset
-mkdir build
-cd build
+cd offset && mkdir build && cd build
 SET Qt6_DIR=D:\qt-6.5.3\install
 cmake -DCMAKE_TOOLCHAIN_FILE=D:/vcpkg/scripts/buildsystems/vcpkg.cmake ..
 cmake -DCMAKE_TOOLCHAIN_FILE=~/vcpkg/scripts/buildsystems/vcpkg.cmake ..
