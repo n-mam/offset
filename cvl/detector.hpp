@@ -38,7 +38,7 @@ struct DetectionResult
     int64_t       _ts = -1;
     cv::Mat       _roi;
     cv::Size      _dim;
-    std::string   _stage;
+    int           _stages;
     std::string   _frTag;
 
     DetectionResult(){}
@@ -64,8 +64,8 @@ class Detector
 
     Detector(const std::string& config, const std::string& weight)
     {
-        _configFile = "../cvl/MODELS/" + config;
-        _weightFile = "../cvl/MODELS/" + weight;
+        _configFile = std::getenv("CVL_MODELS_ROOT") + config;
+        _weightFile = std::getenv("CVL_MODELS_ROOT") + weight;
 
         try
         {
@@ -228,12 +228,12 @@ class ObjectDetector : public Detector
         Detections out;
 
         cv::Mat inputBlob = cv::dnn::blobFromImage(
-                                    frame,
-                                    0.007843f,
-                                    cv::Size(300, 300),
-                                    cv::Scalar(127.5, 127.5, 127.5),
-                                    false,
-                                    false);
+            frame,
+            0.007843f,
+            cv::Size(300, 300),
+            cv::Scalar(127.5, 127.5, 127.5),
+            false,
+            false);
 
         _network.setInput(inputBlob);
 
@@ -306,7 +306,7 @@ class BackgroundSubtractor : public Detector
 
         Detections out;
 
-        double areaThreshold = (double)config[IDX_MOCAP_EXCLUDE_AREA] / 10;
+        double areaThreshold = (double)config[IDX_MOCAP_EXCLUDE_AREA];
 
         for (size_t i = 0; i < contours.size(); i++)
         {

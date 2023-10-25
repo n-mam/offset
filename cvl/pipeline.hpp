@@ -29,7 +29,8 @@ class pipeline
 
         _backgroundSubtractor = std::make_unique<cvl::BackgroundSubtractor>();
 
-        //_faceRec = std::make_unique<cvl::facerec>("../MODELS/FaceRecognition/fr.csv");
+        _faceRecognizer = std::make_unique<cvl::facerec>(
+            std::getenv("CVL_MODELS_ROOT") + std::string("FaceRecognition/fr.csv"));
     }
 
     ~pipeline()
@@ -131,7 +132,7 @@ class pipeline
 
     inline auto faceRecognition(cv::Mat& frame)
     {
-        return _faceRec->predict(frame);
+        return _faceRecognizer->predict(frame);
     }
 
     inline auto execute(cv::Mat& frame, int *config)
@@ -158,7 +159,7 @@ class pipeline
         }
 
         if (stages & 8) {
-            // facerec config[IDX_FACEREC_CONFIDENCE] /10
+
         }
 
         if (stages & 16) {
@@ -171,21 +172,27 @@ class pipeline
         {
             cvl::DetectionResult r;
 
-            // r._stage = "face";
-            // r._roi = frame(roi).clone(),
-            // r._ts = duration_cast<seconds>(system_clock::now()
-            //     .time_since_epoch()).count();
-            // _detectionsQueue.enqueue(r);
-
-            if (stages & 8) {
+            if ((stages & 8) && (stages & 1)) {
                 cv::Mat gray;
+                r._roi = frame(roi).clone();
                 cv::cvtColor(r._roi, gray, cv::COLOR_BGR2GRAY);
+
                 const auto& [tag, confidence] = faceRecognition(gray);
 
                 if (tag.length() && confidence > 0.0)
                     cv::putText(frame, tag + " : " + std::to_string(confidence),
                         cv::Point((int)roi.x, (int)(roi.y - 5)), cv::FONT_HERSHEY_SIMPLEX,
-                        0.5, cv::Scalar(0, 0, 255), 1);
+                        1.0, cv::Scalar(255, 255, 255), config[IDX_BOUNDINGBOX_THICKNESS]);
+            }
+
+            if (0) { //save detections
+                r._stages = stages;
+                if (r._roi.empty()) {
+                    r._roi = frame(roi).clone();
+                }
+                r._ts = duration_cast<seconds>(system_clock::now()
+                    .time_since_epoch()).count();
+                _detectionsQueue.enqueue(r);
             }
 
             cv::rectangle(frame, roi, cv::Scalar(0, 255, 0), config[IDX_BOUNDINGBOX_THICKNESS]);
@@ -200,7 +207,7 @@ class pipeline
 
     cvl::queue<cvl::DetectionResult> _detectionsQueue;
 
-    std::unique_ptr<cvl::facerec> _faceRec;
+    std::unique_ptr<cvl::facerec> _faceRecognizer;
 
     std::unique_ptr<cvl::FaceDetector> _faceDetector = nullptr;
 

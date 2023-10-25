@@ -21,6 +21,9 @@ int main(int argc, char *argv[])
 {
   qputenv("QSG_RENDER_LOOP", "threaded");
 
+  if (qgetenv("CVL_MODELS_ROOT").isEmpty())
+    qputenv("CVL_MODELS_ROOT", "D:/offset/cvl/MODELS/");
+
   #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
   #endif

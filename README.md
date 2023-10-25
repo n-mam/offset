@@ -4,7 +4,7 @@
 
 FXC
 <p align="center">
- <img src="https://lh3.googleusercontent.com/d/193lB9OfdeZ-hfUxqmythLaAwk1ExGaEE" width="45%">
+ <img src="https://lh3.googleusercontent.com/d/193lB9OfdeZ-hfUxqmythLaAwk1ExGaEE" width="60%">
 </p>
 - Requires elevation. Please run as admin.<br/>
 - Creates volume level images using either VSS snapshots or from live volume.<br/>
@@ -22,7 +22,7 @@ FXC
 
 FTPS<br/>
 <p align="center">
- <img src="https://lh3.googleusercontent.com/d/1L9AJ0i0d4H2kKGp-TRFpxCeYFjPgzDnW" width="45%">
+ <img src="https://lh3.googleusercontent.com/d/1L9AJ0i0d4H2kKGp-TRFpxCeYFjPgzDnW" width="60%">
 </p>
 - Supports plain and secure FTPS (using openssl async bio).<br/>
 - Ability to browse while transfers are in progress.<br/>
@@ -31,10 +31,10 @@ FTPS<br/>
 
 CAMERA<br/>
 <p align="center">
- <img src="https://lh3.googleusercontent.com/d/1W3Tq_WpxGhiv7i9srMxQqZBdrdDdzJIo" width="45%">
+ <img src="https://lh3.googleusercontent.com/d/1W3Tq_WpxGhiv7i9srMxQqZBdrdDdzJIo" width="60%">
 </p>
 <p align="center">
- <img src="https://lh3.googleusercontent.com/d/1855S5_Ia8R8GF_YiTC2Vng3xPSbg5xye" width="45%">
+ <img src="https://lh3.googleusercontent.com/d/1855S5_Ia8R8GF_YiTC2Vng3xPSbg5xye" width="60%">
 </p>
 - Face detection, Motion detection, Face recognition.<br/>
 - Uses default opencv built-in models and DNN based detectors.<br/>

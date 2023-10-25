@@ -91,13 +91,15 @@ class facerec
 
     std::string line, path, classlabel, frtag;
 
+    std::string modelRoot = std::getenv("CVL_MODELS_ROOT");
+
     while (getline(file, line)) {
       std::stringstream liness(line);
       std::getline(liness, path, separator);
       std::getline(liness, classlabel, separator);
       std::getline(liness, frtag);
       if(!path.empty() && !classlabel.empty() && !frtag.empty()) {
-        images.push_back(cv::imread(path, 0));
+        images.push_back(cv::imread(modelRoot + path, 0));
         int id = std::atoi(classlabel.c_str());
         labels.push_back(id);
         tags.push_back(frtag);
