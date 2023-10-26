@@ -31,18 +31,18 @@ FTPS<br/>
 
 CAMERA<br/>
 <p align="center">
- <img src="https://lh3.googleusercontent.com/d/1W3Tq_WpxGhiv7i9srMxQqZBdrdDdzJIo" width="70%">
+ <img src="https://lh3.googleusercontent.com/d/1LiNTVr3Ps8EfEbSOOcoRaBLHk4ymfEf7" width="70%">
 </p>
 <p align="center">
- <img src="https://lh3.googleusercontent.com/d/1855S5_Ia8R8GF_YiTC2Vng3xPSbg5xye" width="60%">
+ <img src="https://lh3.googleusercontent.com/d/1gClqVfeIM45I8YqFpaDt0jUphnuAlqP1" width="70%">
 </p>
 - Face detection, Motion detection, Face recognition.<br/>
 - Uses default opencv built-in models and DNN based detectors.<br/>
 - Detection configurability on a per camera basis.<br/>
 - Ability to save detection results on a per camera basis.<br/>
-- The release has default(non-CUDA) opencv build for CPUs.
+- The release has default(non-CUDA) opencv build for CPUs.<br/>
 - For NVIDIA GPU it is recommended to do a custom variant opencv build by using CUDA/CUDNN vcpkg variants.<br/>
-- Code supports CUDA backend and traget for DNN infrence if available.<br/>
+- Code supports CUDA backend and target for DNN inference if available.<br/>
 
 #### vcpkg dependencies
 
