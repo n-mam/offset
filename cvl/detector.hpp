@@ -5,6 +5,7 @@
 
 #include <geometry.hpp>
 
+#include "opencv2/face.hpp"
 #include <opencv2/dnn.hpp>
 #include <opencv2/aruco.hpp>
 #include <opencv2/bgsegm.hpp>
@@ -15,7 +16,10 @@
 #include <string>
 #include <vector>
 #include <chrono>
+#include <fstream>
+#include <sstream>
 #include <filesystem>
+#include <unordered_map>
 
 namespace cvl {
 
@@ -327,6 +331,103 @@ class BackgroundSubtractor : public Detector
 
     cv::Ptr<cv::BackgroundSubtractor> pBackgroundSubtractor[5] = {nullptr};
 
+};
+
+class FaceRecognizer
+{
+    public:
+
+    FaceRecognizer(const std::string& csv)
+    {
+        _id_frtag_map.reserve(256);
+
+        try {
+            read_csv(csv, _images, _labels, _frTags);
+        }
+        catch (const std::exception& e) {
+            std::cerr << e.what() << std::endl;
+        }
+
+        _model = cv::face::LBPHFaceRecognizer::create();
+
+        _model->setRadius(1);
+        _model->setNeighbors(8);
+        _model->setGridX(8);
+        _model->setGridY(8);
+
+        _model->train(_images, _labels);
+    }
+
+    ~FaceRecognizer(){}
+
+    auto getTagFromId(int id)
+    {
+        std::string tag;
+
+        try {
+            tag = _id_frtag_map.at(id);
+        }
+        catch(const std::exception& e) {
+            ERR << e.what() << " " << id;
+        }
+
+        return tag;
+    }
+
+    auto predict(const cv::Mat& roi, int *config)
+    {
+        int label = -1;
+
+        double confidence = 0.0;
+
+        _model->predict(roi, label, confidence);
+
+        std::pair<std::string, double> fRet;
+
+        if (confidence <= config[cvl::IDX_FACEREC_CONFIDENCE] * 10) {
+            fRet = std::make_pair(getTagFromId(label), confidence);
+        }
+
+        return fRet;
+    }
+
+    private:
+
+    std::vector<int> _labels;
+    std::vector<cv::Mat> _images;
+    std::vector<std::string> _frTags;
+
+    std::unordered_map<int, std::string> _id_frtag_map;
+
+    cv::Ptr<cv::face::LBPHFaceRecognizer> _model;
+
+    void read_csv(const std::string& filename, std::vector<cv::Mat>& images,
+        std::vector<int>& labels, std::vector<std::string>& tags, char separator = ';')
+    {
+        std::ifstream file(filename.c_str(), std::ifstream::in);
+
+        if (!file) {
+            ERR << "No valid input file was given, please check the given filename";
+        }
+
+        std::string line, path, classlabel, frtag;
+
+        std::string modelRoot = std::getenv("CVL_MODELS_ROOT");
+
+        while (getline(file, line)) {
+            std::stringstream liness(line);
+            std::getline(liness, path, separator);
+            std::getline(liness, classlabel, separator);
+            std::getline(liness, frtag);
+            if(!path.empty() && !classlabel.empty() && !frtag.empty()) {
+                images.push_back(cv::imread(modelRoot + path, 0));
+                int id = std::atoi(classlabel.c_str());
+                labels.push_back(id);
+                tags.push_back(frtag);
+                _id_frtag_map.emplace(id, frtag);
+            }
+        }
+    }
 };
 
 }

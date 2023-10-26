@@ -5,7 +5,6 @@
 #include <chrono>
 #include <fstream>
 
-#include <facerec.hpp>
 #include <detector.hpp>
 #include <geometry.hpp>
 
@@ -29,7 +28,7 @@ class pipeline
 
         _backgroundSubtractor = std::make_unique<cvl::BackgroundSubtractor>();
 
-        _faceRecognizer = std::make_unique<cvl::facerec>(
+        _faceRecognizer = std::make_unique<cvl::FaceRecognizer>(
             std::getenv("CVL_MODELS_ROOT") + std::string("FaceRecognition/fr.csv"));
     }
 
@@ -130,9 +129,9 @@ class pipeline
         return _objectDetector->Detect(frame, config);
     }
 
-    inline auto faceRecognition(cv::Mat& frame)
+    inline auto faceRecognition(cv::Mat& frame, int *config)
     {
-        return _faceRecognizer->predict(frame);
+        return _faceRecognizer->predict(frame, config);
     }
 
     inline auto execute(cv::Mat& frame, int *config)
@@ -177,7 +176,7 @@ class pipeline
                 r._roi = frame(roi).clone();
                 cv::cvtColor(r._roi, gray, cv::COLOR_BGR2GRAY);
 
-                const auto& [tag, confidence] = faceRecognition(gray);
+                const auto& [tag, confidence] = faceRecognition(gray, config);
 
                 if (tag.length() && confidence > 0.0)
                     cv::putText(frame, tag + " : " + std::to_string(confidence),
@@ -207,7 +206,7 @@ class pipeline
 
     cvl::queue<cvl::DetectionResult> _detectionsQueue;
 
-    std::unique_ptr<cvl::facerec> _faceRecognizer;
+    std::unique_ptr<cvl::FaceRecognizer> _faceRecognizer;
 
     std::unique_ptr<cvl::FaceDetector> _faceDetector = nullptr;
 

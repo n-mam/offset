@@ -15,9 +15,12 @@ Item {
         enabled: stackview.depth > 1
         MouseArea {
             anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
             onClicked: {
                 stackview.pop()
             }
+            onContainsMouseChanged: parent.scale = 1 + (containsMouse ? 0.2 : 0)
         }
     }
 

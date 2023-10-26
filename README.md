@@ -1,10 +1,10 @@
 [Download](https://github.com/n-mam/offset/releases/download/2.0/offset-2.0.zip)
 
-#### Features
+#### The following 3 tools are currently implemented
 
 FXC
 <p align="center">
- <img src="https://lh3.googleusercontent.com/d/193lB9OfdeZ-hfUxqmythLaAwk1ExGaEE" width="60%">
+ <img src="https://lh3.googleusercontent.com/d/193lB9OfdeZ-hfUxqmythLaAwk1ExGaEE" width="65%">
 </p>
 - Requires elevation. Please run as admin.<br/>
 - Creates volume level images using either VSS snapshots or from live volume.<br/>
@@ -22,7 +22,7 @@ FXC
 
 FTPS<br/>
 <p align="center">
- <img src="https://lh3.googleusercontent.com/d/1L9AJ0i0d4H2kKGp-TRFpxCeYFjPgzDnW" width="60%">
+ <img src="https://lh3.googleusercontent.com/d/1L9AJ0i0d4H2kKGp-TRFpxCeYFjPgzDnW" width="70%">
 </p>
 - Supports plain and secure FTPS (using openssl async bio).<br/>
 - Ability to browse while transfers are in progress.<br/>
@@ -31,7 +31,7 @@ FTPS<br/>
 
 CAMERA<br/>
 <p align="center">
- <img src="https://lh3.googleusercontent.com/d/1W3Tq_WpxGhiv7i9srMxQqZBdrdDdzJIo" width="60%">
+ <img src="https://lh3.googleusercontent.com/d/1W3Tq_WpxGhiv7i9srMxQqZBdrdDdzJIo" width="70%">
 </p>
 <p align="center">
  <img src="https://lh3.googleusercontent.com/d/1855S5_Ia8R8GF_YiTC2Vng3xPSbg5xye" width="60%">
@@ -39,7 +39,10 @@ CAMERA<br/>
 - Face detection, Motion detection, Face recognition.<br/>
 - Uses default opencv built-in models and DNN based detectors.<br/>
 - Detection configurability on a per camera basis.<br/>
-- Ability to save detection results.<br/>
+- Ability to save detection results on a per camera basis.<br/>
+- The release has default(non-CUDA) opencv build for CPUs.
+- For NVIDIA GPU it is recommended to do a custom variant opencv build by using CUDA/CUDNN vcpkg variants.<br/>
+- Code supports CUDA backend and traget for DNN infrence if available.<br/>
 
 #### vcpkg dependencies
 

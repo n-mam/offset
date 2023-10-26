@@ -23,7 +23,6 @@ Item {
 
     Column {
         spacing: 5
-
         Rectangle {
             id: playerRect
             border.width: 1
@@ -49,13 +48,6 @@ Item {
                     to: 450
                     onMoved: playerRoot.increment = playerZoomSlider.value
                 }
-                Text {
-                    text: "  "
-                }
-                Text {
-                    text: vr.name
-                    color: "white"
-                }
             }
 
             VideoRenderer {
@@ -65,63 +57,77 @@ Item {
                 cfg: playerRoot.cfg
             }
 
-            Row {
+            Rectangle {
                 z: 10
-                spacing: 12
+                width: parent.width - 2
+                height: 30
+                color: "black"
+                opacity: 0.5
                 visible: controlsVisible
                 anchors.bottom: parent.bottom
                 anchors.horizontalCenter: parent.horizontalCenter
-                anchors.margins: 4
-                Image {
-                    width: 18
-                    height: 18
-                    source: "qrc:/play.png"
-                    MouseArea {
-                        hoverEnabled: true
-                        anchors.fill: parent
-                        onClicked: vr.start()
-                        cursorShape: Qt.PointingHandCursor
-                        onContainsMouseChanged: parent.scale = 1 + (containsMouse ? 0.2 : 0)
+                Row {
+                    spacing: 12
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.verticalCenter: parent.verticalCenter
+                    Image {
+                        width: 18
+                        height: 18
+                        source: "qrc:/play.png"
+                        MouseArea {
+                            hoverEnabled: true
+                            anchors.fill: parent
+                            onClicked: vr.start()
+                            cursorShape: Qt.PointingHandCursor
+                            onContainsMouseChanged: parent.scale = 1 + (containsMouse ? 0.2 : 0)
+                        }
+                    }
+
+                    Image {
+                        width: 18
+                        height: 18
+                        source: "qrc:/pause.png"
+                        MouseArea {
+                            hoverEnabled: true
+                            anchors.fill: parent
+                            onClicked: vr.stop()
+                            cursorShape: Qt.PointingHandCursor
+                            onContainsMouseChanged: parent.scale = 1 + (containsMouse ? 0.2 : 0)
+                        }
+                    }
+
+                    Image {
+                        width: 18
+                        height: 18
+                        source: "qrc:/settings.png"
+                        MouseArea {
+                            hoverEnabled: true
+                            anchors.fill: parent
+                            onClicked: cameraSettingsClickedSignal(vr)
+                            cursorShape: Qt.PointingHandCursor
+                            onContainsMouseChanged: parent.scale = 1 + (containsMouse ? 0.2 : 0)
+                        }
+                    }
+
+                    Image {
+                        width: 18
+                        height: 18
+                        source: "qrc:/bin.png"
+                        MouseArea {
+                            hoverEnabled: true
+                            anchors.fill: parent
+                            onClicked: cameraDeleteClickedSignal(vr)
+                            cursorShape: Qt.PointingHandCursor
+                            onContainsMouseChanged: parent.scale = 1 + (containsMouse ? 0.2 : 0)
+                        }
                     }
                 }
-
-                Image {
-                    width: 18
-                    height: 18
-                    source: "qrc:/pause.png"
-                    MouseArea {
-                        hoverEnabled: true
-                        anchors.fill: parent
-                        onClicked: vr.stop()
-                        cursorShape: Qt.PointingHandCursor
-                        onContainsMouseChanged: parent.scale = 1 + (containsMouse ? 0.2 : 0)
-                    }
-                }
-
-                Image {
-                    width: 18
-                    height: 18
-                    source: "qrc:/settings.png"
-                    MouseArea {
-                        hoverEnabled: true
-                        anchors.fill: parent
-                        onClicked: cameraSettingsClickedSignal(vr)
-                        cursorShape: Qt.PointingHandCursor
-                        onContainsMouseChanged: parent.scale = 1 + (containsMouse ? 0.2 : 0)
-                    }
-                }
-
-                Image {
-                    width: 18
-                    height: 18
-                    source: "qrc:/bin.png"
-                    MouseArea {
-                        hoverEnabled: true
-                        anchors.fill: parent
-                        onClicked: cameraDeleteClickedSignal(vr)
-                        cursorShape: Qt.PointingHandCursor
-                        onContainsMouseChanged: parent.scale = 1 + (containsMouse ? 0.2 : 0)
-                    }
+                Text {
+                    text: vr.name
+                    color: "white"
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.margins: 4
                 }
             }
 
