@@ -1,4 +1,4 @@
-[Download](https://github.com/n-mam/offset/releases/download/2.0/offset-2.0.zip)
+[Download](https://github.com/n-mam/offset/releases/download/2.1/Offset-2.1.zip)
 
 #### The following 3 tools are currently implemented
 
@@ -102,7 +102,7 @@ qml\Release\offset.exe
 #### Deploy:
 
 ```sh
-windeployqt --qmldir E:\offset\qml E:\offset\build\qml\Release\offset.exe
+windeployqt --qmldir D:\offset\app\qml D:\offset\build\app\Release\offset.exe
 ```
 vc redist is bundled with package zip; in case your system does not have that installed already
 
