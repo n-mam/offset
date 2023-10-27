@@ -41,8 +41,8 @@ CAMERA<br/>
 - Detection configurability on a per camera basis.<br/>
 - Ability to save detection results on a per camera basis.<br/>
 - The release has default(non-CUDA) opencv build for CPUs.<br/>
-- For NVIDIA GPU it is recommended to do a custom variant opencv build by using CUDA/CUDNN vcpkg variants.<br/>
-- Code supports CUDA backend and target for DNN inference if available.<br/>
+- For NVIDIA GPU it is recommended to do a custom opencv CUDA/CUDNN variant build via vcpkg.<br/>
+- The code either ways supports both CUDA/CPU backend and target for DNN inference; in order.<br/>
 
 #### vcpkg dependencies
 

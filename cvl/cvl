@@ -42,7 +42,7 @@ class camera
     {
         stop();
 
-        _pipeline_thread = std::thread(&camera::process_frames, this);
+        _process_thread = std::thread(&camera::process_frames, this);
 
         if (cbk) {
             _frame_cbk = cbk;
@@ -57,8 +57,8 @@ class camera
         _stop = true;
         if (_queue_thread.joinable())
             _queue_thread.join();
-        if (_pipeline_thread.joinable())
-            _pipeline_thread.join();
+        if (_process_thread.joinable())
+            _process_thread.join();
         _stop = false;
     }
 
@@ -67,6 +67,8 @@ class camera
     std::string iSource;
 
     int iWaitKeyTimeout = 18;
+
+    std::string iResultsFolder;
 
     int iPipelineConfig[16] = { 0 };
 
@@ -82,7 +84,7 @@ class camera
 
     std::thread _queue_thread;
 
-    std::thread _pipeline_thread;
+    std::thread _process_thread;
 
     void queue_frames(void)
     {
@@ -142,7 +144,7 @@ class camera
             }
 
             if (iPipelineConfig[IDX_PIPELINE_STAGES]) {
-                pipeLine.execute(frame, iPipelineConfig);
+                pipeLine.execute(frame, iPipelineConfig, iResultsFolder);
             }
 
             q_out.enqueue(frame);

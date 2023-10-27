@@ -1,5 +1,6 @@
 #include <VideoRenderer.h>
 
+#include <QDir>
 #include <QMutexLocker>
 #include <QRandomGenerator>
 #include <QSGSimpleRectNode>
@@ -300,6 +301,22 @@ QVariantMap VideoRenderer::getCfg()
     return m_cfg;
 }
 
+QString VideoRenderer::getResultsFolder()
+{
+    return QString::fromStdString(m_camera->iResultsFolder);
+}
+
+void VideoRenderer::setResultsFolder(QString path)
+{
+    if (path != getResultsFolder()) {
+        QDir dir(path);
+        if (dir.exists()) {
+            m_camera->iResultsFolder = path.toStdString();
+            emit resultsFolderChanged(path);
+        }
+    }
+}
+
 void VideoRenderer::setCfg(QVariantMap cfg)
 {
     if (cfg != m_cfg) {
@@ -328,6 +345,8 @@ void VideoRenderer::setCfg(QVariantMap cfg)
                 setMocapAlgo(i.value().toInt());
             } else if (key == "areaThreshold") {
                 setAreaThreshold(i.value().toInt());
+            } else if (key == "resultsFolder") {
+                setResultsFolder(i.value().toString());
             }
         }
         emit cfgChanged(cfg);

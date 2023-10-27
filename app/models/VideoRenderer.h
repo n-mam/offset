@@ -33,6 +33,7 @@ class VideoRenderer : public QQuickItem
   Q_PROPERTY(double scalef READ getScaleF WRITE setScaleF NOTIFY scaleFChanged);
   Q_PROPERTY(QString source READ getSource WRITE setSource NOTIFY sourceChanged);
   Q_PROPERTY(int mocapAlgo READ getMocapAlgo WRITE setMocapAlgo NOTIFY mocapAlgoChanged);
+  Q_PROPERTY(QString resultsFolder READ getResultsFolder WRITE setResultsFolder NOTIFY resultsFolderChanged);
   Q_PROPERTY(int bboxThickness READ getBboxThickness WRITE setBboxThickness NOTIFY bboxThicknessChanged);
   Q_PROPERTY(int areaThreshold READ getAreaThreshold WRITE setAreaThreshold NOTIFY areaThresholdChanged);
   Q_PROPERTY(double faceConfidence READ getFaceConfidence WRITE setFaceConfidence NOTIFY faceConfidenceChanged);
@@ -55,6 +56,8 @@ class VideoRenderer : public QQuickItem
   void setObjectConfidence(double);
   double getFacerecConfidence();
   void setFacerecConfidence(double);
+  QString getResultsFolder();
+  void setResultsFolder(QString);
   double getScaleF(void);
   void setScaleF(double scalef);
   QString getSource(void);
@@ -74,6 +77,7 @@ class VideoRenderer : public QQuickItem
   void mocapAlgoChanged(int);
   void bboxThicknessChanged(int);
   void areaThresholdChanged(int);
+  void resultsFolderChanged(QString);
   void faceConfidenceChanged(double);
   void objectConfidenceChanged(double);
   void facerecConfidenceChanged(double);

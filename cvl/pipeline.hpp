@@ -20,7 +20,7 @@ class pipeline
 
     pipeline()
     {
-        //_thread = std::thread(&pipeline::pipelineThread, this);
+        _thread = std::thread(&pipeline::detectionSaveThread, this);
 
         _faceDetector = std::make_unique<cvl::FaceDetector>();
 
@@ -134,7 +134,7 @@ class pipeline
         return _faceRecognizer->predict(frame, config);
     }
 
-    inline auto execute(cv::Mat& frame, int *config)
+    inline auto execute(cv::Mat& frame, int *config, const std::string& resultsPath)
     {
         if (frame.empty()) {
             ERR << "empty frame grabbed";
@@ -167,6 +167,9 @@ class pipeline
 
         cvl::Detector::FilterDetections(detections, frame);
 
+        _save = (bool)resultsPath.length();
+        _save_path = resultsPath;
+
         for (const auto& roi : detections)
         {
             cvl::DetectionResult r;
@@ -184,7 +187,7 @@ class pipeline
                         1.0, cv::Scalar(255, 255, 255), config[IDX_BOUNDINGBOX_THICKNESS]);
             }
 
-            if (0) { //save detections
+            if (_save) {
                 r._stages = stages;
                 if (r._roi.empty()) {
                     r._roi = frame(roi).clone();
@@ -202,7 +205,11 @@ class pipeline
 
     bool _stop = false;
 
+    bool _save = false;
+
     std::thread _thread;
+
+    std::string _save_path;
 
     cvl::queue<cvl::DetectionResult> _detectionsQueue;
 
@@ -214,22 +221,28 @@ class pipeline
 
     std::unique_ptr<cvl::BackgroundSubtractor> _backgroundSubtractor = nullptr;
 
-    void pipelineThread()
+    void detectionSaveThread()
     {
         static uint32_t count = 0;
 
-        while (!_stop)
-        {
+        while (!_stop) {
+
+            if (!_save || _save_path.length() == 0) {
+                std::this_thread::sleep_for(milliseconds(350));
+                continue;
+            }
+
             auto d = _detectionsQueue.dequeue();
 
-            if (d.empty())
-            {
+            if (d.empty()) {
                 std::this_thread::sleep_for(milliseconds(50));
                 continue;
             }
 
             cvl::geometry::saveMatAsImage(
-                d._roi, std::to_string(++count) + "_" + std::to_string(d._ts), ".jpg");
+                d._roi, _save_path + "/" +
+                    std::to_string(++count) + "_" + std::to_string(d._ts), ".jpg");
+
         }
     }
 };

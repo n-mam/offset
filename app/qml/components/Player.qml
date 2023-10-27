@@ -60,7 +60,7 @@ Item {
             Rectangle {
                 z: 10
                 width: parent.width - 2
-                height: 30
+                height: 40
                 color: "black"
                 opacity: 0.5
                 visible: controlsVisible

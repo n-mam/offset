@@ -4,7 +4,6 @@
         "waitKeyTimeout": 15,
         "stages": 4,
         "scalef": 0.5,
-        "save": true,
         "mocapAlgo": 3,
         "areaThreshold": 10000,
         "source": "D:\\videos\\night.mp4"
@@ -14,7 +13,6 @@
         "waitKeyTimeout": 16,
         "stages": 1,
         "scalef": 0.6,
-        "save": true,
         "source": "0"
     },
     {
@@ -22,7 +20,6 @@
         "waitKeyTimeout": 17,
         "stages": 2,
         "scalef": 0.7,
-        "save": true,
         "source": "D:\\videos\\ppl_walking.mp4"
     },
     {
@@ -30,7 +27,7 @@
         "waitKeyTimeout": 18,
         "stages": 1,
         "scalef": 0.8,
-        "save": true,
+        "resultsFolder": "C:\\Users\\nmam\\Desktop\\qqq",
         "bboxThickness": 3,
         "source": "D:\\videos\\trump2.mp4"
     },
@@ -39,7 +36,7 @@
         "waitKeyTimeout": 19,
         "stages": 1,
         "scalef": 0.9,
-        "save": true,
+        "resultsFolder": "",
         "source": "D:\\videos\\trump3.mp4"
     },
     {
@@ -47,7 +44,6 @@
         "waitKeyTimeout": 20,
         "stages": 1,
         "scalef": 1,
-        "save": true,
         "source": "D:\\videos\\obama_hasan.mp4"
     }
 

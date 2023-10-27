@@ -143,19 +143,16 @@ Item {
                 Row {
                     spacing: 5
                     anchors.verticalCenter: parent.verticalCenter
-                    CheckBox {
-                        id: saveCheckboxId
-                        checked: false
-                        text: qsTr("Save")
-                    }
                     TextField {
-                        id: saveFolderId
-                        enabled: saveCheckboxId.checked
+                        id: resultsFolderId
                         width: 300
                         height: rowHeight - 10
                         placeholderText: qsTr("folder")
-                        text: ""
+                        text: vr.resultsFolder
                         anchors.verticalCenter: parent.verticalCenter
+                        onEditingFinished: {
+                            vr.resultsFolder = resultsFolderId.text
+                        }
                     }
                 }
             }
@@ -347,36 +344,30 @@ Item {
                 }
                 RadioButton {
                     text: qsTr("MOG")
+                    checked: vr.mocapAlgo === 0
+                    onClicked: vr.mocapAlgo = 0
+                }
+                RadioButton {
+                    text: qsTr("CNT")
                     checked: vr.mocapAlgo === 1
                     onClicked: vr.mocapAlgo = 1
                 }
                 RadioButton {
-                    text: qsTr("CNT")
+                    text: qsTr("GMG")
                     checked: vr.mocapAlgo === 2
                     onClicked: vr.mocapAlgo = 2
                 }
                 RadioButton {
-                    text: qsTr("GMG")
+                    text: qsTr("GSOC")
                     checked: vr.mocapAlgo === 3
                     onClicked: vr.mocapAlgo = 3
                 }
                 RadioButton {
-                    text: qsTr("GSOC")
+                    text: qsTr("LSBP")
                     checked: vr.mocapAlgo === 4
                     onClicked: vr.mocapAlgo = 4
                 }
-                RadioButton {
-                    text: qsTr("LSBP")
-                    checked: vr.mocapAlgo === 5
-                    onClicked: vr.mocapAlgo = 5
-                }
             }
         }
-    }
-    Button {
-        text: "Save"
-        anchors.bottom: parent.bottom
-        anchors.right: parent.right
-        anchors.margins: 10
     }
 }
