@@ -130,9 +130,9 @@ Item {
                     verticalAlignment: Text.AlignVCenter
                     anchors.verticalCenter: parent.verticalCenter
                 }
-                Text { width: 40 }
+                Text { width: 35 }
                 Text {
-                    text: "Size"
+                    text: "Size:"
                     color: "white"
                     width: labelWidth / 3
                     verticalAlignment: Text.AlignVCenter
@@ -177,6 +177,25 @@ Item {
                         anchors.verticalCenter: parent.verticalCenter
                         onEditingFinished: {
                             vr.resultsFolder = resultsFolderId.text
+                        }
+                    }
+                    Text { width: 35 }
+                    Text {
+                        text: "Skip:"
+                        width: labelWidth / 3
+                        color: "white"
+                        verticalAlignment: Text.AlignVCenter
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                    TextField {
+                        id: skipFramesId
+                        width: 100
+                        height: rowHeight - 10
+                        placeholderText: qsTr("frames")
+                        text: vr.skipFrames
+                        anchors.verticalCenter: parent.verticalCenter
+                        onEditingFinished: {
+                            vr.skipFrames = skipFramesId.text
                         }
                     }
                 }

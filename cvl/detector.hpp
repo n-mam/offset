@@ -27,34 +27,35 @@ using Detections = std::vector<cv::Rect2d>;
 
 constexpr double marker_length_cm = 2.3;
 
-constexpr int IDX_PIPELINE_STAGES = 0;
-constexpr int IDX_FACE_CONFIDENCE = 1;
-constexpr int IDX_OBJECT_CONFIDENCE = 2;
-constexpr int IDX_FACEREC_CONFIDENCE = 3;
-constexpr int IDX_MOCAP_EXCLUDE_AREA = 4;
-constexpr int IDX_BOUNDINGBOX_THICKNESS = 5;
-constexpr int IDX_BOUNDINGBOX_INCREMENT = 6;
-constexpr int IDX_MOCAP_ALGO = 7;
+constexpr int IDX_MOCAP_ALGO = 0;
+constexpr int IDX_SKIP_FRAMES = 1;
+constexpr int IDX_PIPELINE_STAGES = 2;
+constexpr int IDX_FACE_CONFIDENCE = 3;
+constexpr int IDX_OBJECT_CONFIDENCE = 4;
+constexpr int IDX_FACEREC_CONFIDENCE = 5;
+constexpr int IDX_MOCAP_EXCLUDE_AREA = 6;
+constexpr int IDX_BOUNDINGBOX_THICKNESS = 7;
+constexpr int IDX_BOUNDINGBOX_INCREMENT = 8;
 
 struct DetectionResult
 {
     int           _age;
-    char          _gender;
-    int64_t       _ts = -1;
     cv::Mat       _roi;
     cv::Size      _dim;
-    int           _stages;
     std::string   _frTag;
+    int           _stages;
+    char          _gender;
+    int64_t       _ts = -1;
+    uint32_t      _frame;
+    uint32_t      _detection;
 
     DetectionResult(){}
 
-    inline auto empty()
-    {
+    inline auto empty() {
         return (_ts == -1);
     }
 
-    inline auto clone()
-    {
+    inline auto clone() {
         DetectionResult out = *this;
         out._roi = this->_roi.clone();
         return std::move(out);

@@ -24,6 +24,7 @@ class camera
 
     camera()
     {
+        iPipelineConfig[IDX_SKIP_FRAMES] = 4;
         iPipelineConfig[IDX_MOCAP_ALGO] = 3;
         iPipelineConfig[IDX_PIPELINE_STAGES] = 0;
         iPipelineConfig[IDX_FACE_CONFIDENCE] = 5;

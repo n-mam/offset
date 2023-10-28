@@ -167,11 +167,14 @@ class pipeline
 
         cvl::Detector::FilterDetections(detections, frame);
 
+        _count++;
         _save = (bool)resultsPath.length();
         _save_path = resultsPath;
 
-        for (const auto& roi : detections)
+        for (auto i = 0; i < detections.size(); i++)
         {
+            auto roi = detections[i];
+
             cvl::DetectionResult r;
 
             if ((stages & 8) && (stages & 1)) {
@@ -187,8 +190,10 @@ class pipeline
                         1.0, cv::Scalar(255, 255, 255), config[IDX_BOUNDINGBOX_THICKNESS]);
             }
 
-            if (_save) {
+            if (_save && ((_count % config[IDX_SKIP_FRAMES])) == 0) {
                 r._stages = stages;
+                r._frame = _count;
+                r._detection = i;
                 if (r._roi.empty()) {
                     r._roi = frame(roi).clone();
                 }
@@ -207,6 +212,8 @@ class pipeline
 
     bool _save = false;
 
+    uint32_t _count = 0;
+
     std::thread _thread;
 
     std::string _save_path;
@@ -223,8 +230,6 @@ class pipeline
 
     void detectionSaveThread()
     {
-        static uint32_t count = 0;
-
         while (!_stop) {
 
             if (!_save || _save_path.length() == 0) {
@@ -239,9 +244,10 @@ class pipeline
                 continue;
             }
 
-            cvl::geometry::saveMatAsImage(
-                d._roi, _save_path + "/" +
-                    std::to_string(++count) + "_" + std::to_string(d._ts), ".jpg");
+            cvl::geometry::saveMatAsImage(d._roi, _save_path + "/" +
+                    std::to_string(d._frame) + "_" +
+                    std::to_string(d._detection) + "_" +
+                    std::to_string(d._ts), ".jpg");
 
         }
     }

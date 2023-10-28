@@ -330,6 +330,19 @@ void VideoRenderer::setBbSizeIncrement(int increment)
     }
 }
 
+int VideoRenderer::getSkipFrames()
+{
+    return m_camera->iPipelineConfig[cvl::IDX_SKIP_FRAMES];
+}
+
+void VideoRenderer::setSkipFrames(int skip)
+{
+    if (skip != m_camera->iPipelineConfig[cvl::IDX_SKIP_FRAMES]) {
+        m_camera->iPipelineConfig[cvl::IDX_SKIP_FRAMES] = skip;
+        emit skipFramesChanged(skip);
+    }
+}
+
 void VideoRenderer::setCfg(QVariantMap cfg)
 {
     if (cfg != m_cfg) {
