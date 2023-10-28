@@ -130,6 +130,31 @@ Item {
                     verticalAlignment: Text.AlignVCenter
                     anchors.verticalCenter: parent.verticalCenter
                 }
+                Text { width: 40 }
+                Text {
+                    text: "Size"
+                    color: "white"
+                    width: labelWidth / 3
+                    verticalAlignment: Text.AlignVCenter
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+                Slider {
+                    id: bbSizeIncrementSlider
+                    width: 275
+                    height: rowHeight - 10
+                    from: -100
+                    value: vr.bbSizeIncrement
+                    to: 100
+                    onMoved: {
+                        vr.bbSizeIncrement = bbSizeIncrementSlider.value.toFixed(0)
+                    }
+                }
+                Text {
+                    text: bbSizeIncrementSlider.value.toFixed(0) + " px"
+                    color: "white"
+                    verticalAlignment: Text.AlignVCenter
+                    anchors.verticalCenter: parent.verticalCenter
+                }
             }
             Row {
                 spacing: 4

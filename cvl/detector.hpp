@@ -33,7 +33,8 @@ constexpr int IDX_OBJECT_CONFIDENCE = 2;
 constexpr int IDX_FACEREC_CONFIDENCE = 3;
 constexpr int IDX_MOCAP_EXCLUDE_AREA = 4;
 constexpr int IDX_BOUNDINGBOX_THICKNESS = 5;
-constexpr int IDX_MOCAP_ALGO = 6;
+constexpr int IDX_BOUNDINGBOX_INCREMENT = 6;
+constexpr int IDX_MOCAP_ALGO = 7;
 
 struct DetectionResult
 {
@@ -157,11 +158,11 @@ class Detector
 
     std::string _target;
 
+    cv::dnn::Net _network;
+
     std::string _configFile;
 
     std::string _weightFile;
-
-    cv::dnn::Net _network;
 };
 
 class FaceDetector : public Detector
@@ -207,7 +208,10 @@ class FaceDetector : public Detector
 
                 if (cvl::geometry::isRectInsideMat(rect, frame))
                 {
-                    out.emplace_back(cvl::geometry::resizeRect(rect, 54));
+                        out.emplace_back(
+                            config[cvl::IDX_BOUNDINGBOX_INCREMENT] != 0 ?
+                                cvl::geometry::resizeRectByWidth(rect,
+                                    config[cvl::IDX_BOUNDINGBOX_INCREMENT]) : rect);
                 }
             }
         }
@@ -266,7 +270,10 @@ class ObjectDetector : public Detector
 
                     if (cvl::geometry::isRectInsideMat(rect, frame))
                     {
-                        out.emplace_back(cvl::geometry::resizeRect(rect, 40));
+                        out.emplace_back(
+                            config[cvl::IDX_BOUNDINGBOX_INCREMENT] != 0 ?
+                                cvl::geometry::resizeRectByWidth(rect,
+                                    config[cvl::IDX_BOUNDINGBOX_INCREMENT]) : rect);
                     }
                 }
             }

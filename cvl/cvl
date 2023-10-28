@@ -31,6 +31,7 @@ class camera
         iPipelineConfig[IDX_FACEREC_CONFIDENCE] = 5;
         iPipelineConfig[IDX_MOCAP_EXCLUDE_AREA] = 2500;
         iPipelineConfig[IDX_BOUNDINGBOX_THICKNESS] = 2;
+        iPipelineConfig[IDX_BOUNDINGBOX_INCREMENT] = 0;
     }
 
     ~camera()

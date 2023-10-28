@@ -33,6 +33,7 @@ class VideoRenderer : public QQuickItem
   Q_PROPERTY(double scalef READ getScaleF WRITE setScaleF NOTIFY scaleFChanged);
   Q_PROPERTY(QString source READ getSource WRITE setSource NOTIFY sourceChanged);
   Q_PROPERTY(int mocapAlgo READ getMocapAlgo WRITE setMocapAlgo NOTIFY mocapAlgoChanged);
+  Q_PROPERTY(int bbSizeIncrement READ getBbSizeIncrement WRITE setBbSizeIncrement NOTIFY bbSizeIncrementChanged);
   Q_PROPERTY(QString resultsFolder READ getResultsFolder WRITE setResultsFolder NOTIFY resultsFolderChanged);
   Q_PROPERTY(int bboxThickness READ getBboxThickness WRITE setBboxThickness NOTIFY bboxThicknessChanged);
   Q_PROPERTY(int areaThreshold READ getAreaThreshold WRITE setAreaThreshold NOTIFY areaThresholdChanged);
@@ -44,6 +45,8 @@ class VideoRenderer : public QQuickItem
 
   public slots:
 
+  int getBbSizeIncrement();
+  void setBbSizeIncrement(int);
   QVariantMap getCfg();
   void setCfg(QVariantMap);
   int getMocapAlgo();
@@ -76,6 +79,7 @@ class VideoRenderer : public QQuickItem
   void cfgChanged(QVariantMap);
   void mocapAlgoChanged(int);
   void bboxThicknessChanged(int);
+  void bbSizeIncrementChanged(int);
   void areaThresholdChanged(int);
   void resultsFolderChanged(QString);
   void faceConfidenceChanged(double);

@@ -317,6 +317,19 @@ void VideoRenderer::setResultsFolder(QString path)
     }
 }
 
+int VideoRenderer::getBbSizeIncrement()
+{
+    return m_camera->iPipelineConfig[cvl::IDX_BOUNDINGBOX_INCREMENT];
+}
+
+void VideoRenderer::setBbSizeIncrement(int increment)
+{
+    if (increment != m_camera->iPipelineConfig[cvl::IDX_BOUNDINGBOX_INCREMENT]) {
+        m_camera->iPipelineConfig[cvl::IDX_BOUNDINGBOX_INCREMENT] = increment;
+        emit bbSizeIncrementChanged(increment);
+    }
+}
+
 void VideoRenderer::setCfg(QVariantMap cfg)
 {
     if (cfg != m_cfg) {
