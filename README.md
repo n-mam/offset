@@ -43,6 +43,10 @@ CAMERA<br/>
 - The release has default(non-CUDA) opencv build for CPUs.<br/>
 - For NVIDIA GPU it is recommended to do a custom opencv CUDA/CUDNN variant build via vcpkg.<br/>
 - The code either ways supports both CUDA/CPU backend and target for DNN inference; in order.<br/>
+- Set CVL_MODELS_ROOT to local MODELS folder from the repo for detections to work.<br/>
+- Currently the model trains itself off a set of around 10 trump and 10 obama images.<br/>
+- The system can be tested by defining a "Window capture" source in OBS studio against youtube running inside the browser.<br/>
+- Then expose the webbrowser feed over RTSP(using OBS RSTP server plugin). This can then be captured via a cam configuration in offset using the obs rtsp url for running detections.<br/>
 
 #### vcpkg dependencies
 
