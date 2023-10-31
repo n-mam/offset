@@ -244,15 +244,15 @@ void VideoRenderer::setObjectConfidence(double confidence)
     }
 }
 
-double VideoRenderer::getFacerecConfidence()
+int VideoRenderer::getFacerecConfidence()
 {
-    return (double)(m_camera->iPipelineConfig[cvl::IDX_FACEREC_CONFIDENCE]) / 10;
+    return m_camera->iPipelineConfig[cvl::IDX_FACEREC_CONFIDENCE];
 }
 
-void VideoRenderer::setFacerecConfidence(double confidence)
+void VideoRenderer::setFacerecConfidence(int confidence)
 {
     if (confidence != m_camera->iPipelineConfig[cvl::IDX_FACEREC_CONFIDENCE]) {
-        m_camera->iPipelineConfig[cvl::IDX_FACEREC_CONFIDENCE] = (int)(confidence * 10);
+        m_camera->iPipelineConfig[cvl::IDX_FACEREC_CONFIDENCE] = confidence;
         emit facerecConfidenceChanged(confidence);
     }
 }
@@ -366,7 +366,7 @@ void VideoRenderer::setCfg(QVariantMap cfg)
             } else if (key == "objectConfidence") {
                 setObjectConfidence(i.value().toDouble());
             } else if (key == "facerecConfidence") {
-                setFacerecConfidence(i.value().toDouble());
+                setFacerecConfidence(i.value().toInt());
             } else if (key == "mocapAlgo") {
                 setMocapAlgo(i.value().toInt());
             } else if (key == "areaThreshold") {

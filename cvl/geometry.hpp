@@ -61,6 +61,14 @@ inline bool doesIntersectReferenceLine(const T& start, const T& end, int refx, i
     return false;
 }
 
+inline auto twoPointString(double value)
+{
+    std::ostringstream oss;
+    oss.precision(2);
+    oss << std::fixed << value;
+    return oss.str();
+}
+
 template<typename T>
 inline auto resizeRectByWidth(const T& rect, int dx)
 {

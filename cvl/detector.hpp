@@ -392,7 +392,7 @@ class FaceRecognizer
 
         std::pair<std::string, double> fRet;
 
-        if (confidence <= config[cvl::IDX_FACEREC_CONFIDENCE] * 10) {
+        if (confidence <= config[cvl::IDX_FACEREC_CONFIDENCE]) {
             fRet = std::make_pair(getTagFromId(label), confidence);
         }
 

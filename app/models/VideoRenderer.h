@@ -60,8 +60,8 @@ class VideoRenderer : public QQuickItem
   void setFaceConfidence(double);
   double getObjectConfidence();
   void setObjectConfidence(double);
-  double getFacerecConfidence();
-  void setFacerecConfidence(double);
+  int getFacerecConfidence();
+  void setFacerecConfidence(int);
   QString getResultsFolder();
   void setResultsFolder(QString);
   double getScaleF(void);

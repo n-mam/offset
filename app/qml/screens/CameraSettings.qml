@@ -343,13 +343,13 @@ Item {
                             height: rowHeight - 10
                             from: 0
                             value: vr.facerecConfidence
-                            to: 1
+                            to: 100
                             onMoved: {
                                 vr.facerecConfidence = facerecConfidence.value.toFixed(1)
                             }
                         }
                         Text {
-                            text: facerecConfidence.value.toFixed(1)
+                            text: facerecConfidence.value.toFixed(1) + " (distance)"
                             color: "white"
                             verticalAlignment: Text.AlignVCenter
                             anchors.verticalCenter: parent.verticalCenter

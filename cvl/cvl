@@ -29,7 +29,7 @@ class camera
         iPipelineConfig[IDX_PIPELINE_STAGES] = 0;
         iPipelineConfig[IDX_FACE_CONFIDENCE] = 5;
         iPipelineConfig[IDX_OBJECT_CONFIDENCE] = 5;
-        iPipelineConfig[IDX_FACEREC_CONFIDENCE] = 5;
+        iPipelineConfig[IDX_FACEREC_CONFIDENCE] = 60;
         iPipelineConfig[IDX_MOCAP_EXCLUDE_AREA] = 2500;
         iPipelineConfig[IDX_BOUNDINGBOX_THICKNESS] = 2;
         iPipelineConfig[IDX_BOUNDINGBOX_INCREMENT] = 0;

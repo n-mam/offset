@@ -184,8 +184,8 @@ class pipeline
 
                 const auto& [tag, confidence] = faceRecognition(gray, config);
 
-                if (tag.length() && confidence > 0.0)
-                    cv::putText(frame, tag + " : " + std::to_string(confidence),
+                if (tag.length() && confidence > 0)
+                    cv::putText(frame, tag + " : " + geometry::twoPointString(confidence),
                         cv::Point((int)roi.x, (int)(roi.y - 5)), cv::FONT_HERSHEY_SIMPLEX,
                         1.0, cv::Scalar(255, 255, 255), config[IDX_BOUNDINGBOX_THICKNESS]);
             }
