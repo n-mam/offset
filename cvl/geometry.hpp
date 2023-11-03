@@ -61,10 +61,11 @@ inline bool doesIntersectReferenceLine(const T& start, const T& end, int refx, i
     return false;
 }
 
-inline auto twoPointString(double value)
+template <int N>
+inline auto toStringWithPrecision(double value)
 {
     std::ostringstream oss;
-    oss.precision(2);
+    oss.precision(N);
     oss << std::fixed << value;
     return oss.str();
 }
@@ -102,8 +103,7 @@ inline auto saveMatAsImage(cv::Mat& mat, const std::string& fileName, const std:
 
     cv::imencode(ext, mat, image);
 
-    std::ofstream fout(
-        (fileName + ext).c_str(),
+    std::ofstream fout((fileName + ext).c_str(),
         std::ios::out|std::ios::binary);
 
     fout.write((const char*)&image[0], image.size());

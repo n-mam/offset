@@ -103,16 +103,9 @@ class pipeline
         {
             auto rect = cv::boundingRect(contour);
 
-            std::ostringstream oss;
-            oss.precision(2);
-
-            // oss << "[" << std::fixed << rect.width;
-            // oss << "," << std::fixed << rect.height;
-            oss << "[" << std::fixed << rect.width * cmpp;
-            oss << "," << std::fixed << rect.height * cmpp << "]";
-
-            cv::putText(frame, oss.str().c_str(), cv::Point(rect.x, rect.y - 2),
-                cv::FONT_HERSHEY_SIMPLEX, 0.3, {0,0,0}, 1);
+            cv::putText(frame, "[" + geometry::toStringWithPrecision<1>(rect.width * cmpp) +
+                "," + geometry::toStringWithPrecision<1>(rect.height * cmpp) + "]" ,
+                cv::Point(rect.x, rect.y - 2), cv::FONT_HERSHEY_SIMPLEX, 0.3, {0,0,0}, 1);
         }
 
         // draw filtered contours on the original image
@@ -171,8 +164,8 @@ class pipeline
         _save = (bool)resultsPath.length();
         _save_path = resultsPath;
 
-        for (auto i = 0; i < detections.size(); i++)
-        {
+        for (auto i = 0; i < detections.size(); i++) {
+
             auto roi = detections[i];
 
             cvl::DetectionResult r;
@@ -184,10 +177,11 @@ class pipeline
 
                 const auto& [tag, confidence] = faceRecognition(gray, config);
 
-                if (tag.length() && confidence > 0)
-                    cv::putText(frame, tag + " : " + geometry::twoPointString(confidence),
+                if (tag.length() && confidence > 0) {
+                    cv::putText(frame, tag + " : " + geometry::toStringWithPrecision<2>(confidence),
                         cv::Point((int)roi.x, (int)(roi.y - 5)), cv::FONT_HERSHEY_SIMPLEX,
                         1.0, cv::Scalar(255, 255, 255), config[IDX_BOUNDINGBOX_THICKNESS]);
+                }
             }
 
             if (_save && ((_count % config[IDX_SKIP_FRAMES])) == 0) {

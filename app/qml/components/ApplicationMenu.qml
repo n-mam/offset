@@ -46,6 +46,8 @@ Rectangle {
             }
             MouseArea {
                 anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
                 onClicked: menuList.currentIndex = index
             }
         }

@@ -304,7 +304,7 @@ Item {
 
   Login {
     visible: !ftpModel.connected
-    width: parent.width - 30
+    width: parent.width - 100
     anchors.top: currentDirectory.bottom
     anchors.topMargin: 45
     anchors.horizontalCenter: parent.horizontalCenter

@@ -43,6 +43,7 @@ StackScreen {
             Button {
                 width: 75
                 text: "Add"
+                anchors.verticalCenter: parent.verticalCenter
                 onClicked: {
                     if (cameraUrl.text) {
                         createPlayerObject({
@@ -53,7 +54,12 @@ StackScreen {
                         cameraUrl.text = ""
                     }
                 }
-                anchors.verticalCenter: parent.verticalCenter
+                MouseArea {
+                    hoverEnabled: true
+                    anchors.fill: parent
+                    onPressed:  mouse.accepted = false
+                    cursorShape: Qt.PointingHandCursor
+                }
             }
             Text {
                 text: " "
@@ -63,6 +69,12 @@ StackScreen {
                 text: "Import"
                 onClicked: importCameraCfgDialog.open()
                 anchors.verticalCenter: parent.verticalCenter
+                MouseArea {
+                    hoverEnabled: true
+                    anchors.fill: parent
+                    onPressed:  mouse.accepted = false
+                    cursorShape: Qt.PointingHandCursor
+                }
             }
         }
 
