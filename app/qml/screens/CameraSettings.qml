@@ -4,9 +4,9 @@ import QtQuick.Layouts
 
 Item {
 
+    required property var vr;
     property var rowHeight: 45
     property var labelWidth: 125
-    required property var vr;
 
     Flickable {
         clip: true

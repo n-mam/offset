@@ -38,7 +38,14 @@ target_link_libraries(
   ZLIB::ZLIB
   OpenSSL::SSL
   Crc32c::crc32c
-  opencv_ml opencv_dnn opencv_dpm opencv_hdf opencv_face opencv_bgsegm opencv_core
+  opencv_ml
+  opencv_dnn
+  opencv_dpm
+  opencv_hdf
+  opencv_face
+  opencv_bgsegm
+  opencv_core
+  opencv_aruco
   OpenSSL::Crypto
 )
 

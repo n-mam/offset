@@ -72,7 +72,7 @@ QVariant DiskListModel::data(const QModelIndex &index, int role) const
         {
           return QVector<QString>({bd->m_fs, bd->m_label, bd->m_serial.toUpper()});
         }
-        
+
       }
       break;
     }
@@ -145,7 +145,7 @@ bool DiskListModel::setData(const QModelIndex &index, const QVariant &value, int
   if (!fRet)
   {
     fRet = true;
-    
+
     auto bd = std::static_pointer_cast<BlockDevice>(m_model[index.row()]);
 
     switch (role)
@@ -262,9 +262,9 @@ bool DiskListModel::convertSelectedItemsToVirtualDisks(QString destination)
 
   STATUS(0) << "Transfer in progress : " << this->getTransfer();
 
-  m_futures.push_back(std::async(std::launch::async, 
+  m_futures.push_back(std::async(std::launch::async,
     [this, configuration](){
-      fxc::ConvertBlockDeviceToVirtualImages(configuration, 
+      fxc::ConvertBlockDeviceToVirtualImages(configuration,
         [this](auto device, auto percent){
           QMetaObject::invokeMethod(this, [this, device, percent](){
             emit this->progress(QString::fromStdWString(device), percent);
@@ -298,7 +298,7 @@ void DiskListModel::refreshModel()
 
   for (auto& names : volumes)
   {
-    QVector<QString> children; 
+    QVector<QString> children;
 
     for (const auto& ss : snapshots)
     {
@@ -325,7 +325,7 @@ void DiskListModel::refreshModel()
 
     int depth = 0;
 
-    auto parentDisk = std::find_if(m_model.begin(), m_model.end(), 
+    auto parentDisk = std::find_if(m_model.begin(), m_model.end(),
           [diskName](const auto& e) -> bool {
             return std::static_pointer_cast<BlockDevice>(e)->m_names[0] == diskName;
           });
@@ -367,7 +367,7 @@ void DiskListModel::refreshModel()
 
     item->m_sourceOptions << "live";
 
-    if (isSnapshotable) 
+    if (isSnapshotable)
     {
       item->m_sourceOptions << "vss";
       item->m_sourceIndex = item->m_sourceOptions.indexOf("vss");

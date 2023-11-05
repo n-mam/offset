@@ -25,7 +25,7 @@ namespace cvl {
 
 using Detections = std::vector<cv::Rect2d>;
 
-constexpr double marker_length_cm = 2.3;
+constexpr double marker_length_cm = 5.3;
 
 constexpr int IDX_MOCAP_ALGO = 0;
 constexpr int IDX_SKIP_FRAMES = 1;

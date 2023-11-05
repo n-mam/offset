@@ -166,7 +166,7 @@ inline auto entry(std::vector<std::string> arguments)
 
     cam->iSource = source;
 
-    cam->iPipelineConfig[IDX_PIPELINE_STAGES] = 1;
+    cam->iPipelineConfig[IDX_PIPELINE_STAGES] = 16;
 
     cam->start(nullptr);
 

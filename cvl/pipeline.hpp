@@ -155,7 +155,7 @@ class pipeline
         }
 
         if (stages & 16) {
-            //detections = detectLength(frame);
+            detectLength(frame);
         }
 
         cvl::Detector::FilterDetections(detections, frame);
