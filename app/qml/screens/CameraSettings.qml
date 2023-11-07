@@ -11,16 +11,18 @@ Item {
     Flickable {
         clip: true
         anchors.fill: parent
-        anchors.margins: 25
+        anchors.margins: 15
         contentHeight: parent.height
         contentWidth: parent.width
         Column {
             spacing: 15
+            anchors.fill: parent
+            anchors.margins: 10
             Row {
                 spacing: 4
                 Text {
                     text: "Camera:"
-                    color: "white"
+                    color: textColor
                     width: labelWidth
                     verticalAlignment: Text.AlignVCenter
                     anchors.verticalCenter: parent.verticalCenter
@@ -31,6 +33,7 @@ Item {
                     implicitHeight: rowHeight - 10
                     placeholderText: qsTr("name")
                     text: vr.name
+                    verticalAlignment: TextInput.AlignVCenter
                     onEditingFinished: {
                         vr.name = nameTextId.text
                     }
@@ -40,7 +43,7 @@ Item {
                 spacing: 4
                 Text {
                     text: "Source:"
-                    color: "white"
+                    color: textColor
                     width: labelWidth
                     verticalAlignment: Text.AlignVCenter
                     anchors.verticalCenter: parent.verticalCenter
@@ -51,6 +54,7 @@ Item {
                     implicitHeight: rowHeight - 10
                     placeholderText: qsTr("url")
                     text: vr.source
+                    verticalAlignment: TextInput.AlignVCenter
                     onEditingFinished: {
                         vr.source = sourceTextId.text
                     }
@@ -60,7 +64,7 @@ Item {
                 spacing: 4
                 Text {
                     text: "WaitKey:"
-                    color: "white"
+                    color: textColor
                     width: labelWidth
                     verticalAlignment: Text.AlignVCenter
                     anchors.verticalCenter: parent.verticalCenter
@@ -72,13 +76,14 @@ Item {
                     placeholderText: qsTr("timeout")
                     text: vr.waitKeyTimeout
                     horizontalAlignment: TextInput.AlignHCenter
+                    verticalAlignment: TextInput.AlignVCenter
                     onEditingFinished: {
                         vr.waitKeyTimeout = parseInt(timeoutTextId.text)
                     }
                 }
                 Text {
                     text: "ms"
-                    color: "white"
+                    color: textColor
                     verticalAlignment: Text.AlignVCenter
                     anchors.verticalCenter: parent.verticalCenter
                 }
@@ -87,7 +92,7 @@ Item {
                 spacing: 4
                 Text {
                     text: "Scale:"
-                    color: "white"
+                    color: textColor
                     width: labelWidth
                     verticalAlignment: Text.AlignVCenter
                     anchors.verticalCenter: parent.verticalCenter
@@ -99,6 +104,7 @@ Item {
                     placeholderText: qsTr("factor")
                     text: vr.scalef
                     horizontalAlignment: TextInput.AlignHCenter
+                    verticalAlignment: TextInput.AlignVCenter
                     onEditingFinished: {
                         vr.scalef = scalefTextId.text
                     }
@@ -108,7 +114,7 @@ Item {
                 spacing: 4
                 Text {
                     text: "BBox:"
-                    color: "white"
+                    color: textColor
                     width: labelWidth
                     verticalAlignment: Text.AlignVCenter
                     anchors.verticalCenter: parent.verticalCenter
@@ -120,20 +126,21 @@ Item {
                     placeholderText: qsTr("thickness")
                     text: vr.bboxThickness
                     horizontalAlignment: TextInput.AlignHCenter
+                    verticalAlignment: TextInput.AlignVCenter
                     onEditingFinished: {
                         vr.bboxThickness = parseInt(bboxThicknessTextId.text)
                     }
                 }
                 Text {
                     text: "px"
-                    color: "white"
+                    color: textColor
                     verticalAlignment: Text.AlignVCenter
                     anchors.verticalCenter: parent.verticalCenter
                 }
                 Text { width: 35 }
                 Text {
                     text: "Size:"
-                    color: "white"
+                    color: textColor
                     width: labelWidth / 3
                     verticalAlignment: Text.AlignVCenter
                     anchors.verticalCenter: parent.verticalCenter
@@ -151,7 +158,7 @@ Item {
                 }
                 Text {
                     text: bbSizeIncrementSlider.value.toFixed(0) + " px"
-                    color: "white"
+                    color: textColor
                     verticalAlignment: Text.AlignVCenter
                     anchors.verticalCenter: parent.verticalCenter
                 }
@@ -161,7 +168,7 @@ Item {
                 Text {
                     text: "Results:"
                     width: labelWidth
-                    color: "white"
+                    color: textColor
                     verticalAlignment: Text.AlignVCenter
                     anchors.verticalCenter: parent.verticalCenter
                 }
@@ -175,6 +182,7 @@ Item {
                         placeholderText: qsTr("folder")
                         text: vr.resultsFolder
                         anchors.verticalCenter: parent.verticalCenter
+                        verticalAlignment: TextInput.AlignVCenter
                         onEditingFinished: {
                             vr.resultsFolder = resultsFolderId.text
                         }
@@ -183,7 +191,7 @@ Item {
                     Text {
                         text: "Skip:"
                         width: labelWidth / 3
-                        color: "white"
+                        color: textColor
                         verticalAlignment: Text.AlignVCenter
                         anchors.verticalCenter: parent.verticalCenter
                     }
@@ -194,6 +202,7 @@ Item {
                         placeholderText: qsTr("frames")
                         text: vr.skipFrames
                         anchors.verticalCenter: parent.verticalCenter
+                        verticalAlignment: TextInput.AlignVCenter
                         onEditingFinished: {
                             vr.skipFrames = skipFramesId.text
                         }
@@ -205,7 +214,7 @@ Item {
                 Text {
                     text: "Detection:"
                     width: labelWidth
-                    color: "white"
+                    color: textColor
                     verticalAlignment: Text.AlignVCenter
                     anchors.verticalCenter: parent.verticalCenter
                 }
@@ -215,10 +224,11 @@ Item {
                     border.width: 1
                     border.color: borderColor
                     color: "transparent"
-                    implicitWidth: detectionOptions.width + 20
+                    implicitWidth: detectionOptions.width + 36
                     implicitHeight: rowHeight
                     Row {
                         id: detectionOptions
+                        spacing: 4
                         anchors.verticalCenter: parent.verticalCenter
                         anchors.horizontalCenter: parent.horizontalCenter
                         CheckBox {
@@ -267,7 +277,7 @@ Item {
                 Text {
                     text: "Confidence:"
                     width: labelWidth
-                    color: "white"
+                    color: textColor
                     verticalAlignment: Text.AlignVCenter
                     anchors.top: parent.top
                     anchors.margins: 11
@@ -278,7 +288,7 @@ Item {
                         visible: detectionOptionFace.checked
                         Text {
                             text: "Face"
-                            color: "white"
+                            color: textColor
                             width: labelWidth / 2
                             verticalAlignment: Text.AlignVCenter
                             anchors.verticalCenter: parent.verticalCenter
@@ -296,7 +306,7 @@ Item {
                         }
                         Text {
                             text: faceConfidence.value.toFixed(1)
-                            color: "white"
+                            color: textColor
                             verticalAlignment: Text.AlignVCenter
                             anchors.verticalCenter: parent.verticalCenter
                         }
@@ -305,7 +315,7 @@ Item {
                         visible: detectionOptionObject.checked
                         Text {
                             text: "Object"
-                            color: "white"
+                            color: textColor
                             width: labelWidth / 2
                             verticalAlignment: Text.AlignVCenter
                             anchors.verticalCenter: parent.verticalCenter
@@ -323,7 +333,7 @@ Item {
                         }
                         Text {
                             text: objectConfidence.value.toFixed(1)
-                            color: "white"
+                            color: textColor
                             verticalAlignment: Text.AlignVCenter
                             anchors.verticalCenter: parent.verticalCenter
                         }
@@ -332,7 +342,7 @@ Item {
                         visible: detectionOptionFaceRec.checked
                         Text {
                             text: "FaceRec"
-                            color: "white"
+                            color: textColor
                             width: labelWidth / 2
                             verticalAlignment: Text.AlignVCenter
                             anchors.verticalCenter: parent.verticalCenter
@@ -350,7 +360,7 @@ Item {
                         }
                         Text {
                             text: facerecConfidence.value.toFixed(1) + " (distance)"
-                            color: "white"
+                            color: textColor
                             verticalAlignment: Text.AlignVCenter
                             anchors.verticalCenter: parent.verticalCenter
                         }
@@ -362,7 +372,7 @@ Item {
                 visible: detectionOptionMotion.checked
                 Text {
                     text: "Motion:"
-                    color: "white"
+                    color: textColor
                     width: labelWidth
                     verticalAlignment: Text.AlignVCenter
                     anchors.verticalCenter: parent.verticalCenter
@@ -374,6 +384,7 @@ Item {
                     placeholderText: qsTr("exclude area")
                     text: vr.areaThreshold
                     horizontalAlignment: TextInput.AlignHCenter
+                    verticalAlignment: TextInput.AlignVCenter
                     anchors.verticalCenter: parent.verticalCenter
                     onEditingFinished: {
                         vr.areaThreshold = parseInt(areaTextId.text)
@@ -381,7 +392,7 @@ Item {
                 }
                 Text {
                     text: ""
-                    color: "white"
+                    color: textColor
                     width: labelWidth / 3
                     verticalAlignment: Text.AlignVCenter
                     anchors.verticalCenter: parent.verticalCenter

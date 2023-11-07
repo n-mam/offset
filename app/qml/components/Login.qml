@@ -25,8 +25,9 @@ Rectangle {
         height: parent.height * 0.90
         placeholderText: qsTr("Host")
         text: "ftp.gnu.org"
-        anchors.bottom: parent.bottom        
+        anchors.bottom: parent.bottom
         horizontalAlignment: TextInput.AlignHCenter
+        verticalAlignment: TextInput.AlignVCenter
       }
       TextField {
         id: port
@@ -35,8 +36,9 @@ Rectangle {
         placeholderText: qsTr("Port")
         validator: IntValidator {bottom: 1; top: 1000}
         text: "21"
-        anchors.bottom: parent.bottom        
+        anchors.bottom: parent.bottom
         horizontalAlignment: TextInput.AlignHCenter
+        verticalAlignment: TextInput.AlignVCenter
       }
     }
 
@@ -51,8 +53,9 @@ Rectangle {
         height: parent.height * 0.90
         placeholderText: qsTr("User")
         text: "anonymous"
-        anchors.bottom: parent.bottom        
+        anchors.bottom: parent.bottom
         horizontalAlignment: TextInput.AlignHCenter
+        verticalAlignment: TextInput.AlignVCenter
       }
     }
 
@@ -64,12 +67,13 @@ Rectangle {
       TextField {
         id: password
         width: parent.width
-        height: parent.height * 0.90        
+        height: parent.height * 0.90
         echoMode: TextInput.Password
         placeholderText: qsTr("Password")
         text: "welcome123"
-        anchors.bottom: parent.bottom        
+        anchors.bottom: parent.bottom
         horizontalAlignment: TextInput.AlignHCenter
+        verticalAlignment: TextInput.AlignVCenter
       }
     }
 
@@ -80,6 +84,7 @@ Rectangle {
 
     Row {
         id: choices
+        spacing: 10
         height: rowHeight
         anchors.horizontalCenter: parent.horizontalCenter
         RadioButton {
@@ -101,6 +106,7 @@ Rectangle {
         width: parent.width * 0.43
         height: parent.height * 0.90
         text: "Connect"
+        anchors.verticalCenter: parent.verticalCenter
         anchors.horizontalCenter: parent.horizontalCenter
         onClicked: {
           login(hostname.text, port.text, username.text, password.text, optionsGroup.checkedButton.text)

@@ -19,7 +19,7 @@ Item {
       anchors.centerIn: parent
       ShapePath {
         strokeWidth: 1
-        strokeColor: "white"
+        strokeColor: borderColor
         strokeStyle: ShapePath.SolidLine
         startX: 1; startY: 0
         PathLine {x: parent.width; y: 0}
@@ -29,7 +29,7 @@ Item {
 
   Text {
     text: currentStatus
-    color: "white"
+    color: textColor
     width: parent.width * 0.55
     height: parent.height
     elide: Text.ElideRight

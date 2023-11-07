@@ -5,6 +5,7 @@
     <file>screens/Trace.qml</file>
     <file>screens/Camera.qml</file>
     <file>screens/Backup.qml</file>
+    <file>screens/Settings.qml</file>
     <file>screens/CameraSettings.qml</file>
     <file>components/List.qml</file>
     <file>components/Login.qml</file>

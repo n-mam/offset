@@ -26,7 +26,7 @@ Item {
         Rectangle {
             id: playerRect
             border.width: 1
-            border.color: controlsVisible ? "steelblue" : "white"
+            border.color: controlsVisible ? "steelblue" : borderColor
             color: "transparent"
             width: mainWindow.width - (mainWindow.width * 0.60) + playerRoot.increment
             height: mainWindow.height - (mainWindow.height * 0.60) + (playerRoot.increment * (mainWindow.height/mainWindow.width))
@@ -124,7 +124,7 @@ Item {
                 }
                 Text {
                     text: vr.name
-                    color: "white"
+                    color: textColor
                     anchors.right: parent.right
                     anchors.verticalCenter: parent.verticalCenter
                     anchors.margins: 4

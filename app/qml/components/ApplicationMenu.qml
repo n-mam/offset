@@ -33,6 +33,9 @@ Rectangle {
             ListElement {
                 name: "log.png"
             }
+            ListElement {
+                name: "settings.png"
+            }
         }
         delegate: Item {
             width: menuList.width

@@ -23,11 +23,31 @@ inline std::vector<std::string> split(const std::string& s, char delim)
   return elems;
 }
 
+inline auto tokenize(const std::string& s, char delim = ' ') {
+
+    std::string token;
+    std::vector<std::string> out;
+
+    for (const auto& e : s) {
+        if (e != delim) {
+            token += e;
+        } else {
+            out.push_back(token);
+            token.clear();
+        }
+    }
+
+    if (token.size())
+        out.push_back(token);
+
+    return out;
+}
+
 inline std::vector<std::string> split(const std::string& s, const std::string& delim)
 {
-    size_t pos_start = 0, pos_end, delim_len = delim.length();
     std::string token;
     std::vector<std::string> res;
+    size_t pos_start = 0, pos_end, delim_len = delim.length();
 
     while ((pos_end = s.find (delim, pos_start)) != std::string::npos)
     {
@@ -36,16 +56,16 @@ inline std::vector<std::string> split(const std::string& s, const std::string& d
         res.push_back (token);
     }
 
-    res.push_back (s.substr (pos_start));
+    res.push_back(s.substr (pos_start));
 
     return res;
 }
 
 inline std::vector<std::wstring> wsplit(const std::wstring& s, const std::wstring& delim)
 {
-    size_t pos_start = 0, pos_end, delim_len = delim.length();
     std::wstring token;
     std::vector<std::wstring> res;
+    size_t pos_start = 0, pos_end, delim_len = delim.length();
 
     while ((pos_end = s.find (delim, pos_start)) != std::string::npos)
     {
@@ -92,16 +112,10 @@ inline std::string& trim(std::string& str, const std::string& chars)
     return ltrim(rtrim(str, chars), chars);
 }
 
-inline bool StartsWith(std::wstring& str, std::wstring prefix)
+template <typename T>
+inline bool startsWith(const T& str, const T& prefix)
 {
-  bool fRet = false;
-
-  if (str.rfind(prefix, 0) == 0)
-  {
-    fRet = true;
-  }
-
-  return fRet;
+    return (str.rfind(prefix, 0) == 0);
 }
 
 inline void removeDuplicates(std::string& str, const char& ch)

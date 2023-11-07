@@ -19,7 +19,7 @@ Rectangle {
     anchors.top: parent.top
     anchors.right: parent.right
     anchors.topMargin: 3
-    anchors.rightMargin: 15
+    anchors.rightMargin: 45
     checked: true
     text: qsTr("Enable")
   }
@@ -34,15 +34,17 @@ Rectangle {
     anchors.topMargin: 5
     height: parent.height * 0.85
     ScrollBar.vertical: ScrollBar {
-      width: 8
+      //width: 8
     }
     flickableDirection: Flickable.VerticalFlick
     model: traceModel
-    delegate: Item {
-      width: ListView.view.width;
+    delegate: Rectangle {
+      color: Material.background
+      width: ListView.view.width
       height: 17
       Label {
         text: line
+        color: textColor
       }
     }
     Connections {
@@ -73,6 +75,7 @@ Rectangle {
       id: clearButton
       text: "CLEAR"
       enabled: (diskListModel.transfer === 0)
+      width: parent.width * 0.65
       height: parent.height * 0.90
       anchors.left: parent.left
       anchors.margins: appSpacing
@@ -83,6 +86,7 @@ Rectangle {
       id: savebutton
       text: "SAVE"
       enabled: (diskListModel.transfer !== 0)
+      width: parent.width * 0.65
       height: parent.height * 0.90
       anchors.left: clearButton.right
       anchors.margins: appSpacing

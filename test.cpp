@@ -11,42 +11,41 @@ void show_usage(void);
 
 int main(int argc, char *argv[])
 {
-  auto arguments = osl::GetArgumentsVector(argc, argv);
+    auto arguments = osl::GetArgumentsVector(argc, argv);
 
-  if (!arguments.size()) {
-    show_usage();
-    return 0;
-  }
-
-  osl::log::SetLogLevel(osl::log::debug);
-
-  osl::log::SetLogSink<std::string>(
-    [](int level, int key, auto log){
-      std::cout << log << std::endl;
+    if (!arguments.size()) {
+        show_usage();
+        return 0;
     }
-  );
 
-  npl::make_dispatcher();
+    osl::log::SetLogLevel(osl::log::debug);
 
-  auto ns = arguments[0];
+    osl::log::SetLogSink<std::string>(
+        [](int level, int key, auto log){
+            std::cout << log << std::endl;
+        });
 
-  #ifdef _WIN32
-  if (ns == "fxc")
-    fxc::entry(arguments);
-  else
-  #endif
-  if (ns == "npl")
-    npl::entry(arguments);
-  else if (ns == "cvl") {
-    cvl::entry(arguments);
-  } else {
-    show_usage();
-  }
+    npl::make_dispatcher();
 
-  return 0;
+    auto ns = arguments[0];
+
+    #ifdef _WIN32
+    if (ns == "fxc") {
+        fxc::entry(arguments);
+    } else
+    #endif
+    if (ns == "npl") {
+        npl::entry(arguments);
+    } else if (ns == "cvl") {
+        cvl::entry(arguments);
+    } else {
+        show_usage();
+    }
+
+    return 0;
 }
 
 void show_usage(void)
 {
-  std::cout << "test npl ftp <host> <port> <user> <pass>" << std::endl;
+    std::cout << "test npl ftp <host> <port> <user> <pass>" << std::endl;
 }

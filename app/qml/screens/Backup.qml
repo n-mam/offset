@@ -21,6 +21,7 @@ Rectangle {
       id: handleDelegate
       implicitWidth: 1
       implicitHeight: 1
+      border.color: borderColor
       containmentMask: Item {
         x: (handleDelegate.width - width) / 2
         width: splitViewTop.width
@@ -49,7 +50,7 @@ Rectangle {
         border.color: "#FA8072"
         Text {
           text: "R"
-          color: "white"
+          color: textColor
           anchors.verticalCenter: parent.verticalCenter
           anchors.horizontalCenter: parent.horizontalCenter
         }
@@ -109,9 +110,9 @@ Rectangle {
           height: parent.height * 0.85
           anchors.left: parent.left
           anchors.leftMargin: 7
-          placeholderText: "Destination"
           text: folderDialog.folder
-          anchors.verticalCenter: parent.verticalCenter
+          placeholderText: "Destination"
+          verticalAlignment: TextInput.AlignVCenter
         }
         Button {
           text: "Select"

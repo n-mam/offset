@@ -16,7 +16,7 @@ Popup {
     Rectangle {
       radius: 3
       border.width: 1
-      border.color: "white"
+      border.color: borderColor
       color: Qt.darker(Material.background)
       width: 284
       height: 164
@@ -25,7 +25,7 @@ Popup {
         id: title
         width: parent.width * 0.80
         elide: Text.ElideMiddle
-        color: "white"
+        color: textColor
         text: context
         anchors.top: parent.top
         anchors.margins: 10

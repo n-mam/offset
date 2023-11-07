@@ -30,8 +30,10 @@ int main(int argc, char *argv[])
 
   qInstallMessageHandler(q_logger);
 
-  qputenv("QT_QUICK_CONTROLS_STYLE", QByteArray("Material"));
-  qputenv("QT_QUICK_CONTROLS_MATERIAL_THEME", QByteArray("Dark"));
+  if (qgetenv("QT_QUICK_CONTROLS_STYLE").isEmpty())
+    qputenv("QT_QUICK_CONTROLS_STYLE", QByteArray("Material"));
+  if (qgetenv("QT_QUICK_CONTROLS_MATERIAL_THEME").isEmpty())
+    qputenv("QT_QUICK_CONTROLS_MATERIAL_THEME", QByteArray("Dark"));
 
   QGuiApplication app(argc, argv);
 
@@ -56,8 +58,8 @@ int main(int argc, char *argv[])
   qmlRegisterType<VideoRenderer>("CustomElements", 1, 0, "VideoRenderer");
 
   engine.rootContext()->setContextProperty("logger", new Logger());
-  engine.rootContext()->setContextProperty("fsModel", LocalFsModel::getInstance());
-  engine.rootContext()->setContextProperty("ftpModel", RemoteFsModel::getInstance());
+  engine.rootContext()->setContextProperty("localFsModel", LocalFsModel::getInstance());
+  engine.rootContext()->setContextProperty("remoteFsModel", RemoteFsModel::getInstance());
   engine.rootContext()->setContextProperty("transferManager", TransferManager::getInstance());
   #ifdef _WIN32
   engine.rootContext()->setContextProperty("diskListModel", new DiskListModel());

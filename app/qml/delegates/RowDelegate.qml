@@ -60,7 +60,7 @@ Rectangle {
 
   Column {
     id: details
-    spacing: 2
+    spacing: 4
     anchors.top: rowDelegate.top
     x: checkBox.x + checkBox.width + rowDelegate.padding + 3
 
@@ -122,7 +122,7 @@ Rectangle {
         x: metadata1.width + metadata2.width + metadata3.width + rowDelegate.padding
         visible: model.selected
         Text {
-          color: "white"
+          color: textColor
           height: parent.height
           text: model.formatOptions[model.formatIndex];
           anchors.verticalCenter: parent.verticalCenter
@@ -143,14 +143,15 @@ Rectangle {
         border.width: 1
         border.color: (sourceText.text === "live") ? "#FF5D00" : "#00FFFC"
         color: "transparent"
-        width: optionsWidth * 0.65
+        width: optionsWidth * 0.90
         height: rowDelegate.columnRowHeight * 0.92
         x: formatRect.x + formatRect.width + rowDelegate.padding
         visible: model.selected
         Text {
           id: sourceText
-          color: "white"
+          color: textColor
           height: parent.height
+          verticalAlignment: Text.AlignVCenter
           text: model.sourceOptions[model.sourceIndex]
           anchors.verticalCenter: parent.verticalCenter
           anchors.horizontalCenter: parent.horizontalCenter
@@ -170,18 +171,18 @@ Rectangle {
         border.width: 1
         border.color: "#56E71F"
         color: "transparent"
-        width: optionsWidth
+        width: optionsWidth + 5
         height: rowDelegate.columnRowHeight * 0.92
         x: sourceRect.x + sourceRect.width + rowDelegate.padding
         visible: model.selected && (model.sourceOptions[model.sourceIndex] == "vss")
         Rectangle{
           id: excludeRectText
-          width: parent.width * 0.67
+          width: parent.width * 0.75
           height: parent.height
           anchors.left: parent.left
           color: "transparent"
           Text {
-            color: "white"
+            color: textColor
             text: "exl+"
             anchors.verticalCenter: parent.verticalCenter
             anchors.horizontalCenter: parent.horizontalCenter
@@ -199,12 +200,12 @@ Rectangle {
         }
         Rectangle {
           id: excludeCount
-          width: excludeRect.width * 0.33
+          width: excludeRect.width * 0.25
           height: parent.height
           anchors.left: spacer.right
           color: "transparent"
           Text {
-            color: "white"
+            color: textColor
             text: model.excludeList.length
             anchors.verticalCenter: parent.verticalCenter
             anchors.horizontalCenter: parent.horizontalCenter

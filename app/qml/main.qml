@@ -11,14 +11,15 @@ ApplicationWindow {
   height: 860 - (860 * 0.30)
   title: qsTr("Offset")
 
-  property var showlog: false
-  property var borderColor: "white" //"#BCDCAA"
   property var appSpacing: 5
+  property var showlog: false
+  property var textColor: "white"
+  property var borderColor: "#727B6C"
 
   ApplicationMenu {
     id: appMenu
     width: 60
-    startIndex: 2
+    startIndex: 1
     height: parent.height - (2 * appSpacing)
     anchors.left: parent.left
     anchors.margins: appSpacing
@@ -46,6 +47,7 @@ ApplicationWindow {
           Ftp {}
           Camera {}
           Trace {}
+          Settings {}
       }
   }
 

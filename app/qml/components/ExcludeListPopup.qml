@@ -14,7 +14,7 @@ Popup {
       height: parent.height * 0.05
       Text {
         text: "Exclude list"
-        color: "white"
+        color: textColor
         anchors.verticalCenter: parent.verticalCenter
         anchors.horizontalCenter: parent.horizontalCenter
       }

@@ -14,12 +14,12 @@ Item {
     anchors.right: parent.right
     anchors.top: parent.top
     anchors.topMargin: 12
-    anchors.margins: 5
+    anchors.margins: 10
     height: 43
     enabled: false
     placeholderText: qsTr("Remote Directory")
     verticalAlignment: TextInput.AlignVCenter
-    onAccepted: ftpModel.currentDirectory = currentDirectory.text
+    onAccepted: remoteFsModel.currentDirectory = currentDirectory.text
   }
 
   ListView {
@@ -32,7 +32,7 @@ Item {
     boundsBehavior: Flickable.StopAtBounds
     height: parent.height - currentDirectory.height - spacer.height - statusRect.height - 2
     clip: true
-    model: ftpModel
+    model: remoteFsModel
     delegate: listItemDelegate
     currentIndex: -1
     cacheBuffer: 1024
@@ -41,7 +41,7 @@ Item {
     highlightMoveVelocity: 800
     highlight: Rectangle { color: "lightsteelblue"; radius: 2 }
     Connections {
-      target: ftpModel
+      target: remoteFsModel
       function onConnected(isConnected) {
         if (!isConnected) {
           currentDirectory.text = ""
@@ -51,9 +51,9 @@ Item {
       }
       function onDirectoryList() {
         remoteListView.currentIndex = -1
-        currentDirectory.text = ftpModel.currentDirectory
+        currentDirectory.text = remoteFsModel.currentDirectory
         var files, folders
-        [files, folders] = ftpModel.totalFilesAndFolders.split(":")
+        [files, folders] = remoteFsModel.totalFilesAndFolders.split(":")
         status.text = files + " files " + folders + " folders "
       }
     }
@@ -67,10 +67,10 @@ Item {
     border.width: 1
     border.color: borderColor
     color: Qt.lighter(Material.background, 1.8)
-    visible: ftpModel.connected
+    visible: remoteFsModel.connected
     anchors.right: parent.right
     anchors.top: currentDirectory.bottom
-    anchors.rightMargin: 5
+    anchors.rightMargin: 10
     anchors.topMargin: 7
 
     Image {
@@ -173,7 +173,7 @@ Item {
       MouseArea {
         anchors.fill: parent
         hoverEnabled: true
-        onClicked: ftpModel.Quit()
+        onClicked: remoteFsModel.Quit()
         cursorShape: Qt.PointingHandCursor
         onContainsMouseChanged: quitTool.scale = 1 + (containsMouse ? 0.2 : 0)
       }
@@ -182,16 +182,16 @@ Item {
 
   function processToolBarAction(action) {
 
-    var fileName = ftpModel.get(remoteListView.currentIndex, "fileName")
-    var fileIsDir = ftpModel.get(remoteListView.currentIndex, "fileIsDir")
-    var fileSize = ftpModel.get(remoteListView.currentIndex, "fileSize")
+    var fileName = remoteFsModel.get(remoteListView.currentIndex, "fileName")
+    var fileIsDir = remoteFsModel.get(remoteListView.currentIndex, "fileIsDir")
+    var fileSize = remoteFsModel.get(remoteListView.currentIndex, "fileSize")
 
     switch (action)
     {
       case "Queue":
       case "Download":
       {
-        if (!ftpModel.connected) {
+        if (!remoteFsModel.connected) {
           logger.updateStatus(1, "Please connect to a server first")
           return;
         }
@@ -201,14 +201,14 @@ Item {
           return;
         }
 
-        ftpModel.QueueTransfer(remoteListView.currentIndex, action === "Download")
+        remoteFsModel.QueueTransfer(remoteListView.currentIndex, action === "Download")
 
         return;
       }
 
       case "Delete":
       {
-        if (!ftpModel.connected) {
+        if (!remoteFsModel.connected) {
           logger.updateStatus(1, "Please connect to a server first")
           return;
         }
@@ -230,7 +230,7 @@ Item {
 
       case "New folder":
       {
-        if (!ftpModel.connected) {
+        if (!remoteFsModel.connected) {
           logger.updateStatus(1, "Please connect to a server first")
           return;
         }
@@ -244,7 +244,7 @@ Item {
 
       case "Rename":
       {
-        if (!ftpModel.connected) {
+        if (!remoteFsModel.connected) {
           logger.updateStatus(1, "Please connect to a server first")
           return;
         }
@@ -264,7 +264,7 @@ Item {
 
       case "Refresh":
       {
-        ftpModel.currentDirectory = ftpModel.currentDirectory
+        remoteFsModel.currentDirectory = remoteFsModel.currentDirectory
       }
     }
   }
@@ -281,21 +281,21 @@ Item {
       {
         if (context.startsWith("New folder"))
         {
-          ftpModel.CreateDirectory(userInput)
+          remoteFsModel.CreateDirectory(userInput)
         }
         else if (context.startsWith("Rename"))
         {
-          ftpModel.Rename(elementName, userInput)
+          remoteFsModel.Rename(elementName, userInput)
         }
         else if (context.startsWith("Delete"))
         {
-          var path = ftpModel.currentDirectory +
-            (ftpModel.currentDirectory.endsWith("/") ? userInput : ("/" + userInput))
+          var path = remoteFsModel.currentDirectory +
+            (remoteFsModel.currentDirectory.endsWith("/") ? userInput : ("/" + userInput))
           if (elementIsDir) {
-            ftpModel.RemoveDirectory(path)
+            remoteFsModel.RemoveDirectory(path)
           } else {
-            ftpModel.RemoveFile(path)
-            ftpModel.currentDirectory = ftpModel.currentDirectory
+            remoteFsModel.RemoveFile(path)
+            remoteFsModel.currentDirectory = remoteFsModel.currentDirectory
           }
         }
       }
@@ -303,13 +303,13 @@ Item {
   }
 
   Login {
-    visible: !ftpModel.connected
+    visible: !remoteFsModel.connected
     width: parent.width - 100
     anchors.top: currentDirectory.bottom
     anchors.topMargin: 45
     anchors.horizontalCenter: parent.horizontalCenter
     onLogin: (host, port, user, password, protocol) => {
-      ftpModel.Connect(host, port, user, password, protocol)
+      remoteFsModel.Connect(host, port, user, password, protocol)
     }
   }
 
@@ -325,10 +325,10 @@ Item {
       anchors.centerIn: spacer
       ShapePath {
         strokeWidth: 1
-        strokeColor: "white"
+        strokeColor: borderColor
         strokeStyle: ShapePath.SolidLine
-        startX: 1; startY: 0
-        PathLine {x: spacer.width; y: 0}
+        startX: 1; startY: 1
+        PathLine {x: spacer.width; y: 1}
       }
     }
   }
@@ -348,7 +348,7 @@ Item {
 
     Text {
       id: status
-      color: "white"
+      color: textColor
       text: "Not connected"
       verticalAlignment: Text.AlignVCenter
       anchors.verticalCenter: parent.verticalCenter
@@ -380,7 +380,7 @@ Item {
         x: listItemIcon.x + listItemIcon.width + 5
         text: fileName
         height: parent.height
-        color: delegateRect.ListView.isCurrentItem ? "black" : "white"
+        color: delegateRect.ListView.isCurrentItem ? "black" : textColor
         verticalAlignment: Text.AlignVCenter
         anchors.verticalCenter: parent.verticalCenter
       }
@@ -391,10 +391,10 @@ Item {
         onDoubleClicked: {
           if (fileIsDir) {
             if (fileName === "..")
-              ftpModel.currentDirectory = ftpModel.getParentDirectory()
+              remoteFsModel.currentDirectory = remoteFsModel.getParentDirectory()
             else
-              ftpModel.currentDirectory = ftpModel.currentDirectory +
-                (ftpModel.currentDirectory.endsWith("/") ? fileName : ("/" + fileName))
+              remoteFsModel.currentDirectory = remoteFsModel.currentDirectory +
+                (remoteFsModel.currentDirectory.endsWith("/") ? fileName : ("/" + fileName))
           }
         }
         onClicked: (mouse) => {

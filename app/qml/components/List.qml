@@ -1,11 +1,11 @@
 import QtQuick
 import QtQuick.Controls
-import QtQuick.Controls.Material 2.12
 import "qrc:/delegates"
 
 ListView {
   id: listView
   clip: true
+  spacing: 2
   currentIndex: -1
   delegate: Rectangle {
     id: listDelegate

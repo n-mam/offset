@@ -21,6 +21,7 @@ Rectangle {
       id: handleDelegate
       implicitWidth: 1
       implicitHeight: 1
+      border.color: borderColor
       containmentMask: Item {
         x: (handleDelegate.width - width) / 2
         width: splitViewTop.width
@@ -36,6 +37,7 @@ Rectangle {
         id: handleDelegate
         implicitWidth: 1
         implicitHeight: 1
+        border.color: borderColor
         containmentMask: Item {
           x: (handleDelegate.width - width) / 2
           width: 15
@@ -55,7 +57,7 @@ Rectangle {
       anchors.rightMargin: 2
       SplitView.minimumHeight: 90
       SplitView.preferredHeight: parent.height * 0.25
-      color: Material.background
+      color: "transparent"
       // radius: 5
       // border.width: 1
       // border.color: borderColor

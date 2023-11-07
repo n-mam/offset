@@ -43,7 +43,7 @@ Loader {
     Rectangle {
       radius: 2
       border.width: 1
-      border.color: "white"
+      border.color: borderColor
       color: Material.background
       Rectangle {
         id: used
@@ -54,7 +54,7 @@ Loader {
         color: "#ADDEFC" //lightskyblue"
         anchors.left: parent.left
         Text {
-          text: loader.used > 1 ? 
+          text: loader.used > 1 ?
                   loader.used.toFixed(1) + "g" :
                   (loader.used * 1024).toFixed(1) + "m"
           anchors.horizontalCenter: percent(loader.used, loader.free) < 10 ? undefined : used.horizontalCenter

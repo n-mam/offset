@@ -216,8 +216,7 @@ void RemoteFsModel::setCurrentDirectory(QString directory)
 
   m_ftp->Transfer(npl::ftp::list, directory.toStdString(),
     [=, list = std::string()] (const char *b, size_t n) mutable {
-      if (!b)
-      {
+      if (!b) {
         std::vector<FileElement> fe_list;
 
         if (directory.toStdString() != "/")

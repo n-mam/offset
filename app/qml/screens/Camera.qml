@@ -1,6 +1,6 @@
 import QtQuick
-import QtQuick.Controls
 import QtQuick.Dialogs
+import QtQuick.Controls
 import "qrc:/components"
 
 StackScreen {
@@ -36,9 +36,9 @@ StackScreen {
             TextField {
                 id: cameraUrl
                 width: 275
-                height: camScreenRoot.height * 0.08
+                height: camScreenRoot.height * 0.065
                 placeholderText: qsTr("Camera")
-                anchors.verticalCenter: parent.verticalCenter
+                verticalAlignment: TextInput.AlignVCenter
             }
             Button {
                 width: 75
@@ -72,7 +72,7 @@ StackScreen {
                 MouseArea {
                     hoverEnabled: true
                     anchors.fill: parent
-                    onPressed:  mouse.accepted = false
+                    onPressed:  (mouse) => { mouse.accepted = false }
                     cursorShape: Qt.PointingHandCursor
                 }
             }

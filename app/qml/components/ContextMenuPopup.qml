@@ -13,7 +13,7 @@ Popup {
     Rectangle {
       radius: 3
       border.width: 1
-      border.color: "white"
+      border.color: borderColor
       color: Qt.darker(Material.background)
       width: 100
       height: 130
@@ -26,7 +26,7 @@ Popup {
         model: ListModel { id: menuModel }
         delegate: Text {
           text: name
-          color: "white"
+          color: textColor
           width: menuListview.width
           horizontalAlignment: Text.AlignHCenter
           MouseArea {

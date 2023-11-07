@@ -14,11 +14,11 @@ Item {
     anchors.right: parent.right
     anchors.top: parent.top
     anchors.topMargin: 12
-    anchors.margins: 5
+    anchors.margins: 10
     height: 43
     placeholderText: qsTr("Local Directory")
     verticalAlignment: TextInput.AlignVCenter
-    onAccepted: fsModel.currentDirectory = currentDirectory.text
+    onAccepted: localFsModel.currentDirectory = currentDirectory.text
   }
 
   ListView {
@@ -32,7 +32,7 @@ Item {
     boundsBehavior: Flickable.StopAtBounds
     height: parent.height - currentDirectory.height - spacer.height - statusRect.height - 2
     clip: true
-    model: fsModel
+    model: localFsModel
     delegate: listItemDelegate
     currentIndex: -1
     cacheBuffer: 1024
@@ -41,12 +41,12 @@ Item {
     highlightMoveVelocity: 800
     highlight: Rectangle { color: "lightsteelblue"; radius: 2 }
     Connections {
-      target: fsModel
+      target: localFsModel
       function onDirectoryList() {
         localListView.currentIndex = -1
-        currentDirectory.text = fsModel.currentDirectory
+        currentDirectory.text = localFsModel.currentDirectory
         var files, folders
-        [files, folders] = fsModel.totalFilesAndFolders.split(":")
+        [files, folders] = localFsModel.totalFilesAndFolders.split(":")
         status.text = files + " files " + folders + " folders "
       }
     }
@@ -62,7 +62,7 @@ Item {
     color: Qt.lighter(Material.background, 1.8)
     anchors.right: parent.right
     anchors.top: currentDirectory.bottom
-    anchors.rightMargin: 5
+    anchors.rightMargin: 10
     anchors.topMargin: 7
 
     Image {
@@ -159,16 +159,16 @@ Item {
 
   function processToolBarAction(action)
   {
-    var fileName = fsModel.get(localListView.currentIndex, "fileName")
-    var fileIsDir = fsModel.get(localListView.currentIndex, "fileIsDir")
-    var fileSize = fsModel.get(localListView.currentIndex, "fileSize")
+    var fileName = localFsModel.get(localListView.currentIndex, "fileName")
+    var fileIsDir = localFsModel.get(localListView.currentIndex, "fileIsDir")
+    var fileSize = localFsModel.get(localListView.currentIndex, "fileSize")
 
     switch (action)
     {
       case "Queue":
       case "Upload":
       {
-        if (!ftpModel.connected) {
+        if (!remoteFsModel.connected) {
           logger.updateStatus(1, "Please connect to a server first")
           return;
         }
@@ -178,7 +178,7 @@ Item {
           return;
         }
 
-        fsModel.QueueTransfer(localListView.currentIndex, action === "Upload")
+        localFsModel.QueueTransfer(localListView.currentIndex, action === "Upload")
 
         return;
       }
@@ -226,7 +226,7 @@ Item {
 
       case "Refresh":
       {
-        fsModel.currentDirectory = fsModel.currentDirectory
+        localFsModel.currentDirectory = localFsModel.currentDirectory
       }
     }
   }
@@ -243,21 +243,21 @@ Item {
       {
         if (context.startsWith("New folder"))
         {
-          fsModel.CreateDirectory(currentDirectory.text + "/" + userInput, true)
+          localFsModel.CreateDirectory(currentDirectory.text + "/" + userInput, true)
         }
         else if (context.startsWith("Rename"))
         {
-          fsModel.Rename(
+          localFsModel.Rename(
             currentDirectory.text + "/" + elementName,
             currentDirectory.text + "/" + userInput, true)
         }
         else if (context.startsWith("Delete"))
         {
           var path = currentDirectory.text + "/" + elementName
-          elementIsDir ? fsModel.RemoveDirectory(path, true) :
-            fsModel.RemoveFile(path, true)
+          elementIsDir ? localFsModel.RemoveDirectory(path, true) :
+            localFsModel.RemoveFile(path, true)
         }
-        fsModel.currentDirectory = fsModel.currentDirectory
+        localFsModel.currentDirectory = localFsModel.currentDirectory
       }
     }
   }
@@ -274,10 +274,10 @@ Item {
       anchors.centerIn: spacer
       ShapePath {
         strokeWidth: 1
-        strokeColor: "white"
+        strokeColor: borderColor
         strokeStyle: ShapePath.SolidLine
-        startX: 1; startY: 0
-        PathLine {x: spacer.width; y: 0}
+        startX: 1; startY: 1
+        PathLine {x: spacer.width; y: 1}
       }
     }
   }
@@ -297,7 +297,7 @@ Item {
 
     Text {
       id: status
-      color: "white"
+      color: textColor
       verticalAlignment: Text.AlignVCenter
       anchors.verticalCenter: parent.verticalCenter
       anchors.left: parent.left
@@ -334,7 +334,7 @@ Item {
         x: listItemIcon.x + listItemIcon.width + 5
         text: fileName
         height: parent.height
-        color: delegateRect.ListView.isCurrentItem ? "black" : "white"
+        color: delegateRect.ListView.isCurrentItem ? "black" : textColor
         verticalAlignment: Text.AlignVCenter
         anchors.verticalCenter: parent.verticalCenter
       }
@@ -345,11 +345,11 @@ Item {
         onDoubleClicked: {
           if (fileIsDir) {
             if (fileName === "..")
-              fsModel.currentDirectory = fsModel.getParentDirectory()
+              localFsModel.currentDirectory = localFsModel.getParentDirectory()
             else
-              fsModel.currentDirectory = fsModel.currentDirectory +
-                (fsModel.currentDirectory.endsWith(fsModel.pathSeperator) ?
-                  fileName : (fsModel.pathSeperator + fileName))
+              localFsModel.currentDirectory = localFsModel.currentDirectory +
+                (localFsModel.currentDirectory.endsWith(localFsModel.pathSeperator) ?
+                  fileName : (localFsModel.pathSeperator + fileName))
           }
         }
         onClicked: (mouse) => {
@@ -359,5 +359,5 @@ Item {
     }
   }
 
-  Component.onCompleted: fsModel.currentDirectory = ""
+  Component.onCompleted: localFsModel.currentDirectory = ""
 }
