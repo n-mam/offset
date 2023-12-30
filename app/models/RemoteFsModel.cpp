@@ -9,12 +9,6 @@ RemoteFsModel::~RemoteFsModel()
 {
 }
 
-RemoteFsModel * RemoteFsModel::getInstance(void)
-{
-  static RemoteFsModel * s_instance = new RemoteFsModel();
-  return s_instance;
-}
-
 bool RemoteFsModel::Connect(QString host, QString port, QString user, QString password, QString protocol)
 {
   m_port = port.toInt();
@@ -86,7 +80,7 @@ void RemoteFsModel::QueueTransfer(int index, bool start)
   DownloadInternal(
     fileName,
     m_currentDirectory,
-    LocalFsModel::getInstance()->getCurrentDirectory().toStdString(),
+    getInstance<LocalFsModel>()->getCurrentDirectory().toStdString(),
     fileIsDir,
     fileSize);
 }
@@ -106,7 +100,7 @@ void RemoteFsModel::DownloadInternal(const std::string& file, const std::string&
             localPath,
             true);
         } else {
-          TransferManager::getInstance()->AddToTransferQueue({
+          getInstance<TransferManager>()->AddToTransferQueue({
             localPath + path_sep + fe.m_name,
             remotePath + "/" + fe.m_name,
             npl::ftp::download,
@@ -115,7 +109,7 @@ void RemoteFsModel::DownloadInternal(const std::string& file, const std::string&
         }
     });
   } else {
-    TransferManager::getInstance()->AddToTransferQueue({
+    getInstance<TransferManager>()->AddToTransferQueue({
       localPath,
       remotePath,
       npl::ftp::download,

@@ -11,12 +11,6 @@ LocalFsModel::~LocalFsModel()
 {
 }
 
-LocalFsModel * LocalFsModel::getInstance(void)
-{
-  static LocalFsModel s_instance;
-  return &s_instance;
-}
-
 void LocalFsModel::QueueTransfer(int index, bool start)
 {
   auto fileName = m_model[index].m_name;
@@ -26,7 +20,7 @@ void LocalFsModel::QueueTransfer(int index, bool start)
   UploadInternal(
     fileName,
     m_currentDirectory,
-    RemoteFsModel::getInstance()->getCurrentDirectory().toStdString(),
+    getInstance<RemoteFsModel>()->getCurrentDirectory().toStdString(),
     fileIsDir,
     fileSize);
 }
@@ -46,7 +40,7 @@ void LocalFsModel::UploadInternal(const std::string& file, const std::string& lo
             remotePath,
             true);
         } else if (entry.is_regular_file()) {
-          TransferManager::getInstance()->AddToTransferQueue({
+          getInstance<TransferManager>()->AddToTransferQueue({
             entry.path().string(),
             remotePath + "/" + entry.path().filename().string(),
             npl::ftp::upload,
@@ -55,7 +49,7 @@ void LocalFsModel::UploadInternal(const std::string& file, const std::string& lo
         }
       }
     } else {
-      TransferManager::getInstance()->AddToTransferQueue({
+      getInstance<TransferManager>()->AddToTransferQueue({
         localPath,
         remotePath,
         npl::ftp::upload,

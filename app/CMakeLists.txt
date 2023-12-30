@@ -6,6 +6,8 @@ set(CMAKE_AUTORCC ON)
 
 find_package(ZLIB REQUIRED)
 find_package(OpenCV CONFIG REQUIRED)
+find_package(libzip CONFIG REQUIRED)
+find_package(tinyxml2 CONFIG REQUIRED)
 find_package(Qt6 REQUIRED COMPONENTS Quick QuickControls2 Gui)
 
 qt6_add_resources(QT_RESOURCES
@@ -20,6 +22,7 @@ target_sources(offset PRIVATE main.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/models/FsModel.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/models/AppConfig.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/models/BaseModel.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/models/TextModel.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/models/LocalFsModel.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/models/RemoteFsModel.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/models/VideoRenderer.cpp
@@ -54,10 +57,15 @@ target_link_libraries(
   opencv_aruco
   Crc32c::crc32c
   OpenSSL::Crypto
+  tinyxml2::tinyxml2
 )
 
 if(WIN32)
-  target_link_libraries(offset PRIVATE Ws2_32.lib VssApi.lib)
+  target_link_libraries(
+    offset PRIVATE
+    Ws2_32.lib 
+    VssApi.lib
+  )
 endif(WIN32)
 
 if (WIN32)

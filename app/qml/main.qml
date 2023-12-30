@@ -19,7 +19,7 @@ ApplicationWindow {
   ApplicationMenu {
     id: appMenu
     width: 60
-    startIndex: 1
+    startIndex: 3
     height: parent.height - (2 * appSpacing)
     anchors.left: parent.left
     anchors.margins: appSpacing
@@ -46,8 +46,9 @@ ApplicationWindow {
           Backup {}
           Ftp {}
           Camera {}
-          Trace {}
+          Compare {}
           Settings {}
+          Trace {}
       }
   }
 

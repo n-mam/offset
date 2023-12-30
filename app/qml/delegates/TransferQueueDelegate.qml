@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Controls
 
 Rectangle {
-  // radius: 5
+  // radius: 3
   // border.width: 1
   // border.color: "gray"
   id: delegateRect
@@ -12,7 +12,7 @@ Rectangle {
 
   Rectangle {
     id: topRow
-    // radius: 5
+    // radius: 3
     // border.width: 1
     // border.color: "gray"
     anchors.margins: 5

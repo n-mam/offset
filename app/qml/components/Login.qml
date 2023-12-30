@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Controls
 
 Rectangle {
-  // radius: 2
+  // radius: 3
   // border.width: 1
   // border.color: "#5FFAFF"
   color: "transparent"

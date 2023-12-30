@@ -6,6 +6,7 @@
 
 #include <Logger.h>
 #include <AppConfig.h>
+#include <TextModel.h>
 #include <LocalFsModel.h>
 #include <RemoteFsModel.h>
 #include <VideoRenderer.h>
@@ -19,85 +20,88 @@ void q_logger(QtMsgType, const QMessageLogContext&, const QString&);
 
 int main(int argc, char *argv[])
 {
-  qputenv("QSG_RENDER_LOOP", "threaded");
+    qputenv("QSG_RENDER_LOOP", "threaded");
 
-  if (qgetenv("CVL_MODELS_ROOT").isEmpty())
-    qputenv("CVL_MODELS_ROOT", "D:/offset/cvl/MODELS/");
-
-  #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+    #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
-  #endif
+    #endif
 
-  qInstallMessageHandler(q_logger);
+    qInstallMessageHandler(q_logger);
 
-  if (qgetenv("QT_QUICK_CONTROLS_STYLE").isEmpty())
-    qputenv("QT_QUICK_CONTROLS_STYLE", QByteArray("Material"));
-  if (qgetenv("QT_QUICK_CONTROLS_MATERIAL_THEME").isEmpty())
-    qputenv("QT_QUICK_CONTROLS_MATERIAL_THEME", QByteArray("Dark"));
+    if (qgetenv("CVL_MODELS_ROOT").isEmpty()) {
+        qputenv("CVL_MODELS_ROOT", "D:/offset/cvl/MODELS/");
+    }
+    if (qgetenv("QT_QUICK_CONTROLS_STYLE").isEmpty()) {
+        qputenv("QT_QUICK_CONTROLS_STYLE", QByteArray("Material"));
+    }
+    if (qgetenv("QT_QUICK_CONTROLS_MATERIAL_THEME").isEmpty()) {
+        qputenv("QT_QUICK_CONTROLS_MATERIAL_THEME", QByteArray("Dark"));
+    }
 
-  QGuiApplication app(argc, argv);
+    QGuiApplication app(argc, argv);
 
-  app.setWindowIcon(QIcon(":app.ico"));
+    app.setWindowIcon(QIcon(":app.ico"));
 
-  QFont font("Consolas", 10);
-  app.setFont(font);
+    QFont font("Consolas", 10);
+    app.setFont(font);
 
-  QQmlApplicationEngine engine;
+    QQmlApplicationEngine engine;
 
-  const QUrl url(u"qrc:/main.qml"_qs);
+    const QUrl url(u"qrc:/main.qml"_qs);
 
-  QObject::connect(&engine, &QQmlApplicationEngine::objectCreated, &app,
-    [url](QObject *obj, const QUrl &objUrl) {
-      if (!obj && url == objUrl)
-          QCoreApplication::exit(-1);
-    },
-    Qt::QueuedConnection);
+    QObject::connect(&engine, &QQmlApplicationEngine::objectCreated, &app,
+      [url](QObject *obj, const QUrl &objUrl) {
+        if (!obj && url == objUrl)
+            QCoreApplication::exit(-1);
+      },
+      Qt::QueuedConnection);
 
-  engine.rootContext()->setContextProperty("appConfig", new AppConfig());
+    engine.rootContext()->setContextProperty("appConfig", new AppConfig());
 
-  qmlRegisterType<VideoRenderer>("CustomElements", 1, 0, "VideoRenderer");
+    qmlRegisterType<VideoRenderer>("CustomElements", 1, 0, "VideoRenderer");
+    qmlRegisterType<TextModel>("CustomElements", 1, 0, "TextModel");
 
-  engine.rootContext()->setContextProperty("logger", new Logger());
-  engine.rootContext()->setContextProperty("localFsModel", LocalFsModel::getInstance());
-  engine.rootContext()->setContextProperty("remoteFsModel", RemoteFsModel::getInstance());
-  engine.rootContext()->setContextProperty("transferManager", TransferManager::getInstance());
-  #ifdef _WIN32
-  engine.rootContext()->setContextProperty("diskListModel", new DiskListModel());
-  #endif
+    engine.rootContext()->setContextProperty("logger", new Logger());
+    engine.rootContext()->setContextProperty("localFsModel", getInstance<LocalFsModel>());
+    engine.rootContext()->setContextProperty("remoteFsModel", getInstance<RemoteFsModel>());
+    engine.rootContext()->setContextProperty("transferManager", getInstance<TransferManager>());
+    #ifdef _WIN32
+    engine.rootContext()->setContextProperty("diskListModel", new DiskListModel());
+    #endif
 
-  engine.load(url);
+    engine.load(url);
 
-  return app.exec();
+    return app.exec();
 }
 
 void q_logger(QtMsgType type, const QMessageLogContext &context, const QString &msg)
 {
-  char buffer[2048];
-  QByteArray localMsg = msg.toLocal8Bit();
+    char buffer[2048];
+    QByteArray localMsg = msg.toLocal8Bit();
 
-  switch (type){
-    case QtDebugMsg:
-      sprintf(buffer, "q_logger: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
-      break;
-    case QtInfoMsg:
-      sprintf(buffer, "q_logger Info: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
-      break;
-    case QtWarningMsg:
-      sprintf(buffer, "q_logger Warning: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
-      break;
-    case QtCriticalMsg:
-      sprintf(buffer, "q_logger Critical: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
-      break;
-    case QtFatalMsg:
-      sprintf(buffer, "q_logger Fatal: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
-      #ifdef _WIN32
-      //OutputDebugStringA(buffer);
-      #endif
-      abort();
-  }
-  #ifdef _WIN32
-  OutputDebugStringA(buffer);
-  #endif
-  //qDebug() << buffer;
-  LOG << buffer;
+    switch (type) {
+        case QtDebugMsg:
+        sprintf(buffer, "q_logger: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
+        break;
+        case QtInfoMsg:
+        sprintf(buffer, "q_logger Info: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
+        break;
+        case QtWarningMsg:
+        sprintf(buffer, "q_logger Warning: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
+        break;
+        case QtCriticalMsg:
+        sprintf(buffer, "q_logger Critical: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
+        break;
+        case QtFatalMsg:
+        sprintf(buffer, "q_logger Fatal: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
+        #ifdef _WIN32
+        //OutputDebugStringA(buffer);
+        #endif
+        abort();
+    }
+    #ifdef _WIN32
+    OutputDebugStringA(buffer);
+    #endif
+    //qDebug() << buffer;
+    LOG << buffer;
 }

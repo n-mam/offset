@@ -5,7 +5,7 @@ import "qrc:/components"
 
 Rectangle {
   id: rowDelegate
-  // radius: 5
+  // radius: 3
   // border.width: 1
   // border.color: "#00bfff"
   color: parent.color

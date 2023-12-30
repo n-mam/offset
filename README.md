@@ -59,7 +59,7 @@ vcpkg.exe install openssl:x64-windows crc32c:x64-windows rapidjson:x64-windows z
 
 sudo apt-get install build-essential zip curl vim bison meson pkg-config
 
-./vcpkg install openssl:x64-linux crc32c:x64-linux rapidjson:x64-linux zlib:x64-linux opencv4[contrib,core,default-features,dnn,ffmpeg]:x64-linux --recurse
+./vcpkg install tinyxml2 libzip openssl:x64-linux crc32c:x64-linux rapidjson:x64-linux zlib:x64-linux opencv4[contrib,core,default-features,dnn,ffmpeg]:x64-linux --recurse
 
 vcpkg.exe integrate install
 
@@ -93,13 +93,13 @@ Qt will be installed into 'D:/qt-6.5.3/install'
 ```sh
 git clone https://github.com/n-mam/offset.git
 cd offset && mkdir build && cd build
-SET Qt6_DIR=D:\qt-6.5.3\install
+SET Qt6_DIR=C:\Qt-6.5.3\install\lib\cmake\Qt6
 cmake -DCMAKE_TOOLCHAIN_FILE=D:/vcpkg/scripts/buildsystems/vcpkg.cmake ..
 cmake -DCMAKE_TOOLCHAIN_FILE=~/vcpkg/scripts/buildsystems/vcpkg.cmake ..
 cmake --build . --config Release
 
 Run as admin (needed for FXC):
-SET PATH=%PATH%;D:\qt-6.5.3\install\bin
+SET PATH=%PATH%;C:\Qt-6.5.3\install\bin
 qml\Release\offset.exe
 ```
 

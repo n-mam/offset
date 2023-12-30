@@ -31,7 +31,7 @@
 #define _1M    1048576                     // 1ULL*1024*1024
 #define _2M    2097152                     // 2ULL*1024*1024
 #define _3M    3145728
-#define _4M    4194304                     
+#define _4M    4194304
 #define _1G    1073741824                  // 1*1024*1024*1024
 #define _1T    1099511627776
 #define _2T    2199023255552               // 2*1024*1024*1024*1024
@@ -75,7 +75,7 @@ inline auto GetArgumentsVector(int argc, char *argv[])
 inline auto GetCurrentDateTime(void)
 {
   char buf[80];
-  struct tm tstruct;      
+  struct tm tstruct;
   time_t now = time(0);
 
   tstruct = *localtime(&now);
@@ -128,34 +128,26 @@ inline auto MessageDigest(const unsigned char *message, size_t message_len, unsi
   return fRet;
 }
 
-inline auto GetDirectoryList(std::string& dir)
-{
-  if (!dir.size())
-  {
+inline auto GetDirectoryList(std::string& dir) {
+
+  if (!dir.size()) {
     dir = std::filesystem::current_path().string();
   }
 
-  for (auto& e : std::filesystem::directory_iterator(dir))
-  {
+  for (auto& e : std::filesystem::directory_iterator(dir)) {
     //e.path().filename().string();
 
-    if (std::filesystem::is_symlink(e))
-    {
-      
-    }
-    else if (std::filesystem::is_directory(e))
-    {
-      
-    }
-    else
-    {
+    if (std::filesystem::is_symlink(e)) {
+
+    } else if (std::filesystem::is_directory(e)) {
+
+    } else {
       //file
     }
   }
 }
 
-inline auto get_timestamp()
-{
+inline auto get_timestamp() {
   std::time_t t = std::time(0);
   std::tm *now = std::localtime(&t);
   std::wstringstream ss;
@@ -169,8 +161,8 @@ inline auto get_timestamp()
 }
 
 template<typename T>
-inline auto endian_reverse(T x)
-{
+inline auto endian_reverse(T x) {
+
   auto l = sizeof(T);
 
   uint8_t *p = (uint8_t *) &x;
@@ -185,51 +177,48 @@ inline auto endian_reverse(T x)
   return x;
 }
 
-inline auto DumpBufferToFile(const std::string& path, const uint8_t *b, uint64_t l)
-{
-  FILE *file = nullptr;
-  file = fopen(path.c_str(), "wb");
-  fwrite(b, 1, l, file);
-  fclose(file);
+inline auto DumpBufferToFile(const std::string& path, const uint8_t *b, uint64_t l) {
+    FILE *file = nullptr;
+    file = fopen(path.c_str(), "wb");
+    fwrite(b, 1, l, file);
+    fclose(file);
 }
 
-inline auto DocToJsonString(rapidjson::Document& rjd)
-{
-  rapidjson::StringBuffer buffer;
-  rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
-  rjd.Accept(writer);
-  return buffer.GetString();
+inline auto DocToJsonString(rapidjson::Document& rjd) {
+    rapidjson::StringBuffer buffer;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+    rjd.Accept(writer);
+    return buffer.GetString();
 }
 
-inline void LTOB(uint64_t value, unsigned char *memory, int size)
-{
-  for (int i = 0; i < size; i++)
-  {
-    memory[size - 1 - i] = *((unsigned char *)(&value) + i);
-  }
+inline void LTOB(uint64_t value, unsigned char *memory, int size) {
+    for (int i = 0; i < size; i++) {
+        memory[size - 1 - i] = *((unsigned char *)(&value) + i);
+    }
 }
+
 inline void LTOB16(uint64_t value, unsigned char *memory)
 {
-  LTOB(value, memory, 2);
+    LTOB(value, memory, 2);
 }
+
 inline void LTOB32(uint64_t value, unsigned char *memory)
 {
-  LTOB(value, memory, 4);
+    LTOB(value, memory, 4);
 }
+
 inline void LTOB64(uint64_t value, unsigned char *memory)
 {
-  LTOB(value, memory, 8);
+    LTOB(value, memory, 8);
 }
 
 template<typename T>
-inline auto is_bit_set(T x, uint8_t n)
-{
+inline auto is_bit_set(T x, uint8_t n) {
   return ((x >> (n - 1)) & 1);
 }
 
 template<typename T>
-inline void set_bit(T& x, uint8_t n)
-{
+inline void set_bit(T& x, uint8_t n) {
   x |= 1 << (n - 1);
 }
 

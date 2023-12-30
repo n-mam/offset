@@ -10,84 +10,79 @@ namespace fxc {
 //create a raw image from source at ofset o and write to target
 auto image_copy_from(npl::SPFileDevice source, npl::SPSubject<uint8_t, uint8_t> target, TProgressCallback cbk =nullptr)
 {
-  if (!osl::AllowExtendedDasdIO(source->_fd_sync))
-  {
-    LOG << "AllowExtendedDasdIO failed, error : " << GetLastError();
-  }
-
-  auto length = osl::GetBlockDeviceLength(source->_fd_sync);
-
-  LOG << "Total length " << length;
-
-  DWORD dwBytesRead = 0;
-  DWORD dwBytesWritten = 0;
-  uint64_t totalBytesRead = 0;
-  uint64_t totalBytesWritten = 0;
-
-  bool stop = false, ok = true;
-
-  LARGE_INTEGER r_offset, w_offset;
-  r_offset.QuadPart = 0;
-  w_offset.QuadPart = 0;
-
-  uint64_t bs = _2M;
-  uint64_t pendingBytes = length, toRead = 0;
-
-  auto buffer = std::make_unique<char []>(bs);
-
-  while (!stop && ok && pendingBytes)
-  {
-    if (pendingBytes >= bs)
-    {
-      toRead = bs;
-    }
-    else
-    {
-      toRead = (DWORD)(pendingBytes + ((pendingBytes % 512) ? (512 - (pendingBytes % 512)) : 0));
+    if (!osl::AllowExtendedDasdIO(source->_fd_sync)) {
+      LOG << "AllowExtendedDasdIO failed, error : " << GetLastError();
     }
 
-    // read the source device
-    dwBytesRead = source->ReadSync((uint8_t *) buffer.get(), toRead, r_offset.QuadPart);
+    auto length = osl::GetBlockDeviceLength(source->_fd_sync);
 
-    ok = (dwBytesRead == toRead);
+    LOG << "Total length " << length;
 
-    // write to the target disk
-    dwBytesWritten = target->WriteSync((uint8_t *) buffer.get(), dwBytesRead, w_offset.QuadPart);
+    DWORD dwBytesRead = 0;
+    DWORD dwBytesWritten = 0;
+    uint64_t totalBytesRead = 0;
+    uint64_t totalBytesWritten = 0;
 
-    ok = (dwBytesWritten == dwBytesRead);
+    bool ok = true;
+    bool stop = false;
 
-    totalBytesRead += dwBytesRead;
+    LARGE_INTEGER r_offset, w_offset;
+    r_offset.QuadPart = 0;
+    w_offset.QuadPart = 0;
 
-    totalBytesWritten += dwBytesWritten;
+    uint64_t bs = _2M;
+    uint64_t pendingBytes = length, toRead = 0;
 
-    pendingBytes -= dwBytesRead;
+    auto buffer = std::make_unique<char []>(bs);
 
-    r_offset.QuadPart += bs;
-    w_offset.QuadPart += bs;
+    while (!stop && ok && pendingBytes) {
 
-    dwBytesRead = dwBytesWritten = 0;
+        if (pendingBytes >= bs) {
+            toRead = bs;
+        } else {
+            toRead = (DWORD)(pendingBytes + ((pendingBytes % 512) ? (512 - (pendingBytes % 512)) : 0));
+        }
 
-    if (cbk)
-    {
-      stop = cbk(L"", static_cast<int>(((double)totalBytesRead/(double)length) * 100));
+        // read the source device
+        dwBytesRead = source->ReadSync((uint8_t *) buffer.get(), toRead, r_offset.QuadPart);
+
+        ok = (dwBytesRead == toRead);
+
+        // write to the target disk
+        dwBytesWritten = target->WriteSync((uint8_t *) buffer.get(), dwBytesRead, w_offset.QuadPart);
+
+        ok = (dwBytesWritten == dwBytesRead);
+
+        totalBytesRead += dwBytesRead;
+
+        totalBytesWritten += dwBytesWritten;
+
+        pendingBytes -= dwBytesRead;
+
+        r_offset.QuadPart += bs;
+        w_offset.QuadPart += bs;
+
+        dwBytesRead = dwBytesWritten = 0;
+
+        if (cbk) {
+            stop = cbk(L"", static_cast<int>(((double)totalBytesRead/(double)length) * 100));
+        }
     }
-  }
 
-  if (stop || !ok)
-  {
-    LOG << "image_copy_from stop, ok : " << stop << ", " << ok;
-    return false;
-  }
+    if (stop || !ok) {
+        LOG << "image_copy_from stop, ok : " << stop << ", " << ok;
+        return false;
+    }
 
-  target->WriteSync();
+    target->WriteSync();
 
-  LOG << "Read " << totalBytesRead << " bytes";
-  LOG << "Wrote " << totalBytesWritten << " bytes";
+    LOG << "Read " << totalBytesRead << " bytes";
+    LOG << "Wrote " << totalBytesWritten << " bytes";
 
-  return true;
+    return true;
 }
 
-//create base parent vhd from a volume/snapshot block device 
+//create base parent vhd from a volume/snapshot block device
 auto create_base_vhd(const std::wstring& volume, npl::SPSubject<uint8_t, uint8_t> target, fxc::TProgressCallback cbk)
 {
   auto source = npl::make_file(volume, false);
@@ -192,7 +187,7 @@ auto create_base_vhd(const std::wstring& volume, npl::SPSubject<uint8_t, uint8_t
   // bat
   target->WriteSync((uint8_t *) bat.get(), disk->iBATSize, sizeof(VHD_FOOTER_HEADER));
 
-  // set target for io operations on disk 
+  // set target for io operations on disk
   target->AddEventListener(disk);
 
   disk->CommitPartitionTable();
@@ -250,7 +245,7 @@ auto create_base_vhd(const std::wstring& volume, npl::SPSubject<uint8_t, uint8_t
 
   assert(nTotalPayloadBlocks == 0);
 
-  // assert the fact that constructed bat matches the one 
+  // assert the fact that constructed bat matches the one
   // which is dynamically maintained due to disk level writes
   if (memcmp(disk->iBAT.get(), bat.get(), disk->iBATSize))
   {
@@ -329,7 +324,7 @@ auto create_child_vhd(const std::wstring& source, const std::wstring& parent, np
   if (hvhd == INVALID_HANDLE_VALUE)
   {
     LOG << "create_child_vhd failed to attach vhd";
-    return false; 
+    return false;
   }
 
   auto phyDiskPath = osl::GetPhysicalDiskPath(hvhd);
@@ -337,7 +332,7 @@ auto create_child_vhd(const std::wstring& source, const std::wstring& parent, np
   if (!phyDiskPath.size())
   {
     LOG << "create_child_vhd failed to get physical disk object";
-    return false; 
+    return false;
   }
 
   auto phyDisk = npl::make_file(phyDiskPath);
@@ -413,7 +408,7 @@ auto create_fixed_vhd(const std::wstring& device, npl::SPSubject<uint8_t, uint8_
 
   auto disk = std::make_shared<VirtualHardDisk>(length, _2M, VirtualHardDisk::EVHDType::Fixed);
 
-  // set target for io operations on disk 
+  // set target for io operations on disk
   target->AddEventListener(disk);
 
   auto rc = disk->CommitPartitionTable();
@@ -462,7 +457,7 @@ auto create_raw_image(const std::wstring& device, npl::SPSubject<uint8_t, uint8_
   target.reset();
 }
 
-//create base parent vhdx from a volume/snapshot block device 
+//create base parent vhdx from a volume/snapshot block device
 void create_base_vhdx(const std::wstring& volume, npl::SPSubject<uint8_t, uint8_t> target, fxc::TProgressCallback cbk)
 {
   auto source = npl::make_file(volume, false);
@@ -614,7 +609,7 @@ void create_base_vhdx(const std::wstring& volume, npl::SPSubject<uint8_t, uint8_
   // bat
   target->WriteSync((uint8_t *) bat.get(), disk->iBATSize, _3M);
 
-  // set target for io operations on disk 
+  // set target for io operations on disk
   target->AddEventListener(disk);
 
   disk->CommitPartitionTable();
@@ -676,7 +671,7 @@ void create_base_vhdx(const std::wstring& volume, npl::SPSubject<uint8_t, uint8_
 
   assert(nTotalPayloadBlocks == 0);
 
-  // assert the fact that constructed bat matches the one 
+  // assert the fact that constructed bat matches the one
   // which is dynamically maintained due to disk level writes
   if (memcmp(disk->iBAT.get(), bat.get(), disk->iBATSize))
   {
@@ -773,7 +768,7 @@ bool create_child_vhdx(const std::wstring& source, const std::wstring& parent, n
   if (hvhd == INVALID_HANDLE_VALUE)
   {
     LOG << "create_child_vhdx failed to attach vhd";
-    return false; 
+    return false;
   }
 
   auto phyDiskPath = osl::GetPhysicalDiskPath(hvhd);
@@ -781,7 +776,7 @@ bool create_child_vhdx(const std::wstring& source, const std::wstring& parent, n
   if (!phyDiskPath.size())
   {
     LOG << "create_child_vhdx failed to get physical disk object";
-    return false; 
+    return false;
   }
 
   auto phyDisk = npl::make_file(phyDiskPath);

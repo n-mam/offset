@@ -41,14 +41,14 @@ Loader {
   Component {
     id: usageComponent
     Rectangle {
-      radius: 2
+      radius: 3
       border.width: 1
       border.color: borderColor
       color: Material.background
       Rectangle {
         id: used
         x: parent.x
-        radius: 2
+        radius: 3
         width: loader.width * (loader.used / (loader.used + loader.free))
         height: parent.height
         color: "#ADDEFC" //lightskyblue"
@@ -64,7 +64,7 @@ Loader {
       }
       Rectangle {
         id: remaining
-        radius: 2
+        radius: 3
         x: used.x + used.width
         width: loader.width - used.width
         height: parent.height

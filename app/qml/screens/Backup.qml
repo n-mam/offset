@@ -31,7 +31,7 @@ Rectangle {
 
     Rectangle {
       id: listRect
-      // radius: 5
+      // radius: 3
       // border.width: 1
       // border.color: borderColor
       width: parent.width
@@ -74,14 +74,6 @@ Rectangle {
           }
         }
       }
-      FolderDialog {
-        id: folderDialog
-        onAccepted: {
-          var path = folderDialog.folder.toString();
-          path = path.replace(/^(file:\/{3})|(qrc:\/{2})|(http:\/{2})/,"");
-          destination.text = decodeURIComponent(path).replace(/\//g, "\\")
-        }
-      }
     }
 
     Rectangle {
@@ -91,43 +83,21 @@ Rectangle {
       SplitView.preferredHeight: parent.height * 0.20
       SplitView.maximumHeight: 100
       color: "transparent"
-      // radius: 5
+      // radius: 3
       // border.width: 1
       // border.color: borderColor
-      Rectangle {
-        id: destRect
+
+      FileFolderSelector {
         width: parent.width
-        height: 40
-        anchors.top: parent.top
-        anchors.topMargin: 8
-        color: "transparent"
-        // radius: 5
-        // border.width: 1
-        // border.color: borderColor
-        TextField {
-          id: destination
-          width: (parent.width * 0.77) - (2 * appSpacing)
-          height: parent.height * 0.85
-          anchors.left: parent.left
-          anchors.leftMargin: 7
-          text: folderDialog.folder
-          placeholderText: "Destination"
-          verticalAlignment: TextInput.AlignVCenter
-        }
-        Button {
-          text: "Select"
-          width: (parent.width * 0.20) - appSpacing
-          height: parent.height
-          anchors.right: parent.right
-          anchors.rightMargin: 7
-          anchors.bottom: parent.bottom
-          onClicked: folderDialog.open()
-          anchors.verticalCenter: parent.verticalCenter
-        }
+        height: 43
+        isFolderSelector: true
+        label: "Select"
+        placeholder: "Destination"
       }
+
       Rectangle {
         id: actionsRect
-        // radius: 5
+        // radius: 3
         // border.width: 1
         // border.color: borderColor
         anchors.bottom: parent.bottom

@@ -39,7 +39,7 @@ Item {
     focus: true
     highlightMoveDuration: 100
     highlightMoveVelocity: 800
-    highlight: Rectangle { color: "lightsteelblue"; radius: 2 }
+    highlight: Rectangle { color: "lightsteelblue"; radius: 3 }
     Connections {
       target: localFsModel
       function onDirectoryList() {
@@ -56,7 +56,7 @@ Item {
     id: toolBar
     width: 26
     height: 147
-    radius: 2
+    radius: 3
     border.width: 1
     border.color: borderColor
     color: Qt.lighter(Material.background, 1.8)
@@ -153,6 +153,102 @@ Item {
         onClicked: processToolBarAction("Delete")
         cursorShape: Qt.PointingHandCursor
         onContainsMouseChanged: deleteTool.scale = 1 + (containsMouse ? 0.2 : 0)
+      }
+    }
+  }
+
+  Rectangle {
+    id: spacer
+    color: Material.background
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: statusRect.top
+    height: 3
+    Shape {
+      anchors.fill: spacer
+      anchors.centerIn: spacer
+      ShapePath {
+        strokeColor: borderColor
+        strokeStyle: ShapePath.SolidLine
+        startX: 1; startY: 1
+        PathLine {x: spacer.width; y: 1}
+      }
+    }
+  }
+
+  Rectangle {
+    id: statusRect
+    height: 25
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    anchors.leftMargin: 5
+    anchors.rightMargin: 2
+    color: Material.background
+    // radius: 3
+    // border.width: 1
+    // border.color: borderColor
+
+    Text {
+      id: status
+      color: textColor
+      verticalAlignment: Text.AlignVCenter
+      anchors.verticalCenter: parent.verticalCenter
+      anchors.left: parent.left
+    }
+  }
+
+  Component {
+    id: listItemDelegate
+    Rectangle {
+      id: delegateRect
+      implicitWidth: ListView.view.width
+      implicitHeight: 24
+      Component.onCompleted: {
+        if (fileName === ".") {
+          height = 0
+          visible = false
+        }
+      }
+      color: "transparent"
+      // radius: 3
+      // border.width: 1
+      // border.color: "#123"
+
+      Image {
+        id: listItemIcon
+        x: 3
+        width: 20; height: 20
+        anchors.verticalCenter: parent.verticalCenter
+        source: fileIsDir ? (fileName !== "." ? "qrc:/folder.png" : "") : "qrc:/file.png"
+      }
+
+      Text {
+        id: feText
+        x: listItemIcon.x + listItemIcon.width + 5
+        text: fileName
+        height: parent.height
+        color: delegateRect.ListView.isCurrentItem ? "black" : textColor
+        verticalAlignment: Text.AlignVCenter
+        anchors.verticalCenter: parent.verticalCenter
+      }
+
+      MouseArea {
+        anchors.fill: parent
+        acceptedButtons: Qt.AllButtons
+        onDoubleClicked: {
+          if (fileIsDir) {
+            if (fileName === "..")
+              localFsModel.currentDirectory = localFsModel.getParentDirectory()
+            else
+              localFsModel.currentDirectory = localFsModel.currentDirectory +
+                (localFsModel.currentDirectory.endsWith(localFsModel.pathSeperator) ?
+                  fileName : (localFsModel.pathSeperator + fileName))
+          }
+        }
+        onClicked: (mouse) => {
+          localListView.currentIndex = index
+        }
       }
     }
   }
@@ -258,103 +354,6 @@ Item {
             localFsModel.RemoveFile(path, true)
         }
         localFsModel.currentDirectory = localFsModel.currentDirectory
-      }
-    }
-  }
-
-  Rectangle {
-    id: spacer
-    color: "transparent"
-    anchors.left: parent.left
-    anchors.right: parent.right
-    anchors.bottom: statusRect.top
-    height: 1
-    Shape {
-      anchors.fill: spacer
-      anchors.centerIn: spacer
-      ShapePath {
-        strokeWidth: 1
-        strokeColor: borderColor
-        strokeStyle: ShapePath.SolidLine
-        startX: 1; startY: 1
-        PathLine {x: spacer.width; y: 1}
-      }
-    }
-  }
-
-  Rectangle {
-    id: statusRect
-    height: 25
-    anchors.left: parent.left
-    anchors.right: parent.right
-    anchors.bottom: parent.bottom
-    anchors.leftMargin: 5
-    anchors.rightMargin: 2
-    color: Material.background
-    // radius: 2
-    // border.width: 1
-    // border.color: borderColor
-
-    Text {
-      id: status
-      color: textColor
-      verticalAlignment: Text.AlignVCenter
-      anchors.verticalCenter: parent.verticalCenter
-      anchors.left: parent.left
-    }
-  }
-
-  Component {
-    id: listItemDelegate
-    Rectangle {
-      id: delegateRect
-      implicitWidth: ListView.view.width
-      implicitHeight: 24
-      Component.onCompleted: {
-        if (fileName === ".") {
-          height = 0
-          visible = false
-        }
-      }
-      color: "transparent"
-      // radius: 2
-      // border.width: 1
-      // border.color: "#123"
-
-      Image {
-        id: listItemIcon
-        x: 3
-        width: 20; height: 20
-        anchors.verticalCenter: parent.verticalCenter
-        source: fileIsDir ? (fileName !== "." ? "qrc:/folder.png" : "") : "qrc:/file.png"
-      }
-
-      Text {
-        id: feText
-        x: listItemIcon.x + listItemIcon.width + 5
-        text: fileName
-        height: parent.height
-        color: delegateRect.ListView.isCurrentItem ? "black" : textColor
-        verticalAlignment: Text.AlignVCenter
-        anchors.verticalCenter: parent.verticalCenter
-      }
-
-      MouseArea {
-        anchors.fill: parent
-        acceptedButtons: Qt.AllButtons
-        onDoubleClicked: {
-          if (fileIsDir) {
-            if (fileName === "..")
-              localFsModel.currentDirectory = localFsModel.getParentDirectory()
-            else
-              localFsModel.currentDirectory = localFsModel.currentDirectory +
-                (localFsModel.currentDirectory.endsWith(localFsModel.pathSeperator) ?
-                  fileName : (localFsModel.pathSeperator + fileName))
-          }
-        }
-        onClicked: (mouse) => {
-          localListView.currentIndex = index
-        }
       }
     }
   }

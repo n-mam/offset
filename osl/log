@@ -1,8 +1,8 @@
 #ifndef LOG_HPP
 #define LOG_HPP
 
-#include <iostream>
 #include <sstream>
+#include <iostream>
 #include <functional>
 #include <type_traits>
 
@@ -14,113 +14,91 @@ namespace osl {
 template<typename T>
 using TLogCallback = std::function<void (int, int, const T&)>;
 
-class log
-{
-  public:
+struct log {
 
-  log(){}
+    public:
 
-  log(int level, int key = 0)
-  {
-    m_key = key;
-    m_level = level;
-  }
+    log(){}
 
-  ~log()
-  {
-    if (a_sink && a_ss.str().size())
-    {
-      a_sink(m_level, m_key, a_ss.str());
-      //OutputDebugStringA(a_ss.str().c_str());
-    }
-    if (w_sink && w_ss.str().size())
-    {
-      w_sink(m_level, m_key, w_ss.str());
-      //OutputDebugStringW(w_ss.str().c_str());
-    }
-  }
-
-  enum {
-    debug = 0,
-    info = 1,
-    warn = 2,
-    error = 3,
-    status = 4,
-    critical = 5
-  };
-
-  static void SetLogLevel(decltype(osl::log::debug) level)
-  {
-    s_app_log_level = level;
-  }
-
-  template<typename T>
-  static void SetLogSink(TLogCallback<T> cbk)
-  {
-    if constexpr(std::is_same<T, std::string>::value)
-    {
-      a_sink = cbk;
+    log(int level, int key = 0) {
+        m_key = key;
+        m_level = level;
     }
 
-    if constexpr(std::is_same<T, std::wstring>::value)
-    {
-      w_sink = cbk;
+    ~log() {
+        if (a_sink && a_ss.str().size()) {
+            a_sink(m_level, m_key, a_ss.str());
+            //OutputDebugStringA(a_ss.str().c_str());
+        }
+
+        if (w_sink && w_ss.str().size()) {
+            w_sink(m_level, m_key, w_ss.str());
+            //OutputDebugStringW(w_ss.str().c_str());
+        }
     }
-  }
 
-  private:
+    enum {
+        debug = 0,
+        info = 1,
+        warn = 2,
+        error = 3,
+        status = 4,
+        critical = 5
+    };
 
-  template<typename T>
-  friend log&& operator <<(log&& lhs, const T& rhs);
+    static void SetLogLevel(decltype(osl::log::debug) level) {
+        s_app_log_level = level;
+    }
 
-  inline static TLogCallback<std::string> a_sink = nullptr;
-  inline static TLogCallback<std::wstring> w_sink = nullptr;
+    template<typename T>
+    static void SetLogSink(TLogCallback<T> cbk) {
+        if constexpr(std::is_same<T, std::string>::value) {
+            a_sink = cbk;
+        }
 
-  int m_key = 0;
-  int m_level = log::info;
-  std::stringstream a_ss;
-  std::wstringstream w_ss;
-  inline static int s_app_log_level = osl::log::info;
+        if constexpr(std::is_same<T, std::wstring>::value) {
+            w_sink = cbk;
+        }
+    }
+
+    private:
+
+    template<typename T>
+    friend log&& operator <<(log&& lhs, const T& rhs);
+
+    inline static TLogCallback<std::string> a_sink = nullptr;
+    inline static TLogCallback<std::wstring> w_sink = nullptr;
+
+    int m_key = 0;
+    int m_level = log::info;
+    std::stringstream a_ss;
+    std::wstringstream w_ss;
+    inline static int s_app_log_level = osl::log::info;
 };
 
 template<typename T>
-log&& operator <<(log&& lhs, const T& rhs)
-{
-  if (lhs.m_level >= log::s_app_log_level)
-  {
-    if constexpr(std::is_convertible_v<T, const std::string&>)
-    {
-      lhs.a_ss << rhs;
+log&& operator <<(log&& lhs, const T& rhs) {
+    if (lhs.m_level >= log::s_app_log_level) {
+        if constexpr(std::is_convertible_v<T, const std::string&>) {
+            lhs.a_ss << rhs;
+        } else if constexpr(std::is_convertible_v<T, const std::wstring&>) {
+            lhs.w_ss << rhs;
+        } else if (lhs.a_ss.str().size()) {
+            lhs.a_ss << rhs;
+        } else {
+            lhs.w_ss << rhs;
+        }
     }
-    else if constexpr(std::is_convertible_v<T, const std::wstring&>)
-    {
-      lhs.w_ss << rhs;
-    }
-    else if (lhs.a_ss.str().size())
-    {
-      lhs.a_ss << rhs;
-    }
-    else
-    {
-      lhs.w_ss << rhs;
-    }
-  }
-
-  return std::move(lhs);
+    return std::move(lhs);
 }
 
 }
 
 #define DBG osl::log(osl::log::debug)
-
 #define LOG osl::log(osl::log::info)
-
 #define WARN osl::log(osl::log::warn)
-
 #define ERR osl::log(osl::log::error)
-
 #define STATUS(k) osl::log(osl::log::status, k)
-
 #define CRITICAL osl::log(osl::log::critical)
 
 #endif

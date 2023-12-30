@@ -9,7 +9,7 @@ ListView {
   currentIndex: -1
   delegate: Rectangle {
     id: listDelegate
-    // radius: 5
+    // radius: 3
     // border.width: 1
     // border.color: "grey"
     width: listView.width

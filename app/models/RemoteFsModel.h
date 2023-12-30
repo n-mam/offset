@@ -18,8 +18,6 @@ class RemoteFsModel : public FsModel
     RemoteFsModel();
     ~RemoteFsModel();
 
-    static RemoteFsModel * getInstance(void);
-
     Q_PROPERTY(bool connected READ getConnected WRITE setConnected NOTIFY connected);
 
     Q_INVOKABLE void Quit();

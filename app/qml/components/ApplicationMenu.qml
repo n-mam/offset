@@ -17,7 +17,7 @@ Rectangle {
         spacing: 25
         width: parent.width
         currentIndex: startIndex
-        height: parent.height - (parent.height * 0.40)
+        height: parent.height - (parent.height * 0.30)
         anchors.verticalCenter: parent.verticalCenter
         anchors.horizontalCenter: parent.horizontalCenter
         model: ListModel {
@@ -31,10 +31,13 @@ Rectangle {
                 name: "camera.png"
             }
             ListElement {
-                name: "log.png"
+                name: "compare.png"
             }
             ListElement {
                 name: "settings.png"
+            }
+            ListElement {
+                name: "log.png"
             }
         }
         delegate: Item {

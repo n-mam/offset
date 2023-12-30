@@ -1,6 +1,7 @@
 #ifndef NPL_HPP
 #define NPL_HPP
 
+#include <observer/singleton>
 #include <observer/dispatcher>
 #include <device/socket>
 #include <protocol/ftp>
@@ -39,6 +40,7 @@ inline auto make_ftp(const std::string& host, int port, tls tls = tls::no) {
 }
 
 inline auto make_ws_server(const std::string& host, int port,
+
     tls tls = tls::no, TOnClientMessageCbk cbk = nullptr) {
 
     SPProtocolWSServer ls;

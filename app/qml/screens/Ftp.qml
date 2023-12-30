@@ -58,7 +58,7 @@ Rectangle {
       SplitView.minimumHeight: 90
       SplitView.preferredHeight: parent.height * 0.25
       color: "transparent"
-      // radius: 5
+      // radius: 3
       // border.width: 1
       // border.color: borderColor
 
@@ -76,7 +76,7 @@ Rectangle {
         highlightMoveDuration: 100
         highlightMoveVelocity: 800
         delegate: TransferQueueDelegate{}
-        highlight: Rectangle { color: "lightsteelblue"; radius: 2 }
+        highlight: Rectangle { color: "lightsteelblue"; radius: 3 }
         Connections {
           target: transferManager
           function onTransferStarted(index) {

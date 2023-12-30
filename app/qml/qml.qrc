@@ -5,21 +5,24 @@
     <file>screens/Trace.qml</file>
     <file>screens/Camera.qml</file>
     <file>screens/Backup.qml</file>
-    <file>screens/Settings.qml</file>
-    <file>screens/CameraSettings.qml</file>
+    <file>screens/Compare.qml</file>
     <file>components/List.qml</file>
+    <file>screens/Settings.qml</file>
     <file>components/Login.qml</file>
-    <file>components/Element.qml</file>
     <file>components/Player.qml</file>
+    <file>components/Element.qml</file>
+    <file>components/DiffView.qml</file>
     <file>components/FTPFooter.qml</file>
     <file>components/FxcFooter.qml</file>
+    <file>delegates/RowDelegate.qml</file>
+    <file>screens/CameraSettings.qml</file>
     <file>components/StackScreen.qml</file>
     <file>components/LocalListView.qml</file>
     <file>components/RenameNewPopup.qml</file>
     <file>components/RemoteListView.qml</file>
-    <file>components/ExcludeListPopup.qml</file>
     <file>components/ApplicationMenu.qml</file>
-    <file>delegates/RowDelegate.qml</file>
+    <file>components/ExcludeListPopup.qml</file>
+    <file>components/FileFolderSelector.qml</file>
     <file>delegates/TransferQueueDelegate.qml</file>
   </qresource>
 </RCC>

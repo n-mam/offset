@@ -15,7 +15,7 @@ Item {
         height: 200
         anchors.top: parent.top
         anchors.right: parent.right
-        radius: 2
+        radius: 3
         border.width: 1
         border.color: borderColor
         color: "transparent"
