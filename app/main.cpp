@@ -6,10 +6,11 @@
 
 #include <Logger.h>
 #include <AppConfig.h>
-#include <TextModel.h>
 #include <LocalFsModel.h>
 #include <RemoteFsModel.h>
 #include <VideoRenderer.h>
+#include <CompareManager.h>
+#include <CompareFileModel.h>
 
 #ifdef _WIN32
 #include <DiskListModel.h>
@@ -59,11 +60,12 @@ int main(int argc, char *argv[])
     engine.rootContext()->setContextProperty("appConfig", new AppConfig());
 
     qmlRegisterType<VideoRenderer>("CustomElements", 1, 0, "VideoRenderer");
-    qmlRegisterType<TextModel>("CustomElements", 1, 0, "TextModel");
+    qmlRegisterType<CompareFileModel>("CustomElements", 1, 0, "CompareFileModel");
 
     engine.rootContext()->setContextProperty("logger", new Logger());
     engine.rootContext()->setContextProperty("localFsModel", getInstance<LocalFsModel>());
     engine.rootContext()->setContextProperty("remoteFsModel", getInstance<RemoteFsModel>());
+    engine.rootContext()->setContextProperty("compareManager", getInstance<CompareManager>());
     engine.rootContext()->setContextProperty("transferManager", getInstance<TransferManager>());
     #ifdef _WIN32
     engine.rootContext()->setContextProperty("diskListModel", new DiskListModel());

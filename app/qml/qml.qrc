@@ -10,11 +10,12 @@
     <file>screens/Settings.qml</file>
     <file>components/Login.qml</file>
     <file>components/Player.qml</file>
+    <file>components/ButtonX.qml</file>
     <file>components/Element.qml</file>
-    <file>components/DiffView.qml</file>
     <file>components/FTPFooter.qml</file>
     <file>components/FxcFooter.qml</file>
     <file>delegates/RowDelegate.qml</file>
+    <file>components/CompareFile.qml</file>
     <file>screens/CameraSettings.qml</file>
     <file>components/StackScreen.qml</file>
     <file>components/LocalListView.qml</file>

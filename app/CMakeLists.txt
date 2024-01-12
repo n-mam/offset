@@ -22,11 +22,12 @@ target_sources(offset PRIVATE main.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/models/FsModel.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/models/AppConfig.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/models/BaseModel.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/models/TextModel.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/models/LocalFsModel.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/models/RemoteFsModel.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/models/VideoRenderer.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/models/CompareManager.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/models/TransferManager.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/models/CompareFileModel.cpp
 )
 
 if(WIN32)
@@ -42,22 +43,22 @@ target_link_libraries(
   offset
   PRIVATE
   Qt6::Gui
-  Qt6::Quick
-  Qt6::QuickControls2
   rapidjson
-  ZLIB::ZLIB
-  OpenSSL::SSL
   opencv_ml
+  Qt6::Quick
+  ZLIB::ZLIB
   opencv_dnn
   opencv_dpm
   opencv_hdf
   opencv_face
-  opencv_bgsegm
   opencv_core
+  OpenSSL::SSL
   opencv_aruco
+  opencv_bgsegm
   Crc32c::crc32c
   OpenSSL::Crypto
   tinyxml2::tinyxml2
+  Qt6::QuickControls2
 )
 
 if(WIN32)

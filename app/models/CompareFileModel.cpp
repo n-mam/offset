@@ -1,18 +1,19 @@
 #include <sstream>
+#include <fstream>
 
 #include <osl/log>
 
-#include <TextModel.h>
+#include <CompareFileModel.h>
 
-TextModel::TextModel()
+CompareFileModel::CompareFileModel()
 {
 }
 
-TextModel::~TextModel()
+CompareFileModel::~CompareFileModel()
 {
 }
 
-QHash<int, QByteArray> TextModel::roleNames() const {
+QHash<int, QByteArray> CompareFileModel::roleNames() const {
     auto roles = QAbstractListModel::roleNames();
     roles.insert(ELineIndent, "lineIndent");
     roles.insert(ELineHash, "lineHash");
@@ -22,13 +23,14 @@ QHash<int, QByteArray> TextModel::roleNames() const {
     return roles;
 }
 
-int TextModel::rowCount(const QModelIndex &parent) const {
+int CompareFileModel::rowCount(const QModelIndex &parent) const {
     return static_cast<int>(m_model.size());
 }
 
-QVariant TextModel::data(const QModelIndex &index, int role) const {
+QVariant CompareFileModel::data(const QModelIndex &index, int role) const {
 
-    if (!index.isValid()) return QVariant();
+    if (!index.isValid()) 
+        return QVariant();
 
     auto row = index.row();
 
@@ -53,19 +55,36 @@ QVariant TextModel::data(const QModelIndex &index, int role) const {
     return {};
 }
 
-QString TextModel::getDocument() {
+QString CompareFileModel::getDocument() {
     return QString::fromStdString(m_document);
 }
 
-void TextModel::setDocument(QString document) {
+void CompareFileModel::setDocument(QString document) {
     if (document != QString::fromStdString(m_document)) {
         m_document = document.toStdString();
-        load_xml_model(m_document);
+        if (!load_as_xml(m_document)) {
+            load_as_txt(m_document);
+        }
         emit documentChanged(document);
     }
 }
 
-void TextModel::load_xml_model(const std::string& file) {
+bool CompareFileModel::load_as_txt(const std::string& file) {
+    std::string line;
+    std::ifstream f(file.c_str());
+    beginResetModel();
+    while (std::getline(f, line)) {
+        m_model.push_back({
+            0,
+            m_model.size() + 1,
+            std::hash<std::string>{}(line),
+            line});
+    }
+    endResetModel();
+    return true;
+}
+
+bool CompareFileModel::load_as_xml(const std::string& file) {
 
     tinyxml2::XMLDocument xmlDoc;
 
@@ -73,14 +92,14 @@ void TextModel::load_xml_model(const std::string& file) {
 
     if (result != tinyxml2::XML_SUCCESS) { 
         ERR << "error : " << result;
-        return;
+        return false;
     }
 
     auto root = xmlDoc.RootElement();
 
     if (!root) { 
         ERR << "error : RootElement ";
-        return;
+        return false;
     }
 
     auto rootElement = root->FirstChildElement();
@@ -94,10 +113,11 @@ void TextModel::load_xml_model(const std::string& file) {
     traverse_element(rootElement, 1);
 
     endResetModel();
+
+    return true;
 }
 
-
-void TextModel::traverse_element(tinyxml2::XMLElement *element, int depth) {
+void CompareFileModel::traverse_element(tinyxml2::XMLElement *element, int depth) {
 
     auto childElement = element->FirstChildElement();
 

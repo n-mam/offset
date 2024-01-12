@@ -10,13 +10,14 @@ Item {
 
   TextField {
     id: currentDirectory
+    height: textFieldHeight
+    enabled: false
+    font.pointSize: 10
+    anchors.margins: 10
+    anchors.topMargin: 12
+    anchors.top: parent.top
     anchors.left: parent.left
     anchors.right: parent.right
-    anchors.top: parent.top
-    anchors.topMargin: 12
-    anchors.margins: 10
-    height: 43
-    enabled: false
     placeholderText: qsTr("Remote Directory")
     verticalAlignment: TextInput.AlignVCenter
     onAccepted: remoteFsModel.currentDirectory = currentDirectory.text

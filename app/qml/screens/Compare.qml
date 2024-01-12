@@ -4,7 +4,12 @@ import QtQuick.Controls
 import "qrc:/components"
 
 Item {
+    id: compareRoot
 
+    property var pointSize: 10
+
+    signal startCompare
+    
     SplitView {
         id: compareSplit
         width: parent.width
@@ -24,28 +29,68 @@ Item {
             }
         }
 
-        DiffView {
-            id: leftDiffView
+        CompareFile {
+            id: leftCompareFile
+            pointSize: compareRoot.pointSize
         }
 
-        DiffView {
-            id: rightDiffView
+        CompareFile {
+            id: rightCompareFile
+            pointSize: compareRoot.pointSize
+        }
+
+        ScrollBar {
+            id: vbar
+            height: parent.height
+            anchors.right: parent.right
+            policy: ScrollBar.AlwaysOff
         }
     }
 
     Rectangle {
+        
         id: compareControls
+        // radius: 3
+        // border.width: 1
+        // border.color: borderColor
         width: parent.width
-        height: parent.height * 0.7
-        anchors.top: compareSplit.bottom
         color: Material.background
+        anchors.bottom: parent.bottom
+        anchors.top: compareSplit.bottom
         Row {
-            spacing: 4
-            Button {
+            spacing: 6
+            anchors.verticalCenter: parent.verticalCenter
+            ButtonX {
                 text: "+"
+                width: 24
+                height: 24
+                onButtonXClicked: {
+                    compareRoot.pointSize += 1
+                }
             }
-            Button {
+            Text {
+                width: 24
+                height: 24
+                color: textColor
+                text: compareRoot.pointSize
+                verticalAlignment: Text.AlignVCenter
+                horizontalAlignment: Text.AlignHCenter
+            }
+            ButtonX {
                 text: "-"
+                width: 24
+                height: 24
+                onButtonXClicked: {
+                    compareRoot.pointSize -= 1
+                }
+            }
+            ButtonX {
+                text: "Compare"
+                width: 62
+                height: 24
+                onButtonXClicked: {
+                    startCompare();
+                }
             }
         }
     }

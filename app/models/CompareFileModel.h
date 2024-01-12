@@ -1,5 +1,5 @@
-#ifndef TEXTMODEL_H
-#define TEXTMODEL_H
+#ifndef COMPARE_FILE_H
+#define COMPARE_FILE_H
 
 #include <vector>
 #include <string>
@@ -9,7 +9,7 @@
 
 #include <QAbstractListModel>
 
-struct TextModel : public QAbstractListModel {
+struct CompareFileModel : public QAbstractListModel {
 
     Q_OBJECT
 
@@ -31,8 +31,8 @@ struct TextModel : public QAbstractListModel {
 
     public:
 
-    TextModel();
-    ~TextModel();
+    CompareFileModel();
+    ~CompareFileModel();
 
     QHash<int, QByteArray> roleNames() const override;
     int rowCount(const QModelIndex& parent = QModelIndex()) const override;
@@ -49,7 +49,8 @@ struct TextModel : public QAbstractListModel {
 
     private:
 
-    void load_xml_model(const std::string& file);
+    bool load_as_xml(const std::string& file);
+    bool load_as_txt(const std::string& file);
     void traverse_element(tinyxml2::XMLElement *element, int depth);
 
     std::string m_document;

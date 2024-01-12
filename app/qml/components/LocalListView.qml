@@ -10,12 +10,13 @@ Item {
 
   TextField {
     id: currentDirectory
+    height: textFieldHeight
+    font.pointSize: 10
+    anchors.margins: 10
+    anchors.topMargin: 12
+    anchors.top: parent.top
     anchors.left: parent.left
     anchors.right: parent.right
-    anchors.top: parent.top
-    anchors.topMargin: 12
-    anchors.margins: 10
-    height: 43
     placeholderText: qsTr("Local Directory")
     verticalAlignment: TextInput.AlignVCenter
     onAccepted: localFsModel.currentDirectory = currentDirectory.text
@@ -225,12 +226,13 @@ Item {
 
       Text {
         id: feText
-        x: listItemIcon.x + listItemIcon.width + 5
         text: fileName
+        font.pointSize: 10
         height: parent.height
-        color: delegateRect.ListView.isCurrentItem ? "black" : textColor
         verticalAlignment: Text.AlignVCenter
+        x: listItemIcon.x + listItemIcon.width + 5
         anchors.verticalCenter: parent.verticalCenter
+        color: delegateRect.ListView.isCurrentItem ? "black" : textColor
       }
 
       MouseArea {

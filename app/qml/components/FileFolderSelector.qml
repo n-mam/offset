@@ -13,40 +13,39 @@ Item {
 
     Rectangle {
         id: destRect
-        width: parent.width
-        height: 40
-        anchors.top: parent.top
+        anchors.fill: parent
         anchors.topMargin: 8
         color: "transparent"
+        anchors.top: parent.top
         // radius: 3
         // border.width: 1
         // border.color: borderColor
         TextField {
             id: destination
-            width: (parent.width * 0.80) - (2 * appSpacing)
-            height: parent.height * 0.85
+            font.pointSize: 10
             anchors.left: parent.left
-            anchors.leftMargin: 7
-            anchors.verticalCenter: parent.verticalCenter
-            text: isFolderSelector ? folderDialog.folder : fileDialog.file
+            height: textFieldHeight
             placeholderText: placeholder
+            anchors.leftMargin: appSpacing
             verticalAlignment: TextInput.AlignVCenter
-        }
-        Button {
-            text: label
-            width: (parent.width * 0.17) - appSpacing
-            height: parent.height
-            anchors.right: parent.right
-            anchors.rightMargin: 7
-           // anchors.bottom: parent.bottom
-            onClicked: isFolderSelector ? folderDialog.open() : fileDialog.open()
             anchors.verticalCenter: parent.verticalCenter
+            width: (parent.width - (3 * appSpacing)) * 0.90
+            text: isFolderSelector ? folderDialog.folder : fileDialog.file
+        }
+        ButtonX {
+            text: label
+            height: textFieldHeight
+            anchors.rightMargin: appSpacing
+            anchors.right: parent.right
+            width: (parent.width - (3 * appSpacing)) * 0.10
+            anchors.verticalCenter: parent.verticalCenter
+            onButtonXClicked: isFolderSelector ? folderDialog.open() : fileDialog.open()
         }
     }
 
     FileDialog {
         id: fileDialog
-        folder: StandardPaths.writableLocation(StandardPaths.DocumentsLocation)
+        folder: StandardPaths.writableLocation(StandardPaths.DesktopLocation)
         onAccepted: {
             var path = fileDialog.file.toString();
             path = path.replace(/^(file:\/{3})|(qrc:\/{2})|(http:\/{2})/,"")

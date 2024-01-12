@@ -15,6 +15,7 @@ ApplicationWindow {
   property var showlog: false
   property var textColor: "white"
   property var borderColor: "#727B6C"
+  property var textFieldHeight: 36
 
   ApplicationMenu {
     id: appMenu

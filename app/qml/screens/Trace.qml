@@ -1,99 +1,89 @@
 import QtQuick
 import QtQuick.Controls
+import "qrc:/components"
 
-Rectangle {
-    // radius: 3
-    // border.width: 1
-    // border.color: borderColor
-    color: Material.background
-    clip: true
+Item {
 
-    ListModel {
-        id: traceModel
-        ListElement {line: ""}
-    }
+    width: parent.width
+    height: parent.height
 
-    CheckBox {
-        id: traceEnable
-        z: 2
-        anchors.top: parent.top
-        anchors.right: parent.right
-        anchors.topMargin: 3
-        anchors.rightMargin: 45
-        checked: true
-        text: qsTr("Enable")
-    }
+    Column {
+        
+        anchors.fill: parent
 
-    ListView {
-        id: traceList
-        clip: true
-        anchors.top: parent.top
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.margins: 10
-        anchors.topMargin: 5
-        height: parent.height * 0.85
-        ScrollBar.vertical: ScrollBar {
-          //width: 8
-        }
-        flickableDirection: Flickable.VerticalFlick
-        model: traceModel
-        delegate: Rectangle {
-            color: Material.background
-            width: ListView.view.width
-            height: 17
-            Label {
-              text: line
-              color: textColor
+        ListModel {
+            id: traceModel
+            ListElement {
+                line: ""
             }
         }
-        Connections {
-            target: logger
-            enabled: (traceEnable.checkState === Qt.Checked)
-            function onAddLogLine(severity, log) {
-                for (var l of log.split("\n")) {
-                  traceModel.append({
-                    line: new Date().toLocaleTimeString(Qt.locale(),
-                    "hh:" + "mm:" + "ss:" + "zzz") + " " + l
-                  })
+
+        ListView {
+            id: traceList
+            clip: true
+            width: parent.width
+            height: parent.height * 0.90
+            ScrollBar.vertical: ScrollBar {
+            //width: 8
+            }
+            flickableDirection: Flickable.VerticalFlick
+            model: traceModel
+            delegate: Rectangle {
+                color: Material.background
+                width: ListView.view.width
+                height: 17
+                Label {
+                    text: line
+                    color: textColor
+                }
+            }
+            Connections {
+                target: logger
+                enabled: (traceEnable.checkState === Qt.Checked)
+                function onAddLogLine(severity, log) {
+                    for (var l of log.split("\n")) {
+                        traceModel.append({
+                            line: new Date().toLocaleTimeString(Qt.locale(),
+                            "hh:" + "mm:" + "ss:" + "zzz") + " " + l
+                        })
+                    }
                 }
             }
         }
-    }
 
-    Rectangle {
-        id: logActions
-        // radius: 3
-        // border.width: 1
-        // border.color: borderColor
-        anchors.top: traceList.bottom
-        anchors.margins: 5
-        color: Material.background
-        anchors.horizontalCenter: parent.horizontalCenter
-        width: 75 + 75 + (3 * appSpacing)
-        height: parent.height * 0.10
-        Button {
-            id: clearButton
-            text: "CLEAR"
-            enabled: (diskListModel.transfer === 0)
-            width: parent.width * 0.65
-            height: parent.height * 0.90
-            anchors.left: parent.left
-            anchors.margins: appSpacing
-            anchors.verticalCenter: parent.verticalCenter
-            onClicked: traceModel.clear()
+        Row {
+            id: logActions
+            spacing: 5
+            width: parent.width
+            height: parent.height * 0.10
+            CheckBox {
+                id: traceEnable
+                z: 2
+                checked: true
+                anchors.topMargin: 3
+                text: qsTr("Enable")
+                anchors.verticalCenter: parent.verticalCenter
+            }
+            ButtonX {
+                id: clearButton
+                text: "Clear"
+                enabled: (diskListModel.transfer === 0)
+                width: 54
+                height: parent.height * 0.40
+                anchors.verticalCenter: parent.verticalCenter
+                onButtonXClicked: traceModel.clear()
+            }
+            ButtonX {
+                id: savebutton
+                text: "Save"
+                enabled: (diskListModel.transfer !== 0)
+                width: 54
+                height: parent.height * 0.40
+                anchors.verticalCenter: parent.verticalCenter
+                onButtonXClicked: {}
+            }
         }
-        Button {
-            id: savebutton
-            text: "SAVE"
-            enabled: (diskListModel.transfer !== 0)
-            width: parent.width * 0.65
-            height: parent.height * 0.90
-            anchors.left: clearButton.right
-            anchors.margins: appSpacing
-            anchors.verticalCenter: parent.verticalCenter
-            onClicked: {}
-        }
+
     }
 
     onVisibleChanged: {
