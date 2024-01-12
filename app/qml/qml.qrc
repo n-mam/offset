@@ -23,6 +23,7 @@
     <file>components/RemoteListView.qml</file>
     <file>components/ApplicationMenu.qml</file>
     <file>components/ExcludeListPopup.qml</file>
+    <file>delegates/CompareLineDelegate.qml</file>
     <file>components/FileFolderSelector.qml</file>
     <file>delegates/TransferQueueDelegate.qml</file>
   </qresource>

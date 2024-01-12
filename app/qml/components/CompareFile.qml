@@ -34,15 +34,15 @@ Rectangle {
     ListView {
         id: textListView
         clip: true
-        model: CompareFileModel{}
         anchors.margins: 10
         ScrollBar.vertical: vbar
+        model: CompareFileModel{}
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
         anchors.top: fileSelector.bottom
         height: parent.height - fileSelector.height
-        delegate: LineDelegate{
+        delegate: CompareLineDelegate{
             height: 26
             width: ListView.view.width
         }
