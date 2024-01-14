@@ -37,7 +37,7 @@ Item {
             Text {
                 anchors.fill: parent
                 verticalAlignment: Text.AlignVCenter
-                text: "<span>" + lineText + "</span>"
+                text: "<pre><span>" + lineText + "</span></pre>"
                 font.pointSize: diffViewRoot.pointSize
                 color: lineTxColor.length ? lineTxColor : textColor
             }

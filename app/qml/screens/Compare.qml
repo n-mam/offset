@@ -61,33 +61,35 @@ Item {
             spacing: 6
             anchors.verticalCenter: parent.verticalCenter
             ButtonX {
-                text: "+"
-                width: 24
-                height: 24
-                onButtonXClicked: {
-                    compareRoot.pointSize += 1
-                }
-            }
-            Text {
-                width: 24
-                height: 24
-                color: textColor
-                text: compareRoot.pointSize
-                verticalAlignment: Text.AlignVCenter
-                horizontalAlignment: Text.AlignHCenter
-            }
-            ButtonX {
                 text: "-"
                 width: 24
-                height: 24
+                height: 28
                 onButtonXClicked: {
                     compareRoot.pointSize -= 1
+                }
+            }
+            TextField {
+                width: 46
+                height: 28
+                color: textColor
+                font.pointSize: 10
+                verticalAlignment: Text.AlignVCenter
+                text: compareRoot.pointSize.toString()
+                horizontalAlignment: Text.AlignHCenter
+                onAccepted: compareRoot.pointSize = parseInt(text, 10)
+            }
+            ButtonX {
+                text: "+"
+                width: 24
+                height: 28
+                onButtonXClicked: {
+                    compareRoot.pointSize += 1
                 }
             }
             ButtonX {
                 text: "Compare"
                 width: 62
-                height: 24
+                height: 28
                 onButtonXClicked: {
                     startCompare();
                 }

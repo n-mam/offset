@@ -80,7 +80,7 @@ void CompareManager::compare() {
     if (!results.ss.size()) return;
 
     // use the first for now
-    auto lcs = results.ss[0];
+    auto& lcs = results.ss[0];
 
     // map of lcs hashes to their 
     // positions in the 2 strings
@@ -125,7 +125,8 @@ void CompareManager::compare() {
     
     auto n_total_added_in_a = 0;
     auto n_total_added_in_b = 0;
-    for (auto& [e, sp] : lcs_pos_map) {
+    for (const auto& e : lcs) {
+        auto& sp = lcs_pos_map.find(e)->second;
         auto in_a = sp.pos_in_a[0] + n_total_added_in_a;
         auto in_b = sp.pos_in_b[0] + n_total_added_in_b;
         auto n = std::abs(in_a - in_b);

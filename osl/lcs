@@ -30,7 +30,7 @@ inline auto find_lcs(const T& p, const T& q) {
         std::vector<step<T>>(cols, step<T>()));
 
     const T& s_min = (p.size() < q.size()) ? p : q;
-    const T& s_max = (p.size() > q.size()) ? p : q;
+    const T& s_max = (p.size() >= q.size()) ? p : q;
 
     // add strings as row and column headers
     for (auto i = 0; i < s_min.size(); i++) {

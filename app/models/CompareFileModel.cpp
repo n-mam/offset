@@ -7,6 +7,7 @@
 
 CompareFileModel::CompareFileModel()
 {
+    m_model.reserve(2048);
 }
 
 CompareFileModel::~CompareFileModel()
@@ -74,9 +75,12 @@ QString CompareFileModel::getDocument() {
 void CompareFileModel::setDocument(QString document) {
     if (document != QString::fromStdString(m_document)) {
         m_document = document.toStdString();
+        beginResetModel();
+        m_model.clear();
         if (!load_as_xml(m_document)) {
             load_as_txt(m_document);
         }
+        endResetModel();
         emit documentChanged(document);
     }
 }
