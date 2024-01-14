@@ -15,10 +15,13 @@ CompareFileModel::~CompareFileModel()
 
 QHash<int, QByteArray> CompareFileModel::roleNames() const {
     auto roles = QAbstractListModel::roleNames();
-    roles.insert(ELineIndent, "lineIndent");
+    roles.insert(ELineReal, "lineReal");
     roles.insert(ELineHash, "lineHash");
     roles.insert(ELineText, "lineText");
+    roles.insert(ELineIndent, "lineIndent");
     roles.insert(ELineNumber, "lineNumber");
+    roles.insert(ELineBgColor, "lineBgColor");
+    roles.insert(ELineTxColor, "lineTxColor");
     roles.insert(ELineIndentSymbol, "lineIndentSymbol");
     return roles;
 }
@@ -35,8 +38,14 @@ QVariant CompareFileModel::data(const QModelIndex &index, int role) const {
     auto row = index.row();
 
     switch (role) {
+        case ELineReal: {
+            return m_model[row].li_real;
+        }
         case ELineIndent: {
             return m_model[row].li_indent;
+        }
+        case ELineNumber: {
+            return (qlonglong)(row + 1);
         }
         case ELineHash: {
             return (qlonglong)m_model[row].li_hash;
@@ -44,11 +53,14 @@ QVariant CompareFileModel::data(const QModelIndex &index, int role) const {
         case ELineText: {
             return QString::fromStdString(m_model[row].li_text);
         }
+        case ELineBgColor: {
+            return QString::fromStdString(m_model[row].li_bgcolor);
+        }
+        case ELineTxColor: {
+            return QString::fromStdString(m_model[row].li_txcolor);
+        }
         case ELineIndentSymbol: {
             return QString::fromStdString(m_model[row].li_indentSymbol);
-        }
-        case ELineNumber: {
-            return (qlonglong)m_model[row].li_number;
         }
     }
 
@@ -74,11 +86,7 @@ bool CompareFileModel::load_as_txt(const std::string& file) {
     std::ifstream f(file.c_str());
     beginResetModel();
     while (std::getline(f, line)) {
-        m_model.push_back({
-            0,
-            m_model.size() + 1,
-            std::hash<std::string>{}(line),
-            line});
+        m_model.push_back({true, 0, std::hash<std::string>{}(line), line});
     }
     endResetModel();
     return true;
@@ -108,7 +116,7 @@ bool CompareFileModel::load_as_xml(const std::string& file) {
 
     beginResetModel();
 
-    m_model.push_back({0, m_model.size() + 1, std::hash<std::string>{}(t), t});
+    m_model.push_back({true, 0, std::hash<std::string>{}(t), t});
 
     traverse_element(rootElement, 1);
 
@@ -149,7 +157,7 @@ void CompareFileModel::traverse_element(tinyxml2::XMLElement *element, int depth
             + (attribute_list.empty() ? "" : " " + attribute_list)
             + (text.empty() ? "" : " \"" + text + "\"");
 
-        m_model.push_back({depth + 2, m_model.size() + 1, std::hash<std::string>{}(line), line});
+        m_model.push_back({true, depth + 2, std::hash<std::string>{}(line), line});
 
         traverse_element(childElement, depth + 2);
 

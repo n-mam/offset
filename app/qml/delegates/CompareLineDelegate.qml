@@ -3,21 +3,44 @@ import QtQuick.Controls
 
 Item {
     id: cldRoot
+
     Row {
-        spacing: 1
-        width: parent.width
-        height: parent.height
-        Text{
+        anchors.fill: parent
+        Text {
+            id: lineNumberId
             text: "<span>" + lineNumber + 
                         lineIndentSymbol.repeat(
                             (cldRoot.ListView.view.model.rowCount().toString().length + 1) - 
-                                lineNumber.toString().length) + 
-                  "</span>"
-            color: "#A4A4A4" //6E7681"
+                                lineNumber.toString().length) + "</span>"
+            color: "#969696"
+            verticalAlignment: Text.AlignVCenter
+            anchors.verticalCenter: parent.verticalCenter 
+            font.pointSize: diffViewRoot.pointSize
         }
-        Text {
-            color: textColor
-            text: "<span>" + lineText + "</span>"
+        Rectangle {
+            clip: true
+            height: parent.height
+            width: parent.width - lineNumberId.width
+            color: (lineBgColor.length && lineReal) ? lineBgColor : Material.background
+            Canvas {
+                id: patternCanvas
+                visible: !lineReal
+                anchors.fill: parent
+                onPaint: {
+                    var ctx = getContext('2d');
+                    ctx.fillStyle = ctx.createPattern(
+                        "#808080", Qt.BDiagPattern); 
+                    ctx.fillRect(0, 0, width, height);
+                    ctx.stroke();
+                }
+            }
+            Text {
+                anchors.fill: parent
+                verticalAlignment: Text.AlignVCenter
+                text: "<span>" + lineText + "</span>"
+                font.pointSize: diffViewRoot.pointSize
+                color: lineTxColor.length ? lineTxColor : textColor
+            }
         }
     }
 }

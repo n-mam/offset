@@ -1,0 +1,110 @@
+#ifndef LCS_H
+#define LCS_H
+
+#include <set>
+#include <map>
+#include <string>
+#include <vector>
+#include <iomanip>
+#include <sstream>
+#include <iostream>
+#include <type_traits>
+
+namespace osl {
+
+template <typename T>
+struct step {
+    std::vector<T> ss;
+};
+
+template <typename T>
+using Mat = std::vector<std::vector<step<T>>>;
+
+template <typename T>
+inline auto find_lcs(const T& p, const T& q) {
+
+    auto rows = 2 + std::min(p.size(), q.size());
+    auto cols = 2 + std::max(p.size(), q.size());
+
+    Mat<T> mat(rows,
+        std::vector<step<T>>(cols, step<T>()));
+
+    const T& s_min = (p.size() < q.size()) ? p : q;
+    const T& s_max = (p.size() > q.size()) ? p : q;
+
+    // add strings as row and column headers
+    for (auto i = 0; i < s_min.size(); i++) {
+        mat[2 + i][0] = {{T(1, s_min[i])}};
+    }
+
+    for (auto i = 0; i < s_max.size(); i++) {
+        mat[0][2 + i] = {{T(1, s_max[i])}};
+    }
+
+    //lcs
+    for (auto i = 0; i < s_min.size(); i++) {
+
+        auto r = mat[2 + i][0].ss[0];
+        
+        for (auto j = 0; j < s_max.size(); j++) {
+
+            step<T> step;
+            auto c = mat[0][2 + j].ss[0];
+
+            if (r != c) {
+                // longest of the top and left sequences
+                auto top = mat[(2 + i) - 1][(2 + j)];
+                auto left = mat[(2 + i)][(2 + j) - 1];
+
+                T longest_top;
+                T longest_left;
+
+                for (const auto& e : top.ss) {
+                    if (e.size() > longest_top.size()) 
+                        longest_top = e;
+                }
+                for (const auto& e : left.ss) {
+                    if (e.size() > longest_left.size()) 
+                        longest_left = e;
+                }
+
+                if (longest_top.size() > longest_left.size()) {
+                    step = top;
+                } else if (longest_top.size() < longest_left.size()) {
+                    step = left;
+                } else {
+                    std::set<T> set;
+                    for (const auto& e : top.ss)
+                        set.insert(e);
+                    for (const auto& e : left.ss)
+                        set.insert(e);
+                    for (const auto& e : set)
+                        step.ss.push_back(e);
+                }
+            } else if (r == c) {
+                // append matching element i.e. the one's 
+                // being compared, to all upper left sequences
+                auto upper_left = mat[(2 + i) - 1][(2 + j) - 1];
+                auto ss = upper_left.ss;
+                if (!ss.size()) {
+                    ss.push_back(r);
+                } else {
+                    for (auto& e : ss) {
+                       e.insert(e.end(), r.begin(), r.end());
+                    }
+                }
+                step = { ss };
+            }
+
+            mat[2 + i][2 + j] = step;
+        }
+    }
+
+    // The final result is that the last cell contains all 
+    // the longest subsequences common to (AGCAT) and (GAC)
+    return mat[rows-1][cols-1];
+}
+
+}
+
+#endif

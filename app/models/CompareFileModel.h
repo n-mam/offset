@@ -7,25 +7,34 @@
 #include <zip.h>
 #include <tinyxml2.h>
 
+class CompareManager;
+
 #include <QAbstractListModel>
 
 struct CompareFileModel : public QAbstractListModel {
+
+    friend class CompareManager;
 
     Q_OBJECT
 
     enum Roles {
         ELineHash = Qt::UserRole,
+        ELineReal,
         ELineText,
         ELineNumber,
         ELineIndent,
+        ELineBgColor,
+        ELineTxColor,
         ELineIndentSymbol
     };
 
     struct LineItem {
+        bool li_real;
         int li_indent;
-        std::size_t li_number;
         std::size_t li_hash;
         std::string li_text;
+        std::string li_bgcolor;
+        std::string li_txcolor;
         std::string li_indentSymbol = "&nbsp;";
     };
 
