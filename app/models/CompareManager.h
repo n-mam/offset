@@ -20,15 +20,20 @@ class CompareManager : public QObject {
     CompareManager();
     ~CompareManager();
 
-    Q_INVOKABLE void setCompareFileModel(CompareFileModel *model);
+    void setCompareFileModel(CompareFileModel *model);
+
+    Q_INVOKABLE void compare();
+
+    public slots:
+
+    void onFileModelChanged(CompareFileModel *model);
 
     private:
 
-    void compare();
-    auto computeMedian(const std::unordered_map<size_t, _lcs_sym_pos>&);
     void pickNearestToMedian(std::vector<int>& vec, int median);
+    auto computeMedian(const std::unordered_map<size_t, _lcs_sym_pos>&);
 
-    std::vector<CompareFileModel *> m_models;
+    std::vector<CompareFileModel *> _models;
 };
 
 #endif

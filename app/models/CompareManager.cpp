@@ -11,9 +11,14 @@ CompareManager::~CompareManager() {
 }
 
 void CompareManager::setCompareFileModel(CompareFileModel *model) {
-    m_models.push_back(model);
-    if (m_models.size() == 2) {
-        compare();
+    _models.push_back(model);
+}
+
+void CompareManager::onFileModelChanged(CompareFileModel *model) {
+    for (auto& m : _models) {
+        if (m != model) {
+            m->resetToOriginalState();
+        }
     }
 }
 
@@ -62,11 +67,14 @@ void CompareManager::pickNearestToMedian(std::vector<int>& vec, int median) {
 
 void CompareManager::compare() {
 
-    auto& A = m_models[0]->m_model;
-    auto& B = m_models[1]->m_model;
+    auto& A = _models[0]->_model;
+    auto& B = _models[1]->_model;
 
     std::vector<size_t> ha;
     std::vector<size_t> hb;
+
+    ha.reserve(A.size());
+    ha.reserve(B.size());
 
     for (const auto& e : A) {
         ha.push_back(e.li_hash);
@@ -85,6 +93,7 @@ void CompareManager::compare() {
     // map of lcs hashes to their 
     // positions in the 2 strings
     std::unordered_map<size_t, _lcs_sym_pos> lcs_pos_map;
+    lcs_pos_map.reserve(lcs.size());
 
     for (const auto& e : lcs) {
         _lcs_sym_pos sp;
@@ -119,10 +128,7 @@ void CompareManager::compare() {
     // be aligned and have a one-to-one mapping. Loop
     // through all lcs result hashes and adjust models
     // A and B. Then loop through all model elements
-    // and change their display attributes
-    m_models[0]->beginResetModel();
-    m_models[1]->beginResetModel();
-    
+    // and change their display attributes   
     auto n_total_added_in_a = 0;
     auto n_total_added_in_b = 0;
     for (const auto& e : lcs) {
@@ -131,16 +137,19 @@ void CompareManager::compare() {
         auto in_b = sp.pos_in_b[0] + n_total_added_in_b;
         auto n = std::abs(in_a - in_b);
         if (in_a < in_b) {
-            A.insert(A.begin() + in_a, n, {});
+            _models[0]->insertStripedRows(in_a, n);
             n_total_added_in_a += n;
         } else if (in_b < in_a) {
-            B.insert(B.begin() + in_b, n, {});
+            _models[1]->insertStripedRows(in_b, n);
             n_total_added_in_b += n;
         }
     }
 
     auto n = std::min(A.size(), B.size());
     auto x = std::max(A.size(), B.size());
+
+    _models[0]->beginResetModel();
+    _models[1]->beginResetModel();
 
     for (auto i = 0; i < n; i++) {
         if (A[i].li_hash != B[i].li_hash) {
@@ -150,7 +159,7 @@ void CompareManager::compare() {
 
     if (A.size() != B.size()) {
         for (auto i = n; i < x; i++) {
-            if (A.size() > B.size()){
+            if (A.size() > B.size()) {
                 A[i].li_bgcolor = "#4C5A2C";
             } else {
                 B[i].li_bgcolor = "#4C5A2C";
@@ -158,8 +167,8 @@ void CompareManager::compare() {
         }
     }
 
-    m_models[0]->endResetModel();
-    m_models[1]->endResetModel();
+    _models[1]->endResetModel();
+    _models[0]->endResetModel();
 }
 
 // std::string q = "GAC";

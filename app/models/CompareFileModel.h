@@ -7,8 +7,6 @@
 #include <zip.h>
 #include <tinyxml2.h>
 
-class CompareManager;
-
 #include <QAbstractListModel>
 
 struct CompareFileModel : public QAbstractListModel {
@@ -49,12 +47,15 @@ struct CompareFileModel : public QAbstractListModel {
 
     Q_PROPERTY(QString document READ getDocument WRITE setDocument NOTIFY documentChanged);
 
+    void resetToOriginalState();
+    void insertStripedRows(int offset, int count);
+
     QString getDocument();
     void setDocument(QString document);
 
     signals:
 
-    void documentChanged(QString);
+    void documentChanged(CompareFileModel *model);
 
     private:
 
@@ -62,8 +63,9 @@ struct CompareFileModel : public QAbstractListModel {
     bool load_as_txt(const std::string& file);
     void traverse_element(tinyxml2::XMLElement *element, int depth);
 
+    bool _changed = false;
     std::string m_document;
-    std::vector<LineItem> m_model;
+    std::vector<LineItem> _model;
 };
 
 #endif

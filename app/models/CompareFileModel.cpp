@@ -1,13 +1,18 @@
 #include <sstream>
 #include <fstream>
 
-#include <osl/log>
-
+#include <CompareManager.h>
 #include <CompareFileModel.h>
 
-CompareFileModel::CompareFileModel()
-{
-    m_model.reserve(2048);
+#include <osl/log>
+#include <osl/singleton>
+
+CompareFileModel::CompareFileModel() {
+    _model.reserve(2048);
+    auto cm = getInstance<CompareManager>();
+    cm->setCompareFileModel(this);
+    connect(this, &CompareFileModel::documentChanged,
+        cm, &CompareManager::onFileModelChanged);
 }
 
 CompareFileModel::~CompareFileModel()
@@ -28,7 +33,7 @@ QHash<int, QByteArray> CompareFileModel::roleNames() const {
 }
 
 int CompareFileModel::rowCount(const QModelIndex &parent) const {
-    return static_cast<int>(m_model.size());
+    return static_cast<int>(_model.size());
 }
 
 QVariant CompareFileModel::data(const QModelIndex &index, int role) const {
@@ -40,28 +45,28 @@ QVariant CompareFileModel::data(const QModelIndex &index, int role) const {
 
     switch (role) {
         case ELineReal: {
-            return m_model[row].li_real;
+            return _model[row].li_real;
         }
         case ELineIndent: {
-            return m_model[row].li_indent;
+            return _model[row].li_indent;
         }
         case ELineNumber: {
             return (qlonglong)(row + 1);
         }
         case ELineHash: {
-            return (qlonglong)m_model[row].li_hash;
+            return (qlonglong)_model[row].li_hash;
         }
         case ELineText: {
-            return QString::fromStdString(m_model[row].li_text);
+            return QString::fromStdString(_model[row].li_text);
         }
         case ELineBgColor: {
-            return QString::fromStdString(m_model[row].li_bgcolor);
+            return QString::fromStdString(_model[row].li_bgcolor);
         }
         case ELineTxColor: {
-            return QString::fromStdString(m_model[row].li_txcolor);
+            return QString::fromStdString(_model[row].li_txcolor);
         }
         case ELineIndentSymbol: {
-            return QString::fromStdString(m_model[row].li_indentSymbol);
+            return QString::fromStdString(_model[row].li_indentSymbol);
         }
     }
 
@@ -76,12 +81,36 @@ void CompareFileModel::setDocument(QString document) {
     if (document != QString::fromStdString(m_document)) {
         m_document = document.toStdString();
         beginResetModel();
-        m_model.clear();
+        _model.clear();
         if (!load_as_xml(m_document)) {
             load_as_txt(m_document);
         }
         endResetModel();
-        emit documentChanged(document);
+        emit documentChanged(this);
+    }
+}
+
+void CompareFileModel::insertStripedRows(int offset, int count) {
+    beginInsertRows(QModelIndex(), offset, offset + count);
+    _model.insert(_model.begin() + offset, count, {});
+    endInsertRows();
+    _changed = true;
+}
+
+void CompareFileModel::resetToOriginalState() {
+    if (_changed) {
+        beginResetModel();
+        //remove striped rows
+        _model.erase(
+            std::remove_if(_model.begin(), _model.end(),
+                [](const auto& e){ return !e.li_real; }),
+            _model.end());
+        //reset colors
+        for (auto& e : _model) {
+            e.li_bgcolor = "";
+            e.li_txcolor = "";
+        }
+        endResetModel();
     }
 }
 
@@ -90,7 +119,7 @@ bool CompareFileModel::load_as_txt(const std::string& file) {
     std::ifstream f(file.c_str());
     beginResetModel();
     while (std::getline(f, line)) {
-        m_model.push_back({true, 0, std::hash<std::string>{}(line), line});
+        _model.push_back({true, 0, std::hash<std::string>{}(line), line});
     }
     endResetModel();
     return true;
@@ -120,7 +149,7 @@ bool CompareFileModel::load_as_xml(const std::string& file) {
 
     beginResetModel();
 
-    m_model.push_back({true, 0, std::hash<std::string>{}(t), t});
+    _model.push_back({true, 0, std::hash<std::string>{}(t), t});
 
     traverse_element(rootElement, 1);
 
@@ -161,7 +190,7 @@ void CompareFileModel::traverse_element(tinyxml2::XMLElement *element, int depth
             + (attribute_list.empty() ? "" : " " + attribute_list)
             + (text.empty() ? "" : " \"" + text + "\"");
 
-        m_model.push_back({true, depth + 2, std::hash<std::string>{}(line), line});
+        _model.push_back({true, depth + 2, std::hash<std::string>{}(line), line});
 
         traverse_element(childElement, depth + 2);
 

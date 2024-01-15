@@ -55,7 +55,6 @@ Rectangle {
             }
             onDropped: (drop) => {
                 console.log(drop.urls)
-                diffViewRoot.border.color = "white"
                 var path = drop.urls[0].toString();
                 path = path.replace(/^(file:\/{3})|(qrc:\/{2})|(http:\/{2})/,"")
                 var file = decodeURIComponent(path).replace(/\//g, "\\")
@@ -73,12 +72,5 @@ Rectangle {
 
     function getCompareFile() {
         return textListView.model.document
-    }
-
-    Connections {
-        target: compareRoot
-        function onStartCompare() {
-            compareManager.setCompareFileModel(textListView.model)
-        }
     }
 }

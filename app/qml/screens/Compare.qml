@@ -7,8 +7,6 @@ Item {
     id: compareRoot
 
     property var pointSize: 10
-
-    signal startCompare
     
     SplitView {
         id: compareSplit
@@ -91,7 +89,7 @@ Item {
                 width: 62
                 height: 28
                 onButtonXClicked: {
-                    startCompare();
+                    compareManager.compare();
                 }
             }
         }
