@@ -28,35 +28,13 @@ Item {
         }
 
         MouseArea {
+            hoverEnabled: true
             anchors.fill: parent
             onClicked: {
                 buttonXClicked()
             }
+            onEntered: button.color = "steelblue"
+            onExited: button.color = Material.background
         }
     }
 }
-
-// Button {
-//     id: control
-//     padding: 0
-
-//     contentItem: Text {
-//         color: textColor
-//         text: control.text
-//         font: control.font
-//         opacity: enabled ? 1.0 : 0.3
-//         horizontalAlignment: Text.AlignHCenter
-//         verticalAlignment: Text.AlignVCenter
-//         elide: Text.ElideRight
-//     }
-
-//     background: Rectangle {
-//         radius: 3
-//         border.width: 1
-//         implicitWidth: 32
-//         implicitHeight: 32
-//         opacity: enabled ? 1 : 0.3
-//         color: Material.background
-//         border.color: control.down ? "white" : borderColor
-//     }
-// }

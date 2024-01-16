@@ -12,6 +12,7 @@
     <file>components/Player.qml</file>
     <file>components/ButtonX.qml</file>
     <file>components/Element.qml</file>
+    <file>components/LineDifference.qml</file>
     <file>components/FTPFooter.qml</file>
     <file>components/FxcFooter.qml</file>
     <file>delegates/RowDelegate.qml</file>

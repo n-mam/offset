@@ -12,10 +12,11 @@ ApplicationWindow {
   title: qsTr("Offset")
 
   property var appSpacing: 5
+  property var pointSize: 10
   property var showlog: false
   property var textColor: "white"
-  property var borderColor: "#727B6C"
   property var textFieldHeight: 36
+  property var borderColor: "#727B6C"
 
   ApplicationMenu {
     id: appMenu

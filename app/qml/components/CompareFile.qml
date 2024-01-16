@@ -7,8 +7,9 @@ import CustomElements 1.0
 
 Rectangle {
 
-    id: diffViewRoot
-    required property var pointSize
+    id: compareFileRoot
+
+    property var clickedRow: -1
 
     radius: 3
     border.width: 1
@@ -19,11 +20,12 @@ Rectangle {
 
     FileFolderSelector {
         id: fileSelector
-        height: 45
+        height: 42
         label: ".."
-        anchors.margins: 4
+        anchors.margins: 2
         placeholder: "File"
         isFolderSelector: false
+        anchors.top: parent.top
         anchors.left: parent.left
         anchors.right: parent.right
         onFileSelected: (file) => {
@@ -45,13 +47,16 @@ Rectangle {
         delegate: CompareLineDelegate{
             height: 26
             width: ListView.view.width
+            onRowClicked: (row) => {
+                clickedRow = row
+            }
         }
         DropArea {
-            id: diffViewDropArea;
+            id: compareFileDropArea;
             anchors.fill: parent
             onEntered: (drag) => {
-                diffViewRoot.border.color = "gray";
                 drag.accept (Qt.LinkAction);
+                compareFileRoot.border.color = "gray";
             }
             onDropped: (drop) => {
                 console.log(drop.urls)
@@ -61,7 +66,7 @@ Rectangle {
                 onCompareFileUpdated(file)
             }
             onExited: {
-                diffViewRoot.border.color = borderColor;
+                compareFileRoot.border.color = borderColor;
             }
         }
     }
@@ -72,5 +77,9 @@ Rectangle {
 
     function getCompareFile() {
         return textListView.model.document
+    }
+
+    function getModel() {
+        return textListView.model
     }
 }

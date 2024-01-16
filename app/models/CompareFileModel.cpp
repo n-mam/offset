@@ -98,20 +98,20 @@ void CompareFileModel::insertStripedRows(int offset, int count) {
 }
 
 void CompareFileModel::resetToOriginalState() {
-    if (_changed) {
         beginResetModel();
         //remove striped rows
-        _model.erase(
-            std::remove_if(_model.begin(), _model.end(),
-                [](const auto& e){ return !e.li_real; }),
-            _model.end());
+        if (_changed) {
+            _model.erase(
+                std::remove_if(_model.begin(), _model.end(),
+                    [](const auto& e){ return !e.li_real; }),
+                _model.end());
+        }
         //reset colors
         for (auto& e : _model) {
             e.li_bgcolor = "";
             e.li_txcolor = "";
         }
         endResetModel();
-    }
 }
 
 bool CompareFileModel::load_as_txt(const std::string& file) {
