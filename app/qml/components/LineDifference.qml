@@ -22,6 +22,8 @@ Item {
                 model: modelTop
                 interactive: false
                 anchors.fill: parent
+                anchors.topMargin: 1
+                anchors.bottomMargin: 1
                 anchors.leftMargin: 10
                 anchors.rightMargin: 10
                 delegate: CompareLineDelegate {
@@ -43,6 +45,8 @@ Item {
                 model: modelBottom
                 interactive: false
                 anchors.fill: parent
+                anchors.topMargin: 1
+                anchors.bottomMargin: 1
                 anchors.leftMargin: 10
                 anchors.rightMargin: 10
                 delegate: CompareLineDelegate {
@@ -54,7 +58,6 @@ Item {
     }
 
     function updateView(row) {
-        console.log(updateView, row)
         leftListView.positionViewAtIndex(row - 1, ListView.Center)
         rightListView.positionViewAtIndex(row - 1, ListView.Center)
     }

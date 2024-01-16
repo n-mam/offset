@@ -20,9 +20,9 @@ Rectangle {
 
     FileFolderSelector {
         id: fileSelector
-        height: 42
+        height: 34
         label: ".."
-        anchors.margins: 2
+        anchors.margins: 4
         placeholder: "File"
         isFolderSelector: false
         anchors.top: parent.top

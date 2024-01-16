@@ -31,20 +31,25 @@ StackScreen {
         Row {
             id: camControl
             spacing: 10
+            width: cameraUrl.width + 75 + 100
+            height: camScreenRoot.height * 0.08
             anchors.bottom: baseId.bottom
             anchors.horizontalCenter: parent.horizontalCenter
             TextField {
                 id: cameraUrl
                 width: 275
-                height: camScreenRoot.height * 0.065
+                height: 28
+                font.pointSize: pointSize
                 placeholderText: qsTr("Camera")
                 verticalAlignment: TextInput.AlignVCenter
+                anchors.verticalCenter: parent.verticalCenter
             }
-            Button {
+            ButtonX {
                 width: 75
+                height: 28
                 text: "Add"
                 anchors.verticalCenter: parent.verticalCenter
-                onClicked: {
+                onButtonXClicked: {
                     if (cameraUrl.text) {
                         createPlayerObject({
                             "cfg": {
@@ -61,13 +66,11 @@ StackScreen {
                     cursorShape: Qt.PointingHandCursor
                 }
             }
-            Text {
-                text: " "
-            }
-            Button {
+            ButtonX {
                 width: 100
+                height: 28
                 text: "Import"
-                onClicked: importCameraCfgDialog.open()
+                onButtonXClicked: importCameraCfgDialog.open()
                 anchors.verticalCenter: parent.verticalCenter
                 MouseArea {
                     hoverEnabled: true

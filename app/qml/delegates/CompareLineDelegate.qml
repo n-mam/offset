@@ -14,13 +14,13 @@ Item {
                             (cldRoot.ListView.view.model.rowCount().toString().length + 1) - 
                                 lineNumber.toString().length) + "</span>"
             color: "#339AF0"
+            font.pointSize: pointSize
             verticalAlignment: Text.AlignVCenter
             anchors.verticalCenter: parent.verticalCenter 
-            font.pointSize: pointSize
         }
         Rectangle {
             clip: true
-            height: parent.height - 4
+            height: parent.height
             width: parent.width - lineNumberId.width
             anchors.verticalCenter: parent.verticalCenter
             color: (lineBgColor.length && lineReal) ? lineBgColor : Material.background
@@ -37,17 +37,15 @@ Item {
             }
             Text {
                 anchors.fill: parent
-                verticalAlignment: Text.AlignVCenter
-                text: "<pre><span>" + lineText + "</span></pre>"
                 font.pointSize: pointSize
+                verticalAlignment: Text.AlignVCenter
                 color: lineTxColor.length ? lineTxColor : textColor
-            }
-            MouseArea {
-                anchors.fill: parent
-                onClicked: {
-                    rowClicked(lineNumber)
-                }
+                text: "<span>" + lineText.replace(/ /g, '&nbsp;') + "</span>"
             }
         }
+    }
+    MouseArea {
+        anchors.fill: parent
+        onClicked: rowClicked(lineNumber)
     }
 }

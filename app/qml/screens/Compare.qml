@@ -11,7 +11,7 @@ Item {
         SplitView {
             id: compareSplit
             width: parent.width
-            height: parent.height * 0.83
+            height: parent.height * 0.84
             orientation: Qt.Horizontal
 
             handle: Rectangle {
@@ -52,20 +52,20 @@ Item {
         LineDifference {
             id: lineDiff
             width: parent.width
-            height: parent.height * 0.11
+            height: parent.height * 0.08
             modelTop: leftCompareFile.getModel()
             modelBottom: rightCompareFile.getModel()
         }
 
         Rectangle {
-            id: compareControls
             // radius: 3
             // border.width: 1
             // border.color: borderColor
             width: parent.width
             color: Material.background
-            height: parent.height - compareSplit.height - lineDiff.height
+            height: parent.height - compareSplit.height - lineDiff.height - 8
             Row {
+                anchors.verticalCenter: parent.verticalCenter
                 spacing: 4
                 ButtonX {
                     text: "-"
@@ -88,8 +88,11 @@ Item {
                     width: 24
                     height: 26
                     onButtonXClicked: pointSize += 1
-                    
                 }
+            }
+            Row {
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.horizontalCenter: parent.horizontalCenter
                 ButtonX {
                     text: "Compare"
                     width: 62
@@ -98,6 +101,5 @@ Item {
                 }
             }
         }
-    
     }
 }

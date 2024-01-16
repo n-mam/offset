@@ -9,20 +9,35 @@ Item {
     property var rowHeight: 45
     property var labelWidth: 100
 
-    Rectangle {
-        id: testRect
-        width: 300
-        height: 200
-        anchors.top: parent.top
+    Row {
         anchors.right: parent.right
-        radius: 3
-        border.width: 1
-        border.color: borderColor
-        color: "transparent"
-        Text {
-            color: textColor
-            text: "this is a test rectangle"
-            anchors.centerIn: parent
+        Rectangle {
+            id: testRect
+            width: 200
+            height: 100
+            radius: 3
+            border.width: 1
+            border.color: borderColor
+            color: "transparent"
+            Text {
+                color: textColor
+                text: "this is a test rectangle"
+                anchors.centerIn: parent
+            }
+        }
+        Rectangle {
+            id: testRect2
+            width: 100
+            height: 100
+            radius: 3
+            border.width: 1
+            border.color: borderColor
+            color: diffColor
+            Text {
+                color: textColor
+                text: "Test"
+                anchors.centerIn: parent
+            }
         }
     }
 
@@ -85,6 +100,30 @@ Item {
                     }
                 }
             }
+            Row {
+                spacing: 4
+                Text {
+                    text: "Diff:"
+                    color: textColor
+                    width: labelWidth
+                    verticalAlignment: Text.AlignVCenter
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+                TextField {
+                    id: diffColorId
+                    width: 100
+                    height: rowHeight - 10
+                    placeholderText: qsTr("color")
+                    text: diffColor
+                    onPressed: {
+                        context = "diff"
+                        colorDialog.open()
+                    }
+                    onEditingFinished: {
+                        diffColor = diffColorId.text
+                    }
+                }
+            }
             ColorDialog {
                 id: colorDialog
                 onSelectedColorChanged: {
@@ -92,6 +131,8 @@ Item {
                         borderColor = selectedColor
                     else if (context === "text")
                         textColor = selectedColor
+                    else if (context === "diff")
+                        diffColor = selectedColor                        
                 }
             }
         }
