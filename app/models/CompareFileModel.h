@@ -22,7 +22,6 @@ struct CompareFileModel : public QAbstractListModel {
         ELineNumber,
         ELineIndent,
         ELineBgColor,
-        ELineTxColor,
         ELineIndentSymbol
     };
 
@@ -32,7 +31,6 @@ struct CompareFileModel : public QAbstractListModel {
         std::size_t li_hash;
         std::string li_text;
         std::string li_bgcolor;
-        std::string li_txcolor;
         std::string li_indentSymbol = "&nbsp;";
     };
 

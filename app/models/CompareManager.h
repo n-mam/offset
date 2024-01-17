@@ -14,7 +14,10 @@ class CompareManager : public QObject {
         std::vector<int> pos_in_a;
         std::vector<int> pos_in_b;
     };
-
+    struct _lcs_sym_pos_matched {
+        int pos_in_a;
+        int pos_in_b;
+    };
     public:
 
     CompareManager();

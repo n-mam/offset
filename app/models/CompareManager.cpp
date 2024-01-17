@@ -112,15 +112,38 @@ void CompareManager::compare() {
 
     auto [median_a, median_b] = computeMedian(lcs_pos_map);
 
-    // loop through all _lcs_sym_pos entries and 
-    // remove duplicate lcs symbols from A and B
-    // by picking the one nearest to the median
-    for (auto& [e, sp] : lcs_pos_map) {
-        if (sp.pos_in_a.size() > 1) {
-            pickNearestToMedian(sp.pos_in_a, median_a);
-        }
-        if (sp.pos_in_b.size() > 1) {
-            pickNearestToMedian(sp.pos_in_b, median_b);
+    // loop through all unmatched _lcs_sym_pos entries 
+    // and match lcs symbols from A to B by picking 
+    // the one that is at a min distance to any of the 
+    // other. Remove only those matched entries from lcs_pos_map
+    std::unordered_map<size_t, _lcs_sym_pos_matched> lcs_pos_map_matched;
+    lcs_pos_map_matched.reserve(lcs.size());
+    for (auto& e : lcs) {
+        auto& sp = lcs_pos_map.find(e)->second;
+        auto la = sp.pos_in_a.size();
+        auto lb = sp.pos_in_b.size();
+        if (la > 1 || lb > 1) {
+            for (auto i = 0; i < std::min(la, lb); i++) {
+                auto& bigger = (la > lb) ? sp.pos_in_a : sp.pos_in_b;
+                auto& smaller = (la <= lb) ? sp.pos_in_a : sp.pos_in_b;
+                int match_big = -1;
+                int diff = INT32_MAX;
+                // match pos in smaller with all pos in bigger (min dist)
+                for (auto& pos_big : bigger) {
+                    if (std::abs(smaller[i] - pos_big) < diff) {
+                        diff = std::abs(smaller[i] - pos_big);
+                        match_big = pos_big;
+                    }
+                }
+                // add the match pair to lcs_pos_map_matched
+                if (la > lb) { // A is bigger or equal
+                    lcs_pos_map_matched.insert({e, {match_big, smaller[i]}});
+                } else { // B is bigger
+                    lcs_pos_map_matched.insert({e, {smaller[i], match_big}});
+                }
+            }
+        } else {
+            lcs_pos_map_matched.insert({e, {sp.pos_in_a[0], sp.pos_in_b[0]}});
         }
     }
 
@@ -132,9 +155,9 @@ void CompareManager::compare() {
     auto n_total_added_in_a = 0;
     auto n_total_added_in_b = 0;
     for (const auto& e : lcs) {
-        auto& sp = lcs_pos_map.find(e)->second;
-        auto in_a = sp.pos_in_a[0] + n_total_added_in_a;
-        auto in_b = sp.pos_in_b[0] + n_total_added_in_b;
+        auto [in_a, in_b] = lcs_pos_map_matched.find(e)->second;
+        in_a += n_total_added_in_a;
+        in_b += n_total_added_in_b;
         auto n = std::abs(in_a - in_b);
         if (in_a < in_b) {
             _models[0]->insertStripedRows(in_a, n);

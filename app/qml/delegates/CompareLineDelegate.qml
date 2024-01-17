@@ -10,7 +10,7 @@ Item {
         Text {
             id: lineNumberId
             text: "<span>" + lineNumber + 
-                        lineIndentSymbol.repeat(
+                        '&nbsp;'.repeat(
                             (cldRoot.ListView.view.model.rowCount().toString().length + 1) - 
                                 lineNumber.toString().length) + "</span>"
             color: "#339AF0"
@@ -36,11 +36,12 @@ Item {
                 }
             }
             Text {
+                color: textColor
                 anchors.fill: parent
                 font.pointSize: pointSize
                 verticalAlignment: Text.AlignVCenter
-                color: lineTxColor.length ? lineTxColor : textColor
-                text: "<span>" + lineText.replace(/ /g, '&nbsp;') + "</span>"
+                text: "<span>" + lineIndentSymbol.repeat(lineIndent)  + 
+                    lineText.replace(/ /g, '&nbsp;') + "</span>"
             }
         }
     }

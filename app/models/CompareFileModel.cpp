@@ -27,7 +27,6 @@ QHash<int, QByteArray> CompareFileModel::roleNames() const {
     roles.insert(ELineIndent, "lineIndent");
     roles.insert(ELineNumber, "lineNumber");
     roles.insert(ELineBgColor, "lineBgColor");
-    roles.insert(ELineTxColor, "lineTxColor");
     roles.insert(ELineIndentSymbol, "lineIndentSymbol");
     return roles;
 }
@@ -61,9 +60,6 @@ QVariant CompareFileModel::data(const QModelIndex &index, int role) const {
         }
         case ELineBgColor: {
             return QString::fromStdString(_model[row].li_bgcolor);
-        }
-        case ELineTxColor: {
-            return QString::fromStdString(_model[row].li_txcolor);
         }
         case ELineIndentSymbol: {
             return QString::fromStdString(_model[row].li_indentSymbol);
@@ -109,7 +105,6 @@ void CompareFileModel::resetToOriginalState() {
         //reset colors
         for (auto& e : _model) {
             e.li_bgcolor = "";
-            e.li_txcolor = "";
         }
         endResetModel();
 }
