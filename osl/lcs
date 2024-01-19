@@ -1,6 +1,9 @@
 #ifndef LCS_H
 #define LCS_H
 
+#include <osl/log>
+
+#undef max
 #include <set>
 #include <map>
 #include <string>

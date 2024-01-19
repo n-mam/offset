@@ -11,175 +11,26 @@ CompareManager::~CompareManager() {
 }
 
 void CompareManager::setCompareFileModel(CompareFileModel *model) {
-    _models.push_back(model);
+    _file_models.push_back(model);
 }
 
 void CompareManager::onFileModelChanged(CompareFileModel *model) {
-    for (auto& m : _models) {
-        if (m != model) {
-            m->resetToOriginalState();
+    for (auto& fm : _file_models) {
+        if (fm != model) {
+            fm->resetToOriginalState();
         }
     }
 }
 
-// compute median of all lcs symbol positions in A and B
-auto CompareManager::computeMedian(const std::unordered_map<size_t, _lcs_sym_pos>& lcs_pos_map) {
-
-    int median_a, median_b;
-    std::vector<int> all_pos_a;
-    std::vector<int> all_pos_b;
-
-    for (const auto& [e, sp] : lcs_pos_map) {
-        all_pos_a.insert(all_pos_a.end(), sp.pos_in_a.begin(), sp.pos_in_a.end());
-        all_pos_b.insert(all_pos_b.end(), sp.pos_in_b.begin(), sp.pos_in_b.end());
-    }
-
-    std::sort(all_pos_a.begin(), all_pos_a.end());
-    std::sort(all_pos_b.begin(), all_pos_b.end());
-
-    if (all_pos_a.size() % 2) {
-        median_a = (all_pos_a[all_pos_a.size()/2] + all_pos_a[(all_pos_a.size()/2) + 1]) / 2;
-    } else {
-        median_a = all_pos_a[all_pos_a.size()/2];
-    }
-
-    if (all_pos_b.size() % 2) {
-        median_b = (all_pos_b[all_pos_b.size()/2] + all_pos_b[(all_pos_b.size()/2) + 1]) / 2;
-    } else {
-        median_b = all_pos_b[all_pos_b.size()/2];
-    }
-
-    return std::make_pair(median_a, median_b);
-}
-
-void CompareManager::pickNearestToMedian(std::vector<int>& vec, int median) {
-    int32_t nearest = -1;
-    int32_t diff = INT32_MAX;
-    for (const auto& pos : vec) {
-        if (std::abs(median - pos) < diff) {
-            nearest = pos;
-            diff = std::abs(median - pos);
-        }
-    }
-    vec.clear();
-    vec.push_back(nearest);
-}
-
-void CompareManager::compare() {
-
-    auto& A = _models[0]->_model;
-    auto& B = _models[1]->_model;
-
-    std::vector<size_t> ha;
-    std::vector<size_t> hb;
-
-    ha.reserve(A.size());
-    ha.reserve(B.size());
-
-    for (const auto& e : A) {
-        ha.push_back(e.li_hash);
-    }
-    for (const auto& e : B) {
-        hb.push_back(e.li_hash);
-    }
-
-    auto results = osl::find_lcs<std::vector<size_t>>(ha, hb);
-
-    if (!results.ss.size()) return;
-
-    // use the first for now
-    auto& lcs = results.ss[0];
-
-    // map of lcs hashes to their 
-    // positions in the 2 strings
-    std::unordered_map<size_t, _lcs_sym_pos> lcs_pos_map;
-    lcs_pos_map.reserve(lcs.size());
-
-    for (const auto& e : lcs) {
-        _lcs_sym_pos sp;
-        for (auto it = ha.begin(); it != ha.end(); it++) {
-            if (e == *it) {
-                sp.pos_in_a.push_back(std::distance(ha.begin(), it));
-            }
-        }
-        for (auto it = hb.begin(); it != hb.end(); it++) {
-            if (e == *it) {
-                sp.pos_in_b.push_back(std::distance(hb.begin(), it));
-            }          
-        }
-        lcs_pos_map.insert({e, sp});
-    }
-
-    auto [median_a, median_b] = computeMedian(lcs_pos_map);
-
-    // loop through all unmatched _lcs_sym_pos entries 
-    // and match lcs symbols from A to B by picking 
-    // the one that is at a min distance to any of the 
-    // other. Remove only those matched entries from lcs_pos_map
-    std::unordered_map<size_t, _lcs_sym_pos_matched> lcs_pos_map_matched;
-    lcs_pos_map_matched.reserve(lcs.size());
-    for (auto& e : lcs) {
-        auto& sp = lcs_pos_map.find(e)->second;
-        auto la = sp.pos_in_a.size();
-        auto lb = sp.pos_in_b.size();
-        if (la > 1 || lb > 1) {
-            for (auto i = 0; i < std::min(la, lb); i++) {
-                auto& bigger = (la > lb) ? sp.pos_in_a : sp.pos_in_b;
-                auto& smaller = (la <= lb) ? sp.pos_in_a : sp.pos_in_b;
-                int match_big = -1;
-                int diff = INT32_MAX;
-                // match pos in smaller with all pos in bigger (min dist)
-                for (auto& pos_big : bigger) {
-                    if (std::abs(smaller[i] - pos_big) < diff) {
-                        diff = std::abs(smaller[i] - pos_big);
-                        match_big = pos_big;
-                    }
-                }
-                // add the match pair to lcs_pos_map_matched
-                if (la > lb) { // A is bigger or equal
-                    lcs_pos_map_matched.insert({e, {match_big, smaller[i]}});
-                } else { // B is bigger
-                    lcs_pos_map_matched.insert({e, {smaller[i], match_big}});
-                }
-            }
-        } else {
-            lcs_pos_map_matched.insert({e, {sp.pos_in_a[0], sp.pos_in_b[0]}});
-        }
-    }
-
-    // At this point the lcs symbols in A and B should
-    // be aligned and have a one-to-one mapping. Loop
-    // through all lcs result hashes and adjust models
-    // A and B. Then loop through all model elements
-    // and change their display attributes   
-    auto n_total_added_in_a = 0;
-    auto n_total_added_in_b = 0;
-    for (const auto& e : lcs) {
-        auto [in_a, in_b] = lcs_pos_map_matched.find(e)->second;
-        in_a += n_total_added_in_a;
-        in_b += n_total_added_in_b;
-        auto n = std::abs(in_a - in_b);
-        if (in_a < in_b) {
-            _models[0]->insertStripedRows(in_a, n);
-            n_total_added_in_a += n;
-        } else if (in_b < in_a) {
-            _models[1]->insertStripedRows(in_b, n);
-            n_total_added_in_b += n;
-        }
-    }
-
+template<typename T>
+auto CompareManager::finalizeDisplayAttributes(T& A, T& B) {
     auto n = std::min(A.size(), B.size());
     auto x = std::max(A.size(), B.size());
-
-    _models[0]->beginResetModel();
-    _models[1]->beginResetModel();
-
     for (auto i = 0; i < n; i++) {
         if (A[i].li_hash != B[i].li_hash) {
             A[i].li_bgcolor = B[i].li_bgcolor = "#701414";
         }
     }
-
     if (A.size() != B.size()) {
         for (auto i = n; i < x; i++) {
             if (A.size() > B.size()) {
@@ -189,9 +40,145 @@ void CompareManager::compare() {
             }
         }
     }
+}
 
-    _models[1]->endResetModel();
-    _models[0]->endResetModel();
+template <typename T>
+auto CompareManager::getHashVectorsFromSubModel(const T& a, const T& b) {
+    std::vector<size_t> ha;
+    std::vector<size_t> hb;
+    ha.reserve(a.size());
+    hb.reserve(b.size());
+    for (const auto& e : a) {
+        ha.push_back(e.li_hash);
+    }
+    for (const auto& e : b) {
+        hb.push_back(e.li_hash);
+    }
+    return std::make_pair(ha, hb);
+}
+
+template<typename T>
+auto CompareManager::get_lcs_pos_vector(const T& lcs, const T& ha, const T& hb) {
+    std::vector<_lcs_sym_pos> lcs_pos;
+    lcs_pos.reserve(lcs.size());
+    for (const auto& e : lcs) {
+        _lcs_sym_pos lsp = {e};
+        for (auto it = ha.begin(); it != ha.end(); it++) {
+            if (e == *it) {
+                lsp.pos_in_a.push_back(std::distance(ha.begin(), it));
+            }
+        }
+        for (auto it = hb.begin(); it != hb.end(); it++) {
+            if (e == *it) {
+                lsp.pos_in_b.push_back(std::distance(hb.begin(), it));
+            }
+        }
+        lcs_pos.push_back(lsp);
+    }
+    return lcs_pos;
+}
+
+template<typename T>
+auto CompareManager::compareInternal(T& A, T&B) {
+
+    auto [ha, hb] = getHashVectorsFromSubModel(A, B);
+
+    auto r = osl::find_lcs<std::vector<size_t>>(ha, hb);
+
+    if (!r.ss.size()) return;
+
+    // use the first for now
+    auto& lcs = r.ss[0];
+
+    // vector of lcs symbol hashes  
+    // to their positions in A and B
+    auto lcs_pos = get_lcs_pos_vector(lcs, ha, hb);
+
+    // At this point the lcs symbols in A and B should
+    // be aligned and have a one-to-one mapping. Loop
+    // through all lcs hashes and adjust models
+    // A and B. skip duplicated lcs symbols
+    auto n_total_added_in_a = 0;
+    auto n_total_added_in_b = 0;
+    for (const auto& e : lcs_pos) {
+        auto& _in_a = e.pos_in_a;
+        auto& _in_b = e.pos_in_b;
+        if (_in_a.size() > 1) continue;
+        for (auto i = 0; i < _in_a.size(); i++) {
+            auto in_a = _in_a[i];
+            auto in_b = _in_b[i];
+            in_a += n_total_added_in_a;
+            in_b += n_total_added_in_b;
+            auto n = std::abs(in_a - in_b);
+            if (in_a < in_b) {
+                A.insert(A.begin() + in_a, n, {});
+                n_total_added_in_a += n;
+            } else if (in_b < in_a) {
+                B.insert(B.begin() + in_b, n, {});
+                n_total_added_in_b += n;
+            }
+        }
+    }
+
+    // all unique and common LCS symbols 
+    // have been aligned at this point
+    // Loop through both models and find 
+    // sections in between aligned symbols
+
+    int i = 0;
+    int j = -1;
+
+    for (auto k = 0; k < std::min(A.size(), B.size()); k++) {
+        j++;
+        if (A[k].li_hash == B[k].li_hash) {
+            if (j - 1 - i) {
+                LOG << "section detected at " << i + 1 << "," << j;
+                std::vector<CompareFileModel::LineItem> sub_a(A.begin() + i, A.begin() + j );
+                std::vector<CompareFileModel::LineItem> sub_b(B.begin() + i, B.begin() + j );
+                compareInternal(sub_a, sub_b);
+                auto delta = std::abs(static_cast<int>(sub_a.size() - sub_b.size()));
+                if (delta) {
+                    if (sub_b.size() > sub_a.size()) {
+                        // clear the original sub_b window in B
+                        B.erase(B.begin() + i, B.begin() + j);
+                        // insert sub_b at the starting of the cleared area
+                        B.insert(B.begin() + i, sub_b.begin(), sub_b.end());
+                        // insert delta rows in A to preserve the rest of earlier alingment
+                        A.insert(A.begin() + j, delta, {});
+                    } else if (sub_a.size() > sub_b.size()) {
+                        // clear the original sub_a window in A
+                        A.erase(A.begin() + i, A.begin() + j);
+                        // insert sub_a at the starting of the cleared area
+                        A.insert(A.begin() + i, sub_a.begin(), sub_a.end());
+                        // insert delta rows in B to preserve the rest of earlier alingment
+                        B.insert(B.begin() + j, delta, {});
+                    } else if (sub_a.size() == sub_b.size()) {
+                        assert(false);
+                    }
+                    // scan max(sub_s, sub_b) sized section of
+                    // A and B for duplicate inserted empty rows
+                    for (auto m = 0; m < std::max(sub_a.size(), sub_b.size()); m++) {
+                        if (!A[i + m].li_real && !A[i + m].li_real) {
+                            A.erase(A.begin() + i + m);
+                            B.erase(B.begin() + i + m);
+                        }
+                    }
+                }
+            }
+            j = k;
+            i = k + 1;
+        }
+    }
+
+    finalizeDisplayAttributes(A, B);
+}
+
+void CompareManager::compare() {
+    _file_models[0]->beginResetModel();
+    _file_models[1]->beginResetModel();
+    compareInternal(_file_models[0]->_model, _file_models[1]->_model);
+    _file_models[1]->endResetModel();
+    _file_models[0]->endResetModel();
 }
 
 // std::string q = "GAC";

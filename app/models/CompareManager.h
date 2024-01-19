@@ -11,13 +11,11 @@ class CompareManager : public QObject {
     Q_OBJECT
 
     struct _lcs_sym_pos {
+        size_t e;
         std::vector<int> pos_in_a;
         std::vector<int> pos_in_b;
     };
-    struct _lcs_sym_pos_matched {
-        int pos_in_a;
-        int pos_in_b;
-    };
+
     public:
 
     CompareManager();
@@ -33,10 +31,19 @@ class CompareManager : public QObject {
 
     private:
 
-    void pickNearestToMedian(std::vector<int>& vec, int median);
-    auto computeMedian(const std::unordered_map<size_t, _lcs_sym_pos>&);
+    template<typename T>
+    auto finalizeDisplayAttributes(T& A, T& B);
 
-    std::vector<CompareFileModel *> _models;
+    template <typename T>
+    auto getHashVectorsFromSubModel(const T& A, const T& B);
+
+    template<typename T>
+    auto compareInternal(T& A, T&B);
+
+    template<typename T>
+    auto get_lcs_pos_vector(const T& lcs, const T& ha, const T& hb);
+
+    std::vector<CompareFileModel *> _file_models;
 };
 
 #endif

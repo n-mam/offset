@@ -94,9 +94,9 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.horizontalCenter: parent.horizontalCenter
                 ButtonX {
-                    text: "Compare"
                     width: 62
                     height: 26
+                    text: "Compare"
                     onButtonXClicked: compareManager.compare()
                 }
             }
