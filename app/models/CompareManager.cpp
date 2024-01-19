@@ -133,8 +133,8 @@ auto CompareManager::compareInternal(T& A, T&B) {
         if (A[k].li_hash == B[k].li_hash) {
             if (j - 1 - i) {
                 LOG << "section detected at " << i + 1 << "," << j;
-                std::vector<CompareFileModel::LineItem> sub_a(A.begin() + i, A.begin() + j );
-                std::vector<CompareFileModel::LineItem> sub_b(B.begin() + i, B.begin() + j );
+                std::vector<CompareFileModel::LineItem> sub_a(A.begin() + i, A.begin() + j);
+                std::vector<CompareFileModel::LineItem> sub_b(B.begin() + i, B.begin() + j);
                 compareInternal(sub_a, sub_b);
                 auto delta = std::abs(static_cast<int>(sub_a.size() - sub_b.size()));
                 if (delta) {
@@ -158,7 +158,7 @@ auto CompareManager::compareInternal(T& A, T&B) {
                     // scan max(sub_s, sub_b) sized section of
                     // A and B for duplicate inserted empty rows
                     for (auto m = 0; m < std::max(sub_a.size(), sub_b.size()); m++) {
-                        if (!A[i + m].li_real && !A[i + m].li_real) {
+                        if (!A[i + m].li_real && !B[i + m].li_real) {
                             A.erase(A.begin() + i + m);
                             B.erase(B.begin() + i + m);
                         }
