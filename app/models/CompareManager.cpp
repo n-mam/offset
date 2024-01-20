@@ -43,7 +43,7 @@ auto CompareManager::finalizeDisplayAttributes(T& A, T& B) {
 }
 
 template <typename T>
-auto CompareManager::getHashVectorsFromSubModel(const T& a, const T& b) {
+auto CompareManager::getHashVectorsFromModels(const T& a, const T& b) {
     std::vector<size_t> ha;
     std::vector<size_t> hb;
     ha.reserve(a.size());
@@ -81,11 +81,11 @@ auto CompareManager::get_lcs_pos_vector(const T& lcs, const T& ha, const T& hb) 
 template<typename T>
 auto CompareManager::compareInternal(T& A, T&B) {
 
-    auto [ha, hb] = getHashVectorsFromSubModel(A, B);
+    auto [ha, hb] = getHashVectorsFromModels(A, B);
 
     auto r = osl::find_lcs<std::vector<size_t>>(ha, hb);
 
-    if (!r.ss.size()) return;
+    if (!r.ss.size()) return r.ss.size();
 
     // use the first for now
     auto& lcs = r.ss[0];
@@ -171,14 +171,28 @@ auto CompareManager::compareInternal(T& A, T&B) {
     }
 
     finalizeDisplayAttributes(A, B);
+
+    return lcs.size();
 }
 
-void CompareManager::compare() {
+size_t CompareManager::compare() {
+    auto& A = _file_models[0]->_model;
+    auto& B = _file_models[1]->_model;
     _file_models[0]->beginResetModel();
     _file_models[1]->beginResetModel();
-    compareInternal(_file_models[0]->_model, _file_models[1]->_model);
+    auto lcs_len = compareInternal(A, B);
+    // make sure the final 2 modified models are of same size
+    // else rows of one would be squished more than the other
+    auto delta = std::abs(
+        static_cast<int>(A.size() - B.size()));
+    if (A.size() > B.size()) {
+        B.insert(B.end(), delta, {});
+    } else if (A.size() < B.size()) {
+        A.insert(A.end(), delta, {});
+    }
     _file_models[1]->endResetModel();
     _file_models[0]->endResetModel();
+    return lcs_len;
 }
 
 // std::string q = "GAC";

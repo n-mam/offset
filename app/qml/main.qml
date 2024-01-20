@@ -8,14 +8,14 @@ ApplicationWindow {
   id: mainWindow
   visible: true
   width: 1430 - (1430 * 0.32)
-  height: 860 - (860 * 0.27)
+  height: 860 - (860 * 0.22)
   title: qsTr("Offset")
 
   property var appSpacing: 5
   property var pointSize: 10
   property var showlog: false
   property var textColor: "white"
-  property var textFieldHeight: 36
+  property var textFieldHeight: 34
   property var diffColor: "#701414"
   property var borderColor: "#727B6C"
 

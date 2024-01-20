@@ -60,7 +60,7 @@ Rectangle {
     }
 
     CompareControls {
-        id: compareControlId
+        id: compareControl
         width: parent.width
         anchors.top: lineDiff.bottom
         height: parent.height - compareSplit.height - lineDiff.height

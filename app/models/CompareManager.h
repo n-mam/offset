@@ -21,9 +21,9 @@ class CompareManager : public QObject {
     CompareManager();
     ~CompareManager();
 
-    void setCompareFileModel(CompareFileModel *model);
+    Q_INVOKABLE size_t compare();
 
-    Q_INVOKABLE void compare();
+    void setCompareFileModel(CompareFileModel *model);
 
     public slots:
 
@@ -32,13 +32,13 @@ class CompareManager : public QObject {
     private:
 
     template<typename T>
+    auto compareInternal(T& A, T&B);
+
+    template<typename T>
     auto finalizeDisplayAttributes(T& A, T& B);
 
     template <typename T>
-    auto getHashVectorsFromSubModel(const T& A, const T& B);
-
-    template<typename T>
-    auto compareInternal(T& A, T&B);
+    auto getHashVectorsFromModels(const T& A, const T& B);
 
     template<typename T>
     auto get_lcs_pos_vector(const T& lcs, const T& ha, const T& hb);

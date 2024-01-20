@@ -20,9 +20,10 @@ Item {
 
     FileFolderSelector {
         id: fileSelector
-        height: 34
-        anchors.margins: 4
+        anchors.margins: 10
         placeholder: "File"
+        anchors.topMargin: 12
+        height: textFieldHeight
         isFolderSelector: false
         anchors.top: parent.top
         image: "qrc:/folder.png"

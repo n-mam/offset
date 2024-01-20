@@ -21,7 +21,8 @@ Item {
 
         Image {
             id: buttonImage
-            width: 22; height: 22
+            width: buttonRoot.width
+            height: buttonRoot.height
             source: buttonRoot.image
             visible: buttonRoot.image.length
             anchors.verticalCenter: parent.verticalCenter

@@ -12,35 +12,27 @@ Item {
     signal fileSelected(var file)
     signal folderSelected(var folder)
 
-    Rectangle {
-        id: destRect
+    Row {
+        spacing: appSpacing
         anchors.fill: parent
-        anchors.topMargin: 8
-        color: "transparent"
         anchors.top: parent.top
-        // radius: 3
-        // border.width: 1
-        // border.color: borderColor
         TextField {
             id: destination
             font.pointSize: 10
-            anchors.left: parent.left
-            height: textFieldHeight - 4
+            height: parent.height
             placeholderText: placeholder
-            anchors.leftMargin: appSpacing
             verticalAlignment: TextInput.AlignVCenter
             anchors.verticalCenter: parent.verticalCenter
-            width: (parent.width - (3 * appSpacing)) * 0.93
+            width: parent.width - appSpacing - folderButton.width
             text: isFolderSelector ? folderDialog.folder : fileDialog.file
         }
         ButtonX {
-            height: textFieldHeight - 4
-            anchors.right: parent.right
+            id: folderButton
+            width: 28
+            height: 28
             text: fileFolderSelector.label
             image: fileFolderSelector.image
-            anchors.rightMargin: appSpacing
             anchors.verticalCenter: parent.verticalCenter
-            width: (parent.width - (3 * appSpacing)) * 0.07
             onButtonXClicked: isFolderSelector ? folderDialog.open() : fileDialog.open()
         }
     }

@@ -3,12 +3,15 @@ import QtQuick.Controls
 
 Item {
     id: cldRoot
+
+    property var innerMargin: 0
+
     signal rowClicked(var row)
 
     Row {
-        anchors.margins: 1
         width: parent.width
         anchors.top: parent.top
+        anchors.margins: innerMargin
         anchors.bottom: parent.bottom
         Text {
             id: lineNumberId

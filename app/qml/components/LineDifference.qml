@@ -23,6 +23,7 @@ Rectangle {
         anchors.right: parent.right
         height: (parent.height / 2)
         delegate: CompareLineDelegate {
+            innerMargin: 1
             width: ListView.view.width
             height: ListView.view.height
         }
@@ -56,6 +57,7 @@ Rectangle {
         height: (parent.height / 2)
         anchors.bottom: parent.bottom
         delegate: CompareLineDelegate {
+            innerMargin: 1
             width: ListView.view.width
             height: ListView.view.height
         }

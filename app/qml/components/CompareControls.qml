@@ -5,6 +5,7 @@ import QtQuick.Controls
 Item {
 
     Row {
+        id: leftRow
         spacing: 4
         anchors.margins: 10
         anchors.left: parent.left
@@ -33,13 +34,57 @@ Item {
         }
     }
     Row {
+        id: middleRow
         anchors.verticalCenter: parent.verticalCenter
         anchors.horizontalCenter: parent.horizontalCenter
         ButtonX {
             width: 62
             height: 26
             text: "Compare"
-            onButtonXClicked: compareManager.compare()
+            onButtonXClicked: () => {
+                var startTime = new Date();
+                var lcs_len = compareManager.compare()
+                var endTime = new Date();
+                var tt = Math.round(endTime - startTime);
+                lcsLength.text = "lcs: " + lcs_len + ", "
+                timeTaken.text = "time: " + ((tt > 1000) ? ((tt / 1000) + "s") : (tt + "ms"))
+            }
+        }
+    }
+    Row {
+        id: rightRow
+        spacing: 4
+        anchors.margins: 10
+        anchors.right: parent.right
+        anchors.verticalCenter: parent.verticalCenter
+        ButtonX {
+            id: nextChange
+            width: 20
+            height: 20
+            image: "qrc:/up-diff.png"
+            anchors.verticalCenter: parent.verticalCenter
+            onButtonXClicked: console.log("next")
+        }
+        ButtonX {
+            id: previousChange
+            width: 20
+            height: 20
+            image: "qrc:/down-diff.png"
+            anchors.verticalCenter: parent.verticalCenter
+            onButtonXClicked: console.log("prev")
+        }
+        Text {
+            text: "  "
+        }
+        Text {
+            id: lcsLength
+            text: ""
+            color: textColor
+        }
+        Text {
+            id: timeTaken
+            text: ""
+            color: textColor
         }
     }
 }
