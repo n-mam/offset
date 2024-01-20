@@ -1,59 +1,63 @@
 import QtQuick
 import QtQml.Models
+import QtQuick.Shapes
 import QtQuick.Controls
 import "qrc:/delegates"
 
-Item {
-    property var modelTop
-    property var modelBottom
-    Column {
-        spacing: 2
-        anchors.fill: parent
-        Rectangle {
-            radius: 3
-            border.width: 1
-            border.color: borderColor
-            width: parent.width
-            height: parent.height / 2
-            color: Material.background
-            ListView {
-                id: leftListView
-                clip: true
-                model: modelTop
-                interactive: false
-                anchors.fill: parent
-                anchors.topMargin: 1
-                anchors.bottomMargin: 1
-                anchors.leftMargin: 10
-                anchors.rightMargin: 10
-                delegate: CompareLineDelegate {
-                    width: ListView.view.width
-                    height: ListView.view.height
-                }
+Rectangle {
+    radius: 0
+    border.width: 1
+    border.color: borderColor
+    color: Material.background
+    property var modelA
+    property var modelB
+
+    ListView {
+        id: leftListView
+        clip: true
+        model: modelA
+        interactive: false
+        anchors.leftMargin: 10
+        anchors.rightMargin: 10
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: (parent.height / 2)
+        delegate: CompareLineDelegate {
+            width: ListView.view.width
+            height: ListView.view.height
+        }
+    }
+    Rectangle {
+        id: spacer
+        height: 1
+        width: parent.width
+        anchors.centerIn: parent
+        color: Material.background
+        Shape {
+            anchors.fill: spacer
+            anchors.centerIn: spacer
+            ShapePath {
+                startX: 0; startY: 1
+                strokeColor: borderColor
+                strokeStyle: ShapePath.SolidLine
+                PathLine {x: spacer.width; y: 1}
             }
         }
-        Rectangle {
-            radius: 3
-            border.width: 1
-            border.color: borderColor
-            width: parent.width
-            height: parent.height / 2
-            color: Material.background
-            ListView {
-                id: rightListView
-                clip: true
-                model: modelBottom
-                interactive: false
-                anchors.fill: parent
-                anchors.topMargin: 1
-                anchors.bottomMargin: 1
-                anchors.leftMargin: 10
-                anchors.rightMargin: 10
-                delegate: CompareLineDelegate {
-                    width: ListView.view.width
-                    height: ListView.view.height
-                }
-            }
+    }
+    ListView {
+        id: rightListView
+        clip: true
+        model: modelB
+        interactive: false
+        anchors.leftMargin: 10
+        anchors.rightMargin: 10
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: (parent.height / 2)
+        anchors.bottom: parent.bottom
+        delegate: CompareLineDelegate {
+            width: ListView.view.width
+            height: ListView.view.height
         }
     }
 

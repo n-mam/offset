@@ -3,8 +3,9 @@ import QtQuick.Controls
 import Qt.labs.platform
 
 Item {
-
-    required property var label
+    id: fileFolderSelector
+    property var label: ""
+    property var image: ""
     required property var placeholder
     required property var isFolderSelector
 
@@ -24,21 +25,22 @@ Item {
             id: destination
             font.pointSize: 10
             anchors.left: parent.left
-            height: textFieldHeight
+            height: textFieldHeight - 4
             placeholderText: placeholder
             anchors.leftMargin: appSpacing
             verticalAlignment: TextInput.AlignVCenter
             anchors.verticalCenter: parent.verticalCenter
-            width: (parent.width - (3 * appSpacing)) * 0.90
+            width: (parent.width - (3 * appSpacing)) * 0.93
             text: isFolderSelector ? folderDialog.folder : fileDialog.file
         }
         ButtonX {
-            text: label
-            height: textFieldHeight
-            anchors.rightMargin: appSpacing
+            height: textFieldHeight - 4
             anchors.right: parent.right
-            width: (parent.width - (3 * appSpacing)) * 0.10
+            text: fileFolderSelector.label
+            image: fileFolderSelector.image
+            anchors.rightMargin: appSpacing
             anchors.verticalCenter: parent.verticalCenter
+            width: (parent.width - (3 * appSpacing)) * 0.07
             onButtonXClicked: isFolderSelector ? folderDialog.open() : fileDialog.open()
         }
     }

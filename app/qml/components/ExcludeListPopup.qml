@@ -23,7 +23,7 @@ Popup {
       id: popupText
       radius: 3
       border.width: 1
-      border.color: "#FFFFFF"
+      border.color: borderColor
       color: "transparent"
       width: parent.width
       height: parent.height * 0.80
@@ -41,7 +41,7 @@ Popup {
     Rectangle {
       // radius: 3
       // border.width: 1
-      // border.color: "#FFFFFF"
+      // border.color: borderColor
       color: "transparent"
       width: 75 + 75 + (3 * appSpacing)
       height: parent.height * 0.15

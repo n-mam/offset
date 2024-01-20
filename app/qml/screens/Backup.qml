@@ -79,20 +79,21 @@ Rectangle {
     Rectangle {
       id: bottomRect
       width: parent.width
-      SplitView.minimumHeight: 90
-      SplitView.preferredHeight: parent.height * 0.20
-      SplitView.maximumHeight: 100
       color: "transparent"
+      SplitView.minimumHeight: 90
+      SplitView.maximumHeight: 100
+      SplitView.preferredHeight: parent.height * 0.20
       // radius: 3
       // border.width: 1
       // border.color: borderColor
 
       FileFolderSelector {
-        width: parent.width
         height: 43
+        width: parent.width / 2
         isFolderSelector: true
-        label: "Select"
+        image: "qrc:/folder.png"
         placeholder: "Destination"
+        anchors.horizontalCenter: parent.horizontalCenter
       }
 
       Rectangle {
@@ -100,34 +101,32 @@ Rectangle {
         // radius: 3
         // border.width: 1
         // border.color: borderColor
+        height: 36
+        color: "transparent"
         anchors.bottom: parent.bottom
         anchors.horizontalCenter: parent.horizontalCenter
-        color: "transparent"
-        width: parent.width * 0.5
-        height: 40
-        Button {
+        implicitWidth: startButton.width + cancelbutton.width + 4
+        ButtonX {
           id: startButton
+          width: 100
           text: "START"
-          enabled: (diskListModel.transfer === 0)
-          width: parent.width * 0.45
           height: parent.height
-          anchors.left: parent.left
-          anchors.margins: appSpacing
+          enabled: (diskListModel.transfer === 0)
           anchors.verticalCenter: parent.verticalCenter
-          onClicked: {
+          onButtonXClicked: {
             diskListModel.convertSelectedItemsToVirtualDisks(destination.text)
           }
         }
-        Button {
+        ButtonX {
           id: cancelbutton
+          width: 100
           text: "CANCEL"
-          enabled: (diskListModel.transfer !== 0)
-          width: parent.width * 0.45
+          anchors.margins: 4
           height: parent.height
           anchors.left: startButton.right
-          anchors.margins: appSpacing
+          enabled: (diskListModel.transfer !== 0)
           anchors.verticalCenter: parent.verticalCenter
-          onClicked: {
+          onButtonXClicked: {
             diskListModel.stop = true;
           }
         }

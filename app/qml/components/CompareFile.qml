@@ -5,27 +5,27 @@ import "qrc:/delegates"
 import "qrc:/components"
 import CustomElements 1.0
 
-Rectangle {
+Item {
 
     id: compareFileRoot
 
     property var clickedRow: -1
 
-    radius: 3
-    border.width: 1
-    border.color: borderColor
-    color: Material.background
+    // radius: 3
+    // border.width: 1
+    // border.color: borderColor
+    // color: Material.background
     implicitHeight: parent.height
     implicitWidth: (parent.width / 2) - 1
 
     FileFolderSelector {
         id: fileSelector
         height: 34
-        label: ".."
         anchors.margins: 4
         placeholder: "File"
         isFolderSelector: false
         anchors.top: parent.top
+        image: "qrc:/folder.png"
         anchors.left: parent.left
         anchors.right: parent.right
         onFileSelected: (file) => {
@@ -56,17 +56,15 @@ Rectangle {
             anchors.fill: parent
             onEntered: (drag) => {
                 drag.accept (Qt.LinkAction);
-                compareFileRoot.border.color = "gray";
             }
             onDropped: (drop) => {
-                console.log(drop.urls)
                 var path = drop.urls[0].toString();
                 path = path.replace(/^(file:\/{3})|(qrc:\/{2})|(http:\/{2})/,"")
                 var file = decodeURIComponent(path).replace(/\//g, "\\")
                 onCompareFileUpdated(file)
             }
             onExited: {
-                compareFileRoot.border.color = borderColor;
+
             }
         }
     }

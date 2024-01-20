@@ -7,22 +7,33 @@ Item {
     id: buttonRoot
 
     property var text: ""
+    property var image: ""
 
     signal buttonXClicked
 
     Rectangle {
         id: button
         radius: 3
-        border.width: 1
         anchors.fill: parent
         border.color: borderColor
         color: Material.background
+        border.width: buttonRoot.text.length ? 1 : 0
+
+        Image {
+            id: buttonImage
+            width: 22; height: 22
+            source: buttonRoot.image
+            visible: buttonRoot.image.length
+            anchors.verticalCenter: parent.verticalCenter
+            anchors.horizontalCenter: parent.horizontalCenter
+        }
 
         Text {
             id: buttonText
-            color: "white"
+            color: textColor
             anchors.centerIn: parent
             text: qsTr(buttonRoot.text)
+            visible: buttonRoot.text.length
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter            
         }

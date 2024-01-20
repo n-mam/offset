@@ -11,10 +11,10 @@ Rectangle {
 
   SplitView {
     id: splitViewTop
+    anchors.top: parent.top
     orientation: Qt.Vertical
     anchors.left: parent.left
     anchors.right: parent.right
-    anchors.top: parent.top
     anchors.bottom: ftpFooter.top
 
     handle: Rectangle {
@@ -22,7 +22,7 @@ Rectangle {
       implicitWidth: 1
       implicitHeight: 1
       border.color: borderColor
-      containmentMask: Item {
+      containmentMask: Item { // hit area
         x: (handleDelegate.width - width) / 2
         width: splitViewTop.width
         height: 15
@@ -66,16 +66,16 @@ Rectangle {
         id: queue
         clip: true
         spacing: 1
+        currentIndex: -1
         anchors.fill: parent
         anchors.topMargin: 5
         anchors.leftMargin: 3
         anchors.rightMargin: 3
         model: transferManager
-        currentIndex: -1
-        boundsBehavior: Flickable.StopAtBounds
         highlightMoveDuration: 100
         highlightMoveVelocity: 800
         delegate: TransferQueueDelegate{}
+        boundsBehavior: Flickable.StopAtBounds
         highlight: Rectangle { color: "lightsteelblue"; radius: 3 }
         Connections {
           target: transferManager

@@ -6,14 +6,17 @@ Item {
     signal rowClicked(var row)
 
     Row {
-        anchors.fill: parent
+        anchors.margins: 1
+        width: parent.width
+        anchors.top: parent.top
+        anchors.bottom: parent.bottom
         Text {
             id: lineNumberId
             text: "<span>" + lineNumber + 
                         '&nbsp;'.repeat(
                             (cldRoot.ListView.view.model.rowCount().toString().length + 1) - 
                                 lineNumber.toString().length) + "</span>"
-            color: "#339AF0"
+            color: "#888888"
             font.pointSize: pointSize
             verticalAlignment: Text.AlignVCenter
             anchors.verticalCenter: parent.verticalCenter 
@@ -30,7 +33,7 @@ Item {
                 anchors.fill: parent
                 onPaint: {
                     var ctx = getContext('2d');
-                    ctx.fillStyle = ctx.createPattern("#808080", Qt.BDiagPattern); 
+                    ctx.fillStyle = ctx.createPattern("#888888", Qt.BDiagPattern); 
                     ctx.fillRect(0, 0, width, height);
                     ctx.stroke();
                 }
