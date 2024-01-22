@@ -28,14 +28,14 @@ Item {
   }
 
   Text {
-    text: currentStatus
     color: textColor
-    width: parent.width * 0.55
+    text: currentStatus
     height: parent.height
-    elide: Text.ElideRight
-    anchors.bottom: parent.bottom
-    anchors.left: parent.left
     anchors.leftMargin: 5
+    elide: Text.ElideRight
+    anchors.left: parent.left
+    width: parent.width * 0.55
+    anchors.bottom: parent.bottom
     verticalAlignment: Text.AlignVCenter
     anchors.verticalCenter: parent.verticalCenter
   }

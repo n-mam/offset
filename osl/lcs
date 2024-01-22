@@ -108,6 +108,25 @@ inline auto find_lcs(const T& p, const T& q) {
     return mat[rows-1][cols-1];
 }
 
+inline auto lcs_tests() {
+    auto r = osl::find_lcs<std::string>("abc", "a1b2c3");
+    for (const auto& lcs : r.ss) LOG << lcs;
+    LOG << "-------------";
+    r = osl::find_lcs<std::string>("GAC", "AGCAT");
+    for (const auto& lcs : r.ss) LOG << lcs;
+    LOG << "-------------";
+    auto rr = osl::find_lcs<std::vector<int>>({1,2,3,4,5}, {2,3,4,1,5});
+    for (const auto& lcs: rr.ss)
+        for (const auto& e : lcs)
+            LOG << std::to_string(e);
+    LOG << "-------------";
+    r = osl::find_lcs<std::string>(
+        "This is a relatively long string than the others just to see what happens with large inputs like this one",
+        "is xxx long xxx the xxx to xxx with xxx xxx inputs one");
+    for (const auto& lcs : r.ss) LOG << lcs;
+    LOG << "-------------";
+}
+
 }
 
 #endif

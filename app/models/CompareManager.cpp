@@ -27,32 +27,40 @@ auto CompareManager::finalizeDisplayAttributes(T& A, T& B) {
     auto n = std::min(A.size(), B.size());
     auto x = std::max(A.size(), B.size());
     for (auto i = 0; i < n; i++) {
-        if (A[i].li_hash != B[i].li_hash) {
-            A[i].li_bgcolor = B[i].li_bgcolor = "#701414";
+        if (A[i].e_hash != B[i].e_hash) {
+            if (!A[i].e_real && B[i].e_real) {
+                // added to B; green
+                B[i].e_bgcolor = "#4C5A2C";
+            } else if (A[i].e_real && !B[i].e_real) {
+                // removed from A; A red, B gradient
+                A[i].e_bgcolor = "#701414";
+            } else {
+                A[i].e_bgcolor = B[i].e_bgcolor = "#701414";
+            }
         }
     }
     if (A.size() != B.size()) {
         for (auto i = n; i < x; i++) {
             if (A.size() > B.size()) {
-                A[i].li_bgcolor = "#4C5A2C";
+                A[i].e_bgcolor = "#701414";
             } else {
-                B[i].li_bgcolor = "#4C5A2C";
+                B[i].e_bgcolor = "#4C5A2C";
             }
         }
     }
 }
 
 template <typename T>
-auto CompareManager::getHashVectorsFromModels(const T& a, const T& b) {
+auto CompareManager::getHashVectorsFromModels(const T& A, const T& B) {
     std::vector<size_t> ha;
     std::vector<size_t> hb;
-    ha.reserve(a.size());
-    hb.reserve(b.size());
-    for (const auto& e : a) {
-        ha.push_back(e.li_hash);
+    ha.reserve(A.size());
+    hb.reserve(B.size());
+    for (const auto& e : A) {
+        ha.push_back(e.e_hash);
     }
-    for (const auto& e : b) {
-        hb.push_back(e.li_hash);
+    for (const auto& e : B) {
+        hb.push_back(e.e_hash);
     }
     return std::make_pair(ha, hb);
 }
@@ -79,7 +87,107 @@ auto CompareManager::get_lcs_pos_vector(const T& lcs, const T& ha, const T& hb) 
 }
 
 template<typename T>
-auto CompareManager::compareInternal(T& A, T&B) {
+auto CompareManager::processDiffSections(T& A, T& B) {
+    // all unique and common LCS symbols have been aligned at this point
+    // Loop through models and find diff sections between aligned symbols
+    int i = 0;
+    int j = 0;
+
+    for (auto k = 0; k < std::min(A.size(), B.size()); k++) {
+        if (A[k].e_hash == B[k].e_hash) {
+            if (j - i > 1) {
+                processSection(A, B, i, j);
+            }
+            i = j = k + 1;
+        } else {
+            j++;
+        }
+    }
+
+    if (j - i > 1) {
+        processSection(A, B, i, j);
+    }
+}
+
+template<typename T>
+auto CompareManager::processSection(T& A, T&B, int i, int j) {
+    
+    LOG << "diff section at " << i + 1 << "," << j + 1;
+
+    //Constructs the container with the contents of the range [first, last)
+    std::vector<CompareFileModel::Element> sub_a(A.begin() + i, A.begin() + j);
+    std::vector<CompareFileModel::Element> sub_b(B.begin() + i, B.begin() + j);
+
+    // sections are equal before this comparision
+    compareRoot(sub_a, sub_b);
+
+    // make sections equal again after comparision
+    auto delta = std::abs(
+        static_cast<int>(sub_a.size() - sub_b.size()));
+
+    if (sub_a.size() > sub_b.size()) {
+        sub_b.insert(sub_b.end(), delta, {});
+    } else if (sub_a.size() < sub_b.size()) {
+        sub_a.insert(sub_a.end(), delta, {});
+    }
+
+    // clear the original sub_b window in B
+    B.erase(B.begin() + i, B.begin() + j);
+    // clear the original sub_a window in A
+    A.erase(A.begin() + i, A.begin() + j);
+
+    // insert sub_b at the starting of the cleared area
+    B.insert(B.begin() + i, sub_b.begin(), sub_b.end());
+    // insert sub_a at the starting of the cleared area
+    A.insert(A.begin() + i, sub_a.begin(), sub_a.end());
+
+    // scan max(sub_a, sub_b) sized section of
+    // A and B for duplicate inserted empty rows
+    for (auto m = 0; m < std::max(sub_a.size(), sub_b.size()); m++) {
+        if (!A[i + m].e_real && !B[i + m].e_real) {
+            A.erase(A.begin() + i + m);
+            B.erase(B.begin() + i + m);
+        }
+    }
+}
+
+template<typename T>
+auto CompareManager::align(T& A, T&B, std::vector<_lcs_sym_pos>& lcs_pos, int n) {
+    uint32_t n_total_added_in_a = 0;
+    uint32_t n_total_added_in_b = 0;
+    for (auto& p : lcs_pos) {
+        auto& _in_a = p.pos_in_a;
+        auto& _in_b = p.pos_in_b;
+        if ((_in_a.size() <= n) && (_in_b.size() <= n)) {
+            auto in_a = _in_a[0];
+            auto in_b = _in_b[0];
+            in_a += n_total_added_in_a;
+            in_b += n_total_added_in_b;
+            auto n = std::abs(in_a - in_b);
+            if (in_a < in_b) {
+                A.insert(A.begin() + in_a, n, {});
+                n_total_added_in_a += n;
+            } else if (in_b < in_a) {
+                B.insert(B.begin() + in_b, n, {});
+                n_total_added_in_b += n;
+            }
+            for (auto& q : lcs_pos) {
+                if ((&p != &q) && (p.e == q.e)) {
+                    q.pos_in_a.erase(q.pos_in_a.begin());
+                    q.pos_in_b.erase(q.pos_in_b.begin());
+                }
+            }
+        } else {
+            continue;
+        }
+    }
+    return std::make_pair(
+        n_total_added_in_a,
+        n_total_added_in_b);
+}
+
+template<typename T>
+auto CompareManager::compareRoot(T& A, T&B) {
 
     auto [ha, hb] = getHashVectorsFromModels(A, B);
 
@@ -94,19 +202,16 @@ auto CompareManager::compareInternal(T& A, T&B) {
     // to their positions in A and B
     auto lcs_pos = get_lcs_pos_vector(lcs, ha, hb);
 
-    // At this point the lcs symbols in A and B should
-    // be aligned and have a one-to-one mapping. Loop
-    // through all lcs hashes and adjust models
-    // A and B. skip duplicated lcs symbols
-    auto n_total_added_in_a = 0;
-    auto n_total_added_in_b = 0;
-    for (const auto& e : lcs_pos) {
-        auto& _in_a = e.pos_in_a;
-        auto& _in_b = e.pos_in_b;
-        if (_in_a.size() > 1) continue;
-        for (auto i = 0; i < _in_a.size(); i++) {
-            auto in_a = _in_a[i];
-            auto in_b = _in_b[i];
+    // loop through all lcs hashes and adjust models A
+    // and B to align unique symbols. skip duplicates
+    uint32_t n_total_added_in_a = 0;
+    uint32_t n_total_added_in_b = 0;
+    for (auto& p : lcs_pos) {
+        auto& _in_a = p.pos_in_a;
+        auto& _in_b = p.pos_in_b;
+        if ((_in_a.size() == 1) && (_in_b.size() == 1)) {
+            auto in_a = _in_a[0];
+            auto in_b = _in_b[0];
             in_a += n_total_added_in_a;
             in_b += n_total_added_in_b;
             auto n = std::abs(in_a - in_b);
@@ -117,71 +222,20 @@ auto CompareManager::compareInternal(T& A, T&B) {
                 B.insert(B.begin() + in_b, n, {});
                 n_total_added_in_b += n;
             }
+        } else {
+            continue;
         }
     }
 
-    // all unique and common LCS symbols 
-    // have been aligned at this point
-    // Loop through both models and find 
-    // sections in between aligned symbols
-
-    int i = 0;
-    int j = -1;
-
-    for (auto k = 0; k < std::min(A.size(), B.size()); k++) {
-        j++;
-        if (A[k].li_hash == B[k].li_hash) {
-            if (j - 1 - i) {
-                LOG << "section detected at " << i + 1 << "," << j;
-                std::vector<CompareFileModel::LineItem> sub_a(A.begin() + i, A.begin() + j);
-                std::vector<CompareFileModel::LineItem> sub_b(B.begin() + i, B.begin() + j);
-                compareInternal(sub_a, sub_b);
-                auto delta = std::abs(static_cast<int>(sub_a.size() - sub_b.size()));
-                if (delta) {
-                    if (sub_b.size() > sub_a.size()) {
-                        // clear the original sub_b window in B
-                        B.erase(B.begin() + i, B.begin() + j);
-                        // insert sub_b at the starting of the cleared area
-                        B.insert(B.begin() + i, sub_b.begin(), sub_b.end());
-                        // insert delta rows in A to preserve the rest of earlier alingment
-                        A.insert(A.begin() + j, delta, {});
-                    } else if (sub_a.size() > sub_b.size()) {
-                        // clear the original sub_a window in A
-                        A.erase(A.begin() + i, A.begin() + j);
-                        // insert sub_a at the starting of the cleared area
-                        A.insert(A.begin() + i, sub_a.begin(), sub_a.end());
-                        // insert delta rows in B to preserve the rest of earlier alingment
-                        B.insert(B.begin() + j, delta, {});
-                    } else if (sub_a.size() == sub_b.size()) {
-                        assert(false);
-                    }
-                    // scan max(sub_s, sub_b) sized section of
-                    // A and B for duplicate inserted empty rows
-                    for (auto m = 0; m < std::max(sub_a.size(), sub_b.size()); m++) {
-                        if (!A[i + m].li_real && !B[i + m].li_real) {
-                            A.erase(A.begin() + i + m);
-                            B.erase(B.begin() + i + m);
-                        }
-                    }
-                }
-            }
-            j = k;
-            i = k + 1;
-        }
+    if (!n_total_added_in_a && !n_total_added_in_b) {
+        // nothing was added in either of the two models. This means
+        // that either the lcs's are already aligned.. all unique
+        // (33.txt, 44.txt) / all multiples (a1.txt, b1.txt) or
+        // it could be all non-aligned multiples (a.txt, b.txt)
+        auto [na, nb] = align(A, B, lcs_pos, 2);
     }
 
-    finalizeDisplayAttributes(A, B);
-
-    return lcs.size();
-}
-
-size_t CompareManager::compare() {
-    auto& A = _file_models[0]->_model;
-    auto& B = _file_models[1]->_model;
-    _file_models[0]->beginResetModel();
-    _file_models[1]->beginResetModel();
-    auto lcs_len = compareInternal(A, B);
-    // make sure the final 2 modified models are of same size
+    // make sure the 2 modified models are of same size
     // else rows of one would be squished more than the other
     auto delta = std::abs(
         static_cast<int>(A.size() - B.size()));
@@ -190,9 +244,55 @@ size_t CompareManager::compare() {
     } else if (A.size() < B.size()) {
         A.insert(A.end(), delta, {});
     }
+
+    processDiffSections(A, B);
+
+    finalizeDisplayAttributes(A, B);
+
+    return lcs.size();
+}
+
+template<typename T>
+auto CompareManager::compareGranular(T& A, T&B) {
+    // for all diff items, run lcs at a lower granular level
+    for (auto i = 0; i < std::min(A.size(), B.size()); i++) {
+        if (A[i].e_hash != B[i].e_hash) {
+            auto& la = A[i].e_text;
+            auto& lb = B[i].e_text;
+            if (la.size() && lb.size()) {
+                std::vector<CompareFileModel::Element> CA;
+                std::vector<CompareFileModel::Element> CB;
+                for (auto& c : la) {
+                    CA.push_back({true, 0, std::hash<unsigned char>{}(c), {c}});
+                }
+                for (auto& c : lb) {
+                    CB.push_back({true, 0, std::hash<unsigned char>{}(c), {c}});
+                }
+                auto l = compareRoot(CA, CB);
+                if (l) {
+                    A[i].e_child = std::move(CA);
+                    B[i].e_child = std::move(CB);
+                }
+            }
+        }
+    }
+}
+
+size_t CompareManager::compare() {
+    auto& A = _file_models[0]->_model;
+    auto& B = _file_models[1]->_model;
+
+    _file_models[0]->beginResetModel();
+    _file_models[1]->beginResetModel();
+
+    auto l = compareRoot(A, B);
+
+    compareGranular(A, B);
+
     _file_models[1]->endResetModel();
     _file_models[0]->endResetModel();
-    return lcs_len;
+
+    return l;
 }
 
 // std::string q = "GAC";

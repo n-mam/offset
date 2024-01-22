@@ -44,25 +44,25 @@ QVariant CompareFileModel::data(const QModelIndex &index, int role) const {
 
     switch (role) {
         case ELineReal: {
-            return _model[row].li_real;
+            return _model[row].e_real;
         }
         case ELineIndent: {
-            return _model[row].li_indent;
+            return _model[row].e_indent;
         }
         case ELineNumber: {
             return (qlonglong)(row + 1);
         }
         case ELineHash: {
-            return (qlonglong)_model[row].li_hash;
+            return (qlonglong)_model[row].e_hash;
         }
         case ELineText: {
-            return QString::fromStdString(_model[row].li_text);
+            return QString::fromStdString(_model[row].e_text);
         }
         case ELineBgColor: {
-            return QString::fromStdString(_model[row].li_bgcolor);
+            return QString::fromStdString(_model[row].e_bgcolor);
         }
         case ELineIndentSymbol: {
-            return QString::fromStdString(_model[row].li_indentSymbol);
+            return QString::fromStdString(_model[row].e_indentSymbol);
         }
     }
 
@@ -99,12 +99,12 @@ void CompareFileModel::resetToOriginalState() {
         if (_changed) {
             _model.erase(
                 std::remove_if(_model.begin(), _model.end(),
-                    [](const auto& e){ return !e.li_real; }),
+                    [](const auto& e){ return !e.e_real; }),
                 _model.end());
         }
         //reset colors
         for (auto& e : _model) {
-            e.li_bgcolor = "";
+            e.e_bgcolor = "";
         }
         endResetModel();
 }

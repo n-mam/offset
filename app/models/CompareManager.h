@@ -32,7 +32,16 @@ class CompareManager : public QObject {
     private:
 
     template<typename T>
-    auto compareInternal(T& A, T&B);
+    auto compareRoot(T& A, T&B);
+
+    template<typename T>
+    auto compareGranular(T& A, T&B);
+
+    template<typename T>
+    auto processDiffSections(T& A, T& B);
+
+    template<typename T>
+    auto processSection(T& A, T&B, int i, int j);
 
     template<typename T>
     auto finalizeDisplayAttributes(T& A, T& B);
@@ -42,6 +51,9 @@ class CompareManager : public QObject {
 
     template<typename T>
     auto get_lcs_pos_vector(const T& lcs, const T& ha, const T& hb);
+
+    template<typename T>
+    auto align(T& A, T&B, std::vector<_lcs_sym_pos>& lcs_pos, int n);
 
     std::vector<CompareFileModel *> _file_models;
 };

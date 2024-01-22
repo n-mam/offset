@@ -11,7 +11,7 @@ Item {
     color: "transparent"
     width: parent.width
     height: 1
-    anchors.bottom: parent.top
+    anchors.top: parent.top
     Shape {
       anchors.fill: parent
       anchors.centerIn: parent
@@ -26,14 +26,16 @@ Item {
   }
 
   Text {
-    text: currentStatus
     color: textColor
-    width: parent.width * 0.50
+    text: currentStatus
+    height: parent.height - 1
+    anchors.leftMargin: 5
     elide: Text.ElideRight
-    anchors.bottom: parent.bottom
     anchors.left: parent.left
-    anchors.margins: 5
+    width: parent.width * 0.55
+    anchors.bottom: parent.bottom
     verticalAlignment: Text.AlignVCenter
+    anchors.verticalCenter: parent.verticalCenter
   }
 
 }

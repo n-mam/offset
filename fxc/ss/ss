@@ -362,7 +362,7 @@ class FxcWriter : public CVssWriter
 
         auto excludeList = g_excludeList[originalVolume];
 
-        auto tokens = osl::wsplit(pwszSnapshotDevice, L"GLOBALROOT\\Device\\");
+        auto tokens = osl::split<std::wstring>(pwszSnapshotDevice, L"GLOBALROOT\\Device\\");
 
         auto snapshotRoot = tokens[0] + tokens[1];
 

@@ -25,13 +25,14 @@ struct CompareFileModel : public QAbstractListModel {
         ELineIndentSymbol
     };
 
-    struct LineItem {
-        bool li_real;
-        int li_indent;
-        std::size_t li_hash;
-        std::string li_text;
-        std::string li_bgcolor;
-        std::string li_indentSymbol = "&nbsp;";
+    struct Element {
+        bool e_real;
+        int e_indent;
+        std::size_t e_hash;
+        std::string e_text;
+        std::string e_bgcolor;
+        std::string e_indentSymbol = "&nbsp;";
+        std::vector<Element> e_child;
     };
 
     public:
@@ -62,8 +63,10 @@ struct CompareFileModel : public QAbstractListModel {
     void traverse_element(tinyxml2::XMLElement *element, int depth);
 
     bool _changed = false;
+
     std::string m_document;
-    std::vector<LineItem> _model;
+
+    std::vector<Element> _model;
 };
 
 #endif

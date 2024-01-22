@@ -6,27 +6,23 @@
 #include <locale>
 #include <codecvt>
 #include <sstream>
+#include <algorithm>
 
 namespace osl {
 
 inline auto split(const std::string& s, char delim) {
-
     std::string item;
     std::stringstream ss(s);
     std::vector<std::string> elems;
-
     while (std::getline(ss, item, delim)) {
         elems.push_back(item);
     }
-
     return elems;
 }
 
 inline auto tokenize(const std::string& s, char delim = ' ') {
-
     std::string token;
     std::vector<std::string> out;
-
     for (const auto& e : s) {
         if (e != delim) {
             token += e;
@@ -35,129 +31,99 @@ inline auto tokenize(const std::string& s, char delim = ' ') {
             token.clear();
         }
     }
-
     if (token.size()) {
         out.push_back(token);
     }
-
     return out;
 }
 
-inline std::vector<std::string> split(const std::string& s, const std::string& delim)
-{
-    std::string token;
-    std::vector<std::string> res;
-    size_t pos_start = 0, pos_end, delim_len = delim.length();
-
-    while ((pos_end = s.find (delim, pos_start)) != std::string::npos)
-    {
-        token = s.substr (pos_start, pos_end - pos_start);
+template<typename T>
+inline auto split(const T& s, const T& delim, bool withDelimiter = false) {
+    T token;
+    size_t pos_end;
+    std::vector<T> res;
+    size_t pos_start = 0;
+    size_t delim_len = delim.length();
+    while ((pos_end = s.find(delim, pos_start)) != T::npos) {
+        token = s.substr(pos_start, pos_end - pos_start);
         pos_start = pos_end + delim_len;
-        res.push_back (token);
+        res.push_back(token);
+        if (withDelimiter) {
+            res.push_back(delim);
+        }
     }
-
-    res.push_back(s.substr (pos_start));
-
+    res.push_back(s.substr(pos_start));
     return res;
 }
 
-inline std::vector<std::wstring> wsplit(const std::wstring& s, const std::wstring& delim)
-{
-    std::wstring token;
-    std::vector<std::wstring> res;
-    size_t pos_start = 0, pos_end, delim_len = delim.length();
-
-    while ((pos_end = s.find (delim, pos_start)) != std::string::npos)
-    {
-        token = s.substr (pos_start, pos_end - pos_start);
-        pos_start = pos_end + delim_len;
-        res.push_back (token);
-    }
-
-    res.push_back (s.substr (pos_start));
-
-    return res;
-}
-
-inline std::wstring s2ws(const std::string& str)
-{
+inline auto s2ws(const std::string& str) {
     using convert_typeX = std::codecvt_utf8<wchar_t>;
     std::wstring_convert<convert_typeX, wchar_t> converterX;
-
     return converterX.from_bytes(str);
 }
 
-inline std::string ws2s(const std::wstring& wstr)
-{
+inline auto ws2s(const std::wstring& wstr) {
     using convert_typeX = std::codecvt_utf8<wchar_t>;
     std::wstring_convert<convert_typeX, wchar_t> converterX;
-
     return converterX.to_bytes(wstr);
 }
 
-inline std::string& ltrim(std::string& str, const std::string& chars)
-{
+inline std::string& ltrim(std::string& str, const std::string& chars) {
     str.erase(0, str.find_first_not_of(chars));
     return str;
 }
 
-inline std::string& rtrim(std::string& str, const std::string& chars)
-{
+inline std::string& rtrim(std::string& str, const std::string& chars) {
     str.erase(str.find_last_not_of(chars) + 1);
     return str;
 }
 
-inline std::string& trim(std::string& str, const std::string& chars)
-{
+inline std::string& trim(std::string& str, const std::string& chars) {
     return ltrim(rtrim(str, chars), chars);
 }
 
 template <typename T>
-inline bool startsWith(const T& str, const T& prefix)
-{
+inline bool startsWith(const T& str, const T& prefix) {
     return (str.rfind(prefix, 0) == 0);
 }
 
-inline void removeDuplicates(std::string& str, const char& ch)
-{
-  auto new_end = std::unique(str.begin(), str.end(),
-    [ch](char lhs, char rhs) {
-      return (lhs == rhs) && (lhs == ch);
-    });
-
-  str.erase(new_end, str.end());
+inline void removeDuplicates(std::string& str, const char& ch) {
+    auto new_end = std::unique(str.begin(), str.end(),
+        [ch](char lhs, char rhs) {
+            return (lhs == rhs) && (lhs == ch);
+        });
+    str.erase(new_end, str.end());
 }
 
-//Replace part of a string with another string
-inline auto replace(const std::string& str, const std::string& from, const std::string& to)
-{
-  std::string result = str;
-  size_t start_pos = result.find(from);
-  if(start_pos != std::string::npos)
-    result.replace(start_pos, from.length(), to);
-  return result;
+// Replace part of a string with another string
+inline auto replace(const std::string& str, const std::string& from, const std::string& to) {
+    std::string result = str;
+    size_t start_pos = result.find(from);
+    if(start_pos != std::string::npos) {
+        result.replace(start_pos, from.length(), to);
+    }
+    return result;
 }
 
-inline auto parseUrl(const std::string& url)
-{
-  char port[32] = { '\0' };
-  char hostname[256] = { '\0' };
-  char username[128] = { '\0' };
-  char password[128] = { '\0' };
-  char protocol[32] = { '\0' };
-  char directory[256] = { '\0' };
+inline auto parseUrl(const std::string& url) {
+    char port[32] = { '\0' };
+    char hostname[256] = { '\0' };
+    char username[128] = { '\0' };
+    char password[128] = { '\0' };
+    char protocol[32] = { '\0' };
+    char directory[256] = { '\0' };
 
-  // ftps://nmam:welcome123@127.0.0.1:21/a/b/c
-  sscanf(url.c_str(), "%32[^:]://%128[^:]:%128[^@]@%256[^:]:%32[^/]/%256[^\n]",
-      protocol, username, password, hostname, port, directory);
+    // ftps://nmam:welcome123@127.0.0.1:21/a/b/c
+    sscanf(url.c_str(), "%32[^:]://%128[^:]:%128[^@]@%256[^:]:%32[^/]/%256[^\n]",
+        protocol, username, password, hostname, port, directory);
 
-  return std::make_tuple(
-    std::string(protocol),
-    std::string(username),
-    std::string(password),
-    std::string(hostname),
-    std::string(port),
-    std::string(directory));
+    return std::make_tuple(
+        std::string(protocol),
+        std::string(username),
+        std::string(password),
+        std::string(hostname),
+        std::string(port),
+        std::string(directory));
 }
 
 } // namespace

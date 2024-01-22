@@ -44,15 +44,17 @@ Item {
             Text {
                 color: textColor
                 anchors.fill: parent
+                text: markupTextLine()
                 font.pointSize: pointSize
                 verticalAlignment: Text.AlignVCenter
-                text: "<span>" + lineIndentSymbol.repeat(lineIndent)  + 
-                    lineText.replace(/ /g, '&nbsp;') + "</span>"
             }
         }
     }
     MouseArea {
         anchors.fill: parent
         onClicked: rowClicked(lineNumber)
+    }
+    function markupTextLine(text) {
+        return lineIndentSymbol.repeat(lineIndent)  +  lineText;
     }
 }

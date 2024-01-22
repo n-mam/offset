@@ -72,9 +72,8 @@ void RemoteFsModel::QueueTransfer(int index, bool start)
   auto fileIsDir = IsElementDirectory(index);
   auto fileSize = GetElementSize(index);
 
-  if (fileName.find("->") != std::string::npos)
-  {
-    fileName = osl::trim(osl::split(fileName, "->")[1], " ");
+  if (fileName.find("->") != std::string::npos) {
+    fileName = osl::trim(osl::split<std::string>(fileName, "->")[1], " ");
   }
 
   DownloadInternal(
@@ -270,7 +269,7 @@ void RemoteFsModel::ParseDirectoryList(const std::string& list, std::vector<File
 // type=dir;modify=20221015170330.792;perms=cple; Intel
 void RemoteFsModel::ParseMLSDList(const std::string& list, std::vector<FileElement>& fe_list, int *pfc, int *pdc)
 {
-  auto lines = osl::split(list, "\r\n");
+  auto lines = osl::split<std::string>(list, "\r\n");
 
   for (auto& line : lines)
   {
@@ -314,7 +313,7 @@ void RemoteFsModel::ParseMLSDList(const std::string& list, std::vector<FileEleme
 // -rw-rw-rw- 1 ftp    ftp       1468320 Oct 15 17:37 a b c
 void RemoteFsModel::ParseLinuxList(const std::string& list, std::vector<FileElement>& fe_list, int *pfc, int *pdc)
 {
-  auto lines = osl::split(list, "\r\n");
+  auto lines = osl::split<std::string>(list, "\r\n");
 
   for (auto& line : lines)
   {
@@ -367,7 +366,7 @@ void RemoteFsModel::ParseWindowsList(const std::string& list, std::vector<FileEl
 {
   LOG << list;
 
-  auto lines = osl::split(list, "\r\n");
+  auto lines = osl::split<std::string>(list, "\r\n");
 
   for (auto& line : lines)
   {

@@ -6,6 +6,7 @@
 
 #include <npl/npl>
 #include <cvl/cvl>
+#include <osl/lcs>
 
 void show_usage(void);
 
@@ -18,7 +19,7 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    osl::log::SetLogLevel(osl::log::debug);
+    osl::log::SetLogLevel(osl::log::info);
 
     osl::log::SetLogSink<std::string>(
         [](int level, int key, auto log){
@@ -38,6 +39,8 @@ int main(int argc, char *argv[])
         npl::entry(arguments);
     } else if (ns == "cvl") {
         cvl::entry(arguments);
+    } else if (ns == "osl") {
+       osl::lcs_tests();
     } else {
         show_usage();
     }

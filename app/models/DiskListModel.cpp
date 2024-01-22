@@ -304,7 +304,7 @@ void DiskListModel::refreshModel()
     {
       if (std::get<1>(ss) == names.front())
       {
-        auto tokens = osl::wsplit(std::get<0>(ss), L"GLOBALROOT\\Device\\");
+        auto tokens = osl::split<std::wstring>(std::get<0>(ss), L"GLOBALROOT\\Device\\");
         auto childlabel = QString::fromWCharArray((tokens[0] + tokens[1]).c_str());
         children.push_back(childlabel);
       }

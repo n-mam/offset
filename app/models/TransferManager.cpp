@@ -241,7 +241,7 @@ void TransferManager::UploadTransfer(const Transfer& t, int sid) {
   auto& ftp = m_sessions[sid];
 
   std::string directory;
-  auto tokens = osl::split(path.parent_path().string(), "/");
+  auto tokens = osl::split<std::string>(path.parent_path().string(), "/");
 
   for (const auto& e : tokens) {
     if (!e.empty()) {
