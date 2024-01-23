@@ -67,6 +67,7 @@ auto CompareManager::getHashVectorsFromModels(const T& A, const T& B) {
 
 template<typename T>
 auto CompareManager::get_lcs_pos_vector(const T& lcs, const T& ha, const T& hb) {
+    bool aligned = true;
     std::vector<_lcs_sym_pos> lcs_pos;
     lcs_pos.reserve(lcs.size());
     for (const auto& e : lcs) {
@@ -82,8 +83,15 @@ auto CompareManager::get_lcs_pos_vector(const T& lcs, const T& ha, const T& hb) 
             }
         }
         lcs_pos.push_back(lsp);
+        auto n = std::min(lsp.pos_in_a.size(), lsp.pos_in_b.size());
+        for (auto i = 0; i < n; i ++) {
+            if (lsp.pos_in_a[i] != lsp.pos_in_b[i]) {
+                aligned = false;
+                break;
+            }
+        }
     }
-    return lcs_pos;
+    return std::make_pair(lcs_pos, aligned);
 }
 
 template<typename T>
@@ -198,41 +206,17 @@ auto CompareManager::compareRoot(T& A, T&B) {
     // use the first for now
     auto& lcs = r.ss[0];
 
-    // vector of lcs symbol hashes  
-    // to their positions in A and B
-    auto lcs_pos = get_lcs_pos_vector(lcs, ha, hb);
+    // vector of all lcs symbol positions in A and B
+    auto [lcs_pos, aligned] = get_lcs_pos_vector(lcs, ha, hb);
 
     // loop through all lcs hashes and adjust models A
     // and B to align unique symbols. skip duplicates
-    uint32_t n_total_added_in_a = 0;
-    uint32_t n_total_added_in_b = 0;
-    for (auto& p : lcs_pos) {
-        auto& _in_a = p.pos_in_a;
-        auto& _in_b = p.pos_in_b;
-        if ((_in_a.size() == 1) && (_in_b.size() == 1)) {
-            auto in_a = _in_a[0];
-            auto in_b = _in_b[0];
-            in_a += n_total_added_in_a;
-            in_b += n_total_added_in_b;
-            auto n = std::abs(in_a - in_b);
-            if (in_a < in_b) {
-                A.insert(A.begin() + in_a, n, {});
-                n_total_added_in_a += n;
-            } else if (in_b < in_a) {
-                B.insert(B.begin() + in_b, n, {});
-                n_total_added_in_b += n;
-            }
-        } else {
-            continue;
+    if (!aligned) {
+        auto n = 1;
+        while (true) {
+            auto [added_in_a, added_in_b] = align(A, B, lcs_pos, n++);
+            if (added_in_a || added_in_b) break;
         }
-    }
-
-    if (!n_total_added_in_a && !n_total_added_in_b) {
-        // nothing was added in either of the two models. This means
-        // that either the lcs's are already aligned.. all unique
-        // (33.txt, 44.txt) / all multiples (a1.txt, b1.txt) or
-        // it could be all non-aligned multiples (a.txt, b.txt)
-        auto [na, nb] = align(A, B, lcs_pos, 2);
     }
 
     // make sure the 2 modified models are of same size
