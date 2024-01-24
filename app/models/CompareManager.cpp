@@ -23,6 +23,19 @@ void CompareManager::onFileModelChanged(CompareFileModel *model) {
 }
 
 template<typename T>
+void CompareManager::makeEqual(T& A, T& B) {
+    auto delta = std::abs(
+        static_cast<int>(A.size() - B.size()));
+    if (delta) {
+        if (A.size() > B.size()) {
+            B.insert(B.end(), delta, {});
+        } else if (A.size() < B.size()) {
+            A.insert(A.end(), delta, {});
+        }
+    }
+}
+
+template<typename T>
 auto CompareManager::finalizeDisplayAttributes(T& A, T& B) {
     auto n = std::min(A.size(), B.size());
     auto x = std::max(A.size(), B.size());
@@ -161,23 +174,26 @@ auto CompareManager::processSection(T& A, T&B, int i, int j) {
 
 template<typename T>
 auto CompareManager::align(T& A, T&B, std::vector<_lcs_sym_pos>& lcs_pos, int n) {
-    uint32_t n_total_added_in_a = 0;
-    uint32_t n_total_added_in_b = 0;
+    uint32_t n_aligned = 0;
+    uint32_t added_in_a = 0;
+    uint32_t added_in_b = 0;
     for (auto& p : lcs_pos) {
         auto& _in_a = p.pos_in_a;
         auto& _in_b = p.pos_in_b;
         if ((_in_a.size() <= n) && (_in_b.size() <= n)) {
             auto in_a = _in_a[0];
             auto in_b = _in_b[0];
-            in_a += n_total_added_in_a;
-            in_b += n_total_added_in_b;
+            in_a += added_in_a;
+            in_b += added_in_b;
             auto n = std::abs(in_a - in_b);
             if (in_a < in_b) {
                 A.insert(A.begin() + in_a, n, {});
-                n_total_added_in_a += n;
+                added_in_a += n;
             } else if (in_b < in_a) {
                 B.insert(B.begin() + in_b, n, {});
-                n_total_added_in_b += n;
+                added_in_b += n;
+            } else if (in_a == in_b) {
+                n_aligned++;
             }
             for (auto& q : lcs_pos) {
                 if ((&p != &q) && (p.e == q.e)) {
@@ -189,9 +205,7 @@ auto CompareManager::align(T& A, T&B, std::vector<_lcs_sym_pos>& lcs_pos, int n)
             continue;
         }
     }
-    return std::make_pair(
-        n_total_added_in_a,
-        n_total_added_in_b);
+    return std::make_tuple(added_in_a, added_in_b, n_aligned);
 }
 
 template<typename T>
@@ -201,38 +215,33 @@ auto CompareManager::compareRoot(T& A, T&B) {
 
     auto r = osl::find_lcs<std::vector<size_t>>(ha, hb);
 
-    if (!r.ss.size()) return r.ss.size();
+    if (!r.ss.size()) {
+        makeEqual(A, B);
+        finalizeDisplayAttributes(A, B);
+        return r.ss.size();
+    }
 
     // use the first for now
     auto& lcs = r.ss[0];
 
     // vector of all lcs symbol positions in A and B
-    auto [lcs_pos, aligned] = get_lcs_pos_vector(lcs, ha, hb);
+    auto [lcs_pos, fully_aligned] = get_lcs_pos_vector(lcs, ha, hb);
 
     // loop through all lcs hashes and adjust models A
     // and B to align unique symbols. skip duplicates
-    if (!aligned) {
+    if (!fully_aligned) {
         auto n = 1;
         while (true) {
-            auto [added_in_a, added_in_b] = align(A, B, lcs_pos, n++);
-            if (added_in_a || added_in_b) break;
+            auto [added_in_a, added_in_b, n_aligned] = align(A, B, lcs_pos, n++);
+            if (added_in_a || added_in_b || n_aligned) break;
         }
     }
 
     // make sure the 2 modified models are of same size
     // else rows of one would be squished more than the other
-    auto delta = std::abs(
-        static_cast<int>(A.size() - B.size()));
-    if (A.size() > B.size()) {
-        B.insert(B.end(), delta, {});
-    } else if (A.size() < B.size()) {
-        A.insert(A.end(), delta, {});
-    }
-
+    makeEqual(A, B);
     processDiffSections(A, B);
-
     finalizeDisplayAttributes(A, B);
-
     return lcs.size();
 }
 

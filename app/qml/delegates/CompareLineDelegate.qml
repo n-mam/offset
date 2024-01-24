@@ -65,20 +65,23 @@ Item {
         if (lineChildCount) {
             textRect.color = "#5a2626"
             lineChildren.forEach((child, i) => {
-                //console.log(i, child.text, child.color, child.color.length, child.real);
+                console.log(i, child.text, child.color, child.color.length, child.real);
                 if (child.color.length > 0) {
-                    result += "<span style=\"background-color:#be6060\">" + child.text.length ? child.text : '&nbsp;' + "</span>";
+                    result += "<span style=\"background-color:#be6060;\">" + 
+                                    (child.text.length ? 
+                                        _replaceFrontBackSpaces(child.text) : '&nbsp;') + 
+                                "</span>";
                 } else if (child.real === false) {
-                    result += "<span style=\"background-color:#be6060\">" + '&nbsp;' + "</span>";
+                    result += "<span style=\"background-color:#888888;\">" + '&nbsp;' + "</span>";
                 } else {
-                    result += child.text.length ? child.text : '&nbsp;';
+                    result += child.text.length ? _replaceFrontBackSpaces(child.text) : '&nbsp;';
                 }
             })
         } else {
             result = lineText;
         }
 
-        return _replaceFrontBackSpaces(result, '&nbsp;');
+        return _replaceFrontBackSpaces(result);
     }
 
     function _trimLeft(s) {
@@ -97,11 +100,15 @@ Item {
         }
         return "";
     }
-    function _replaceFrontBackSpaces(s, ch) {
+    function _replaceFrontBackSpaces(s) {
         var n_leading_spaces = s.length - _trimLeft(s).length;
         var n_trailing_spaces = s.length - _trimRight(s).length;
-        var ss = ch.repeat(n_leading_spaces) + s.trim() + ch.repeat(n_trailing_spaces);
-        //console.log(n_leading_spaces, n_trailing_spaces, new_text);
-        return ss;
+        let ss = s.trim();
+        if (ss === "") return '&nbsp;';
+        for (let i = 0; i < n_leading_spaces; i++)
+            ss = '&nbsp;' + ss;
+        for (let i = 0; i < n_trailing_spaces; i++)
+            ss = ss + '&nbsp;';
+        return ss
     }
 }
