@@ -22,6 +22,8 @@ struct CompareFileModel : public QAbstractListModel {
         ELineNumber,
         ELineIndent,
         ELineBgColor,
+        ELineChildren,
+        ELineChildCount,
         ELineIndentSymbol
     };
 

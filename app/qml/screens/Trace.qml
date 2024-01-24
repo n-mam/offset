@@ -54,8 +54,8 @@ Item {
         Row {
             id: logActions
             spacing: 5
-            width: parent.width
             height: parent.height * 0.10
+            anchors.horizontalCenter: parent.horizontalCenter
             CheckBox {
                 id: traceEnable
                 z: 2

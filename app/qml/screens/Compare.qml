@@ -17,8 +17,8 @@ Rectangle {
 
         handle: Rectangle {
             id: handleDelegate
-            implicitWidth: 2
-            implicitHeight: 4
+            implicitWidth: 1
+            implicitHeight: 1
             border.color: borderColor
 
             containmentMask: Item { // hit area

@@ -57,4 +57,8 @@ Item {
             destination.text = decodeURIComponent(path).replace(/\//g, "\\")
         }
     }
+
+    function setPath(path) {
+        destination.text = path
+    }
 }

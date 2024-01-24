@@ -27,6 +27,8 @@ QHash<int, QByteArray> CompareFileModel::roleNames() const {
     roles.insert(ELineIndent, "lineIndent");
     roles.insert(ELineNumber, "lineNumber");
     roles.insert(ELineBgColor, "lineBgColor");
+    roles.insert(ELineChildren, "lineChildren");
+    roles.insert(ELineChildCount, "lineChildCount");
     roles.insert(ELineIndentSymbol, "lineIndentSymbol");
     return roles;
 }
@@ -63,6 +65,20 @@ QVariant CompareFileModel::data(const QModelIndex &index, int role) const {
         }
         case ELineIndentSymbol: {
             return QString::fromStdString(_model[row].e_indentSymbol);
+        }
+        case ELineChildCount: {
+            return (qlonglong)_model[row].e_child.size();
+        }
+        case ELineChildren: {
+            QList<QVariantMap> children;
+            for (const auto& e : _model[row].e_child) {
+                QVariantMap data;
+                data["real"] = e.e_real;
+                data["text"] = QString::fromStdString(e.e_text);
+                data["color"] = QString::fromStdString(e.e_bgcolor);
+                children << data;
+            }
+            return QVariant::fromValue<QList<QVariantMap>>(children);
         }
     }
 

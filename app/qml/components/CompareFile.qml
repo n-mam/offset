@@ -63,6 +63,7 @@ Item {
                 path = path.replace(/^(file:\/{3})|(qrc:\/{2})|(http:\/{2})/,"")
                 var file = decodeURIComponent(path).replace(/\//g, "\\")
                 onCompareFileUpdated(file)
+                fileSelector.setPath(file)
             }
             onExited: {
 
