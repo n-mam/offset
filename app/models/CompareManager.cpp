@@ -28,9 +28,9 @@ void CompareManager::makeEqual(T& A, T& B) {
         static_cast<int>(A.size() - B.size()));
     if (delta) {
         if (A.size() > B.size()) {
-            B.insert(B.end(), delta, {});
+            B.insert(B.end(), delta, {0, "", {0, 0}});
         } else if (A.size() < B.size()) {
-            A.insert(A.end(), delta, {});
+            A.insert(A.end(), delta, {0, "", {0, 0}});
         }
     }
 }
@@ -41,23 +41,22 @@ auto CompareManager::finalizeDisplayAttributes(T& A, T& B) {
     auto x = std::max(A.size(), B.size());
     for (auto i = 0; i < n; i++) {
         if (A[i].e_hash != B[i].e_hash) {
-            if (!A[i].e_real && B[i].e_real) {
-                // added to B; green
-                B[i].e_bgcolor = "#4C5A2C";
-            } else if (A[i].e_real && !B[i].e_real) {
-                // removed from A; A red, B gradient
-                A[i].e_bgcolor = "#701414";
+            if (!A[i]._real() && B[i]._real()) {
+                B[i]._set_added();
+            } else if (A[i]._real() && !B[i]._real()) {
+                A[i]._set_full();
             } else {
-                A[i].e_bgcolor = B[i].e_bgcolor = "#701414";
+                A[i]._set_full();
+                B[i]._set_full();
             }
         }
     }
     if (A.size() != B.size()) {
         for (auto i = n; i < x; i++) {
             if (A.size() > B.size()) {
-                A[i].e_bgcolor = "#701414";
+                A[i]._set_full();
             } else {
-                B[i].e_bgcolor = "#4C5A2C";
+                B[i]._set_added();
             }
         }
     }
@@ -165,7 +164,7 @@ auto CompareManager::processSection(T& A, T&B, int i, int j) {
     // scan max(sub_a, sub_b) sized section of
     // A and B for duplicate inserted empty rows
     for (auto m = 0; m < std::max(sub_a.size(), sub_b.size()); m++) {
-        if (!A[i + m].e_real && !B[i + m].e_real) {
+        if (!A[i + m]._real() && !B[i + m]._real()) {
             A.erase(A.begin() + i + m);
             B.erase(B.begin() + i + m);
         }
@@ -187,10 +186,10 @@ auto CompareManager::align(T& A, T&B, std::vector<_lcs_sym_pos>& lcs_pos, int n)
             in_b += added_in_b;
             auto n = std::abs(in_a - in_b);
             if (in_a < in_b) {
-                A.insert(A.begin() + in_a, n, {});
+                A.insert(A.begin() + in_a, n, {0, "", {0, 0}});
                 added_in_a += n;
             } else if (in_b < in_a) {
-                B.insert(B.begin() + in_b, n, {});
+                B.insert(B.begin() + in_b, n, {0, "", {0, 0}});
                 added_in_b += n;
             } else if (in_a == in_b) {
                 n_aligned++;
@@ -256,10 +255,10 @@ auto CompareManager::compareGranular(T& A, T&B) {
                 std::vector<CompareFileModel::Element> CA;
                 std::vector<CompareFileModel::Element> CB;
                 for (auto& c : la) {
-                    CA.push_back({true, 0, std::hash<unsigned char>{}(c), {c}});
+                    CA.push_back({std::hash<unsigned char>{}(c), {c}, {1, 0}});
                 }
                 for (auto& c : lb) {
-                    CB.push_back({true, 0, std::hash<unsigned char>{}(c), {c}});
+                    CB.push_back({std::hash<unsigned char>{}(c), {c}, {1, 0}});
                 }
                 auto l = compareRoot(CA, CB);
                 if (l) {

@@ -16,8 +16,14 @@ ApplicationWindow {
   property var showlog: false
   property var textColor: "white"
   property var textFieldHeight: 34
-  property var diffColor: "#701414"
   property var borderColor: "#727B6C"
+
+  property var charDiffColor: "#be6060" // pink - done
+  property var charAddedColor: "#78845C" //light green
+  property var charNotRealColor: "#888888" //gray - done
+  property var elementDiffFullColor: "#701414" // dark red
+  property var elementDiffPartColor: "#5a2626" // light red
+  property var elementDiffAddedColor: "#4C5B2B" // dark green
 
   ApplicationMenu {
     id: appMenu

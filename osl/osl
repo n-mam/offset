@@ -212,16 +212,6 @@ inline void LTOB64(uint64_t value, unsigned char *memory)
     LTOB(value, memory, 8);
 }
 
-template<typename T>
-inline auto is_bit_set(T x, uint8_t n) {
-  return ((x >> (n - 1)) & 1);
-}
-
-template<typename T>
-inline void set_bit(T& x, uint8_t n) {
-  x |= 1 << (n - 1);
-}
-
 } //namespace
 
 #endif //OSL_HPP

@@ -14,11 +14,11 @@ Item {
         anchors.margins: innerMargin
         anchors.bottom: parent.bottom
         Text {
-            id: lineNumberId
-            text: "<span>" + lineNumber + 
+            id: elementNumberId
+            text: "<span>" + elementNumber +
                         '&nbsp;'.repeat(
-                            (cldRoot.ListView.view.model.rowCount().toString().length + 1) - 
-                                lineNumber.toString().length) + "</span>"
+                            (cldRoot.ListView.view.model.rowCount().toString().length + 1) -
+                                elementNumber.toString().length) + "</span>"
             color: "#888888"
             font.pointSize: pointSize
             verticalAlignment: Text.AlignVCenter
@@ -28,12 +28,12 @@ Item {
             id: textRect
             clip: true
             height: parent.height
-            width: parent.width - lineNumberId.width
+            color: Material.background
+            width: parent.width - elementNumberId.width
             anchors.verticalCenter: parent.verticalCenter
-            color: (lineBgColor.length && lineReal) ? lineBgColor : Material.background
             Canvas {
                 id: patternCanvas
-                visible: !lineReal
+                visible: !elementReal
                 anchors.fill: parent
                 onPaint: {
                     var ctx = getContext('2d');
@@ -48,39 +48,47 @@ Item {
                 textFormat: Text.RichText
                 font.pointSize: pointSize
                 verticalAlignment: Text.AlignVCenter
-                text: lineIndentSymbol.repeat(lineIndent) + markupTextLine()
+                text: indentSymbol.repeat(elementIndent) + markupText()
             }
         }
     }
 
     MouseArea {
         anchors.fill: parent
-        onClicked: rowClicked(lineNumber)
+        onClicked: rowClicked(elementNumber)
     }
 
-    function markupTextLine() {
-
+    function markupText() {
         var result = "";
-
-        if (lineChildCount) {
-            textRect.color = "#5a2626"
-            lineChildren.forEach((child, i) => {
-                console.log(i, child.text, child.color, child.color.length, child.real);
-                if (child.color.length > 0) {
-                    result += "<span style=\"background-color:#be6060;\">" + 
-                                    (child.text.length ? 
-                                        _replaceFrontBackSpaces(child.text) : '&nbsp;') + 
+        if (/*elementDiffPart &&*/ elementChildCount) {
+            textRect.color = elementDiffPartColor
+            elementChildren.forEach((child, i) => {
+                //console.log(i, child.full, child.real, child.text);
+                if (child.full) {
+                    result += "<span style=\"background-color:" + charDiffColor + ";\">" +
+                                    (child.text.length ? _replaceFrontBackSpaces(child.text) : '&nbsp;') +
                                 "</span>";
-                } else if (child.real === false) {
-                    result += "<span style=\"background-color:#888888;\">" + '&nbsp;' + "</span>";
+                } else if (child.added) {
+                    result += "<span style=\"background-color:" + charAddedColor + ";\">" +
+                                    (child.text.length ? _replaceFrontBackSpaces(child.text) : '&nbsp;') +
+                                "</span>";
+                } else if (!child.real) {
+                    result += "<span style=\"background-color:" + charNotRealColor + ";\">&nbsp;</span>";
                 } else {
                     result += child.text.length ? _replaceFrontBackSpaces(child.text) : '&nbsp;';
                 }
             })
         } else {
-            result = lineText;
+            //console.log(elementDiffAdded, elementDiffFull)
+            if (elementDiffAdded) {
+                textRect.color = elementDiffAddedColor;
+            } else if (elementDiffFull) {
+                textRect.color = elementDiffFullColor;
+            } else {
+                textRect.color = Material.background;
+            }
+            result = elementText;
         }
-
         return _replaceFrontBackSpaces(result);
     }
 

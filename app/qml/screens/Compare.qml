@@ -9,11 +9,13 @@ Rectangle {
     border.color: borderColor
     color: "transparent"
 
+    property var indentSymbol: '&nbsp;'
+
     SplitView {
         id: compareSplit
         width: parent.width
-        height: parent.height * 0.84
         orientation: Qt.Horizontal
+        height: parent.height * 0.84
 
         handle: Rectangle {
             id: handleDelegate

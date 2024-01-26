@@ -16,25 +16,53 @@ struct CompareFileModel : public QAbstractListModel {
     Q_OBJECT
 
     enum Roles {
-        ELineHash = Qt::UserRole,
-        ELineReal,
-        ELineText,
-        ELineNumber,
-        ELineIndent,
-        ELineBgColor,
-        ELineChildren,
-        ELineChildCount,
-        ELineIndentSymbol
+        ElementHash = Qt::UserRole,
+        ElementReal,
+        ElementText,
+        ElementNumber,
+        ElementIndent,
+        ElementDiffFull,
+        ElementDiffPart,
+        ElementChildren,
+        ElementDiffAdded,
+        ElementChildCount,
     };
 
     struct Element {
-        bool e_real;
-        int e_indent;
         std::size_t e_hash;
         std::string e_text;
-        std::string e_bgcolor;
-        std::string e_indentSymbol = "&nbsp;";
+        struct {
+            uint32_t _real: 1;
+            uint32_t _indent: 7;
+            uint32_t _diff_full: 1; // red
+            uint32_t _diff_added: 1; // green
+            uint32_t _diff_part: 1; // light red
+        } e_flags;
         std::vector<Element> e_child;
+        auto _real() const {
+            return (bool)(e_flags._real);
+        }
+        auto _indent() const {
+            return (int)(e_flags._indent);
+        }
+        auto _set_added() {
+            e_flags._diff_added = 1;
+        }
+        auto _set_full() {
+            e_flags._diff_full = 1;
+        }
+        auto _set_part() {
+            e_flags._diff_part = 1;
+        }
+        auto _added() const {
+            return (bool)(e_flags._diff_added);
+        }
+        auto _full() const {
+            return (bool)(e_flags._diff_full);
+        }
+        auto _part() const {
+            return (bool)(e_flags._diff_part);
+        }
     };
 
     public:
@@ -49,7 +77,6 @@ struct CompareFileModel : public QAbstractListModel {
     Q_PROPERTY(QString document READ getDocument WRITE setDocument NOTIFY documentChanged);
 
     void resetToOriginalState();
-    void insertStripedRows(int offset, int count);
 
     QString getDocument();
     void setDocument(QString document);
@@ -62,9 +89,7 @@ struct CompareFileModel : public QAbstractListModel {
 
     bool load_as_xml(const std::string& file);
     bool load_as_txt(const std::string& file);
-    void traverse_element(tinyxml2::XMLElement *element, int depth);
-
-    bool _changed = false;
+    void traverse_element(tinyxml2::XMLElement *element, uint32_t indent);
 
     std::string m_document;
 

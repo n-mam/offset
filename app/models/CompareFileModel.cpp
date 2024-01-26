@@ -21,15 +21,16 @@ CompareFileModel::~CompareFileModel()
 
 QHash<int, QByteArray> CompareFileModel::roleNames() const {
     auto roles = QAbstractListModel::roleNames();
-    roles.insert(ELineReal, "lineReal");
-    roles.insert(ELineHash, "lineHash");
-    roles.insert(ELineText, "lineText");
-    roles.insert(ELineIndent, "lineIndent");
-    roles.insert(ELineNumber, "lineNumber");
-    roles.insert(ELineBgColor, "lineBgColor");
-    roles.insert(ELineChildren, "lineChildren");
-    roles.insert(ELineChildCount, "lineChildCount");
-    roles.insert(ELineIndentSymbol, "lineIndentSymbol");
+    roles.insert(ElementReal, "elementReal");
+    roles.insert(ElementHash, "elementHash");
+    roles.insert(ElementText, "elementText");
+    roles.insert(ElementIndent, "elementIndent");
+    roles.insert(ElementNumber, "elementNumber");
+    roles.insert(ElementDiffFull, "elementDiffFull");
+    roles.insert(ElementDiffPart, "elementDiffPart");
+    roles.insert(ElementChildren, "elementChildren");
+    roles.insert(ElementDiffAdded, "elementDiffAdded");
+    roles.insert(ElementChildCount, "elementChildCount");
     return roles;
 }
 
@@ -45,37 +46,41 @@ QVariant CompareFileModel::data(const QModelIndex &index, int role) const {
     auto row = index.row();
 
     switch (role) {
-        case ELineReal: {
-            return _model[row].e_real;
+        case ElementReal: {
+            return _model[row]._real();
         }
-        case ELineIndent: {
-            return _model[row].e_indent;
+        case ElementIndent: {
+            return _model[row]._indent();
         }
-        case ELineNumber: {
+        case ElementNumber: {
             return (qlonglong)(row + 1);
         }
-        case ELineHash: {
+        case ElementDiffAdded: {
+            return _model[row]._added();
+        }
+        case ElementDiffFull: {
+            return _model[row]._full();
+        }
+        case ElementDiffPart: {
+            return _model[row]._part();
+        }
+        case ElementHash: {
             return (qlonglong)_model[row].e_hash;
         }
-        case ELineText: {
+        case ElementText: {
             return QString::fromStdString(_model[row].e_text);
         }
-        case ELineBgColor: {
-            return QString::fromStdString(_model[row].e_bgcolor);
-        }
-        case ELineIndentSymbol: {
-            return QString::fromStdString(_model[row].e_indentSymbol);
-        }
-        case ELineChildCount: {
+        case ElementChildCount: {
             return (qlonglong)_model[row].e_child.size();
         }
-        case ELineChildren: {
+        case ElementChildren: {
             QList<QVariantMap> children;
             for (const auto& e : _model[row].e_child) {
                 QVariantMap data;
-                data["real"] = e.e_real;
+                data["real"] = e._real();
+                data["full"] = e._full();
+                data["added"] = e._added();
                 data["text"] = QString::fromStdString(e.e_text);
-                data["color"] = QString::fromStdString(e.e_bgcolor);
                 children << data;
             }
             return QVariant::fromValue<QList<QVariantMap>>(children);
@@ -102,25 +107,14 @@ void CompareFileModel::setDocument(QString document) {
     }
 }
 
-void CompareFileModel::insertStripedRows(int offset, int count) {
-    beginInsertRows(QModelIndex(), offset, offset + count);
-    _model.insert(_model.begin() + offset, count, {});
-    endInsertRows();
-    _changed = true;
-}
-
 void CompareFileModel::resetToOriginalState() {
         beginResetModel();
-        //remove striped rows
-        if (_changed) {
-            _model.erase(
-                std::remove_if(_model.begin(), _model.end(),
-                    [](const auto& e){ return !e.e_real; }),
-                _model.end());
+        // remove striped rows
+        if (1) {
         }
-        //reset colors
+        // reset colors
         for (auto& e : _model) {
-            e.e_bgcolor = "";
+            //e.e_flags = 0;
         }
         endResetModel();
 }
@@ -130,7 +124,7 @@ bool CompareFileModel::load_as_txt(const std::string& file) {
     std::ifstream f(file.c_str());
     beginResetModel();
     while (std::getline(f, line)) {
-        _model.push_back({true, 0, std::hash<std::string>{}(line), line});
+        _model.push_back({std::hash<std::string>{}(line), line, {1, 0}});
     }
     endResetModel();
     return true;
@@ -160,7 +154,7 @@ bool CompareFileModel::load_as_xml(const std::string& file) {
 
     beginResetModel();
 
-    _model.push_back({true, 0, std::hash<std::string>{}(t), t});
+    _model.push_back({std::hash<std::string>{}(t), t, {1, 0}});
 
     traverse_element(rootElement, 1);
 
@@ -169,7 +163,7 @@ bool CompareFileModel::load_as_xml(const std::string& file) {
     return true;
 }
 
-void CompareFileModel::traverse_element(tinyxml2::XMLElement *element, int depth) {
+void CompareFileModel::traverse_element(tinyxml2::XMLElement *element, uint32_t indent) {
 
     auto childElement = element->FirstChildElement();
 
@@ -201,9 +195,9 @@ void CompareFileModel::traverse_element(tinyxml2::XMLElement *element, int depth
             + (attribute_list.empty() ? "" : " " + attribute_list)
             + (text.empty() ? "" : " \"" + text + "\"");
 
-        _model.push_back({true, depth + 2, std::hash<std::string>{}(line), line});
+        _model.push_back({std::hash<std::string>{}(line), line, {1, indent + 2}});
 
-        traverse_element(childElement, depth + 2);
+        traverse_element(childElement, indent + 2);
 
         childElement = childElement->NextSiblingElement();
     }
