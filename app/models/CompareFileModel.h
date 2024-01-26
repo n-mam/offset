@@ -76,8 +76,6 @@ struct CompareFileModel : public QAbstractListModel {
 
     Q_PROPERTY(QString document READ getDocument WRITE setDocument NOTIFY documentChanged);
 
-    void resetToOriginalState();
-
     QString getDocument();
     void setDocument(QString document);
 

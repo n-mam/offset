@@ -14,14 +14,6 @@ void CompareManager::setCompareFileModel(CompareFileModel *model) {
     _file_models.push_back(model);
 }
 
-void CompareManager::onFileModelChanged(CompareFileModel *model) {
-    for (auto& fm : _file_models) {
-        if (fm != model) {
-            fm->resetToOriginalState();
-        }
-    }
-}
-
 template<typename T>
 void CompareManager::makeEqual(T& A, T& B) {
     auto delta = std::abs(
@@ -270,20 +262,33 @@ auto CompareManager::compareGranular(T& A, T&B) {
     }
 }
 
-size_t CompareManager::compare() {
-    auto& A = _file_models[0]->_model;
-    auto& B = _file_models[1]->_model;
+template<typename T>
+auto CompareManager::resetToInitialState(T& A) {
+    for (auto it = A.begin(); it != A.end(); ) {
+        auto& e = *it;
+        if (!e._real()) {
+            it = A.erase(it);
+        } else {
+            e.e_flags._indent = 0;
+            e.e_flags._diff_full = 0;
+            e.e_flags._diff_part = 0;
+            e.e_flags._diff_added = 0;
+            it++;
+        }
+    }
+}
 
+size_t CompareManager::compare() {
     _file_models[0]->beginResetModel();
     _file_models[1]->beginResetModel();
-
+    auto& A = _file_models[0]->_model;
+    auto& B = _file_models[1]->_model;
+    resetToInitialState(A);
+    resetToInitialState(B);
     auto l = compareRoot(A, B);
-
     compareGranular(A, B);
-
     _file_models[1]->endResetModel();
     _file_models[0]->endResetModel();
-
     return l;
 }
 

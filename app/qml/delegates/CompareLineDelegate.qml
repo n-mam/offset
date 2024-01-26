@@ -66,20 +66,20 @@ Item {
                 //console.log(i, child.full, child.real, child.text);
                 if (child.full) {
                     result += "<span style=\"background-color:" + charDiffColor + ";\">" +
-                                    (child.text.length ? _replaceFrontBackSpaces(child.text) : '&nbsp;') +
+                                    (child.text.length ? _replaceSpaces(child.text) : '&nbsp;') +
                                 "</span>";
                 } else if (child.added) {
                     result += "<span style=\"background-color:" + charAddedColor + ";\">" +
-                                    (child.text.length ? _replaceFrontBackSpaces(child.text) : '&nbsp;') +
+                                    (child.text.length ? _replaceSpaces(child.text) : '&nbsp;') +
                                 "</span>";
                 } else if (!child.real) {
                     result += "<span style=\"background-color:" + charNotRealColor + ";\">&nbsp;</span>";
                 } else {
-                    result += child.text.length ? _replaceFrontBackSpaces(child.text) : '&nbsp;';
+                    result += child.text.length ? _replaceSpaces(child.text) : '&nbsp;';
                 }
             })
         } else {
-            //console.log(elementDiffAdded, elementDiffFull)
+            //console.log(elementDiffAdded, elementDiffFull, elementText)
             if (elementDiffAdded) {
                 textRect.color = elementDiffAddedColor;
             } else if (elementDiffFull) {
@@ -87,36 +87,11 @@ Item {
             } else {
                 textRect.color = Material.background;
             }
-            result = elementText;
+            result = _replaceSpaces(elementText);
         }
-        return _replaceFrontBackSpaces(result);
+        return result;
     }
-
-    function _trimLeft(s) {
-        for (let i = 0; i < s.length; i++) {
-            if (s[i] !== ' ') {
-                return s.substring(i);
-            }
-        }
-        return "";
-    }
-    function _trimRight(s) {
-        for (let i = (s.length - 1); i >= 0; i--) {
-            if (s[i] !== ' ') {
-                return s.substring(0, i + 1);
-            }
-        }
-        return "";
-    }
-    function _replaceFrontBackSpaces(s) {
-        var n_leading_spaces = s.length - _trimLeft(s).length;
-        var n_trailing_spaces = s.length - _trimRight(s).length;
-        let ss = s.trim();
-        if (ss === "") return '&nbsp;';
-        for (let i = 0; i < n_leading_spaces; i++)
-            ss = '&nbsp;' + ss;
-        for (let i = 0; i < n_trailing_spaces; i++)
-            ss = ss + '&nbsp;';
-        return ss
+    function _replaceSpaces(s) {
+        return s.replace(/ /g, '&nbsp;');
     }
 }

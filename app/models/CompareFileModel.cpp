@@ -11,8 +11,6 @@ CompareFileModel::CompareFileModel() {
     _model.reserve(2048);
     auto cm = getInstance<CompareManager>();
     cm->setCompareFileModel(this);
-    connect(this, &CompareFileModel::documentChanged,
-        cm, &CompareManager::onFileModelChanged);
 }
 
 CompareFileModel::~CompareFileModel()
@@ -105,18 +103,6 @@ void CompareFileModel::setDocument(QString document) {
         endResetModel();
         emit documentChanged(this);
     }
-}
-
-void CompareFileModel::resetToOriginalState() {
-        beginResetModel();
-        // remove striped rows
-        if (1) {
-        }
-        // reset colors
-        for (auto& e : _model) {
-            //e.e_flags = 0;
-        }
-        endResetModel();
 }
 
 bool CompareFileModel::load_as_txt(const std::string& file) {

@@ -27,8 +27,6 @@ class CompareManager : public QObject {
 
     public slots:
 
-    void onFileModelChanged(CompareFileModel *model);
-
     private:
 
     template<typename T>
@@ -38,16 +36,19 @@ class CompareManager : public QObject {
     auto compareRoot(T& A, T&B);
 
     template<typename T>
+    auto resetToInitialState(T& A);
+
+    template<typename T>
     auto compareGranular(T& A, T&B);
 
     template<typename T>
     auto processDiffSections(T& A, T& B);
 
     template<typename T>
-    auto processSection(T& A, T&B, int i, int j);
+    auto finalizeDisplayAttributes(T& A, T& B);
 
     template<typename T>
-    auto finalizeDisplayAttributes(T& A, T& B);
+    auto processSection(T& A, T&B, int i, int j);
 
     template <typename T>
     auto getHashVectorsFromModels(const T& A, const T& B);

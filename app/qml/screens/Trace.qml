@@ -35,6 +35,7 @@ Item {
                 Label {
                     text: line
                     color: textColor
+                    textFormat: Text.PlainText
                 }
             }
             Connections {
