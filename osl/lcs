@@ -3,6 +3,7 @@
 
 #include <osl/log>
 
+#undef min
 #undef max
 #include <set>
 #include <map>

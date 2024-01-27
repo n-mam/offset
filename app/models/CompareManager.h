@@ -10,7 +10,7 @@ class CompareManager : public QObject {
 
     Q_OBJECT
 
-    struct _lcs_sym_pos {
+    struct _sym_pos {
         size_t e;
         std::vector<int> pos_in_a;
         std::vector<int> pos_in_b;
@@ -30,10 +30,10 @@ class CompareManager : public QObject {
     private:
 
     template<typename T>
-    void makeEqual(T& A, T& B);
+    auto makeEqual(T& A, T& B);
 
     template<typename T>
-    auto compareRoot(T& A, T&B);
+    size_t compareRoot(T& A, T&B);
 
     template<typename T>
     auto resetToInitialState(T& A);
@@ -54,10 +54,19 @@ class CompareManager : public QObject {
     auto getHashVectorsFromModels(const T& A, const T& B);
 
     template<typename T>
-    auto get_lcs_pos_vector(const T& lcs, const T& ha, const T& hb);
+    auto getLcsPosVector(const T& lcs, const T& ha, const T& hb);
 
     template<typename T>
-    auto align(T& A, T&B, std::vector<_lcs_sym_pos>& lcs_pos, int n);
+    auto align(T& A, T&B, std::vector<_sym_pos>& lcs_pos, int n);
+
+    template<typename T>
+    auto dumpModels(const T& A, const T&B, const std::string&);
+
+    template<typename T>
+    auto getUniqueCommonPosVector(T& A, T&B);
+
+    template<typename T>
+    auto removeNotRealPairs(T& A, T&B);
 
     std::vector<CompareFileModel *> _file_models;
 };
