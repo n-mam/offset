@@ -28,8 +28,8 @@ Item {
         }
         ButtonX {
             id: folderButton
-            width: 28
-            height: 28
+            width: parent.height * 0.70
+            height: parent.height * 0.70
             text: fileFolderSelector.label
             image: fileFolderSelector.image
             anchors.verticalCenter: parent.verticalCenter

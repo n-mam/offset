@@ -3,7 +3,7 @@ import QtQml.Models
 import QtQuick.Controls
 
 Item {
-
+    signal iterateChange(var down)
     Row {
         id: leftRow
         spacing: 4
@@ -58,20 +58,20 @@ Item {
         anchors.right: parent.right
         anchors.verticalCenter: parent.verticalCenter
         ButtonX {
-            id: nextChange
+            id: prevChange
             width: 20
             height: 20
             image: "qrc:/up-diff.png"
             anchors.verticalCenter: parent.verticalCenter
-            onButtonXClicked: console.log("next")
+            onButtonXClicked: iterateChange(false)
         }
         ButtonX {
-            id: previousChange
+            id: nextChange
             width: 20
             height: 20
             image: "qrc:/down-diff.png"
             anchors.verticalCenter: parent.verticalCenter
-            onButtonXClicked: console.log("prev")
+            onButtonXClicked: iterateChange(true)
         }
         Text {
             text: "  "

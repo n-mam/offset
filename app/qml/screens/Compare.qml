@@ -15,7 +15,7 @@ Rectangle {
         id: compareSplit
         width: parent.width
         orientation: Qt.Horizontal
-        height: parent.height * 0.84
+        height: parent.height * 0.85
 
         handle: Rectangle {
             id: handleDelegate
@@ -66,5 +66,15 @@ Rectangle {
         width: parent.width
         anchors.top: lineDiff.bottom
         height: parent.height - compareSplit.height - lineDiff.height
+        onIterateChange: (down) => {
+            let idx;
+            if (down) {
+                idx = compareManager.getNextDiffIndex()
+            } else {
+                idx = compareManager.getPrevDiffIndex()
+            }
+            leftCompareFile.setCurrentIndex(idx)
+            rightCompareFile.setCurrentIndex(idx)
+        }
     }
 }

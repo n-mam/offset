@@ -10,6 +10,50 @@ CompareManager::~CompareManager() {
 
 }
 
+void CompareManager::onFileModelChanged(CompareFileModel *model) {
+    currentDiffIndex = -1;
+    comparisionDone = false;
+}
+
+size_t CompareManager::getNextDiffIndex() {
+    if (comparisionDone) {
+        auto& A = _file_models[0]->_model;
+        auto& B = _file_models[1]->_model;
+        assert(A.size() == B.size());
+        auto old = currentDiffIndex;
+        for (auto i = currentDiffIndex + 1; i < static_cast<int64_t>(A.size()); i++) {
+            if (A[i].e_hash != B[i].e_hash) {
+                currentDiffIndex = i;
+                break;
+            }
+        }
+        if (currentDiffIndex == old) {
+            currentDiffIndex = -1;
+            return getNextDiffIndex();
+        }
+    }
+    return currentDiffIndex;
+}
+size_t CompareManager::getPrevDiffIndex() {
+    if (comparisionDone) {
+        auto& A = _file_models[0]->_model;
+        auto& B = _file_models[1]->_model;
+        assert(A.size() == B.size());
+        auto old = currentDiffIndex;
+        for (auto i = currentDiffIndex - 1; i >= 0; i--) {
+            if (A[i].e_hash != B[i].e_hash) {
+                currentDiffIndex = i;
+                break;
+            }
+        }
+        if (currentDiffIndex == old) {
+            currentDiffIndex = A.size();
+            return getPrevDiffIndex();
+        }
+    }
+    return currentDiffIndex;
+}
+
 void CompareManager::setCompareFileModel(CompareFileModel *model) {
     _file_models.push_back(model);
 }
@@ -389,6 +433,7 @@ size_t CompareManager::compare() {
     resetToInitialState(B);
     auto l = compareRoot(A, B);
     compareGranular(A, B);
+    comparisionDone = true;
     _file_models[1]->endResetModel();
     _file_models[0]->endResetModel();
     return l;

@@ -7,7 +7,7 @@ import "qrc:/components"
 ApplicationWindow {
   id: mainWindow
   visible: true
-  width: 1430 - (1430 * 0.32)
+  width: 1430 - (1430 * 0.30)
   height: 860 - (860 * 0.22)
   title: qsTr("Offset")
 

@@ -11,6 +11,8 @@ CompareFileModel::CompareFileModel() {
     _model.reserve(2048);
     auto cm = getInstance<CompareManager>();
     cm->setCompareFileModel(this);
+    connect(this, &CompareFileModel::documentChanged,
+        cm, &CompareManager::onFileModelChanged);
 }
 
 CompareFileModel::~CompareFileModel()

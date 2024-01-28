@@ -22,7 +22,10 @@ class CompareManager : public QObject {
     ~CompareManager();
 
     Q_INVOKABLE size_t compare();
+    Q_INVOKABLE size_t getNextDiffIndex();
+    Q_INVOKABLE size_t getPrevDiffIndex();
 
+    void onFileModelChanged(CompareFileModel *model);
     void setCompareFileModel(CompareFileModel *model);
 
     public slots:
@@ -68,6 +71,8 @@ class CompareManager : public QObject {
     template<typename T>
     auto removeNotRealPairs(T& A, T&B);
 
+    bool comparisionDone = false;
+    int64_t currentDiffIndex = -1;
     std::vector<CompareFileModel *> _file_models;
 };
 

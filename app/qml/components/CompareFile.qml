@@ -23,7 +23,7 @@ Item {
         anchors.margins: 10
         placeholder: "File"
         anchors.topMargin: 12
-        height: textFieldHeight
+        height: textFieldHeight - 2
         isFolderSelector: false
         anchors.top: parent.top
         image: "qrc:/folder.png"
@@ -45,6 +45,10 @@ Item {
         anchors.bottom: parent.bottom
         anchors.top: fileSelector.bottom
         height: parent.height - fileSelector.height
+        currentIndex: -1
+        highlightMoveDuration: 100
+        highlightMoveVelocity: 800
+        highlight: Rectangle { color: "lightsteelblue"; }
         delegate: CompareLineDelegate{
             height: 26
             width: ListView.view.width
@@ -81,5 +85,9 @@ Item {
 
     function getModel() {
         return textListView.model
+    }
+
+    function setCurrentIndex(idx) {
+        textListView.currentIndex = idx
     }
 }
