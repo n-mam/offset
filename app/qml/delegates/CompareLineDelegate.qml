@@ -2,10 +2,9 @@ import QtQuick
 import QtQuick.Controls
 
 Item {
+
     id: cldRoot
-
     property var innerMargin: 0
-
     signal rowClicked(var row)
 
     Row {
@@ -33,8 +32,8 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             Canvas {
                 id: patternCanvas
-                visible: !elementReal
                 anchors.fill: parent
+                visible: !elementReal
                 onPaint: {
                     var ctx = getContext('2d');
                     ctx.fillStyle = ctx.createPattern("#888888", Qt.BDiagPattern); 
@@ -92,6 +91,8 @@ Item {
         return result;
     }
     function _replaceSpaces(s) {
-        return s.replace(/ /g, '&nbsp;');
+        return s.replace(/ /g, '&nbsp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
     }
 }

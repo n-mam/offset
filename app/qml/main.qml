@@ -20,18 +20,18 @@ ApplicationWindow {
 
   property var charDiffColor: "#be6060" // pink - done
   property var charAddedColor: "#78845C" //light green
-  property var charNotRealColor: "#888888" //gray - done
+  property var charNotRealColor: "#aaaaaa" //gray - done
   property var elementDiffFullColor: "#701414" // dark red
-  property var elementDiffPartColor: "#5a2626" // light red
+  property var elementDiffPartColor: "#6f3737" // light red
   property var elementDiffAddedColor: "#4C5B2B" // dark green
 
   ApplicationMenu {
     id: appMenu
     width: 48
     startIndex: 3
-    height: parent.height - (2 * appSpacing)
     anchors.left: parent.left
     anchors.margins: appSpacing
+    height: parent.height - (2 * appSpacing)
     anchors.verticalCenter: parent.verticalCenter
     onMenuSelectionSignal: (index) => {
       screenContainer.currentIndex = index
@@ -41,11 +41,11 @@ ApplicationWindow {
   Container {
       id: screenContainer
       focus: true
-      currentIndex: appMenu.startIndex
-      width: parent.width - appMenu.x - appMenu.width - (2 * appSpacing)
-      height: parent.height - (2 * appSpacing)
       anchors.left: appMenu.right
+      currentIndex: appMenu.startIndex
+      height: parent.height - (2 * appSpacing)
       anchors.verticalCenter: parent.verticalCenter
+      width: parent.width - appMenu.x - appMenu.width - (2 * appSpacing)
       contentItem: StackLayout {
           id: layout
           focus: true

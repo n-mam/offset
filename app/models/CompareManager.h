@@ -45,13 +45,13 @@ class CompareManager : public QObject {
     auto compareGranular(T& A, T&B);
 
     template<typename T>
-    auto processDiffSections(T& A, T& B);
+    auto processDiffSections(T& A, T& B, const std::vector<int>& sp);
 
     template<typename T>
     auto finalizeDisplayAttributes(T& A, T& B);
 
     template<typename T>
-    auto processSection(T& A, T&B, int i, int j);
+    auto processSection(T& sub_a, T& sub_b);
 
     template <typename T>
     auto getHashVectorsFromModels(const T& A, const T& B);
@@ -60,7 +60,10 @@ class CompareManager : public QObject {
     auto getLcsPosVector(const T& lcs, const T& ha, const T& hb);
 
     template<typename T>
-    auto align(T& A, T&B, std::vector<_sym_pos>& lcs_pos, int n);
+    auto alignLcsSymbols(T& A, T&B, std::vector<_sym_pos>& lcs_pos, int n);
+
+    template<typename T>
+    auto alignUniqueCommonSymbols(T& A, T&B, std::vector<_sym_pos>& uc_pos);
 
     template<typename T>
     auto dumpModels(const T& A, const T&B, const std::string&);

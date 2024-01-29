@@ -50,7 +50,7 @@ Item {
         highlightMoveVelocity: 800
         highlight: Rectangle { color: "lightsteelblue"; }
         delegate: CompareLineDelegate{
-            height: 26
+            height: 22
             width: ListView.view.width
             onRowClicked: (row) => {
                 clickedRow = row

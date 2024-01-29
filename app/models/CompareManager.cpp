@@ -60,12 +60,13 @@ void CompareManager::setCompareFileModel(CompareFileModel *model) {
 
 template<typename T>
 auto CompareManager::dumpModels(const T& A, const T&B, const std::string& ctx) {
+    return;
     std::stringstream ss_a;
     std::stringstream ss_b;
     for (const auto& e : A)
-        ss_a << e.e_text << ",";
+        ss_a << (e._real() ? e.e_text : "X") << ",";
     for (const auto& e : B)
-        ss_b << e.e_text << ",";
+        ss_b << (e._real() ? e.e_text : "X") << ",";
     auto s_a = ss_a.str();
     auto s_b = ss_b.str();
     s_a.pop_back();
@@ -231,33 +232,48 @@ auto CompareManager::getUniqueCommonPosVector(T& A, T&B) {
 }
 
 template<typename T>
-auto CompareManager::processDiffSections(T& A, T& B) {
+auto CompareManager::processDiffSections(T& A, T& B, const std::vector<int>& sp) {
     int i = 0;
-    int j = 0;
-    for (auto k = 0; k < std::min(A.size(), B.size()); k++) {
-        if (A[k].e_hash == B[k].e_hash) {
-            if (j - i > 1) {
-                processSection(A, B, i, j);
-            }
-            i = j = k + 1;
-        } else {
-            j++;
+    std::vector<std::pair<T, T>> sections;
+    for (auto j = 0; j < sp.size(); j++) {
+        auto e = sp[j];
+        LOG << "section at " << i << "," << e;
+        // range [first, last)
+        std::vector<CompareFileModel::Element> sub_a(A.begin() + i, A.begin() + e);
+        std::vector<CompareFileModel::Element> sub_b(B.begin() + i, B.begin() + e);
+        sections.push_back({sub_a, sub_b});
+        sections.push_back({{A[e]},{B[e]}});
+        i = sp[j] + 1;
+    }
+
+    i = sp.back() + 1;
+    auto e = static_cast<int>(std::min(A.size(), B.size())) - 1;
+    LOG << "last section at " << i << "," << e;
+    std::vector<CompareFileModel::Element> sub_a(A.begin() + i, A.end());
+    std::vector<CompareFileModel::Element> sub_b(B.begin() + i, B.end());
+    sections.push_back({sub_a, sub_b});
+
+    LOG << "dumping sections...";
+    for (const auto& [sa, sb] : sections) {
+        dumpModels(sa, sb, "section");
+    }
+    LOG << "processSection...";
+    for (auto& [sa, sb] : sections) {
+        if (sa.size() > 1){
+            processSection(sa, sb);
         }
     }
-    if (j - i > 1) {
-        processSection(A, B, i, j);
+
+    A.clear();
+    B.clear();
+    for (auto& [sa, sb] : sections) {
+       A.insert(A.end(), sa.begin(), sa.end());
+       B.insert(B.end(), sb.begin(), sb.end());
     }
 }
 
 template<typename T>
-auto CompareManager::processSection(T& A, T&B, int i, int j) {
-    
-    LOG << "diff section at " << i + 1 << "," << j + 1;
-
-    // range [first, last)
-    std::vector<CompareFileModel::Element> sub_a(A.begin() + i, A.begin() + j);
-    std::vector<CompareFileModel::Element> sub_b(B.begin() + i, B.begin() + j);
-
+auto CompareManager::processSection(T& sub_a, T&sub_b) {
     if ((sub_a.size() == 2) && (sub_b.size() == 2)) {
         if (((sub_a[0]._real() && !sub_a[1]._real()) &&
              (!sub_b[0]._real() && sub_b[1]._real())) ||
@@ -271,44 +287,74 @@ auto CompareManager::processSection(T& A, T&B, int i, int j) {
                 sub_b.erase(sub_b.end() - 1);
             }
     }
-
+    removeNotRealPairs(sub_a, sub_b);
     compareRoot(sub_a, sub_b);
-
     // make sections equal again after comparision
     auto delta = std::abs(
         static_cast<int>(sub_a.size() - sub_b.size()));
-
     if (sub_a.size() > sub_b.size()) {
         sub_b.insert(sub_b.end(), delta, {});
     } else if (sub_a.size() < sub_b.size()) {
         sub_a.insert(sub_a.end(), delta, {});
     }
-
-    // erase the original sub_b window in B
-    B.erase(B.begin() + i, B.begin() + j);
-    // erase the original sub_a window in A
-    A.erase(A.begin() + i, A.begin() + j);
-
-    // insert sub_b at the starting of the cleared area
-    B.insert(B.begin() + i, sub_b.begin(), sub_b.end());
-    // insert sub_a at the starting of the cleared area
-    A.insert(A.begin() + i, sub_a.begin(), sub_a.end());
-
-    // scan max(sub_a, sub_b) sized section of
-    // A and B for duplicate inserted empty rows
-    for (auto m = 0; m < std::max(sub_a.size(), sub_b.size()); m++) {
-        if (!A[i + m]._real() && !B[i + m]._real()) {
-            A.erase(A.begin() + i + m);
-            B.erase(B.begin() + i + m);
-        }
-    }
+    removeNotRealPairs(sub_a, sub_b);
 }
 
 template<typename T>
-auto CompareManager::align(T& A, T&B, std::vector<_sym_pos>& pos, int n) {
+auto CompareManager::alignUniqueCommonSymbols(T& A, T&B, std::vector<_sym_pos>& uc_pos) {
+    uint32_t added_in_a = 0;
+    uint32_t added_in_b = 0;
+    std::vector<int> section_points;
+    for (auto it = uc_pos.begin(); it != uc_pos.end(); ) {
+        auto& p = *it;
+        auto in_a = p.pos_in_a[0];
+        auto in_b = p.pos_in_b[0];
+        in_a += added_in_a;
+        in_b += added_in_b;
+        auto n = std::abs(in_a - in_b);
+        auto& ta = A[in_a].e_text; //debug
+        auto& tb = B[in_b].e_text; //debug
+        if (in_a != in_b) {
+            // check if we have any matching positions
+            // after this entry in the uc_pos. if yes,
+            // then we skip this one as it would screw
+            // up the subsequent matched entry's alingment
+            auto it_matched = std::find_if(it, uc_pos.end(),
+                [](const auto& p){
+                    return (p.pos_in_a[0] == p.pos_in_b[0]);
+                });
+            if (it_matched == uc_pos.end()) {
+                if (in_a < in_b) {
+                    A.insert(A.begin() + in_a, n, {0, "", {0, 0}});
+                    added_in_a += n;
+                    assert((in_a + n) == in_b);
+                    section_points.push_back(in_b);
+                } else if (in_b < in_a) {
+                    B.insert(B.begin() + in_b, n, {0, "", {0, 0}});
+                    added_in_b += n;
+                    assert(in_a == (in_b + n));
+                    section_points.push_back(in_a);
+                }
+                it++;
+            } else {
+               it = uc_pos.erase(it);
+               LOG << "skipping position " << in_a << ", " << in_b;
+            }
+        } else {
+            it++;
+            section_points.push_back(in_a);
+        }
+    }
+
+    return section_points;
+}
+
+template<typename T>
+auto CompareManager::alignLcsSymbols(T& A, T&B, std::vector<_sym_pos>& pos, int n) {
     uint32_t n_aligned = 0;
     uint32_t added_in_a = 0;
     uint32_t added_in_b = 0;
+    std::vector<int> section_points;
     for (auto& p : pos) {
         auto& _in_a = p.pos_in_a;
         auto& _in_b = p.pos_in_b;
@@ -324,9 +370,13 @@ auto CompareManager::align(T& A, T&B, std::vector<_sym_pos>& pos, int n) {
             if (in_a < in_b) {
                 A.insert(A.begin() + in_a, n, {0, "", {0, 0}});
                 added_in_a += n;
+                assert((in_a + n) == in_b);
+                section_points.push_back(in_b);
             } else if (in_b < in_a) {
                 B.insert(B.begin() + in_b, n, {0, "", {0, 0}});
                 added_in_b += n;
+                assert(in_a == (in_b + n));
+                section_points.push_back(in_a);
             } else if (in_a == in_b) {
                 n_aligned++;
             }
@@ -340,19 +390,25 @@ auto CompareManager::align(T& A, T&B, std::vector<_sym_pos>& pos, int n) {
             continue;
         }
     }
-    return std::make_tuple(added_in_a, added_in_b, n_aligned);
+    return std::make_tuple(
+        (added_in_a || added_in_b || n_aligned),
+        section_points);
 }
 
 template<typename T>
 size_t CompareManager::compareRoot(T& A, T&B) {
 
+    dumpModels(A, B, "compareRoot");
     auto [ha, hb] = getHashVectorsFromModels(A, B);
     auto uc_pos = getUniqueCommonPosVector(ha, hb);
 
     if (uc_pos.size()) {
-        align(A, B, uc_pos, 1);
-        removeNotRealPairs(A, B);
-        processDiffSections(A, B);
+        auto section_points = alignUniqueCommonSymbols(A, B, uc_pos);
+        dumpModels(A, B, "after align");
+        if (section_points.size()) {
+            processDiffSections(A, B, section_points);
+            dumpModels(A, B, "after processDiffSections");
+        }
     } else {
         auto r = osl::find_lcs<std::vector<size_t>>(ha, hb);
         if (!r.ss.size()) {
@@ -360,23 +416,20 @@ size_t CompareManager::compareRoot(T& A, T&B) {
             finalizeDisplayAttributes(A, B);
             return r.ss.size();
         }
-
-        // use the first for now
+        // use the first
         auto& lcs = r.ss[0];
         // vector of all lcs symbol positions in A and B
         auto [lcs_pos, fully_aligned] = getLcsPosVector(lcs, ha, hb);
-
-        // loop through all lcs hashes and adjust models A
-        // and B to align unique symbols. skip duplicates
+        // loop through all lcs hashes and adjust models
+        // A and B to align LCS symbols. skip duplicates
         if (!fully_aligned) {
             auto n = 1;
             while (true) {
-                auto [added_in_a, added_in_b, n_aligned] = align(A, B, lcs_pos, n++);
-                if (added_in_a || added_in_b || n_aligned) break;
+                auto [rc, sp] = alignLcsSymbols(A, B, lcs_pos, n++);
+                if (rc) break;
             }
         }
     }
-
     removeNotRealPairs(A, B);
     finalizeDisplayAttributes(A, B);
     return 1;
