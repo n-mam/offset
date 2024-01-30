@@ -42,11 +42,12 @@ Item {
         MouseArea {
             hoverEnabled: true
             anchors.fill: parent
+            cursorShape: Qt.PointingHandCursor
+            onEntered: button.color = "steelblue"
+            onExited: button.color = Material.background
             onClicked: {
                 buttonXClicked()
             }
-            onEntered: button.color = "steelblue"
-            onExited: button.color = Material.background
         }
     }
 }

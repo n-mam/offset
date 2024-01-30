@@ -37,8 +37,11 @@ constexpr int IDX_MOCAP_EXCLUDE_AREA = 6;
 constexpr int IDX_BOUNDINGBOX_THICKNESS = 7;
 constexpr int IDX_BOUNDINGBOX_INCREMENT = 8;
 
-struct DetectionResult
-{
+inline auto getModelRootDir() {
+    return std::getenv("CVL_MODELS_ROOT");
+}
+
+struct DetectionResult {
     int           _age;
     cv::Mat       _roi;
     cv::Size      _dim;
@@ -62,29 +65,21 @@ struct DetectionResult
     }
 };
 
-class Detector
-{
-    public:
+class Detector {
 
+    public:
     Detector() {}
 
-    Detector(const std::string& config, const std::string& weight)
-    {
-        _configFile = std::getenv("CVL_MODELS_ROOT") + config;
+    Detector(const std::string& config, const std::string& weight) {
+        _configFile = getModelRootDir() + config;
         _weightFile = std::getenv("CVL_MODELS_ROOT") + weight;
-
-        try
-        {
+        try {
             _network = cv::dnn::readNetFromCaffe(_configFile, _weightFile);
-        }
-        catch(const std::exception& e)
-        {
+        } catch(const std::exception& e) {
             ERR << "Detector, exception : " << e.what();
         }
-
         #ifdef HAVE_OPENCV_CUDAFEATURES2D
-        if (cv::cuda::getCudaEnabledDeviceCount())
-        {
+        if (cv::cuda::getCudaEnabledDeviceCount()) {
             _network.setPreferableBackend(cv::dnn::Backend::DNN_BACKEND_CUDA);
             _network.setPreferableTarget(cv::dnn::Target::DNN_TARGET_CUDA);
             LOG << "CUDA backend and target enabled for inference";
@@ -104,23 +99,16 @@ class Detector
 
     // auxiliary detections and filters
 
-    inline static auto detectArucoMarker(cv::Mat& frame)
-    {
+    inline static auto detectArucoMarker(cv::Mat& frame) {
         double cmpp = 0;
         std::vector<int> markerIds;
         std::vector<std::vector<cv::Point2f>> allMarkerCorners;
         std::vector<std::vector<cv::Point2f>> rejectedCandidates;
-
         auto markerDictionary = new cv::aruco::Dictionary();
-
         *markerDictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
-
         cv::aruco::detectMarkers(frame, cv::Ptr<cv::aruco::Dictionary>(markerDictionary), allMarkerCorners, markerIds);
-
         // cv::aruco::drawDetectedMarkers(frame, allMarkerCorners, markerIds, cv::Scalar(0, 0, 255));
-
-        if (markerIds.size() > 0)
-        {
+        if (markerIds.size() > 0) {
             // assume only one marker for now
             auto edge_distance = geometry::distance<cv::Point2d>(allMarkerCorners[0][0], allMarkerCorners[0][1]);
             cmpp = marker_length_cm / edge_distance;
@@ -130,23 +118,16 @@ class Detector
         return cmpp;
     }
 
-    inline static auto FilterDetections(Detections& detections, cv::Mat& m)
-    {
-        for (auto&& it = detections.begin(); it != detections.end(); )
-        {
+    inline static auto FilterDetections(Detections& detections, cv::Mat& m) {
+        for (auto&& it = detections.begin(); it != detections.end(); ) {
             bool remove = false;
-
             auto& roi = *it;
-
             remove = (roi.x < 0 || roi.x + roi.width > m.cols || roi.x < 0 || roi.y + roi.height > m.rows);
-
             //exclude near-to-frame detections, mark white
-            if ((roi.y < 5) || ((roi.y + roi.height) > (m.rows - 5)))
-            {
+            if ((roi.y < 5) || ((roi.y + roi.height) > (m.rows - 5))) {
                 cv::rectangle(m, roi, cv::Scalar(255, 255, 255), 1, 1);
                 remove = true;
             }
-
             if (remove) {
                 it = detections.erase(it);
             } else {
@@ -158,48 +139,35 @@ class Detector
     protected:
 
     std::string _target;
-
     cv::dnn::Net _network;
-
     std::string _configFile;
-
     std::string _weightFile;
 };
 
-class FaceDetector : public Detector
-{
+class FaceDetector : public Detector {
     public:
-
     FaceDetector() : Detector(
         "FaceDetection/deploy.prototxt",
         "FaceDetection/res10_300x300_ssd_iter_140000.caffemodel") {}
 
     ~FaceDetector() {}
 
-    virtual Detections Detect(cv::Mat& frame, int *config) override
-    {
+    virtual Detections Detect(cv::Mat& frame, int *config) override {
         Detections out;
-
         cv::Mat inputBlob = cv::dnn::blobFromImage(
-            frame,
-            1.0,
-            cv::Size(300, 300),
-            cv::Scalar(104.0, 177.0, 123.0),
-            false,
-            false);
+                        frame,
+                        1.0,
+                        cv::Size(300, 300),
+                        cv::Scalar(104.0, 177.0, 123.0),
+                        false,
+                        false);
 
         _network.setInput(inputBlob);
-
         cv::Mat detection = _network.forward();
-
         cv::Mat detectionMat(detection.size[2], detection.size[3], CV_32F, detection.ptr<float>());
-
-        for (int i = 0; i < detectionMat.rows; ++i)
-        {
+        for (int i = 0; i < detectionMat.rows; ++i) {
             float _confidence = detectionMat.at<float>(i, 2);
-
-            if (_confidence > ((double)config[IDX_FACE_CONFIDENCE] / 10))
-            {
+            if (_confidence > ((double)config[IDX_FACE_CONFIDENCE] / 10)) {
                 int x1 = static_cast<int>(detectionMat.at<float>(i, 3) * frame.cols);
                 int y1 = static_cast<int>(detectionMat.at<float>(i, 4) * frame.rows);
                 int x2 = static_cast<int>(detectionMat.at<float>(i, 5) * frame.cols);
@@ -207,70 +175,52 @@ class FaceDetector : public Detector
 
                 auto rect = cv::Rect2d(x1, y1, x2 - x1, y2 - y1);
 
-                if (cvl::geometry::isRectInsideMat(rect, frame))
-                {
-                        out.emplace_back(
-                            config[cvl::IDX_BOUNDINGBOX_INCREMENT] != 0 ?
-                                cvl::geometry::resizeRectByWidth(rect,
-                                    config[cvl::IDX_BOUNDINGBOX_INCREMENT]) : rect);
+                if (cvl::geometry::isRectInsideMat(rect, frame)) {
+                    out.emplace_back(
+                        config[cvl::IDX_BOUNDINGBOX_INCREMENT] != 0 ?
+                            cvl::geometry::resizeRectByWidth(rect,
+                                config[cvl::IDX_BOUNDINGBOX_INCREMENT]) : rect);
                 }
             }
         }
-
         return out;
     }
 };
 
-class ObjectDetector : public Detector
-{
+class ObjectDetector : public Detector {
     public:
-
     ObjectDetector(const std::string& target) : Detector(
       "ObjectDetection/MobileNetSSD_deploy.prototxt",
-      "ObjectDetection/MobileNetSSD_deploy.caffemodel")
-    {
+      "ObjectDetection/MobileNetSSD_deploy.caffemodel"){
       _target = target;
     }
 
-    virtual Detections Detect(cv::Mat& frame, int *config) override
-    {
+    virtual Detections Detect(cv::Mat& frame, int *config) override {
         Detections out;
-
         cv::Mat inputBlob = cv::dnn::blobFromImage(
-            frame,
-            0.007843f,
-            cv::Size(300, 300),
-            cv::Scalar(127.5, 127.5, 127.5),
-            false,
-            false);
+                        frame,
+                        0.007843f,
+                        cv::Size(300, 300),
+                        cv::Scalar(127.5, 127.5, 127.5),
+                        false,
+                        false);
 
         _network.setInput(inputBlob);
-
         cv::Mat detection = _network.forward();
-
         cv::Mat detectionMat(detection.size[2], detection.size[3], CV_32F, detection.ptr<float>());
-
-        for (int i = 0; i < detectionMat.rows; ++i)
-        {
+        for (int i = 0; i < detectionMat.rows; ++i) {
             float _confidence = detectionMat.at<float>(i, 2);
-
-            if (_confidence > ((double)config[IDX_OBJECT_CONFIDENCE] / 10))
-            {
+            if (_confidence > ((double)config[IDX_OBJECT_CONFIDENCE] / 10)) {
                 int idx, x1, y1, x2, y2;
-
                 idx = static_cast<int>(detectionMat.at<float>(i, 1));
-
-                if (1)//_objectClass[idx] == _target)
-                {
+                if (1) {//_objectClass[idx] == _target)
                     x1 = static_cast<int>(detectionMat.at<float>(i, 3) * frame.cols);
                     y1 = static_cast<int>(detectionMat.at<float>(i, 4) * frame.rows);
                     x2 = static_cast<int>(detectionMat.at<float>(i, 5) * frame.cols);
                     y2 = static_cast<int>(detectionMat.at<float>(i, 6) * frame.rows);
 
                     auto rect = cv::Rect2d(x1, y1, x2 - x1, y2 - y1);
-
-                    if (cvl::geometry::isRectInsideMat(rect, frame))
-                    {
+                    if (cvl::geometry::isRectInsideMat(rect, frame)) {
                         out.emplace_back(
                             config[cvl::IDX_BOUNDINGBOX_INCREMENT] != 0 ?
                                 cvl::geometry::resizeRectByWidth(rect,
@@ -279,11 +229,10 @@ class ObjectDetector : public Detector
                 }
             }
         }
-
         return out;
     }
 
-  protected:
+    protected:
 
     inline static const std::string _objectClass[] = {
       "background", "aeroplane", "bicycle", "bird", "boat",
@@ -293,12 +242,9 @@ class ObjectDetector : public Detector
     };
 };
 
-class BackgroundSubtractor : public Detector
-{
+class BackgroundSubtractor : public Detector {
     public:
-
-    BackgroundSubtractor() : Detector()
-    {
+    BackgroundSubtractor() : Detector() {
         pBackgroundSubtractor[0] = cv::bgsegm::createBackgroundSubtractorMOG();
         pBackgroundSubtractor[1] = cv::bgsegm::createBackgroundSubtractorCNT();
         pBackgroundSubtractor[2] = cv::bgsegm::createBackgroundSubtractorGMG();
@@ -306,96 +252,67 @@ class BackgroundSubtractor : public Detector
         pBackgroundSubtractor[4] = cv::bgsegm::createBackgroundSubtractorLSBP();
     }
 
-    virtual Detections Detect(cv::Mat& frame, int *config) override
-    {
+    virtual Detections Detect(cv::Mat& frame, int *config) override {
         cv::Mat fgMask;
-
         pBackgroundSubtractor[config[IDX_MOCAP_ALGO]]->apply(frame, fgMask, -1);
-
         std::vector<std::vector<cv::Point>> contours;
-
         cv::findContours(fgMask, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
-
         Detections out;
-
         double areaThreshold = (double)config[IDX_MOCAP_EXCLUDE_AREA];
-
-        for (size_t i = 0; i < contours.size(); i++)
-        {
-            if (cv::contourArea(contours[i]) < areaThreshold)
-            {
+        for (size_t i = 0; i < contours.size(); i++) {
+            if (cv::contourArea(contours[i]) < areaThreshold) {
                 continue;
             }
-
             auto bb = cv::boundingRect(contours[i]);
-
             out.emplace_back(bb);
         }
-
         return out;
     }
 
     protected:
 
     cv::Ptr<cv::BackgroundSubtractor> pBackgroundSubtractor[5] = {nullptr};
-
 };
 
-class FaceRecognizer
-{
+class FaceRecognizer {
     public:
-
-    FaceRecognizer(const std::string& csv)
-    {
+    FaceRecognizer(const std::string& csv) {
         _id_frtag_map.reserve(256);
-
         try {
             read_csv(csv, _images, _labels, _frTags);
         }
         catch (const std::exception& e) {
             std::cerr << e.what() << std::endl;
         }
-
         _model = cv::face::LBPHFaceRecognizer::create();
-
         _model->setRadius(1);
         _model->setNeighbors(8);
         _model->setGridX(8);
         _model->setGridY(8);
-
         _model->train(_images, _labels);
     }
 
     ~FaceRecognizer(){}
 
-    auto getTagFromId(int id)
-    {
+    auto getTagFromId(int id) {
         std::string tag;
-
         try {
             tag = _id_frtag_map.at(id);
         }
         catch(const std::exception& e) {
             ERR << e.what() << " " << id;
         }
-
         return tag;
     }
 
-    auto predict(const cv::Mat& roi, int *config)
-    {
+    auto predict(const cv::Mat& roi, int *config) {
         int label = -1;
-
         double confidence = 0.0;
-
         _model->predict(roi, label, confidence);
-
         std::pair<std::string, double> fRet;
-
         if (confidence <= config[cvl::IDX_FACEREC_CONFIDENCE]) {
             fRet = std::make_pair(getTagFromId(label), confidence);
         }
-
         return fRet;
     }
 
@@ -404,24 +321,17 @@ class FaceRecognizer
     std::vector<int> _labels;
     std::vector<cv::Mat> _images;
     std::vector<std::string> _frTags;
-
+    cv::Ptr<cv::face::LBPHFaceRecognizer> _model;
     std::unordered_map<int, std::string> _id_frtag_map;
 
-    cv::Ptr<cv::face::LBPHFaceRecognizer> _model;
-
     void read_csv(const std::string& filename, std::vector<cv::Mat>& images,
-        std::vector<int>& labels, std::vector<std::string>& tags, char separator = ';')
-    {
+            std::vector<int>& labels, std::vector<std::string>& tags, char separator = ';') {
         std::ifstream file(filename.c_str(), std::ifstream::in);
-
         if (!file) {
             ERR << "No valid input file was given, please check the given filename";
         }
-
         std::string line, path, classlabel, frtag;
-
         std::string modelRoot = std::getenv("CVL_MODELS_ROOT");
-
         while (getline(file, line)) {
             std::stringstream liness(line);
             std::getline(liness, path, separator);

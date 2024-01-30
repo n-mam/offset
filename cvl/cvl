@@ -18,12 +18,10 @@ namespace cvl {
 using namespace std::chrono;
 using TFrameCallback = std::function<void (const cv::Mat&)>;
 
-class camera
-{
-    public:
+struct camera {
 
-    camera()
-    {
+    public:
+    camera() {
         iPipelineConfig[IDX_SKIP_FRAMES] = 4;
         iPipelineConfig[IDX_MOCAP_ALGO] = 3;
         iPipelineConfig[IDX_PIPELINE_STAGES] = 0;
@@ -35,17 +33,13 @@ class camera
         iPipelineConfig[IDX_BOUNDINGBOX_INCREMENT] = 0;
     }
 
-    ~camera()
-    {
+    ~camera() {
         stop();
     }
 
-    void start(TFrameCallback cbk)
-    {
+    void start(TFrameCallback cbk) {
         stop();
-
         _process_thread = std::thread(&camera::process_frames, this);
-
         if (cbk) {
             _frame_cbk = cbk;
             _queue_thread = std::thread(&camera::queue_frames, this);
@@ -54,8 +48,7 @@ class camera
         }
     }
 
-    void stop()
-    {
+    void stop(){
         _stop = true;
         if (_queue_thread.joinable())
             _queue_thread.join();
@@ -65,34 +58,24 @@ class camera
     }
 
     std::string iName;
-
     std::string iSource;
-
     int iWaitKeyTimeout = 18;
-
     std::string iResultsFolder;
-
     int iPipelineConfig[16] = { 0 };
 
     private:
 
     bool _stop = false;
-
     cvl::queue<cv::Mat> q_in;
-
     cvl::queue<cv::Mat> q_out;
-
     TFrameCallback _frame_cbk;
-
     std::thread _queue_thread;
-
     std::thread _process_thread;
 
-    void queue_frames(void)
-    {
+    void queue_frames(void) {
+
         cv::VideoCapture cap;
         cap.set(cv::CAP_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_ANY);
-
         if (iSource.length() == 1 && isdigit(iSource[0]))
             cap.open(std::stoi(iSource), cv::CAP_ANY);
         else
@@ -106,13 +89,9 @@ class camera
         cv::Mat f_in;
 
         while (!_stop) {
-
             cap >> f_in;
-
             q_in.enqueue(f_in);
-
             auto f_out = q_out.dequeue();
-
             if (!f_out.empty()) {
                 if (_frame_cbk) {
                     _frame_cbk(f_out);
@@ -120,7 +99,6 @@ class camera
                     cv::imshow("live", f_out);
                 }
             }
-
             if (iWaitKeyTimeout >= 0) {
                 if (cv::waitKey(iWaitKeyTimeout) >= 0) {
                     _stop = true;
@@ -132,44 +110,30 @@ class camera
         DBG << "queue_frames thread returning";
     }
 
-    void process_frames()
-    {
+    void process_frames() {
         cvl::pipeline pipeLine;
-
         while (!_stop) {
-
             auto frame = q_in.dequeue();
-
             if (frame.empty()) {
                 std::this_thread::sleep_for(milliseconds(50));
                 continue;
             }
-
             if (iPipelineConfig[IDX_PIPELINE_STAGES]) {
                 pipeLine.execute(frame, iPipelineConfig, iResultsFolder);
             }
-
             q_out.enqueue(frame);
         }
-
         DBG << "process_frames thread returning";
     }
 };
 
-inline auto entry(std::vector<std::string> arguments)
-{
+inline auto entry(std::vector<std::string> arguments) {
     std::string source = "0";
-
     source = arguments[1];
-
     auto cam = std::make_unique<cvl::camera>();
-
     cam->iSource = source;
-
     cam->iPipelineConfig[IDX_PIPELINE_STAGES] = 16;
-
     cam->start(nullptr);
-
     getchar();
 }
 

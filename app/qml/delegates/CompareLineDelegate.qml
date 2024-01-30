@@ -91,8 +91,9 @@ Item {
         return result;
     }
     function _replaceSpaces(s) {
-        return s.replace(/ /g, '&nbsp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;');
+        return s.replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/ /g, '&nbsp;')
+                .replace(/\t/g, '&nbsp;&nbsp;&nbsp;&nbsp;');
     }
 }
