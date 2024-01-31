@@ -36,7 +36,7 @@ class CompareManager : public QObject {
     auto makeEqual(T& A, T& B);
 
     template<typename T>
-    size_t compareRoot(T& A, T&B);
+    void compareRoot(T& A, T&B);
 
     template<typename T>
     auto resetToInitialState(T& A);

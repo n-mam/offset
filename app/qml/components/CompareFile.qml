@@ -10,6 +10,7 @@ Item {
     id: compareFileRoot
 
     property var clickedRow: -1
+    property var mergeDirection: ""
 
     // radius: 3
     // border.width: 1
@@ -44,6 +45,7 @@ Item {
         anchors.right: parent.right
         anchors.bottom: parent.bottom
         anchors.top: fileSelector.bottom
+        anchors.leftMargin: 4
         height: parent.height - fileSelector.height
         currentIndex: -1
         highlightMoveDuration: 100

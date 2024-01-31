@@ -26,6 +26,7 @@ Rectangle {
             innerMargin: 2
             width: ListView.view.width
             height: ListView.view.height
+            property var mergeDirection: "A2B"
         }
     }
     Rectangle {
@@ -60,6 +61,7 @@ Rectangle {
             innerMargin: 2
             width: ListView.view.width
             height: ListView.view.height
+            property var mergeDirection: "B2A"
         }
     }
 

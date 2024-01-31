@@ -4,22 +4,19 @@ import QtQuick.Controls
 import "qrc:/components"
 
 StackScreen {
-
     id: camScreenRoot
     baseItem: baseId
-
     Item {
-
         id: baseId
-
         Flickable {
             id: flickableGrid
             clip: true
-            width: camScreenRoot.width
-            height: camScreenRoot.height * 0.90
-            contentHeight: camGrid.height
+            anchors.left: baseId.left
+            anchors.right: baseId.right
+            anchors.margins: 4
             contentWidth: camGrid.width
-
+            contentHeight: camGrid.height
+            height: camScreenRoot.height * 0.90
             Grid {
                 id: camGrid
                 columns: 2
@@ -27,13 +24,12 @@ StackScreen {
                 //Player{}
             }
         }
-
         Row {
             id: camControl
             spacing: 10
+            anchors.bottom: baseId.bottom
             width: cameraUrl.width + 75 + 100
             height: camScreenRoot.height * 0.08
-            anchors.bottom: baseId.bottom
             anchors.horizontalCenter: parent.horizontalCenter
             TextField {
                 id: cameraUrl
@@ -129,9 +125,5 @@ StackScreen {
             }
         }
     }
-
-    Component.onCompleted: {
-
-    }
-
+    Component.onCompleted: {}
 }

@@ -43,10 +43,9 @@ Item {
             text: "Compare"
             onButtonXClicked: () => {
                 var startTime = new Date();
-                var lcs_len = compareManager.compare()
+                compareManager.compare()
                 var endTime = new Date();
                 var tt = Math.round(endTime - startTime);
-                lcsLength.text = "lcs: " + lcs_len + ", "
                 timeTaken.text = "time: " + ((tt > 1000) ? ((tt / 1000) + "s") : (tt + "ms"))
             }
         }
@@ -75,11 +74,6 @@ Item {
         }
         Text {
             text: "  "
-        }
-        Text {
-            id: lcsLength
-            text: ""
-            color: textColor
         }
         Text {
             id: timeTaken

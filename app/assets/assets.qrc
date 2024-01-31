@@ -29,6 +29,8 @@
     <file>download.png</file>
     <file>settings.png</file>
     <file>down-diff.png</file>
+    <file>left-arrow.png</file>
     <file>filedelete.png</file>
+    <file>right-arrow.png</file>
   </qresource>
 </RCC>

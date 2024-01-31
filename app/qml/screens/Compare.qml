@@ -25,13 +25,14 @@ Rectangle {
 
             containmentMask: Item { // hit area
                 x: (handleDelegate.width - width) / 2
-                width: 48
+                width: 12
                 height: compareSplit.height
             }
         }
 
         CompareFile {
             id: leftCompareFile
+            mergeDirection: "A2B"
             onClickedRowChanged: () => {
                 lineDiff.updateView(clickedRow)
             }
@@ -39,6 +40,7 @@ Rectangle {
 
         CompareFile {
             id: rightCompareFile
+            mergeDirection: "B2A"
             onClickedRowChanged: () => {
                 lineDiff.updateView(clickedRow)
             }

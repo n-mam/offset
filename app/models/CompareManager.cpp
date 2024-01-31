@@ -354,7 +354,6 @@ auto CompareManager::alignLcsSymbols(T& A, T&B, std::vector<_sym_pos>& pos, int 
     uint32_t n_aligned = 0;
     uint32_t added_in_a = 0;
     uint32_t added_in_b = 0;
-    std::vector<int> section_points;
     for (auto& p : pos) {
         auto& _in_a = p.pos_in_a;
         auto& _in_b = p.pos_in_b;
@@ -371,12 +370,10 @@ auto CompareManager::alignLcsSymbols(T& A, T&B, std::vector<_sym_pos>& pos, int 
                 A.insert(A.begin() + in_a, n, {0, "", {0, 0}});
                 added_in_a += n;
                 assert((in_a + n) == in_b);
-                section_points.push_back(in_b);
             } else if (in_b < in_a) {
                 B.insert(B.begin() + in_b, n, {0, "", {0, 0}});
                 added_in_b += n;
                 assert(in_a == (in_b + n));
-                section_points.push_back(in_a);
             } else if (in_a == in_b) {
                 n_aligned++;
             }
@@ -390,15 +387,13 @@ auto CompareManager::alignLcsSymbols(T& A, T&B, std::vector<_sym_pos>& pos, int 
             continue;
         }
     }
-    return std::make_tuple(
-        (added_in_a || added_in_b || n_aligned),
-        section_points);
+    return (added_in_a || added_in_b || n_aligned);
 }
 
 template<typename T>
-size_t CompareManager::compareRoot(T& A, T&B) {
+void CompareManager::compareRoot(T& A, T&B) {
 
-    dumpModels(A, B, "compareRoot");
+    dumpModels(A, B, "compare Root");
     auto [ha, hb] = getHashVectorsFromModels(A, B);
     auto uc_pos = getUniqueCommonPosVector(ha, hb);
 
@@ -411,33 +406,30 @@ size_t CompareManager::compareRoot(T& A, T&B) {
         }
     } else {
         auto r = osl::find_lcs<std::vector<size_t>>(ha, hb);
-        if (!r.ss.size()) {
-            makeEqual(A, B);
-            finalizeDisplayAttributes(A, B);
-            return r.ss.size();
-        }
-        // use the first
-        auto& lcs = r.ss[0];
-        // vector of all lcs symbol positions in A and B
-        auto [lcs_pos, fully_aligned] = getLcsPosVector(lcs, ha, hb);
-        // loop through all lcs hashes and adjust models
-        // A and B to align LCS symbols. skip duplicates
-        if (!fully_aligned) {
-            auto n = 1;
-            while (true) {
-                auto [rc, sp] = alignLcsSymbols(A, B, lcs_pos, n++);
-                if (rc) break;
+        if (r.ss.size()) {
+            // use the first
+            auto& lcs = r.ss[0];
+            // vector of all lcs symbol positions in A and B
+            auto [lcs_pos, fully_aligned] = getLcsPosVector(lcs, ha, hb);
+            // loop through all lcs hashes and adjust models
+            // A and B to align LCS symbols. skip duplicates
+            if (!fully_aligned) {
+                auto n = 1;
+                while (true) {
+                    auto rc = alignLcsSymbols(A, B, lcs_pos, n++);
+                    if (rc) break;
+                }
             }
+        } else {
+            makeEqual(A, B);
         }
     }
     removeNotRealPairs(A, B);
     finalizeDisplayAttributes(A, B);
-    return 1;
 }
 
 template<typename T>
 auto CompareManager::compareGranular(T& A, T&B) {
-    // for all diff items, run lcs at a lower granular level
     for (auto i = 0; i < std::min(A.size(), B.size()); i++) {
         if (A[i].e_hash != B[i].e_hash) {
             auto& la = A[i].e_text;
@@ -451,11 +443,9 @@ auto CompareManager::compareGranular(T& A, T&B) {
                 for (auto& c : lb) {
                     CB.push_back({std::hash<unsigned char>{}(c), {c}, {1, 0}});
                 }
-                auto l = compareRoot(CA, CB);
-                if (l) {
-                    A[i].e_child = std::move(CA);
-                    B[i].e_child = std::move(CB);
-                }
+                compareRoot(CA, CB);
+                A[i].e_child = std::move(CA);
+                B[i].e_child = std::move(CB);
             }
         }
     }
@@ -484,12 +474,12 @@ size_t CompareManager::compare() {
     auto& B = _file_models[1]->_model;
     resetToInitialState(A);
     resetToInitialState(B);
-    auto l = compareRoot(A, B);
+    compareRoot(A, B);
     compareGranular(A, B);
     comparisionDone = true;
     _file_models[1]->endResetModel();
     _file_models[0]->endResetModel();
-    return l;
+    return 0;
 }
 
 // std::string q = "GAC";

@@ -8,10 +8,31 @@ Item {
     signal rowClicked(var row)
 
     Row {
+        spacing: 4
         width: parent.width
         anchors.top: parent.top
         anchors.margins: innerMargin
         anchors.bottom: parent.bottom
+        Image {
+            id: mergeButton
+            width: 14
+            height: 14
+            fillMode: Image.PreserveAspectFit
+            anchors.verticalCenter: parent.verticalCenter
+            source: (!elementReal || elementDiffPart ||
+                    elementDiffFull || elementDiffAdded) ?
+                        (mergeDirection === "A2B" ?
+                            "qrc:/right-arrow.png" : "qrc:/left-arrow.png") : ""
+            MouseArea {
+                hoverEnabled: true
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                onContainsMouseChanged: mergeButton.scale = 1 + (containsMouse ? 0.4 : 0)
+                onClicked: {
+
+                }
+            }
+        }
         Text {
             id: elementNumberId
             text: "<span>" + elementNumber +
@@ -21,15 +42,15 @@ Item {
             color: "#888888"
             font.pointSize: pointSize
             verticalAlignment: Text.AlignVCenter
-            anchors.verticalCenter: parent.verticalCenter 
+            anchors.verticalCenter: parent.verticalCenter
         }
         Rectangle {
             id: textRect
             clip: true
             height: parent.height
             color: Material.background
-            width: parent.width - elementNumberId.width
             anchors.verticalCenter: parent.verticalCenter
+            width: parent.width - elementNumberId.width - mergeButton.width
             Canvas {
                 id: patternCanvas
                 anchors.fill: parent
