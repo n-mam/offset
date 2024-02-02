@@ -133,10 +133,9 @@ void LocalFsModel::setCurrentDirectory(QString directory)
     });
   }
 
-  std::partition(m_model.begin(), m_model.end(),
-    [](const auto& e){
+  std::ranges::partition(m_model, [](const auto& e) {
       return e.m_attributes[0] == 'd';
-    });
+  });
 
   emit directoryList();
 

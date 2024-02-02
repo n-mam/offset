@@ -88,13 +88,8 @@ inline std::string& rtrim(std::string& str, const std::string& chars) {
     return str;
 }
 
-inline std::string& trim(std::string& str, const std::string& chars) {
+inline std::string& trim(std::string& str, const std::string& chars = " ") {
     return ltrim(rtrim(str, chars), chars);
-}
-
-template <typename T>
-inline bool startsWith(const T& str, const T& prefix) {
-    return (str.rfind(prefix, 0) == 0);
 }
 
 inline void removeDuplicates(std::string& str, const char& ch) {

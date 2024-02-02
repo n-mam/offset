@@ -9,20 +9,15 @@ TransferManager::TransferManager() {
     connect(this, &TransferManager::transferSuccessful, this, &TransferManager::TransferFinished);
 }
 
-TransferManager::~TransferManager()
-{
-}
+TransferManager::~TransferManager(){}
 
 QHash<int, QByteArray> TransferManager::roleNames() const {
-
     auto roles = QAbstractListModel::roleNames();
-
     roles.insert(ELocal, "local");
     roles.insert(ERemote, "remote");
     roles.insert(EDirection, "direction");
     roles.insert(EType, "type");
     roles.insert(EProgress, "progress");
-
     return roles;
 }
 
@@ -31,13 +26,10 @@ int TransferManager::rowCount(const QModelIndex& parent) const {
 }
 
 QVariant TransferManager::data(const QModelIndex& index, int role) const {
-
     if (!index.isValid()) {
         return QVariant();
     }
-
     auto row = index.row();
-
     switch (role) {
         case ELocal: {
             return QString::fromStdString(m_queue[row].m_local);
@@ -57,13 +49,12 @@ QVariant TransferManager::data(const QModelIndex& index, int role) const {
         default:
             break;
     }
-
     return QVariant();
 }
 
 void TransferManager::AddToTransferQueue(const Transfer& transfer) {
     QMetaObject::invokeMethod(this,
-        [=, t = std::move(transfer)]() mutable {
+        [this, t = std::move(transfer)]() mutable {
             auto pos = m_queue.size();
             beginInsertRows(QModelIndex(), pos, pos);
             m_queue.emplace_back(t);
@@ -73,9 +64,7 @@ void TransferManager::AddToTransferQueue(const Transfer& transfer) {
 }
 
 int TransferManager::GetSessionWithLeastQueueDepth(void) {
-
     int sid, minimum = INT_MAX;
-
     for (int i = 0; i < MAX_SESSIONS; i++) {
         auto pending = m_sessions[i]->PendingTransfers();
         if (pending < minimum) {
@@ -83,7 +72,6 @@ int TransferManager::GetSessionWithLeastQueueDepth(void) {
             minimum = pending;
         }
     }
-
     return sid;
 }
 
@@ -105,9 +93,7 @@ void TransferManager::StopAllTransfers(void) {
 }
 
 void TransferManager::TransferFinished(int i) {
-
     emit activeTransfers(--m_activeTransfers);
-
     if (UserCancelled() || OneOffTransfer()) {
         if (!m_activeTransfers) {
             auto status = UserCancelled() ?
@@ -116,7 +102,6 @@ void TransferManager::TransferFinished(int i) {
         }
         return;
     }
-
     for (int j = i + 1; j < m_queue.size(); j++) {
         if (m_queue[j].m_state == Transfer::state::queued) {
             ProcessTransfer(j, m_queue[i].m_sid, false);
@@ -126,13 +111,10 @@ void TransferManager::TransferFinished(int i) {
 }
 
 void TransferManager::ProcessAllTransfers(void) {
-
     auto limit = std::min(MAX_SESSIONS, m_queue.size());
-
     if (!limit) {
         STATUS(1) << "Transfer queue empty";
     }
-
     for (int i = 0; i < limit; i++) {
         ProcessTransfer(i, m_next_session, false);
         m_next_session = (m_next_session + 1) % MAX_SESSIONS;
@@ -140,31 +122,18 @@ void TransferManager::ProcessAllTransfers(void) {
 }
 
 void TransferManager::ProcessTransfer(int row, int sid, bool oneoff) {
-
     Transfer& t = m_queue[row];
-
     if (t.m_state == Transfer::state::queued) {
-
         static bool b = InitializeFTPSessions();
-
         b ? b = false : (CheckAndReconnectSessions(), false);
-
         t.m_sid = (sid >= 0) ? sid : GetSessionWithLeastQueueDepth();
-
         t.m_index = row;
-
         m_one_off = oneoff;
-
         emit transferStarted(t.m_index);
-
         emit activeTransfers(++m_activeTransfers);
-
         t.m_state = Transfer::state::processing;
-
         m_stop.store(false, std::memory_order_relaxed);
-
         STATUS(1) << "Transfer in progress..";
-
         if (t.m_direction == npl::ftp::download) {
             DownloadTransfer(t, t.m_sid);
         } else if (t.m_direction == npl::ftp::upload) {
@@ -174,21 +143,16 @@ void TransferManager::ProcessTransfer(int row, int sid, bool oneoff) {
 }
 
 void TransferManager::DownloadTransfer(const Transfer& t, int sid) {
-
     std::filesystem::path path = t.m_local;
-
     std::filesystem::create_directories(path.parent_path());
-
     auto file = std::make_shared<npl::file_device>(t.m_local, true);
-
     auto& ftp = m_sessions[sid];
-
     ftp->Transfer(t.m_direction, t.m_remote,
-        [=, i = t.m_index, offset = 0ULL]
+        [=, this, i = t.m_index, offset = 0ULL]
         (const char *b, size_t n) mutable {
             if (UserCancelled()) {
                 if (!b) {
-                    QMetaObject::invokeMethod(this, [=](){
+                    QMetaObject::invokeMethod(this, [=, this](){
                         m_queue[i].m_state = Transfer::state::cancelled;
                         emit transferCancelled(i);
                     });
@@ -202,7 +166,7 @@ void TransferManager::DownloadTransfer(const Transfer& t, int sid) {
             } else {
                 if (m_queue[i].m_state != Transfer::state::successful) {
                     file.reset();
-                    QMetaObject::invokeMethod(this, [=](){
+                    QMetaObject::invokeMethod(this, [=, this](){
                         m_queue[i].m_state = Transfer::state::successful;
                         emit transferSuccessful(i, ++m_successful_transfers);
                     });
@@ -210,22 +174,21 @@ void TransferManager::DownloadTransfer(const Transfer& t, int sid) {
             }
 
             auto& tt = m_queue[i];
-
             if (tt.m_size) {
                 int p = b ? (((float)offset / tt.m_size) * 100) : 100;
                 if (p > tt.m_progress) {
                     tt.m_progress = p;
-                    QMetaObject::invokeMethod(this, [=](){
-                        emit dataChanged(index(i), index(i), { Roles::EProgress });
+                    QMetaObject::invokeMethod(this, [=, this](){
+                        emit dataChanged(index(i), index(i), {Roles::EProgress});
                     });
                 }
             }
 
             return true;
         },
-        [=, i = t.m_index](const auto& res) {
+        [=, this, i = t.m_index](const auto& res) {
             if (res[0] == '4' || res[0] == '5') {
-                QMetaObject::invokeMethod(this, [=](){
+                QMetaObject::invokeMethod(this, [=, this](){
                     m_queue[i].m_state = Transfer::state::failed;
                     emit transferFailed(i, ++m_failed_transfers);
                 });
@@ -235,86 +198,75 @@ void TransferManager::DownloadTransfer(const Transfer& t, int sid) {
 }
 
 void TransferManager::UploadTransfer(const Transfer& t, int sid) {
-
-  std::filesystem::path path = t.m_remote;
-
-  auto& ftp = m_sessions[sid];
-
-  std::string directory;
-  auto tokens = osl::split<std::string>(path.parent_path().string(), "/");
-
-  for (const auto& e : tokens) {
-    if (!e.empty()) {
-      directory += "/" + e;
-      ftp->CreateDirectory(directory);
+    std::filesystem::path path = t.m_remote;
+    auto& ftp = m_sessions[sid];
+    std::string directory;
+    auto tokens = osl::split<std::string>(path.parent_path().string(), "/");
+    for (const auto& e : tokens) {
+        if (!e.empty()) {
+            directory += "/" + e;
+            ftp->CreateDirectory(directory);
+        }
     }
-  }
+    auto file = std::make_shared<npl::file_device>(t.m_local, false);
+    uint8_t *buf = (uint8_t *) calloc(1, _1M);
 
-  auto file = std::make_shared<npl::file_device>(t.m_local, false);
-
-  uint8_t *buf = (uint8_t *) calloc(1, _1M);
-
-  ftp->Transfer(t.m_direction, t.m_remote,
-    [=, i = t.m_index, offset = 0ULL]
-    (const char *b, size_t l) mutable {
-      if (UserCancelled()) {
-        if (!b) {
-          QMetaObject::invokeMethod(this, [=](){
-            m_queue[i].m_state = Transfer::state::cancelled;
-            emit transferCancelled(i);
-          });
-        }
-        return false;
-      }
-
-      int32_t n = 0;
-
-      if (b) {
-
-        n = file->ReadSync(buf, _1M, offset);
-
-        if (n) {
-          ftp->Write(buf, n);
-          offset += n;
+    ftp->Transfer(t.m_direction, t.m_remote,
+        [=, this, i = t.m_index, offset = 0ULL]
+        (const char *b, size_t l) mutable {
+        if (UserCancelled()) {
+            if (!b) {
+                QMetaObject::invokeMethod(this, [=, this](){
+                    m_queue[i].m_state = Transfer::state::cancelled;
+                    emit transferCancelled(i);
+                });
+            }
+            return false;
         }
 
-      } else {
+        int32_t n = 0;
 
-        if (m_queue[i].m_state != Transfer::state::successful) {
-          QMetaObject::invokeMethod(this, [=](){
-            m_queue[i].m_state = Transfer::state::successful;
-            emit transferSuccessful(i, ++m_successful_transfers);
-          });
+        if (b) {
+            n = file->ReadSync(buf, _1M, offset);
+            if (n) {
+                ftp->Write(buf, n);
+                offset += n;
+            }
+        } else {
+            if (m_queue[i].m_state != Transfer::state::successful) {
+                QMetaObject::invokeMethod(this, [=, this](){
+                    m_queue[i].m_state = Transfer::state::successful;
+                    emit transferSuccessful(i, ++m_successful_transfers);
+                });
+            }
         }
-      }
 
-      auto& tt = m_queue[i];
+        auto& tt = m_queue[i];
 
-      if (tt.m_size) {
-        int p = b ? (((float)offset / tt.m_size) * 100) : 100;
-        if (p > tt.m_progress) {
-          tt.m_progress = p;
-          QMetaObject::invokeMethod(this, [=](){
-            emit dataChanged(index(i), index(i), {Roles::EProgress});
-          });
+        if (tt.m_size) {
+            int p = b ? (((float)offset / tt.m_size) * 100) : 100;
+            if (p > tt.m_progress) {
+                tt.m_progress = p;
+                QMetaObject::invokeMethod(this, [=, this](){
+                    emit dataChanged(index(i), index(i), {Roles::EProgress});
+                });
+            }
         }
-      }
 
-      return (n > 0);
-    },
-    [=, i = t.m_index](const auto& res) {
-      if (res[0] == '4' || res[0] == '5') {
-        QMetaObject::invokeMethod(this, [=](){
-          m_queue[i].m_state = Transfer::state::failed;
-          emit transferFailed(i, ++m_failed_transfers);
-        });
-      }
-    },
-    m_ftpModel->m_protection);
+        return (n > 0);
+        },
+        [=, this, i = t.m_index](const auto& res) {
+            if (res[0] == '4' || res[0] == '5') {
+                QMetaObject::invokeMethod(this, [=, this](){
+                    m_queue[i].m_state = Transfer::state::failed;
+                    emit transferFailed(i, ++m_failed_transfers);
+                });
+            }
+        },
+        m_ftpModel->m_protection);
 }
 
 void TransferManager::RemoveAllTransfers(void) {
-
     if (!m_activeTransfers) {
         if (m_queue.size()) {
             beginResetModel();
@@ -329,7 +281,6 @@ void TransferManager::RemoveAllTransfers(void) {
 }
 
 void TransferManager::RemoveTransfer(int row) {
-
     if (!m_activeTransfers) {
         beginRemoveRows(QModelIndex(), row, row);
         m_queue.erase(m_queue.begin() + row);
@@ -339,28 +290,21 @@ void TransferManager::RemoveTransfer(int row) {
 }
 
 bool TransferManager::InitializeFTPSessions(void) {
-
     while(m_sessions.size() != MAX_SESSIONS) {
-
         auto ftp = npl::make_ftp(
             m_ftpModel->m_host,
             m_ftpModel->m_port,
             m_ftpModel->m_protection);
-
         if (!ftp) {
             STATUS(1) << "Failed to connect to " << m_ftpModel->m_host;
             return false;
         }
-
         ftp->SetCredentials(m_ftpModel->m_user, m_ftpModel->m_password);
-
         ftp->StartClient([this](auto p, bool isConnected){
-            if (!isConnected) { }
+            if (!isConnected) {}
         });
-
         m_sessions.push_back(ftp);
     }
-
     return true;
 }
 

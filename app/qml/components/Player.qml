@@ -22,48 +22,45 @@ Item {
     }
 
     Column {
-        spacing: 5
+        spacing: appSpacing
         Rectangle {
             id: playerRect
             border.width: 1
-            border.color: controlsVisible ? "steelblue" : borderColor
             color: "transparent"
+            border.color: controlsVisible ? "steelblue" : borderColor
             width: mainWindow.width - (mainWindow.width * 0.60) + playerRoot.increment
             height: mainWindow.height - (mainWindow.height * 0.60) + (playerRoot.increment * (mainWindow.height/mainWindow.width))
 
             Row {
                 z: 10
                 spacing: 0
-                visible: controlsVisible
-                anchors.top: parent.top
-                anchors.left: parent.left
                 anchors.margins: 4
-
+                anchors.top: parent.top
+                visible: controlsVisible
+                anchors.left: parent.left
                 Slider {
                     id: playerZoomSlider
+                    to: 450
+                    value: 0
                     width: 220
                     height: 20
                     from: -450
-                    value: 0
-                    to: 450
                     onMoved: playerRoot.increment = playerZoomSlider.value
                 }
             }
-
             VideoRenderer {
                 id: vr
                 width: parent.width
-                height: parent.height
                 cfg: playerRoot.cfg
+                height: parent.height
             }
-
             Rectangle {
                 z: 10
-                width: parent.width - 2
                 height: 40
-                color: "black"
                 opacity: 0.5
+                width: parent.width - 2
                 visible: controlsVisible
+                color: themeColor
                 anchors.bottom: parent.bottom
                 anchors.horizontalCenter: parent.horizontalCenter
                 Row {
@@ -82,7 +79,6 @@ Item {
                             onContainsMouseChanged: parent.scale = 1 + (containsMouse ? 0.2 : 0)
                         }
                     }
-
                     Image {
                         width: 18
                         height: 18
@@ -95,7 +91,6 @@ Item {
                             onContainsMouseChanged: parent.scale = 1 + (containsMouse ? 0.2 : 0)
                         }
                     }
-
                     Image {
                         width: 18
                         height: 18
@@ -130,15 +125,11 @@ Item {
                     anchors.margins: 4
                 }
             }
-
             MouseArea {
                 anchors.fill: parent
                 onClicked: controlsVisible = !controlsVisible;
             }
         }
     }
-
-    Component.onCompleted: {
-
-    }
+    Component.onCompleted: {}
 }

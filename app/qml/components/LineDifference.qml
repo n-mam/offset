@@ -29,21 +29,16 @@ Rectangle {
             property var mergeDirection: "A2B"
         }
     }
-    Rectangle {
-        id: spacer
+    Shape {
         height: 1
         width: parent.width
         anchors.centerIn: parent
-        color: Material.background
-        Shape {
-            anchors.fill: spacer
-            anchors.centerIn: spacer
-            ShapePath {
-                startX: 0; startY: 1
-                strokeColor: borderColor
-                strokeStyle: ShapePath.SolidLine
-                PathLine {x: spacer.width; y: 1}
-            }
+        ShapePath {
+            startX: 0; startY: 1
+            strokeColor: borderColor
+            joinStyle: ShapePath.RoundJoin
+            strokeStyle: ShapePath.SolidLine
+            PathLine {x: parent.width; y: 1}
         }
     }
     ListView {

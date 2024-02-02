@@ -403,6 +403,6 @@ Item {
       remoteFsModel.Connect(host, port, user, password, protocol)
     }
   }
-  
+
   Component.onCompleted: {}
 }

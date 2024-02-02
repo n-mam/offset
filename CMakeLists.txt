@@ -29,7 +29,7 @@ add_subdirectory(app)
 
 add_executable(Test test.cpp)
 
-set_property(TARGET Test PROPERTY CXX_STANDARD 17)
+set_property(TARGET Test PROPERTY CXX_STANDARD 23)
 
 target_link_libraries(
   Test

@@ -38,6 +38,7 @@ struct CompareFileModel : public QAbstractListModel {
             uint32_t _diff_added: 1; // green
             uint32_t _diff_part: 1; // light red
         } e_flags;
+        std::size_t e_hash_t;
         std::vector<Element> e_child;
         auto _real() const {
             return (bool)(e_flags._real);

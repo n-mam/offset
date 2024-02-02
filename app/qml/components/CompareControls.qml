@@ -52,8 +52,8 @@ Item {
     }
     Row {
         id: rightRow
-        spacing: 4
-        anchors.margins: 10
+        spacing: 2
+        anchors.margins: appSpacing
         anchors.right: parent.right
         anchors.verticalCenter: parent.verticalCenter
         ButtonX {
@@ -73,7 +73,7 @@ Item {
             onButtonXClicked: iterateChange(true)
         }
         Text {
-            text: "  "
+            text: " "
         }
         Text {
             id: timeTaken

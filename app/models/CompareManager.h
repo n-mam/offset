@@ -56,6 +56,9 @@ class CompareManager : public QObject {
     template <typename T>
     auto getHashVectorsFromModels(const T& A, const T& B);
 
+    template <typename T>
+    auto getTrimmedHashVectorsFromModels(const T& A, const T& B);
+
     template<typename T>
     auto getLcsPosVector(const T& lcs, const T& ha, const T& hb);
 

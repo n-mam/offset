@@ -2,13 +2,9 @@
 
 #include <CompareManager.h>
 
-CompareManager::CompareManager() {
+CompareManager::CompareManager() {}
 
-}
-
-CompareManager::~CompareManager() {
-
-}
+CompareManager::~CompareManager() {}
 
 void CompareManager::onFileModelChanged(CompareFileModel *model) {
     currentDiffIndex = -1;
@@ -77,13 +73,13 @@ auto CompareManager::dumpModels(const T& A, const T&B, const std::string& ctx) {
 
 template<typename T>
 auto CompareManager::makeEqual(T& A, T& B) {
-    auto delta = std::abs(
+    auto d = std::abs(
         static_cast<int>(A.size() - B.size()));
-    if (delta) {
+    if (d) {
         if (A.size() > B.size()) {
-            B.insert(B.end(), delta, {0, "", {0, 0}});
+            B.insert(B.end(), d, {0, "", {0, 0}});
         } else if (A.size() < B.size()) {
-            A.insert(A.end(), delta, {0, "", {0, 0}});
+            A.insert(A.end(), d, {0, "", {0, 0}});
         }
     }
 }
@@ -129,6 +125,21 @@ auto CompareManager::finalizeDisplayAttributes(T& A, T& B) {
             }
         }
     }
+}
+
+template <typename T>
+auto CompareManager::getTrimmedHashVectorsFromModels(const T& A, const T& B) {
+    std::vector<size_t> ha;
+    std::vector<size_t> hb;
+    ha.reserve(A.size());
+    hb.reserve(B.size());
+    for (const auto& e : A) {
+        ha.push_back(e.e_hash_t);
+    }
+    for (const auto& e : B) {
+        hb.push_back(e.e_hash_t);
+    }
+    return std::make_pair(ha, hb);
 }
 
 template <typename T>
@@ -394,8 +405,8 @@ template<typename T>
 void CompareManager::compareRoot(T& A, T&B) {
 
     dumpModels(A, B, "compare Root");
-    auto [ha, hb] = getHashVectorsFromModels(A, B);
-    auto uc_pos = getUniqueCommonPosVector(ha, hb);
+    auto [ha_t, hb_t] = getTrimmedHashVectorsFromModels(A, B);
+    auto uc_pos = getUniqueCommonPosVector(ha_t, hb_t);
 
     if (uc_pos.size()) {
         auto section_points = alignUniqueCommonSymbols(A, B, uc_pos);
@@ -405,6 +416,7 @@ void CompareManager::compareRoot(T& A, T&B) {
             dumpModels(A, B, "after processDiffSections");
         }
     } else {
+        auto [ha, hb] = getHashVectorsFromModels(A, B);
         auto r = osl::find_lcs<std::vector<size_t>>(ha, hb);
         if (r.ss.size()) {
             // use the first
@@ -438,10 +450,12 @@ auto CompareManager::compareGranular(T& A, T&B) {
                 std::vector<CompareFileModel::Element> CA;
                 std::vector<CompareFileModel::Element> CB;
                 for (auto& c : la) {
-                    CA.push_back({std::hash<unsigned char>{}(c), {c}, {1, 0}});
+                    auto h = std::hash<unsigned char>{}(c);
+                    CA.push_back({h, {c}, {1, 0}, h});
                 }
                 for (auto& c : lb) {
-                    CB.push_back({std::hash<unsigned char>{}(c), {c}, {1, 0}});
+                    auto h = std::hash<unsigned char>{}(c);
+                    CB.push_back({h, {c}, {1, 0}, h});
                 }
                 compareRoot(CA, CB);
                 A[i].e_child = std::move(CA);
