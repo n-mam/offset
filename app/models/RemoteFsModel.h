@@ -9,32 +9,27 @@
 
 using TFileElementListCallback = std::function<void (const std::vector<FileElement>&)>;
 
-class RemoteFsModel : public FsModel
-{
+class RemoteFsModel : public FsModel {
     Q_OBJECT
-
     public:
-
     RemoteFsModel();
     ~RemoteFsModel();
 
     Q_PROPERTY(bool connected READ getConnected WRITE setConnected NOTIFY connected);
 
     Q_INVOKABLE void Quit();
-    Q_INVOKABLE bool Connect(QString host, QString port, QString user, QString password, QString protocol);
-
-    Q_INVOKABLE virtual void QueueTransfer(int index, bool start = false) override;
     Q_INVOKABLE virtual void RemoveFile(QString path) override;
     Q_INVOKABLE virtual void RemoveDirectory(QString path) override;
     Q_INVOKABLE virtual void CreateDirectory(QString path) override;
     Q_INVOKABLE virtual void Rename(QString from, QString to) override;
+    Q_INVOKABLE virtual void QueueTransfer(int index, bool start = false) override;
+    Q_INVOKABLE bool Connect(QString host, QString port, QString user, QString password, QString protocol);
 
     int m_port;
     std::string m_host;
     std::string m_user;
     std::string m_password;
     std::string m_protocol;
-
     npl::tls m_protection = npl::tls::yes;
 
     signals:
@@ -60,9 +55,7 @@ class RemoteFsModel : public FsModel
     void ParseLinuxList(const std::string& list, std::vector<FileElement>& fe_list, int *pfc = nullptr, int *pdc = nullptr);
 
     bool m_connected = false;
-
     npl::SPProtocolFTP m_ftp;
-
     std::vector<std::string> m_directories_to_remove;
 };
 

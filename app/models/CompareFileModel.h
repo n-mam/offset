@@ -86,6 +86,7 @@ struct CompareFileModel : public QAbstractListModel {
 
     private:
 
+    auto simplified(const std::string& a);
     bool load_as_xml(const std::string& file);
     bool load_as_txt(const std::string& file);
     void traverse_element(tinyxml2::XMLElement *element, uint32_t indent);

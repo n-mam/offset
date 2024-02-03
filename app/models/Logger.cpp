@@ -3,10 +3,8 @@
 
 #include <Logger.h>
 
-Logger::Logger()
-{
+Logger::Logger() {
   osl::log::SetLogLevel(osl::log::debug);
-
   osl::log::SetLogSink<std::wstring>(
     [this](int level, int key, const std::wstring& log){
       if (!log.empty()) {
@@ -29,10 +27,7 @@ Logger::Logger()
         }, Qt::QueuedConnection);
       }
     });
-
   npl::make_dispatcher();
 }
 
-Logger::~Logger()
-{
-}
+Logger::~Logger(){}

@@ -187,15 +187,15 @@ auto CompareManager::getLcsPosVector(const T& lcs, const T& ha, const T& hb) {
 }
 
 template<typename T>
-auto CompareManager::getUniqueCommonPosVector(T& A, T&B) {
+auto CompareManager::getUniqueCommonPosVector(T& ha, T&hb) {
     // frequency map
     std::unordered_map<size_t, int> ua_map;
     std::unordered_map<size_t, int> ub_map;
 
-    for (const auto& e : A) {
+    for (const auto& e : ha) {
         ua_map[e] += 1;
     }
-    for (const auto& e : B) {
+    for (const auto& e : hb) {
         ub_map[e] += 1;
     }
 
@@ -216,8 +216,8 @@ auto CompareManager::getUniqueCommonPosVector(T& A, T&B) {
         }
     }
 
-    auto& large = A.size() > B.size() ? A : B;
-    auto& small = A.size() <= B.size() ? A : B;
+    auto& large = ha.size() > hb.size() ? ha : hb;
+    auto& small = ha.size() <= hb.size() ? ha : hb;
 
     std::vector<_sym_pos> uc_pos;
     uc_pos.reserve(small.size());
@@ -228,7 +228,7 @@ auto CompareManager::getUniqueCommonPosVector(T& A, T&B) {
         auto it_b = ub_map.find(e);
         if ((it_a != ua_map.end()) && (it_b != ub_map.end())) {
             auto index_in_other = std::find(large.begin(), large.end(), e) - large.begin();
-            if (A.size() <= B.size()) { // i is from A
+            if (ha.size() <= hb.size()) { // i is from ha
                 sp.pos_in_a.push_back(i);
                 sp.pos_in_b.push_back(index_in_other);
             } else { // i is from B

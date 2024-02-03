@@ -5,29 +5,25 @@
 
 #include <QAbstractListModel>
 
-class LocalFsModel : public FsModel
-{
-  Q_OBJECT
+class LocalFsModel : public FsModel {
+    Q_OBJECT
+    public:
+    LocalFsModel();
+    ~LocalFsModel();
 
-  public:
+    Q_INVOKABLE virtual void QueueTransfer(int index, bool start = false) override;
+    Q_INVOKABLE virtual void RemoveFile(QString path) override;
+    Q_INVOKABLE virtual void RemoveDirectory(QString path) override;
+    Q_INVOKABLE virtual void CreateDirectory(QString path) override;
+    Q_INVOKABLE virtual void Rename(QString from, QString to) override;
 
-  LocalFsModel();
-  ~LocalFsModel();
+    public slots:
 
-  Q_INVOKABLE virtual void QueueTransfer(int index, bool start = false) override;
-  Q_INVOKABLE virtual void RemoveFile(QString path) override;
-  Q_INVOKABLE virtual void RemoveDirectory(QString path) override;
-  Q_INVOKABLE virtual void CreateDirectory(QString path) override;
-  Q_INVOKABLE virtual void Rename(QString from, QString to) override;
+    virtual void setCurrentDirectory(QString) override;
 
-  public slots:
+    protected:
 
-  virtual void setCurrentDirectory(QString) override;
-
-  protected:
-
-  void UploadInternal(const std::string& file, const std::string& folder, const std::string& localFolder, bool isFolder, uint64_t size = 0);
-
+    void UploadInternal(const std::string& file, const std::string& folder, const std::string& localFolder, bool isFolder, uint64_t size = 0);
 };
 
 #endif

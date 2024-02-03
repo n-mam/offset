@@ -7,102 +7,86 @@
 
 #include <QAbstractListModel>
 
-struct Transfer
-{
-  std::string m_local;
-  std::string m_remote;
-  npl::ftp::Direction m_direction;
-  char m_type;
-  uint64_t m_size = 0;
-
-  enum state : uint8_t {
-    queued = 0,
-    processing,
-    cancelled,
-    failed,
-    successful
-  };
-
-  int m_sid = 0;
-  int m_index = -1;
-  int m_progress = 0;
-  mutable state m_state = queued;
+struct Transfer {
+    enum state : uint8_t {
+        queued = 0,
+        processing,
+        cancelled,
+        failed,
+        successful
+    };
+    std::string m_local;
+    std::string m_remote;
+    npl::ftp::Direction m_direction;
+    char m_type;
+    uint64_t m_size = 0;
+    int m_sid = 0;
+    int m_index = -1;
+    int m_progress = 0;
+    mutable state m_state = queued;
 };
 
 class RemoteFsModel;
-
 constexpr size_t MAX_SESSIONS = 2;
 
-class TransferManager : public QAbstractListModel
-{
-  Q_OBJECT
+class TransferManager : public QAbstractListModel {
+    Q_OBJECT
+    public:
+    enum Roles {
+        ELocal = Qt::UserRole,
+        ERemote,
+        EDirection,
+        EType,
+        EProgress
+    };
 
-  public:
+    TransferManager();
+    ~TransferManager();
 
-  enum Roles
-  {
-    ELocal = Qt::UserRole,
-    ERemote,
-    EDirection,
-    EType,
-    EProgress
-  };
+    QHash<int, QByteArray> roleNames() const override;
+    int rowCount(const QModelIndex& parent = QModelIndex()) const override;
+    QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
 
-  TransferManager();
-  ~TransferManager();
+    void AddToTransferQueue(const Transfer& transfer);
 
-  QHash<int, QByteArray> roleNames() const override;
-  int rowCount(const QModelIndex& parent = QModelIndex()) const override;
-  QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
+    Q_INVOKABLE void StopAllTransfers(void);
+    Q_INVOKABLE void ProcessAllTransfers(void);
+    Q_INVOKABLE void ProcessTransfer(int row, int sid, bool oneoff);
+    Q_INVOKABLE void RemoveAllTransfers(void);
+    Q_INVOKABLE void RemoveTransfer(int row);
 
-  void AddToTransferQueue(const Transfer& transfer);
+    public slots:
 
-  Q_INVOKABLE void StopAllTransfers(void);
-  Q_INVOKABLE void ProcessAllTransfers(void);
-  Q_INVOKABLE void ProcessTransfer(int row, int sid, bool oneoff);
-  Q_INVOKABLE void RemoveAllTransfers(void);
-  Q_INVOKABLE void RemoveTransfer(int row);
+    void TransferFinished(int i);
 
-  public slots:
+    signals:
 
-  void TransferFinished(int i);
+    void activeTransfers(int count);
+    void transferCancelled(int index);
+    void transferStarted(int index);
+    void transferQueueSize(int count);
+    void transferSuccessful(int index, int count);
+    void transferFailed(int index, int count);
 
-  signals:
+    private:
 
-  void activeTransfers(int count);
-  void transferCancelled(int index);
-  void transferStarted(int index);
-  void transferQueueSize(int count);
-  void transferSuccessful(int index, int count);
-  void transferFailed(int index, int count);
+    bool UserCancelled(void);
+    bool OneOffTransfer(void);
+    bool InitializeFTPSessions(void);
+    void CheckAndReconnectSessions(void);
+    int GetSessionWithLeastQueueDepth(void);
+    void DownloadTransfer(const Transfer& t, int sid);
+    void UploadTransfer(const Transfer& t, int sid);
 
-  private:
-
-  bool UserCancelled(void);
-  bool OneOffTransfer(void);
-  bool InitializeFTPSessions(void);
-  void CheckAndReconnectSessions(void);
-  int GetSessionWithLeastQueueDepth(void);
-  void DownloadTransfer(const Transfer& t, int sid);
-  void UploadTransfer(const Transfer& t, int sid);
-
-  RemoteFsModel *m_ftpModel;
-
-  std::vector<Transfer> m_queue;
-
-  std::vector<npl::SPProtocolFTP> m_sessions;
-
-  int m_next_session = 0;
-
-  int m_activeTransfers = 0;
-
-  int m_failed_transfers = 0;
-
-  int m_successful_transfers = 0;
-
-  bool m_one_off = false;
-
-  std::atomic<bool> m_stop{false};
+    int m_next_session = 0;
+    bool m_one_off = false;
+    RemoteFsModel *m_ftpModel;
+    int m_activeTransfers = 0;
+    int m_failed_transfers = 0;
+    std::vector<Transfer> m_queue;
+    int m_successful_transfers = 0;
+    std::atomic<bool> m_stop{false};
+    std::vector<npl::SPProtocolFTP> m_sessions;
 };
 
 #if defined _WIN32

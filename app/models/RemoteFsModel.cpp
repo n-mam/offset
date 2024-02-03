@@ -4,61 +4,53 @@
 RemoteFsModel::RemoteFsModel(){}
 RemoteFsModel::~RemoteFsModel(){}
 
-bool RemoteFsModel::Connect(QString host, QString port, QString user, QString password, QString protocol)
-{
-  m_port = port.toInt();
-  m_host = host.toStdString();
-  m_user = user.toStdString();
-  m_password = password.toStdString();
+bool RemoteFsModel::Connect(QString host, QString port, QString user, QString password, QString protocol) {
+    m_port = port.toInt();
+    m_host = host.toStdString();
+    m_user = user.toStdString();
+    m_password = password.toStdString();
+    m_protection = (protocol == "FTPS") ? npl::tls::yes : npl::tls::no;
+    m_ftp = npl::make_ftp(m_host, m_port , m_protection);
+    if (m_ftp) {
+        m_ftp->SetIdleCallback([this](){
+            QMetaObject::invokeMethod(this, [=, this](){
+                for (auto rit = m_directories_to_remove.rbegin();
+                    rit != m_directories_to_remove.rend(); rit++)
+                m_ftp->RemoveDirectory(*rit);
+                if (!m_directories_to_remove.empty()) {
+                    m_directories_to_remove.clear();
+                    RefreshRemoteView();
+                }
+            });
+        });
 
-  m_protection = (protocol == "FTPS") ? npl::tls::yes : npl::tls::no;
+        m_ftp->SetCredentials(m_user, m_password,
+        [this](bool success){
+            QMetaObject::invokeMethod(this, [=, this](){
+                if (success) {
+                    setCurrentDirectory("/");
+                    STATUS(1) << "User " << m_user << " logged in";
+                } else {
+                    STATUS(1) << "Login failed";
+                }
+            }, Qt::QueuedConnection);
+        });
 
-  m_ftp = npl::make_ftp(m_host, m_port , m_protection);
-
-  if (m_ftp) {
-    m_ftp->SetIdleCallback([this](){
-      QMetaObject::invokeMethod(this, [=, this](){
-        for (auto rit = m_directories_to_remove.rbegin();
-              rit != m_directories_to_remove.rend(); rit++)
-          m_ftp->RemoveDirectory(*rit);
-        if (!m_directories_to_remove.empty()) {
-          m_directories_to_remove.clear();
-          RefreshRemoteView();
-        }
-      });
-    });
-
-    m_ftp->SetCredentials(m_user, m_password,
-      [this](bool success){
-        QMetaObject::invokeMethod(this, [=, this](){
-          if (success) {
-            setCurrentDirectory("/");
-            STATUS(1) << "User " << m_user << " logged in";
-          } else {
-            STATUS(1) << "Login failed";
-          }
-        }, Qt::QueuedConnection);
-      });
-
-    m_ftp->StartClient(
-      [this](auto p, bool isConnected){
-        QMetaObject::invokeMethod(this, [=, this](){
-          setConnected(isConnected);
-          if (!isConnected)
-          {
-            beginResetModel();
-            m_model.clear();
-            endResetModel();
-          }
-        }, Qt::QueuedConnection);
-      });
-
-    return true;
-  }
-
-  STATUS(1) << "Failed to connect to " << m_host;
-
-  return false;
+        m_ftp->StartClient(
+        [this](auto p, bool isConnected){
+            QMetaObject::invokeMethod(this, [=, this](){
+                setConnected(isConnected);
+                if (!isConnected) {
+                    beginResetModel();
+                    m_model.clear();
+                    endResetModel();
+                }
+            }, Qt::QueuedConnection);
+        });
+        return true;
+    }
+    STATUS(1) << "Failed to connect to " << m_host;
+    return false;
 }
 
 void RemoteFsModel::QueueTransfer(int index, bool start) {
@@ -66,7 +58,7 @@ void RemoteFsModel::QueueTransfer(int index, bool start) {
     auto fileIsDir = IsElementDirectory(index);
     auto fileSize = GetElementSize(index);
     if (fileName.find("->") != std::string::npos) {
-        fileName = osl::trim(osl::split<std::string>(fileName, "->")[1], " ");
+        fileName = osl::trim(osl::split<std::string>(fileName, "->")[1]);
     }
     DownloadInternal(
         fileName,
@@ -76,37 +68,35 @@ void RemoteFsModel::QueueTransfer(int index, bool start) {
         fileSize);
 }
 
-void RemoteFsModel::DownloadInternal(const std::string& file, const std::string& folder, const std::string& localFolder, bool isFolder, uint64_t size)
-{
-  auto remotePath = folder + ((folder.back() == '/') ? file : ("/" + file));
-  auto localPath = localFolder + ((localFolder.back() == path_sep) ? file : (path_sep + file));
-
-  if (isFolder) {
-    WalkRemoteDirectory(remotePath, [=, this](const std::vector<FileElement>& fe_list){
-      for (const auto& fe : fe_list)
-        if (fe.m_attributes[0] == 'd') {
-          DownloadInternal(
-            fe.m_name,
-            remotePath,
-            localPath,
-            true);
-        } else {
-          getInstance<TransferManager>()->AddToTransferQueue({
-            localPath + path_sep + fe.m_name,
-            remotePath + "/" + fe.m_name,
-            npl::ftp::download,
-            'I', std::stoull(fe.m_size)
-          });
-        }
-    });
-  } else {
-    getInstance<TransferManager>()->AddToTransferQueue({
-      localPath,
-      remotePath,
-      npl::ftp::download,
-      'I', size
-    });
-  }
+void RemoteFsModel::DownloadInternal(const std::string& file, const std::string& folder, const std::string& localFolder, bool isFolder, uint64_t size) {
+    auto remotePath = folder + ((folder.back() == '/') ? file : ("/" + file));
+    auto localPath = localFolder + ((localFolder.back() == path_sep) ? file : (path_sep + file));
+    if (isFolder) {
+        WalkRemoteDirectory(remotePath, [=, this](const std::vector<FileElement>& fe_list){
+        for (const auto& fe : fe_list)
+            if (fe.m_attributes[0] == 'd') {
+                DownloadInternal(
+                    fe.m_name,
+                    remotePath,
+                    localPath,
+                    true);
+            } else {
+                getInstance<TransferManager>()->AddToTransferQueue({
+                    localPath + path_sep + fe.m_name,
+                    remotePath + "/" + fe.m_name,
+                    npl::ftp::download,
+                    'I', std::stoull(fe.m_size)
+                });
+            }
+        });
+    } else {
+        getInstance<TransferManager>()->AddToTransferQueue({
+                localPath,
+                remotePath,
+                npl::ftp::download,
+                'I',
+                size});
+    }
 }
 
 void RemoteFsModel::WalkRemoteDirectory(const std::string& path, TFileElementListCallback callback) {
@@ -173,7 +163,7 @@ void RemoteFsModel::Quit() {
 }
 
 bool RemoteFsModel::getConnected(void) {
-  return m_connected;
+    return m_connected;
 }
 
 void RemoteFsModel::setConnected(bool isConnected) {
@@ -224,7 +214,7 @@ void RemoteFsModel::setCurrentDirectory(QString directory) {
 }
 
 void RemoteFsModel::RefreshRemoteView(void) {
-  setCurrentDirectory(QString::fromStdString(m_currentDirectory));
+    setCurrentDirectory(QString::fromStdString(m_currentDirectory));
 }
 
 void RemoteFsModel::ParseDirectoryList(const std::string& list, std::vector<FileElement>& fe_list, int *pfc, int *pdc) {
@@ -248,7 +238,7 @@ void RemoteFsModel::ParseMLSDList(const std::string& list, std::vector<FileEleme
     if (pos != std::string::npos) {
       pos++;
       name = line.substr(pos);
-      name = osl::trim(name, " ");
+      name = osl::trim(name);
     }
     auto isDir = (line.find("type=dir") != std::string::npos);
     std::string size;
@@ -309,8 +299,7 @@ void RemoteFsModel::ParseLinuxList(const std::string& list, std::vector<FileElem
     }
 }
 
-void RemoteFsModel::ParseWindowsList(const std::string& list, std::vector<FileElement>& fe_list, int *pfc, int *pdc)
-{
+void RemoteFsModel::ParseWindowsList(const std::string& list, std::vector<FileElement>& fe_list, int *pfc, int *pdc) {
     LOG << list;
     auto lines = osl::split<std::string>(list, "\r\n");
     for (auto& line : lines) {

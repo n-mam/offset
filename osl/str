@@ -1,6 +1,8 @@
 #ifndef STR_HPP
 #define STR_HPP
 
+#undef min
+#undef max
 #include <string>
 #include <vector>
 #include <locale>
@@ -78,18 +80,20 @@ inline auto ws2s(const std::wstring& wstr) {
     return converterX.to_bytes(wstr);
 }
 
-inline std::string& ltrim(std::string& str, const std::string& chars) {
-    str.erase(0, str.find_first_not_of(chars));
-    return str;
+inline auto ltrim(const std::string& s, const char& ch) {
+    auto ss = s;
+    ss.erase(0, ss.find_first_not_of(ch));
+    return ss;
 }
 
-inline std::string& rtrim(std::string& str, const std::string& chars) {
-    str.erase(str.find_last_not_of(chars) + 1);
-    return str;
+inline auto rtrim(const std::string& s, const char& ch) {
+    auto ss = s;
+    ss.erase(ss.find_last_not_of(ch) + 1);
+    return ss;
 }
 
-inline std::string& trim(std::string& str, const std::string& chars = " ") {
-    return ltrim(rtrim(str, chars), chars);
+inline auto trim(const std::string& s, const char& ch = ' ') {
+    return ltrim(rtrim(s, ch), ch);
 }
 
 inline void removeDuplicates(std::string& str, const char& ch) {
@@ -129,6 +133,35 @@ inline auto parseUrl(const std::string& url) {
         std::string(hostname),
         std::string(port),
         std::string(directory));
+}
+
+template<typename T>
+inline auto sim_match(const T& a, const T& b) {
+    std::string aa = a;
+    std::string bb = b;
+    aa.erase(
+        std::remove_if(aa.begin(), aa.end(), [](const auto e){ return e == ' '; }),
+        aa.end());
+    bb.erase(
+        std::remove_if(bb.begin(), bb.end(), [](const auto e){ return e == ' '; }),
+        bb.end());
+    int same = 0;
+    int diff = 0;
+    int skip = 0;
+    auto min = std::min(aa.size(), bb.size());
+    for (auto i = 0; i < min; i++) {
+        auto ca = std::tolower(aa[i]);
+        auto cb = std::tolower(bb[i]);
+        if (ca == cb) {
+            same++;
+        } else {
+            diff++;
+        }
+    }
+    auto max = std::max(aa.size(), bb.size());
+    diff += std::abs((int)aa.size() - (int)bb.size());
+    assert((same + diff) == max);
+    return (int)(((double)same/(diff+same)) * 100);
 }
 
 } // namespace
