@@ -128,16 +128,16 @@ auto CompareManager::finalizeDisplayAttributes(T& A, T& B) {
 }
 
 template <typename T>
-auto CompareManager::getTrimmedHashVectorsFromModels(const T& A, const T& B) {
-    std::vector<size_t> ha;
-    std::vector<size_t> hb;
+auto CompareManager::getSimplifiedHashVectors(const T& A, const T& B, TRuleFunction fn) {
+    std::vector<std::pair<size_t, int>> ha;
+    std::vector<std::pair<size_t, int>> hb;
     ha.reserve(A.size());
     hb.reserve(B.size());
-    for (const auto& e : A) {
-        ha.push_back(e.e_hash_t);
+    for (auto i = 0; i < A.size(); i++) {
+        ha.push_back({std::hash<std::string>{}(fn(A[i].e_text)), i});
     }
-    for (const auto& e : B) {
-        hb.push_back(e.e_hash_t);
+    for (auto i = 0; i < B.size(); i++) {
+        hb.push_back({std::hash<std::string>{}(fn(B[i].e_text)), i});
     }
     return std::make_pair(ha, hb);
 }
@@ -187,58 +187,75 @@ auto CompareManager::getLcsPosVector(const T& lcs, const T& ha, const T& hb) {
 }
 
 template<typename T>
-auto CompareManager::getUniqueCommonPosVector(T& ha, T&hb) {
-    // frequency map
-    std::unordered_map<size_t, int> ua_map;
-    std::unordered_map<size_t, int> ub_map;
+auto CompareManager::getUniqueCommonPosVector(const T& A, const T& B) {
 
-    for (const auto& e : ha) {
-        ua_map[e] += 1;
-    }
-    for (const auto& e : hb) {
-        ub_map[e] += 1;
-    }
+    auto& large = A.size() > B.size() ? A : B;
+    auto& small = A.size() <= B.size() ? A : B;
 
-    for (auto it = ua_map.begin(); it != ua_map.end(); ) {
-        auto [e, n] = *it;
-        if (n > 1) {
-            it = ua_map.erase(it);
-        } else {
-            it++;
+    std::vector<std::unordered_map<size_t, int>> ua_maps(_rules.size());
+    std::vector<std::unordered_map<size_t, int>> ub_maps(_rules.size());
+    std::vector<std::unordered_map<std::string, int>> lp_maps(_rules.size());
+
+    for (auto i = 0; i < _rules.size(); i++) {
+        ua_maps[i].reserve(A.size());
+        ub_maps[i].reserve(B.size());
+        auto [ha, hb] = getSimplifiedHashVectors(A, B, _rules[i]);
+        for (const auto& [e, idx] : ha) {
+            ua_maps[i][e] += 1;
+        }
+        for (const auto& [e, idx] : hb) {
+            ub_maps[i][e] += 1;
+        }
+        for (auto it = ua_maps[i].begin(); it != ua_maps[i].end(); ) {
+            auto [e, n] = *it;
+            if (n > 1) {
+                it = ua_maps[i].erase(it);
+            } else {
+                it++;
+            }
+        }
+        for (auto it = ub_maps[i].begin(); it != ub_maps[i].end(); ) {
+            auto [e, n] = *it;
+            if (n > 1) {
+                it = ub_maps[i].erase(it);
+            } else {
+                it++;
+            }
+        }
+        lp_maps[i].reserve(large.size());
+        for (auto pos = 0; pos < large.size(); pos++) {
+            lp_maps[i].insert({_rules[i](large[pos].e_text), pos});
         }
     }
-    for (auto it = ub_map.begin(); it != ub_map.end(); ) {
-        auto [e, n] = *it;
-        if (n > 1) {
-            it = ub_map.erase(it);
-        } else {
-            it++;
-        }
-    }
-
-    auto& large = ha.size() > hb.size() ? ha : hb;
-    auto& small = ha.size() <= hb.size() ? ha : hb;
 
     std::vector<_sym_pos> uc_pos;
     uc_pos.reserve(small.size());
     for (auto i = 0; i < small.size(); i++) {
         auto& e = small[i];
-        _sym_pos sp = {e};
-        auto it_a = ua_map.find(e);
-        auto it_b = ub_map.find(e);
-        if ((it_a != ua_map.end()) && (it_b != ub_map.end())) {
-            auto index_in_other = std::find(large.begin(), large.end(), e) - large.begin();
-            if (ha.size() <= hb.size()) { // i is from ha
-                sp.pos_in_a.push_back(i);
-                sp.pos_in_b.push_back(index_in_other);
-            } else { // i is from B
-                sp.pos_in_a.push_back(index_in_other);
-                sp.pos_in_b.push_back(i);
+        if (!e.e_text.size()) continue;
+        // for the element e, loop throgh all rule results
+        // to see if there is a match with any of the rules
+        for (auto j = 0; j < _rules.size(); j++) {
+            auto simplified = _rules[j](e.e_text);
+            //LOG << "rule" << j << ": " << simplified;
+            auto rh = std::hash<std::string>{}(simplified);
+            auto found_in_a = (ua_maps[j].find(rh) != ua_maps[j].end());
+            auto found_in_b = (ub_maps[j].find(rh) != ub_maps[j].end());
+            if (found_in_a && found_in_b) {
+                _sym_pos sp = {e.e_hash};
+                const auto index_in_large = (lp_maps[j])[simplified];
+                if (A.size() <= B.size()) { // i is from A
+                    sp.pos_in_a.push_back(i);
+                    sp.pos_in_b.push_back(index_in_large);
+                } else { // i is from B
+                    sp.pos_in_a.push_back(index_in_large);
+                    sp.pos_in_b.push_back(i);
+                }
+                uc_pos.emplace_back(sp);
+                break;
             }
-            uc_pos.push_back(sp);
         }
     }
-
     return uc_pos;
 }
 
@@ -248,7 +265,7 @@ auto CompareManager::processDiffSections(T& A, T& B, const std::vector<int>& sp)
     std::vector<std::pair<T, T>> sections;
     for (auto j = 0; j < sp.size(); j++) {
         auto e = sp[j];
-        LOG << "section at " << i << "," << e;
+        //LOG << "section at " << i << "," << e;
         // range [first, last)
         std::vector<CompareFileModel::Element> sub_a(A.begin() + i, A.begin() + e);
         std::vector<CompareFileModel::Element> sub_b(B.begin() + i, B.begin() + e);
@@ -259,16 +276,16 @@ auto CompareManager::processDiffSections(T& A, T& B, const std::vector<int>& sp)
 
     i = sp.back() + 1;
     auto e = static_cast<int>(std::min(A.size(), B.size())) - 1;
-    LOG << "last section at " << i << "," << e;
+    //LOG << "last section at " << i << "," << e;
     std::vector<CompareFileModel::Element> sub_a(A.begin() + i, A.end());
     std::vector<CompareFileModel::Element> sub_b(B.begin() + i, B.end());
     sections.push_back({sub_a, sub_b});
 
-    LOG << "dumping sections...";
+    //LOG << "dumping sections...";
     for (const auto& [sa, sb] : sections) {
         dumpModels(sa, sb, "section");
     }
-    LOG << "processSection...";
+    //LOG << "processSection...";
     for (auto& [sa, sb] : sections) {
         if (sa.size() > 1){
             processSection(sa, sb);
@@ -277,6 +294,7 @@ auto CompareManager::processDiffSections(T& A, T& B, const std::vector<int>& sp)
 
     A.clear();
     B.clear();
+
     for (auto& [sa, sb] : sections) {
        A.insert(A.end(), sa.begin(), sa.end());
        B.insert(B.end(), sb.begin(), sb.end());
@@ -405,8 +423,7 @@ template<typename T>
 void CompareManager::compareRoot(T& A, T&B) {
 
     dumpModels(A, B, "compare Root");
-    auto [ha_t, hb_t] = getTrimmedHashVectorsFromModels(A, B);
-    auto uc_pos = getUniqueCommonPosVector(ha_t, hb_t);
+    auto uc_pos = getUniqueCommonPosVector(A, B);
 
     if (uc_pos.size()) {
         auto section_points = alignUniqueCommonSymbols(A, B, uc_pos);
@@ -451,11 +468,11 @@ auto CompareManager::compareGranular(T& A, T&B) {
                 std::vector<CompareFileModel::Element> CB;
                 for (auto& c : la) {
                     auto h = std::hash<unsigned char>{}(c);
-                    CA.push_back({h, {c}, {1, 0}, h});
+                    CA.push_back({h, {c}, {1, 0}});
                 }
                 for (auto& c : lb) {
                     auto h = std::hash<unsigned char>{}(c);
-                    CB.push_back({h, {c}, {1, 0}, h});
+                    CB.push_back({h, {c}, {1, 0}});
                 }
                 compareRoot(CA, CB);
                 A[i].e_child = std::move(CA);

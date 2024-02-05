@@ -123,8 +123,7 @@ bool CompareFileModel::load_as_txt(const std::string& file) {
         _model.push_back({
             std::hash<std::string>{}(line),
             line,
-            {1, 0},
-            std::hash<std::string>{}(simplified(line))
+            {1, 0}
         });
     }
     endResetModel();
@@ -152,8 +151,7 @@ bool CompareFileModel::load_as_xml(const std::string& file) {
     _model.push_back({
         std::hash<std::string>{}(t),
         t,
-        {1, 0},
-        std::hash<std::string>{}(osl::trim(t))
+        {1, 0}
     });
     traverse_element(rootElement, 1);
     endResetModel();
