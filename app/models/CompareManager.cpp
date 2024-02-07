@@ -129,15 +129,15 @@ auto CompareManager::finalizeDisplayAttributes(T& A, T& B) {
 
 template <typename T>
 auto CompareManager::getSimplifiedHashVectors(const T& A, const T& B, TRuleFunction fn) {
-    std::vector<std::pair<size_t, int>> ha;
-    std::vector<std::pair<size_t, int>> hb;
+    std::vector<size_t> ha;
+    std::vector<size_t> hb;
     ha.reserve(A.size());
     hb.reserve(B.size());
     for (auto i = 0; i < A.size(); i++) {
-        ha.push_back({std::hash<std::string>{}(fn(A[i].e_text)), i});
+        ha.push_back(std::hash<std::string>{}(fn(A[i].e_text)));
     }
     for (auto i = 0; i < B.size(); i++) {
-        hb.push_back({std::hash<std::string>{}(fn(B[i].e_text)), i});
+        hb.push_back(std::hash<std::string>{}(fn(B[i].e_text)));
     }
     return std::make_pair(ha, hb);
 }
@@ -200,10 +200,10 @@ auto CompareManager::getUniqueCommonPosVector(const T& A, const T& B) {
         ua_maps[i].reserve(A.size());
         ub_maps[i].reserve(B.size());
         auto [ha, hb] = getSimplifiedHashVectors(A, B, _rules[i]);
-        for (const auto& [e, idx] : ha) {
+        for (const auto& e : ha) {
             ua_maps[i][e] += 1;
         }
-        for (const auto& [e, idx] : hb) {
+        for (const auto& e : hb) {
             ub_maps[i][e] += 1;
         }
         for (auto it = ua_maps[i].begin(); it != ua_maps[i].end(); ) {

@@ -24,11 +24,11 @@ Item {
         anchors.margins: 10
         placeholder: "File"
         anchors.topMargin: 12
-        height: textFieldHeight - 2
         isFolderSelector: false
         anchors.top: parent.top
         image: "qrc:/folder.png"
         anchors.left: parent.left
+        height: textFieldHeight - 2
         anchors.right: parent.right
         onFileSelected: (file) => {
             onCompareFileUpdated(file)
@@ -38,18 +38,18 @@ Item {
     ListView {
         id: textListView
         clip: true
+        currentIndex: -1
         anchors.margins: 10
+        anchors.leftMargin: 4
         ScrollBar.vertical: vbar
         model: CompareFileModel{}
         anchors.left: parent.left
+        highlightMoveDuration: 100
+        highlightMoveVelocity: 800
         anchors.right: parent.right
         anchors.bottom: parent.bottom
         anchors.top: fileSelector.bottom
-        anchors.leftMargin: 4
         height: parent.height - fileSelector.height
-        currentIndex: -1
-        highlightMoveDuration: 100
-        highlightMoveVelocity: 800
         highlight: Rectangle { color: "lightsteelblue"; }
         delegate: CompareLineDelegate{
             height: 22

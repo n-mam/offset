@@ -27,7 +27,7 @@ ApplicationWindow {
 
   ApplicationMenu {
     id: appMenu
-    width: 48
+    width: 40
     startIndex: 3
     anchors.left: parent.left
     anchors.margins: appSpacing

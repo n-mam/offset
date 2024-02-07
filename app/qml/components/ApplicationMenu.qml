@@ -1,14 +1,11 @@
 import QtQuick
 
 Rectangle {
-
-    property var startIndex: 0
-
     //radius: 3
     //border.width: 1
     //border.color: borderColor
     color: "transparent"
-
+    property var startIndex: 0
     signal menuSelectionSignal(var index)
 
     ListView {

@@ -106,15 +106,6 @@ void CompareFileModel::setDocument(QString document) {
     }
 }
 
-auto CompareFileModel::simplified(const std::string& a) {
-    auto s = osl::trim(a);
-    s.erase(std::remove_if(s.begin(), s.end(),
-        [](const auto& e){ return e == ' '; }), s.end());
-    std::for_each(s.begin(), s.end(),
-        [](auto& c) { c = std::tolower(c); });
-    return s;
-}
-
 bool CompareFileModel::load_as_txt(const std::string& file) {
     std::string line;
     std::ifstream f(file.c_str());
