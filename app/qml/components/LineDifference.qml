@@ -30,6 +30,7 @@ Rectangle {
         }
     }
     Shape {
+        id: divider
         height: 1
         width: parent.width
         anchors.centerIn: parent
@@ -38,7 +39,7 @@ Rectangle {
             strokeColor: borderColor
             joinStyle: ShapePath.RoundJoin
             strokeStyle: ShapePath.SolidLine
-            PathLine {x: parent.width; y: 1}
+            PathLine {x: divider.width; y: 1}
         }
     }
     ListView {

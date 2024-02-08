@@ -3,7 +3,7 @@ import QtQml.Models
 import QtQuick.Controls
 
 Item {
-    signal iterateChange(var down)
+    signal comparisonDone
     Row {
         id: leftRow
         spacing: 4
@@ -44,6 +44,7 @@ Item {
             onButtonXClicked: () => {
                 var startTime = new Date();
                 compareManager.compare()
+                comparisonDone()
                 var endTime = new Date();
                 var tt = Math.round(endTime - startTime);
                 timeTaken.text = "time: " + ((tt > 1000) ? ((tt / 1000) + "s") : (tt + "ms"))
@@ -56,22 +57,6 @@ Item {
         anchors.margins: appSpacing
         anchors.right: parent.right
         anchors.verticalCenter: parent.verticalCenter
-        ButtonX {
-            id: prevChange
-            width: 20
-            height: 20
-            image: "qrc:/up-diff.png"
-            anchors.verticalCenter: parent.verticalCenter
-            onButtonXClicked: iterateChange(false)
-        }
-        ButtonX {
-            id: nextChange
-            width: 20
-            height: 20
-            image: "qrc:/down-diff.png"
-            anchors.verticalCenter: parent.verticalCenter
-            onButtonXClicked: iterateChange(true)
-        }
         Text {
             text: " "
         }
