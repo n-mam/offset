@@ -17,56 +17,56 @@ Popup {
       radius: 3
       border.width: 1
       border.color: borderColor
-      color: Qt.darker(Material.background)
       width: 284
       height: 164
+      color: Qt.darker(Material.background)
 
       Text {
         id: title
-        width: parent.width * 0.80
-        elide: Text.ElideMiddle
-        color: textColor
         text: context
-        anchors.top: parent.top
+        color: textColor
         anchors.margins: 10
+        elide: Text.ElideMiddle
+        anchors.top: parent.top
+        width: parent.width * 0.80
         anchors.horizontalCenter: parent.horizontalCenter
       }
       TextField {
         id: userInput
+        text: inputValue
+        anchors.margins: 20
         width: parent.width - 20
         anchors.top: title.bottom
-        anchors.margins: 20
-        text: inputValue
         placeholderText: inputHint
-        anchors.horizontalCenter: parent.horizontalCenter
         horizontalAlignment: Text.AlignHCenter
         verticalAlignment: TextInput.AlignVCenter
+        anchors.horizontalCenter: parent.horizontalCenter
         onAccepted: {
 
         }
       }
       Rectangle {
-        width: parent.width * 0.75
         height: 40
-        anchors.top: userInput.bottom
         anchors.margins: 10
-        anchors.horizontalCenter: parent.horizontalCenter
+        width: parent.width * 0.75
+        anchors.top: userInput.bottom
         color: Qt.darker(Material.background)
+        anchors.horizontalCenter: parent.horizontalCenter
         Button {
-          width: parent.width * 0.4
-          height: parent.height
           text: "OK"
+          height: parent.height
+          width: parent.width * 0.4
           anchors.left: parent.left
-          anchors.verticalCenter: parent.verticalCenter
           onClicked: dismissed(userInput.text)
+          anchors.verticalCenter: parent.verticalCenter
         }
         Button {
           text: "Cancel"
-          width: parent.width * 0.4
           height: parent.height
+          onClicked: dismissed("")
+          width: parent.width * 0.4
           anchors.right: parent.right
           anchors.verticalCenter: parent.verticalCenter
-          onClicked: dismissed("")
         }
       }
     }

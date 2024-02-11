@@ -12,15 +12,15 @@ Popup {
     anchors.fill: parent
     Rectangle {
       radius: 3
+      width: 100
+      height: 130
       border.width: 1
       border.color: borderColor
       color: Qt.darker(Material.background)
-      width: 100
-      height: 130
       ListView {
         id: menuListview
-        spacing: 10
         clip: true
+        spacing: 10
         anchors.margins: 5
         anchors.fill: parent
         model: ListModel { id: menuModel }

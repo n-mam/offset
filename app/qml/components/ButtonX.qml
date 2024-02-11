@@ -36,7 +36,7 @@ Item {
             text: qsTr(buttonRoot.text)
             visible: buttonRoot.text.length
             horizontalAlignment: Text.AlignHCenter
-            verticalAlignment: Text.AlignVCenter            
+            verticalAlignment: Text.AlignVCenter
         }
 
         MouseArea {
@@ -45,9 +45,7 @@ Item {
             cursorShape: Qt.PointingHandCursor
             onEntered: button.color = "steelblue"
             onExited: button.color = Material.background
-            onClicked: {
-                buttonXClicked()
-            }
+            onClicked: buttonXClicked()
         }
     }
 }

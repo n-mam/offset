@@ -13,8 +13,8 @@ Popup {
       width: parent.width
       height: parent.height * 0.05
       Text {
-        text: "Exclude list"
         color: textColor
+        text: "Exclude list"
         anchors.verticalCenter: parent.verticalCenter
         anchors.horizontalCenter: parent.horizontalCenter
       }
@@ -23,12 +23,12 @@ Popup {
       id: popupText
       radius: 3
       border.width: 1
-      border.color: borderColor
-      color: "transparent"
+      anchors.margins: 2
       width: parent.width
+      color: "transparent"
+      border.color: borderColor
       height: parent.height * 0.80
       anchors.top: popupLabel.bottom
-      anchors.margins: 2
       ScrollView {
         anchors.fill: parent
         TextArea {
@@ -43,15 +43,15 @@ Popup {
       // border.width: 1
       // border.color: borderColor
       color: "transparent"
-      width: 75 + 75 + (3 * appSpacing)
       height: parent.height * 0.15
-      anchors.horizontalCenter: parent.horizontalCenter
       anchors.top: popupText.bottom
+      width: 75 + 75 + (3 * appSpacing)
+      anchors.horizontalCenter: parent.horizontalCenter
       Button {
-        text: "OK"
         width: 90
-        height: parent.height * 0.90
+        text: "OK"
         anchors.left: parent.left
+        height: parent.height * 0.90
         anchors.verticalCenter: parent.verticalCenter
         onClicked: function() {
           model.excludeList = []
@@ -61,13 +61,13 @@ Popup {
         }
       }
       Button {
-        text: "Cancel"
         width: 90
-        height: parent.height * 0.90
+        text: "Cancel"
+        onClicked: popup.close()
         anchors.right: parent.right
         anchors.margins: appSpacing
+        height: parent.height * 0.90
         anchors.verticalCenter: parent.verticalCenter
-        onClicked: popup.close()
       }
     }
   }

@@ -11,12 +11,13 @@ StackScreen {
         Flickable {
             id: flickableGrid
             clip: true
+            anchors.margins: 4
             anchors.left: baseId.left
             anchors.right: baseId.right
-            anchors.margins: 4
             contentWidth: camGrid.width
             contentHeight: camGrid.height
             height: camScreenRoot.height * 0.90
+            flickableDirection: Flickable.VerticalFlick
             Grid {
                 id: camGrid
                 columns: 2
@@ -29,20 +30,19 @@ StackScreen {
             spacing: 10
             anchors.bottom: baseId.bottom
             width: cameraUrl.width + 75 + 100
-            height: camScreenRoot.height * 0.08
             anchors.horizontalCenter: parent.horizontalCenter
             TextField {
                 id: cameraUrl
                 width: 275
-                height: 28
+                height: textFieldHeight
                 font.pointSize: pointSize
-                placeholderText: qsTr("Camera")
+                placeholderText: qsTr("Camera source")
                 verticalAlignment: TextInput.AlignVCenter
                 anchors.verticalCenter: parent.verticalCenter
             }
             ButtonX {
                 width: 75
-                height: 28
+                height: textFieldHeight
                 text: "Add"
                 anchors.verticalCenter: parent.verticalCenter
                 onButtonXClicked: {
@@ -55,25 +55,13 @@ StackScreen {
                         cameraUrl.text = ""
                     }
                 }
-                MouseArea {
-                    hoverEnabled: true
-                    anchors.fill: parent
-                    onPressed:  (mouse) => { mouse.accepted = false }
-                    cursorShape: Qt.PointingHandCursor
-                }
             }
             ButtonX {
                 width: 100
-                height: 28
+                height: textFieldHeight
                 text: "Import"
                 onButtonXClicked: importCameraCfgDialog.open()
                 anchors.verticalCenter: parent.verticalCenter
-                MouseArea {
-                    hoverEnabled: true
-                    anchors.fill: parent
-                    onPressed:  (mouse) => { mouse.accepted = false }
-                    cursorShape: Qt.PointingHandCursor
-                }
             }
         }
 

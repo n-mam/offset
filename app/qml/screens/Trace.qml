@@ -8,7 +8,7 @@ Item {
     height: parent.height
 
     Column {
-        
+
         anchors.fill: parent
 
         ListModel {
@@ -21,13 +21,11 @@ Item {
         ListView {
             id: traceList
             clip: true
+            model: traceModel
             width: parent.width
             height: parent.height * 0.90
-            ScrollBar.vertical: ScrollBar {
-            //width: 8
-            }
+            ScrollBar.vertical: ScrollBar {}
             flickableDirection: Flickable.VerticalFlick
-            model: traceModel
             delegate: Rectangle {
                 color: Material.background
                 width: ListView.view.width
@@ -67,28 +65,29 @@ Item {
             }
             ButtonX {
                 id: clearButton
-                text: "Clear"
-                enabled: (diskListModel.transfer === 0)
                 width: 54
+                text: "Clear"
                 height: parent.height * 0.40
-                anchors.verticalCenter: parent.verticalCenter
                 onButtonXClicked: traceModel.clear()
+                enabled: (diskListModel.transfer === 0)
+                anchors.verticalCenter: parent.verticalCenter
             }
             ButtonX {
                 id: savebutton
-                text: "Save"
-                enabled: (diskListModel.transfer !== 0)
                 width: 54
-                height: parent.height * 0.40
-                anchors.verticalCenter: parent.verticalCenter
+                text: "Save"
                 onButtonXClicked: {}
+                height: parent.height * 0.40
+                enabled: (diskListModel.transfer !== 0)
+                anchors.verticalCenter: parent.verticalCenter
             }
         }
 
     }
 
     onVisibleChanged: {
-        if (visible)
+        if (visible) {
           traceList.positionViewAtEnd()
+        }
     }
 }

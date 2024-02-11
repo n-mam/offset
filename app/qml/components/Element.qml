@@ -6,9 +6,6 @@ import QtQuick.Controls.Material 2.12
 Loader {
   id: loader
 
-  required property string type
-  required property bool create
-
   property string text
   property string color
 
@@ -16,6 +13,9 @@ Loader {
   property var free
   property var value
   property var checked
+
+  required property string type
+  required property bool create
 
   function percent(one, two) {
     return (one/(one + two)) * 100
@@ -47,12 +47,12 @@ Loader {
       color: Material.background
       Rectangle {
         id: used
-        x: parent.x
         radius: 3
-        width: loader.width * (loader.used / (loader.used + loader.free))
+        x: parent.x
         height: parent.height
-        color: "#ADDEFC" //lightskyblue"
         anchors.left: parent.left
+        color: "#ADDEFC" //lightskyblue"
+        width: loader.width * (loader.used / (loader.used + loader.free))
         Text {
           text: loader.used > 1 ?
                   loader.used.toFixed(1) + "g" :
@@ -65,11 +65,11 @@ Loader {
       Rectangle {
         id: remaining
         radius: 3
-        x: used.x + used.width
-        width: loader.width - used.width
-        height: parent.height
         color: "mintcream"
+        height: parent.height
+        x: used.x + used.width
         anchors.right: parent.right
+        width: loader.width - used.width
         Text {
           text: loader.free > 1 ?
                   loader.free.toFixed(1) + "g":
@@ -89,18 +89,18 @@ Loader {
       checked: loader.checked
       implicitWidth: indicator.width
       indicator: Rectangle {
-        readonly property int size: 12
+        radius: 4
         implicitWidth: size
         implicitHeight: size
-        radius: 4
+        readonly property int size: 12
         border.color: cb.down ? "black" : "darkgrey"
         Rectangle {
-          anchors.centerIn: parent
-          width: parent.size/2
-          height: width
           radius: 3
-          color: cb.down ? "darkgrey" : "black"
+          height: width
           visible: cb.checked
+          width: parent.size/2
+          anchors.centerIn: parent
+          color: cb.down ? "darkgrey" : "black"
         }
       }
       onClicked: {

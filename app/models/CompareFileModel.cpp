@@ -110,6 +110,22 @@ bool CompareFileModel::load_as_txt(const std::string& file) {
     std::string line;
     std::ifstream f(file.c_str());
     beginResetModel();
+    // char ch;
+    // do {
+    //     ch = f.get();
+    //     line += ch;
+    //     if (ch == '\r' || ch == '\n') {
+    //         auto peek = f.peek();
+    //         if (peek != '\r' && peek != '\n') {
+    //             _model.push_back({
+    //                 std::hash<std::string>{}(line),
+    //                 line,
+    //                 {1, 0}
+    //             });
+    //             line.clear();
+    //         }
+    //     }
+    // } while(std::char_traits<char>::not_eof(ch));
     while (std::getline(f, line)) {
         _model.push_back({
             std::hash<std::string>{}(line),

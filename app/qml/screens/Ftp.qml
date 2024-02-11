@@ -51,13 +51,13 @@ Rectangle {
 
     Rectangle {
       id: transferQueue
-      anchors.left: parent.left
-      anchors.right: parent.right
+      color: "transparent"
       anchors.leftMargin: 2
       anchors.rightMargin: 2
+      anchors.left: parent.left
+      anchors.right: parent.right
       SplitView.minimumHeight: 90
       SplitView.preferredHeight: parent.height * 0.25
-      color: "transparent"
       // radius: 3
       // border.width: 1
       // border.color: borderColor

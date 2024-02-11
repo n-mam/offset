@@ -16,7 +16,7 @@ ApplicationWindow {
   property var showlog: false
   property var textColor: "white"
   property var textFieldHeight: 34
-  property var borderColor: "#727B6C"
+  property var borderColor: "#404040"
 
   property var charDiffColor: "#be6060" // pink - done
   property var charAddedColor: "#78845C" //light green

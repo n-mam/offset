@@ -13,10 +13,10 @@ ListView {
     // border.width: 1
     // border.color: "grey"
     width: listView.width
-    implicitHeight: rd.height
-    color: Material.background
     visible: model.visible
     enabled: model.visible
+    implicitHeight: rd.height
+    color: Material.background
 
     property var originalHeight;
 

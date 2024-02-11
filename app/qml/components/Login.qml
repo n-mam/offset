@@ -12,7 +12,7 @@ Rectangle {
   signal login(var host, var port, var user, var password, var protocol)
 
   Column {
-    spacing: 4
+    spacing: 6
     width: parent.width
     Row {
       spacing: 5
@@ -21,24 +21,24 @@ Rectangle {
       anchors.right: parent.right
       TextField {
         id: hostname
-        width: parent.width * 0.75
-        height: parent.height * 0.90
-        placeholderText: qsTr("Host")
         text: "ftp.gnu.org"
+        height: textFieldHeight
+        width: parent.width * 0.75
+        placeholderText: qsTr("Host")
         anchors.bottom: parent.bottom
-        horizontalAlignment: TextInput.AlignHCenter
         verticalAlignment: TextInput.AlignVCenter
+        horizontalAlignment: TextInput.AlignHCenter
       }
       TextField {
         id: port
-        width: parent.width * 0.23
-        height: parent.height * 0.90
-        placeholderText: qsTr("Port")
-        validator: IntValidator {bottom: 1; top: 1000}
         text: "21"
+        height: textFieldHeight
+        width: parent.width * 0.23
+        placeholderText: qsTr("Port")
         anchors.bottom: parent.bottom
-        horizontalAlignment: TextInput.AlignHCenter
         verticalAlignment: TextInput.AlignVCenter
+        horizontalAlignment: TextInput.AlignHCenter
+        validator: IntValidator {bottom: 1; top: 1000}
       }
     }
 
@@ -49,31 +49,31 @@ Rectangle {
       anchors.right: parent.right
       TextField {
         id: username
-        width: parent.width
-        height: parent.height * 0.90
-        placeholderText: qsTr("User")
         text: "anonymous"
+        width: parent.width
+        height: textFieldHeight
+        placeholderText: qsTr("User")
         anchors.bottom: parent.bottom
-        horizontalAlignment: TextInput.AlignHCenter
         verticalAlignment: TextInput.AlignVCenter
+        horizontalAlignment: TextInput.AlignHCenter
       }
     }
 
     Row {
       spacing: 5
+      height: rowHeight
       anchors.left: parent.left
       anchors.right: parent.right
-      height: rowHeight
       TextField {
         id: password
+        text: "welcome123"
         width: parent.width
         height: parent.height * 0.90
         echoMode: TextInput.Password
-        placeholderText: qsTr("Password")
-        text: "welcome123"
         anchors.bottom: parent.bottom
-        horizontalAlignment: TextInput.AlignHCenter
+        placeholderText: qsTr("Password")
         verticalAlignment: TextInput.AlignVCenter
+        horizontalAlignment: TextInput.AlignHCenter
       }
     }
 
@@ -103,9 +103,9 @@ Rectangle {
       anchors.right: parent.right
       color: Material.background
       Button {
+        text: "Connect"
         width: parent.width * 0.43
         height: parent.height * 0.90
-        text: "Connect"
         anchors.verticalCenter: parent.verticalCenter
         anchors.horizontalCenter: parent.horizontalCenter
         onClicked: {

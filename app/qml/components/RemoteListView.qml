@@ -25,22 +25,22 @@ Item {
 
   ListView {
     id: remoteListView
-    anchors.left: parent.left
-    anchors.right: parent.right
-    anchors.top: currentDirectory.bottom
-    anchors.leftMargin: 5
-    anchors.rightMargin: 5
-    boundsBehavior: Flickable.StopAtBounds
-    height: parent.height - currentDirectory.height - spacer.height - statusRect.height - 2
     clip: true
-    model: remoteFsModel
-    delegate: listItemDelegate
+    focus: true
     currentIndex: -1
     cacheBuffer: 1024
-    focus: true
+    model: remoteFsModel
+    anchors.leftMargin: 5
+    anchors.rightMargin: 5
+    anchors.left: parent.left
+    delegate: listItemDelegate
     highlightMoveDuration: 100
     highlightMoveVelocity: 800
+    anchors.right: parent.right
+    anchors.top: currentDirectory.bottom
+    boundsBehavior: Flickable.StopAtBounds
     highlight: Rectangle { color: "lightsteelblue"; radius: 3 }
+    height: parent.height - currentDirectory.height - spacer.height - statusRect.height - 2
     Connections {
       target: remoteFsModel
       function onConnected(isConnected) {

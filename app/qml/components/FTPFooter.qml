@@ -10,18 +10,18 @@ Item {
 
   Rectangle {
     id: spacer
-    color: "transparent"
-    width: parent.width
     height: 1
+    width: parent.width
+    color: "transparent"
     anchors.bottom: parent.top
     Shape {
       anchors.fill: parent
       anchors.centerIn: parent
       ShapePath {
         strokeWidth: 1
+        startX: 1; startY: 0
         strokeColor: borderColor
         strokeStyle: ShapePath.SolidLine
-        startX: 1; startY: 0
         PathLine {x: parent.width; y: 0}
       }
     }
@@ -42,16 +42,16 @@ Item {
 
   Rectangle {
     id: queueStats
-    width: parent.width * 0.45
-    height: parent.height
-    anchors.right: parent.right
     color: "transparent"
+    height: parent.height
+    width: parent.width * 0.45
+    anchors.right: parent.right
 
     Text {
       id: queueCount
       color: "#8CDCFE"
-      anchors.left: parent.left
       anchors.leftMargin: 5
+      anchors.left: parent.left
       verticalAlignment: Text.AlignVCenter
       anchors.verticalCenter: parent.verticalCenter
       Connections {
@@ -65,8 +65,8 @@ Item {
     Text {
       id: activeCount
       color: "#2EDE79"
-      anchors.left: queueCount.right
       anchors.leftMargin: 10
+      anchors.left: queueCount.right
       verticalAlignment: Text.AlignVCenter
       anchors.verticalCenter: parent.verticalCenter
       Connections {
@@ -80,8 +80,8 @@ Item {
     Text {
       id: successCount
       color: "#2EDE79"
-      anchors.left: activeCount.right
       anchors.leftMargin: 10
+      anchors.left: activeCount.right
       verticalAlignment: Text.AlignVCenter
       anchors.verticalCenter: parent.verticalCenter
       Connections {
@@ -95,8 +95,8 @@ Item {
     Text {
       id: failedCount
       color: "#EF5129"
-      anchors.left: successCount.right
       anchors.leftMargin: 10
+      anchors.left: successCount.right
       verticalAlignment: Text.AlignVCenter
       anchors.verticalCenter: parent.verticalCenter
       Connections {
@@ -110,61 +110,61 @@ Item {
     Image {
       id: queue
       width: 24; height: 24
+      anchors.rightMargin: 3
       source: "qrc:/queue.png"
       anchors.right: stop.left
-      anchors.rightMargin: 3
       anchors.verticalCenter: parent.verticalCenter
       MouseArea {
         hoverEnabled: true
         anchors.fill: parent
-        onClicked: transferManager.ProcessAllTransfers()
         cursorShape: Qt.PointingHandCursor
+        onClicked: transferManager.ProcessAllTransfers()
         onContainsMouseChanged: queue.scale = 1 + (containsMouse ? 0.4 : 0)
       }
     }
     ColorOverlay {
-      anchors.fill: queue
       source: queue
       color: "#69BAE8"
+      anchors.fill: queue
     }
 
     Image {
       id: stop
       width: 24; height: 24
+      anchors.rightMargin: 3
       source: "qrc:/stop.png"
       anchors.right: clear.left
-      anchors.rightMargin: 3
       anchors.verticalCenter: parent.verticalCenter
       MouseArea {
         hoverEnabled: true
         anchors.fill: parent
-        onClicked: transferManager.StopAllTransfers()
         cursorShape: Qt.PointingHandCursor
+        onClicked: transferManager.StopAllTransfers()
         onContainsMouseChanged: stop.scale = 1 + (containsMouse ? 0.4 : 0)
       }
     }
     ColorOverlay {
-      anchors.fill: stop
       source: stop
       color: "#FF7471"
+      anchors.fill: stop
     }
 
     Image {
       id: clear
       width: 24; height: 24
+      anchors.rightMargin: 5
       source: "qrc:/delete.png"
       anchors.right: parent.right
-      anchors.rightMargin: 5
       anchors.verticalCenter: parent.verticalCenter
       MouseArea {
         hoverEnabled: true
         anchors.fill: parent
+        cursorShape: Qt.PointingHandCursor
+        onContainsMouseChanged: clear.scale = 1 + (containsMouse ? 0.4 : 0)
         onClicked: () => {
           transferManager.RemoveAllTransfers()
           successCount.text = failedCount.text = ""
         }
-        cursorShape: Qt.PointingHandCursor
-        onContainsMouseChanged: clear.scale = 1 + (containsMouse ? 0.4 : 0)
       }
     }
   }

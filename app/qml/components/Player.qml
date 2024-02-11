@@ -27,7 +27,7 @@ Item {
             id: playerRect
             border.width: 1
             color: "transparent"
-            border.color: controlsVisible ? "steelblue" : borderColor
+            border.color: borderColor
             width: mainWindow.width - (mainWindow.width * 0.60) + playerRoot.increment
             height: mainWindow.height - (mainWindow.height * 0.60) + (playerRoot.increment * (mainWindow.height/mainWindow.width))
 
@@ -39,13 +39,13 @@ Item {
                 visible: controlsVisible
                 anchors.left: parent.left
                 Slider {
-                    id: playerZoomSlider
+                    id: zoomSlider
                     to: 450
                     value: 0
                     width: 220
                     height: 20
                     from: -450
-                    onMoved: playerRoot.increment = playerZoomSlider.value
+                    onMoved: playerRoot.increment = zoomSlider.value
                 }
             }
             VideoRenderer {
@@ -60,7 +60,7 @@ Item {
                 opacity: 0.5
                 width: parent.width - 2
                 visible: controlsVisible
-                color: themeColor
+                color: Material.background
                 anchors.bottom: parent.bottom
                 anchors.horizontalCenter: parent.horizontalCenter
                 Row {

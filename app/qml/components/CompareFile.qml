@@ -28,7 +28,7 @@ Item {
         anchors.top: parent.top
         image: "qrc:/folder.png"
         anchors.left: parent.left
-        height: textFieldHeight - 2
+        height: textFieldHeight
         anchors.right: parent.right
         onFileSelected: (file) => {
             onCompareFileUpdated(file)

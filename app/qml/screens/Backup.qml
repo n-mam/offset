@@ -38,8 +38,8 @@ Rectangle {
 
     Row {
       id: actionsRect
-      spacing: appSpacing
       height: 28
+      spacing: appSpacing
       anchors.horizontalCenter: parent.horizontalCenter
       ButtonX {
         id: startButton

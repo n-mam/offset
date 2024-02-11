@@ -8,18 +8,16 @@ Item {
 
     Image {
         z: 100
+        anchors.margins: 10
         anchors.top: parent.top
         anchors.right: parent.right
-        anchors.margins: 10
-        source: stackview.depth > 1 ? "qrc:/back.png" : ""
         enabled: stackview.depth > 1
+        source: stackview.depth > 1 ? "qrc:/back.png" : ""
         MouseArea {
-            anchors.fill: parent
             hoverEnabled: true
+            anchors.fill: parent
+            onClicked: stackview.pop()
             cursorShape: Qt.PointingHandCursor
-            onClicked: {
-                stackview.pop()
-            }
             onContainsMouseChanged: parent.scale = 1 + (containsMouse ? 0.2 : 0)
         }
     }
@@ -34,7 +32,5 @@ Item {
         stackview.push(qml, options)
     }
 
-    Component.onCompleted: {
-
-    }
+    Component.onCompleted: {}
 }
