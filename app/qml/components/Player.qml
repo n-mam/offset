@@ -4,33 +4,28 @@ import CustomElements 1.0
 import "qrc:/screens"
 
 Item {
-
     id: playerRoot
-
     property var cfg
     property var increment: 0
     property var controlsVisible: false
 
-    width: playerRect.width
-    height: playerRect.height
+    implicitWidth: playerRect.width
+    implicitHeight: playerRect.height
 
-    signal cameraSettingsClickedSignal(var r)
     signal cameraDeleteClickedSignal(var r)
+    signal cameraSettingsClickedSignal(var r)
 
-    function hasVideoRenderer(r) {
-        return r === vr
-    }
+    Rectangle {
+        id: playerRect
+        border.width: 1
+        color: "transparent"
+        border.color: borderColor
+        width: mainWindow.width - (mainWindow.width * 0.60) + playerRoot.increment - 40 - ( 2 * appSpacing) -10
+        height: mainWindow.height - (mainWindow.height * 0.60) + (playerRoot.increment * (mainWindow.height/mainWindow.width))
 
-    Column {
-        spacing: appSpacing
-        Rectangle {
-            id: playerRect
-            border.width: 1
-            color: "transparent"
-            border.color: borderColor
-            width: mainWindow.width - (mainWindow.width * 0.60) + playerRoot.increment
-            height: mainWindow.height - (mainWindow.height * 0.60) + (playerRoot.increment * (mainWindow.height/mainWindow.width))
-
+        Column {
+            spacing: appSpacing
+            anchors.fill: parent
             Row {
                 z: 10
                 spacing: 0
@@ -50,9 +45,13 @@ Item {
             }
             VideoRenderer {
                 id: vr
-                width: parent.width
                 cfg: playerRoot.cfg
+                width: parent.width
                 height: parent.height
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: controlsVisible = !controlsVisible;
+                }
             }
             Rectangle {
                 z: 10
@@ -125,11 +124,10 @@ Item {
                     anchors.margins: 4
                 }
             }
-            MouseArea {
-                anchors.fill: parent
-                onClicked: controlsVisible = !controlsVisible;
-            }
         }
     }
+
+    function hasVideoRenderer(r) { return r === vr }
+
     Component.onCompleted: {}
 }

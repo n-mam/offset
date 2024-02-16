@@ -1,10 +1,14 @@
 import QtQuick
+import QtQuick.Controls
 
 Rectangle {
-    //radius: 3
-    //border.width: 1
-    //border.color: borderColor
-    color: "transparent"
+    // radius: 3
+    // border.width: 1
+    // border.color: borderColor
+    height: menuList.height
+    color: Material.background
+    y: (parent.height - height) / 2
+
     property var startIndex: 0
     signal menuSelectionSignal(var index)
 
@@ -12,9 +16,9 @@ Rectangle {
         id: menuList
         clip: true
         spacing: 25
+        height: 378
         width: parent.width
         currentIndex: startIndex
-        height: parent.height - (parent.height * 0.30)
         anchors.verticalCenter: parent.verticalCenter
         anchors.horizontalCenter: parent.horizontalCenter
         model: ListModel {
@@ -38,8 +42,8 @@ Rectangle {
             }
         }
         delegate: Item {
-            width: menuList.width
             height: 42
+            width: menuList.width
             Image {
                 width: 28
                 height: 28
@@ -48,8 +52,8 @@ Rectangle {
                 anchors.horizontalCenter: parent.horizontalCenter
             }
             MouseArea {
-                anchors.fill: parent
                 hoverEnabled: true
+                anchors.fill: parent
                 cursorShape: Qt.PointingHandCursor
                 onClicked: menuList.currentIndex = index
             }

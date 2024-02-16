@@ -1,29 +1,22 @@
 import QtQuick
 import QtQuick.Controls
 
-Rectangle {
-  // radius: 3
-  // border.width: 1
-  // border.color: "#5FFAFF"
-  color: "transparent"
+Item {
 
-  property var rowHeight: 43
-  height: (rowHeight * 5) + 3
   signal login(var host, var port, var user, var password, var protocol)
 
   Column {
-    spacing: 6
-    width: parent.width
+    spacing: 20
+    width: parent.width - 25
     Row {
       spacing: 5
-      height: rowHeight
       anchors.left: parent.left
       anchors.right: parent.right
       TextField {
         id: hostname
         text: "ftp.gnu.org"
         height: textFieldHeight
-        width: parent.width * 0.75
+        width: parent.width * 0.78
         placeholderText: qsTr("Host")
         anchors.bottom: parent.bottom
         verticalAlignment: TextInput.AlignVCenter
@@ -33,7 +26,7 @@ Rectangle {
         id: port
         text: "21"
         height: textFieldHeight
-        width: parent.width * 0.23
+        width: parent.width * 0.21
         placeholderText: qsTr("Port")
         anchors.bottom: parent.bottom
         verticalAlignment: TextInput.AlignVCenter
@@ -44,7 +37,6 @@ Rectangle {
 
     Row {
       spacing: 5
-      height: rowHeight
       anchors.left: parent.left
       anchors.right: parent.right
       TextField {
@@ -61,14 +53,13 @@ Rectangle {
 
     Row {
       spacing: 5
-      height: rowHeight
       anchors.left: parent.left
       anchors.right: parent.right
       TextField {
         id: password
         text: "welcome123"
         width: parent.width
-        height: parent.height * 0.90
+        height: textFieldHeight
         echoMode: TextInput.Password
         anchors.bottom: parent.bottom
         placeholderText: qsTr("Password")
@@ -77,15 +68,10 @@ Rectangle {
       }
     }
 
-    ButtonGroup {
-      id: optionsGroup
-      buttons: choices.children
-    }
-
     Row {
         id: choices
-        spacing: 10
-        height: rowHeight
+        spacing: 8
+        height: textFieldHeight
         anchors.horizontalCenter: parent.horizontalCenter
         RadioButton {
           text: qsTr("FTP")
@@ -96,21 +82,18 @@ Rectangle {
         }
     }
 
-    Rectangle {
-      height: rowHeight
-      anchors.margins: 7
-      anchors.left: parent.left
-      anchors.right: parent.right
-      color: Material.background
-      Button {
-        text: "Connect"
-        width: parent.width * 0.43
-        height: parent.height * 0.90
-        anchors.verticalCenter: parent.verticalCenter
-        anchors.horizontalCenter: parent.horizontalCenter
-        onClicked: {
-          login(hostname.text, port.text, username.text, password.text, optionsGroup.checkedButton.text)
-        }
+    ButtonGroup {
+      id: optionsGroup
+      buttons: choices.children
+    }
+
+    ButtonX {
+      text: "Connect"
+      height: textFieldHeight
+      width: parent.width * 0.40
+      anchors.horizontalCenter: parent.horizontalCenter
+      onButtonXClicked: {
+        login(hostname.text, port.text, username.text, password.text, optionsGroup.checkedButton.text)
       }
     }
   }

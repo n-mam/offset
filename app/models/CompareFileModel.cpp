@@ -107,32 +107,32 @@ void CompareFileModel::setDocument(QString document) {
 }
 
 bool CompareFileModel::load_as_txt(const std::string& file) {
+    char ch;
     std::string line;
-    std::ifstream f(file.c_str());
     beginResetModel();
-    // char ch;
-    // do {
-    //     ch = f.get();
-    //     line += ch;
-    //     if (ch == '\r' || ch == '\n') {
-    //         auto peek = f.peek();
-    //         if (peek != '\r' && peek != '\n') {
-    //             _model.push_back({
-    //                 std::hash<std::string>{}(line),
-    //                 line,
-    //                 {1, 0}
-    //             });
-    //             line.clear();
-    //         }
-    //     }
-    // } while(std::char_traits<char>::not_eof(ch));
-    while (std::getline(f, line)) {
-        _model.push_back({
-            std::hash<std::string>{}(line),
-            line,
-            {1, 0}
-        });
+    std::ifstream fs(file.c_str());
+    do {
+        ch = fs.get();
+        line += ch;
+        if (ch == '\r' || ch == '\n') {
+            auto peek = fs.peek();
+            if (peek != '\r' && peek != '\n') {
+                _model.push_back({osl::hash(line), line, {1, 0}});
+                line.clear();
+            }
+        }
+    } while(std::char_traits<char>::not_eof(ch));
+    fs.close();
+    if (line.size()) {
+        _model.push_back({osl::hash(line), line, {1, 0}});
     }
+    // while (std::getline(f, line)) {
+    //     _model.push_back({
+    //         std::hash<std::string>{}(line),
+    //         line,
+    //         {1, 0}
+    //     });
+    // }
     endResetModel();
     return true;
 }
@@ -155,11 +155,7 @@ bool CompareFileModel::load_as_xml(const std::string& file) {
     auto rootElement = root->FirstChildElement();
     std::string t(rootElement->Name());
     beginResetModel();
-    _model.push_back({
-        std::hash<std::string>{}(t),
-        t,
-        {1, 0}
-    });
+    _model.push_back({osl::hash(t), t, {1, 0}});
     traverse_element(rootElement, 1);
     endResetModel();
     return true;
@@ -188,7 +184,7 @@ void CompareFileModel::traverse_element(tinyxml2::XMLElement *element, uint32_t 
         auto line = name
             + (attribute_list.empty() ? "" : " " + attribute_list)
             + (text.empty() ? "" : " \"" + text + "\"");
-        _model.push_back({std::hash<std::string>{}(line), line, {1, indent + 2}});
+        _model.push_back({osl::hash(line), line, {1, indent + 2}});
         traverse_element(childElement, indent + 2);
         childElement = childElement->NextSiblingElement();
     }

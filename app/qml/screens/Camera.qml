@@ -4,7 +4,7 @@ import QtQuick.Controls
 import "qrc:/components"
 
 StackScreen {
-    id: camScreenRoot
+    id: cameraRoot
     baseItem: baseId
     Item {
         id: baseId
@@ -16,7 +16,7 @@ StackScreen {
             anchors.right: baseId.right
             contentWidth: camGrid.width
             contentHeight: camGrid.height
-            height: camScreenRoot.height * 0.90
+            height: cameraRoot.height * 0.90
             flickableDirection: Flickable.VerticalFlick
             Grid {
                 id: camGrid
@@ -64,7 +64,6 @@ StackScreen {
                 anchors.verticalCenter: parent.verticalCenter
             }
         }
-
         FileDialog {
             id: importCameraCfgDialog
             title: "Please choose the camera config file"
@@ -83,7 +82,6 @@ StackScreen {
             }
         }
     }
-
     function createPlayerObject(cfg) {
         var component = Qt.createComponent("qrc:/components/Player.qml")
         //console.log(component.errorString())
@@ -95,17 +93,14 @@ StackScreen {
             });
         }
     }
-
     function finishCreation(component, cfg) {
         var object = component.createObject(camGrid, cfg);
         object.cameraSettingsClickedSignal.connect(cameraSettingsClicked)
         object.cameraDeleteClickedSignal.connect(cameraDeleteClicked)
     }
-
     function cameraSettingsClicked(vr) {
-        camScreenRoot.pushComponent("qrc:/screens/CameraSettings.qml", {"vr": vr})
+        cameraRoot.pushComponent("qrc:/screens/CameraSettings.qml", {"vr": vr})
     }
-
     function cameraDeleteClicked(vr) {
         for(var i in camGrid.children) {
             if (camGrid.children[i].hasVideoRenderer(vr)) {

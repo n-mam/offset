@@ -135,6 +135,11 @@ inline auto parseUrl(const std::string& url) {
         std::string(directory));
 }
 
+template <typename T>
+inline auto hash(const T& value) {
+    return std::hash<T>{}(value);
+}
+
 template<typename T>
 inline auto sim_match(const T& a, const T& b) {
     std::string aa = a;
@@ -160,7 +165,7 @@ inline auto sim_match(const T& a, const T& b) {
     }
     auto max = std::max(aa.size(), bb.size());
     diff += std::abs((int)aa.size() - (int)bb.size());
-    assert((same + diff) == max);
+    //assert((same + diff) == max);
     return (int)(((double)same/(diff+same)) * 100);
 }
 

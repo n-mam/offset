@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
+import QtQuick.Controls.Material
 import "qrc:/screens"
 import "qrc:/components"
 
@@ -31,7 +32,6 @@ ApplicationWindow {
     startIndex: 3
     anchors.left: parent.left
     anchors.margins: appSpacing
-    height: parent.height - (2 * appSpacing)
     anchors.verticalCenter: parent.verticalCenter
     onMenuSelectionSignal: (index) => {
       screenContainer.currentIndex = index

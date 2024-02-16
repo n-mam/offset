@@ -1,3 +1,4 @@
+#include <osl/str>
 #include <osl/lcs>
 
 #include <CompareManager.h>
@@ -134,10 +135,10 @@ auto CompareManager::getSimplifiedHashVectors(const T& A, const T& B, TRuleFunct
     ha.reserve(A.size());
     hb.reserve(B.size());
     for (auto i = 0; i < A.size(); i++) {
-        ha.push_back(std::hash<std::string>{}(fn(A[i].e_text)));
+        ha.push_back(osl::hash(fn(A[i].e_text)));
     }
     for (auto i = 0; i < B.size(); i++) {
-        hb.push_back(std::hash<std::string>{}(fn(B[i].e_text)));
+        hb.push_back(osl::hash(fn(B[i].e_text)));
     }
     return std::make_pair(ha, hb);
 }
@@ -238,7 +239,7 @@ auto CompareManager::getUniqueCommonPosVector(const T& A, const T& B) {
         for (auto j = 0; j < _rules.size(); j++) {
             auto simplified = _rules[j](e.e_text);
             //LOG << "rule" << j << ": " << simplified;
-            auto rh = std::hash<std::string>{}(simplified);
+            auto rh = osl::hash(simplified);
             auto found_in_a = (ua_maps[j].find(rh) != ua_maps[j].end());
             auto found_in_b = (ub_maps[j].find(rh) != ub_maps[j].end());
             if (found_in_a && found_in_b) {
