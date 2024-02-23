@@ -110,13 +110,14 @@ bool CompareFileModel::load_as_txt(const std::string& file) {
     char ch;
     std::string line;
     beginResetModel();
-    std::ifstream fs(file.c_str());
+    std::ifstream fs(file.c_str(), std::ios::binary);
     do {
         ch = fs.get();
         line += ch;
         if (ch == '\r' || ch == '\n') {
-            auto peek = fs.peek();
-            if (peek != '\r' && peek != '\n') {
+            ch = fs.get();
+            line += ch;
+            if (ch == '\r' || ch == '\n') {
                 _model.push_back({osl::hash(line), line, {1, 0}});
                 line.clear();
             }

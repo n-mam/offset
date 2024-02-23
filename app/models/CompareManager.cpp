@@ -1,5 +1,6 @@
 #include <osl/str>
 #include <osl/lcs>
+#include <osl/log>
 
 #include <CompareManager.h>
 

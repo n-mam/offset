@@ -18,7 +18,7 @@ Rectangle {
         model: modelA
         interactive: false
         anchors.leftMargin: 10
-        anchors.rightMargin: 10
+        anchors.rightMargin: 2
         anchors.left: parent.left
         anchors.right: parent.right
         height: (parent.height / 2)
@@ -48,7 +48,7 @@ Rectangle {
         model: modelB
         interactive: false
         anchors.leftMargin: 10
-        anchors.rightMargin: 10
+        anchors.rightMargin: 2
         anchors.left: parent.left
         anchors.right: parent.right
         height: (parent.height / 2)

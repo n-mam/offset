@@ -4,8 +4,8 @@ import QtQuick.Controls
 Item {
 
     id: cldRoot
-    property var innerMargin: 0
     signal rowClicked(var row)
+    property var innerMargin: 0
 
     Row {
         spacing: 4
@@ -28,9 +28,7 @@ Item {
                 anchors.fill: parent
                 cursorShape: Qt.PointingHandCursor
                 onContainsMouseChanged: mergeButton.scale = 1 + (containsMouse ? 0.4 : 0)
-                onClicked: {
-
-                }
+                onClicked: {}
             }
         }
         Text {
