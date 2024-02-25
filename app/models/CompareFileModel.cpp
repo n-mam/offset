@@ -115,12 +115,13 @@ bool CompareFileModel::load_as_txt(const std::string& file) {
         ch = fs.get();
         line += ch;
         if (ch == '\r' || ch == '\n') {
-            ch = fs.get();
-            line += ch;
-            if (ch == '\r' || ch == '\n') {
-                _model.push_back({osl::hash(line), line, {1, 0}});
-                line.clear();
+            auto peek = fs.peek();
+            if (peek == '\r' || peek == '\n') {
+                ch = fs.get();
+                line += ch;
             }
+            _model.push_back({osl::hash(line), line, {1, 0}});
+            line.clear();
         }
     } while(std::char_traits<char>::not_eof(ch));
     fs.close();
