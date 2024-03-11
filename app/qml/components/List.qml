@@ -5,7 +5,7 @@ import "qrc:/delegates"
 ListView {
   id: listView
   clip: true
-  spacing: 2
+  spacing: appSpacing
   currentIndex: -1
   delegate: Rectangle {
     id: listDelegate

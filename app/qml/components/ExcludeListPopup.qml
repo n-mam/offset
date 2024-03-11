@@ -33,7 +33,7 @@ Popup {
         anchors.fill: parent
         TextArea {
           id: excludeListTextArea
-          background: null
+          //background: null
           textMargin: 4
         }
       }

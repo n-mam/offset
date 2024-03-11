@@ -5,7 +5,6 @@ Rectangle {
     // radius: 3
     // border.width: 1
     // border.color: borderColor
-    height: menuList.height
     color: Material.background
     y: (parent.height - height) / 2
 

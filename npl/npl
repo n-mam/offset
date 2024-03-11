@@ -20,13 +20,9 @@ inline auto make_dispatcher(void) {
 }
 
 inline auto make_ftp(const std::string& host, int port, tls tls = tls::no) {
-
     SPProtocolFTP ftp;
-
     auto cc = std::make_shared<socket_device>("sock-cc");
-
     auto success = cc->SetHostAndPort(host, port);
-
     if (success) {
         cc->SetTLS(tls);
         ftp = std::make_shared<npl::ftp>("prot-ftp");
@@ -35,20 +31,14 @@ inline auto make_ftp(const std::string& host, int port, tls tls = tls::no) {
     else {
         cc.reset();
     }
-
     return ftp;
 }
 
-inline auto make_ws_server(const std::string& host, int port,
-
-    tls tls = tls::no, TOnClientMessageCbk cbk = nullptr) {
-
+inline auto make_ws_server(const std::string& host,
+            int port, tls tls = tls::no, TOnClientMessageCbk cbk = nullptr) {
     SPProtocolWSServer ls;
-
     auto cc = std::make_shared<socket_device>("ws-cc");
-
     auto success = cc->SetHostAndPort(host, port);
-
     if (success) {
         cc->SetTLS(tls);
         ls = std::make_shared<websocket_server>("ws-ls");
@@ -57,44 +47,34 @@ inline auto make_ws_server(const std::string& host, int port,
     } else {
         cc.reset();
     }
-
     return ls;
 }
 
 inline auto make_http_client(const std::string& host, int port) {
-
     SPProtocolHttpClient http;
-
     auto sock = std::make_shared<socket_device>("http-socket");
-
     auto success = sock->SetHostAndPort(host, port);
-
     if (success) {
         http = std::make_shared<http_client>("http-protocol");
         D->AddEventListener(sock)->AddEventListener(http);
     } else {
         sock.reset();
     }
-
     return http;
 }
 
 template <typename T>
 inline auto make_file(const T& file, bool create = false) {
-
     auto device = std::make_shared<file_device>(file, create);
-
     if (device->IsConnected()) {
         D->AddEventListener(device);
     } else {
         device.reset();
     }
-
     return device;
 }
 
 inline void test_http_client(const std::string& host, int port) {
-
     for (int i = 0; i < 1; i++) {
         auto http = npl::make_http_client(host, port);
         http->StartClient(
@@ -105,36 +85,23 @@ inline void test_http_client(const std::string& host, int port) {
 }
 
 inline void test_ws_server(const std::string& host, int port) {
-
-    auto ws = npl::make_ws_server(
-        host, port, npl::tls::yes,
+    auto ws = npl::make_ws_server(host, port, npl::tls::yes,
         [] (npl::SPProtocol c, const std::string& m) {
             LOG << "client : " << m;
             c->SendProtocolMessage(
                 (uint8_t *)"server echo : hello",
-                strlen("server echo : hello")
-            );
+                strlen("server echo : hello"));
         });
-
     ws->StartServer();
-
     getchar();
 }
 
-inline void test_ftp_client(
-    const std::string& host,
-    const std::string& port,
-    const std::string& user,
-    const std::string& pass) {
-
+inline void test_ftp_client(const std::string& host, const std::string& port,
+            const std::string& user, const std::string& pass) {
     auto ftp = npl::make_ftp(host, std::stoi(port), npl::tls::yes);
-
     ftp->SetCredentials(user, pass);
-
     ftp->StartClient();
-
-    ftp->Transfer(
-        ftp::list, "/",
+    ftp->Transfer(ftp::list, "/",
         [list = std::string()] (const char *b, size_t n) mutable {
             if (b)
                 list.append(b, n);
@@ -142,12 +109,10 @@ inline void test_ftp_client(
                 LOG << list;
             return true;
         },
-        nullptr, npl::tls::yes);
-
+        nullptr,
+        npl::tls::yes);
     ftp->SetCurrentDirectory("/");
-
     auto file = std::make_shared<file_device>("./xx.txt", true);
-
     ftp->Transfer(ftp::download, "x.txt",
         [file, offset = 0ULL](const char *b, size_t n) mutable {
             if (b) {
@@ -157,43 +122,32 @@ inline void test_ftp_client(
                 LOG << "Download complete";
             }
             return true;
-        }, nullptr, npl::tls::yes);
-
+        },
+        nullptr,
+        npl::tls::yes);
     file.reset();
-
     ftp->Transfer(ftp::upload, "y.txt",
         [&](const char *b, size_t n) mutable {
             return true;
         },
-        nullptr, npl::tls::no);
-
+        nullptr,
+        npl::tls::no);
     ftp->WriteSync((uint8_t *)"hello ", strlen("hello "));
-
     ftp->WriteSync((uint8_t *)"world ", strlen("world "));
-
     ftp->WriteSync(nullptr);
-
     ftp->GetCurrentDirectory([](const std::string& resp) {
         //"resp" holds the response of PWD command
     });
-
     ftp->SetCurrentDirectory("/");
-
     ftp->Quit();
-
     getchar();
 }
 
 inline void test_file_copy(const std::string& source, const std::string& dest) {
-
     auto rd = npl::make_file(source);
-
     auto wd = npl::make_file(dest, true);
-
     constexpr int bufSize = (1 * 1024 * 1024);
-
     uint8_t *buf = (uint8_t *) calloc(bufSize, 1);
-
     auto obv = std::make_shared<npl::Listener>(
         nullptr,
         [wd, off = 0ULL](const uint8_t *b, size_t n) mutable {
@@ -210,17 +164,13 @@ inline void test_file_copy(const std::string& source, const std::string& dest) {
             }
         }
     );
-
     rd->AddEventListener(obv);
     wd->AddEventListener(obv);
-
     rd->Read(buf, bufSize, 0);
-
     getchar();
 }
 
-inline void test_dispatcher()
-{
+inline void test_dispatcher() {
     // commented tests dont work as dispatcher
     // needs to be a shared pointer for the subsequent
     // weak_from_this to work
@@ -230,42 +180,33 @@ inline void test_dispatcher()
     //   d->initialize_control();
     // }
     //return;
-
     for (int i = 0; i < 100; i++) {
         auto d = std::make_shared<dispatcher>();
         d->initialize_control();
     }
-
     // for (int i = 0; i < 100; i++)
     // {
     //   delete new dispatcher();
     // }
-
     // auto d1 = std::make_unique<dispatcher>();
     // auto d2 = std::make_unique<dispatcher>();
-
     std::cout << "Done" << std::endl;
 }
 
-inline auto usage(void)
-{
+inline auto usage(void) {
     LOG << " npl http";
     LOG << " npl ftp <host> <port> <user> <pass>";
     LOG << " npl ws";
 }
 
 inline void entry(std::vector<std::string> arguments) {
-
     if (arguments.size() == 1) {
         usage();
         return;
     }
-
     auto cmd = arguments[1];
-
     arguments.erase(arguments.begin());
     arguments.erase(arguments.begin());
-
     if ((cmd == "ftp") && (arguments.size() >= 4)) {
         npl::test_ftp_client(
         arguments[0],

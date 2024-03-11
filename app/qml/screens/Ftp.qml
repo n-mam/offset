@@ -7,7 +7,7 @@ Rectangle {
   radius: 3
   border.width: 1
   border.color: borderColor
-  color: "transparent"
+  color: Material.background
 
   SplitView {
     id: splitViewTop

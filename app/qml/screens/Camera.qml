@@ -11,17 +11,18 @@ StackScreen {
         Flickable {
             id: flickableGrid
             clip: true
-            anchors.margins: 4
+            anchors.margins: appSpacing
             anchors.left: baseId.left
             anchors.right: baseId.right
             contentWidth: camGrid.width
             contentHeight: camGrid.height
-            height: cameraRoot.height * 0.90
+            height: cameraRoot.height * 0.93
             flickableDirection: Flickable.VerticalFlick
             Grid {
                 id: camGrid
-                columns: 2
-                spacing: 8
+                //defaultWidth 345
+                columns: flickableGrid.width / 345
+                spacing: appSpacing
                 //Player{}
             }
         }
@@ -93,10 +94,27 @@ StackScreen {
             });
         }
     }
-    function finishCreation(component, cfg) {
-        var object = component.createObject(camGrid, cfg);
-        object.cameraSettingsClickedSignal.connect(cameraSettingsClicked)
+    function finishCreation(component, config) {
+        var object = component.createObject(camGrid, {
+            cfg: config,
+            defaultWidth: 345,
+            defaultHeight: 210
+        });
+        object.cameraFullScreenSignal.connect(cameraFullScreen)
         object.cameraDeleteClickedSignal.connect(cameraDeleteClicked)
+        object.cameraSettingsClickedSignal.connect(cameraSettingsClicked)
+    }
+    function cameraFullScreen(entering) {
+        for(var i in camGrid.children) {
+            if (entering) {
+                if (!camGrid.children[i].fullScreen) {
+                    camGrid.children[i].visible = false
+                }
+            } else {
+                camGrid.children[i].visible = true
+            }
+
+        }
     }
     function cameraSettingsClicked(vr) {
         cameraRoot.pushComponent("qrc:/screens/CameraSettings.qml", {"vr": vr})
