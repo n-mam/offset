@@ -61,4 +61,7 @@ Item {
     function setPath(path) {
         destination.text = path
     }
+    function getPath() {
+        return destination.text
+    }
 }

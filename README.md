@@ -2,7 +2,7 @@
 
 #### The following 3 tools are currently implemented
 
-FXC
+Block level backup
 <p align="center">
  <img src="https://lh3.googleusercontent.com/d/193lB9OfdeZ-hfUxqmythLaAwk1ExGaEE" width="65%">
 </p>
@@ -20,7 +20,7 @@ FXC
 - URI format for streaming to FTP:<br/>
   - ftps://username:password@hostname:port/a/b/c<br/><br/>
 
-FTPS<br/>
+FTP(S) client<br/>
 <p align="center">
  <img src="https://lh3.googleusercontent.com/d/1L9AJ0i0d4H2kKGp-TRFpxCeYFjPgzDnW" width="70%">
 </p>
@@ -29,7 +29,7 @@ FTPS<br/>
 - Directory listing support for Linux, Windows and MLSD.<br/>
 - FTPS supports TLS1.3<br/><br/>
 
-CAMERA<br/>
+Camera<br/>
 <p align="center">
  <img src="https://lh3.googleusercontent.com/d/1LiNTVr3Ps8EfEbSOOcoRaBLHk4ymfEf7" width="70%">
 </p>

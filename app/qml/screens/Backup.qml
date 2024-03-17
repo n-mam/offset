@@ -48,7 +48,7 @@ Rectangle {
                 height: parent.height
                 enabled: (diskListModel.transfer === 0)
                 onButtonXClicked: {
-                    diskListModel.convertSelectedItemsToVirtualDisks(destination.text)
+                    diskListModel.convertSelectedItemsToVirtualDisks(destinationSelector.getPath())
                 }
             }
             ButtonX {
