@@ -29,10 +29,10 @@ struct subject : public std::enable_shared_from_this<subject<T1, T2>> {
     virtual ~subject() {
         std::lock_guard<std::mutex> lg(m_lock);
         RemoveAllEventListenersInternal();
-        DBG << "~subject : " << GetName();
+        DBG << "~subject : " << get_name();
     }
 
-    virtual std::string GetName(void) {
+    virtual std::string get_name(void) {
         return m_name;
     }
 
@@ -43,7 +43,7 @@ struct subject : public std::enable_shared_from_this<subject<T1, T2>> {
         return s;
     }
 
-    virtual void SetTarget(const WPSubject& target) {
+    virtual void set_target(const WPSubject& target) {
         std::lock_guard<std::mutex> lg(m_lock);
         m_target = target;
     }
@@ -123,10 +123,10 @@ struct subject : public std::enable_shared_from_this<subject<T1, T2>> {
         NotifyEvent(e);
     }
 
-    virtual const SPSubject& AddEventListener(const SPSubject& observer) {
+    virtual const SPSubject& add_listener(const SPSubject& observer) {
         std::lock_guard<std::mutex> lg(m_lock);
         m_observers.push_back(observer);
-        observer->SetTarget(this->weak_from_this());
+        observer->set_target(this->weak_from_this());
         return observer;
     }
 
@@ -152,7 +152,7 @@ struct subject : public std::enable_shared_from_this<subject<T1, T2>> {
         m_connected = connected;
     }
 
-    virtual bool IsConnected(void) {
+    virtual bool is_connected(void) {
         return m_connected;
     }
 
@@ -176,12 +176,12 @@ struct subject : public std::enable_shared_from_this<subject<T1, T2>> {
 
     }
 
-    virtual void SetProperty(const std::string& key, const std::string& value) {
+    virtual void set_property(const std::string& key, const std::string& value) {
         std::lock_guard<std::mutex> lg(m_lock);
         m_properties[key] = value;
     }
 
-    virtual std::string GetProperty(const std::string& key) {
+    virtual std::string get_property(const std::string& key) {
         std::lock_guard<std::mutex> lg(m_lock);
         std::string value = "";
         try {
@@ -193,13 +193,13 @@ struct subject : public std::enable_shared_from_this<subject<T1, T2>> {
         return value;
     }
 
-    virtual int GetPropertyAsInt(const std::string& key) {
-        auto value = GetProperty(key);
+    virtual int get_property_int(const std::string& key) {
+        auto value = get_property(key);
         return std::stoi(value);
     }
 
-    virtual bool GetPropertyAsBool(const std::string& key) {
-        auto value = GetProperty(key);
+    virtual bool get_property_bool(const std::string& key) {
+        auto value = get_property(key);
         return ((value.size() && value == "true") ? true : false);
     }
 

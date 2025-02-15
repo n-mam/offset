@@ -26,7 +26,7 @@ inline auto make_ftp(const std::string& host, int port, tls tls = tls::no) {
     if (success) {
         cc->SetTLS(tls);
         ftp = std::make_shared<npl::ftp>("prot-ftp");
-        D->AddEventListener(cc)->AddEventListener(ftp);
+        D->add_listener(cc)->add_listener(ftp);
     }
     else {
         cc.reset();
@@ -43,7 +43,7 @@ inline auto make_ws_server(const std::string& host,
         cc->SetTLS(tls);
         ls = std::make_shared<websocket_server>("ws-ls");
         ls->SetClientMessageCallback(cbk);
-        D->AddEventListener(cc)->AddEventListener(ls);
+        D->add_listener(cc)->add_listener(ls);
     } else {
         cc.reset();
     }
@@ -56,7 +56,7 @@ inline auto make_http_client(const std::string& host, int port) {
     auto success = sock->SetHostAndPort(host, port);
     if (success) {
         http = std::make_shared<http_client>("http-protocol");
-        D->AddEventListener(sock)->AddEventListener(http);
+        D->add_listener(sock)->add_listener(http);
     } else {
         sock.reset();
     }
@@ -66,8 +66,8 @@ inline auto make_http_client(const std::string& host, int port) {
 template <typename T>
 inline auto make_file(const T& file, bool create = false) {
     auto device = std::make_shared<file_device>(file, create);
-    if (device->IsConnected()) {
-        D->AddEventListener(device);
+    if (device->is_connected()) {
+        D->add_listener(device);
     } else {
         device.reset();
     }
@@ -164,8 +164,8 @@ inline void test_file_copy(const std::string& source, const std::string& dest) {
             }
         }
     );
-    rd->AddEventListener(obv);
-    wd->AddEventListener(obv);
+    rd->add_listener(obv);
+    wd->add_listener(obv);
     rd->Read(buf, bufSize, 0);
     getchar();
 }
@@ -209,10 +209,10 @@ inline void entry(std::vector<std::string> arguments) {
     arguments.erase(arguments.begin());
     if ((cmd == "ftp") && (arguments.size() >= 4)) {
         npl::test_ftp_client(
-        arguments[0],
-        arguments[1],
-        arguments[2],
-        arguments[3]);
+            arguments[0],
+            arguments[1],
+            arguments[2],
+            arguments[3]);
     } else if (cmd == "http") {
 
     } else if (cmd == "test") {
@@ -222,6 +222,6 @@ inline void entry(std::vector<std::string> arguments) {
     }
 }
 
-} //namespace npl
+}
 
 #endif

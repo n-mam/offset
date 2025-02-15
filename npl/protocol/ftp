@@ -55,24 +55,17 @@ struct ftp : public protocol<uint8_t, uint8_t> {
     virtual ~ftp() {}
 
     virtual int32_t WriteSync(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override {
-
         std::unique_lock<std::mutex> ul(m_mux);
-        
         m_cv.wait(ul, [&](){ return m_uploadChannelReady; });
-
         bool fRet = false;
-
         if (m_data_channel) {
-
             m_uploadChannelReady = false;
-
             if (b && l) {
                 fRet = m_data_channel->Write(b, l);
             } else {
                 std::static_pointer_cast<socket_device>(m_data_channel)->StopSocket();
             }
         }
-
         return fRet ? (int32_t)l : 0;
     }
 
@@ -81,17 +74,11 @@ struct ftp : public protocol<uint8_t, uint8_t> {
     }
 
     virtual void Transfer(Direction direction, const std::string& remote, TTransferCbk tcbk, TResponseCbk rcbk = nullptr, tls P = tls::no) {
-
         std::lock_guard<std::mutex> lg(m_qlock);
-
         if (remote.empty() || !tcbk) assert(false);
-
         bool bQWasEmpty = m_queue.empty();
-
         SetDCProtLevel(P);
-
         std::string command;
-
         if (direction == ftp::list) {
             HasFeature("MLSD") ?
                 command = "MLSD" : command = "LIST";
@@ -100,13 +87,10 @@ struct ftp : public protocol<uint8_t, uint8_t> {
         } else if (direction == ftp::download) {
             command = "RETR";
         }
-
         m_queue.push_back({"TYPE", "I"});
         m_queue.push_back({"PASV"});
         m_queue.push_back({command.c_str(), remote, rcbk, tcbk});
-
         m_pending_transfers++;
-
         CheckQueue(bQWasEmpty);
     }
 
@@ -178,32 +162,6 @@ struct ftp : public protocol<uint8_t, uint8_t> {
 
     protected:
 
-    int m_dc_port;
-
-    std::string m_dc_host;
-
-    std::string m_feat;
-
-    std::string m_syst;
-
-    tls m_dc_tls = tls::no;
-
-    uint8_t m_triggerFlags;
-
-    Direction m_currentDirection;
-
-    int m_pending_transfers = 0;
-
-    SPSubject m_data_channel = nullptr;
-
-    std::function<void ()> m_idle_callback;
-
-    std::mutex m_mux;
-
-    std::condition_variable m_cv;
-    
-    bool m_uploadChannelReady = false;
-    
     struct Command {
         std::string c_name;
         std::string c_args;
@@ -219,9 +177,21 @@ struct ftp : public protocol<uint8_t, uint8_t> {
         uint8_t  t_flags = 0x00;
     };
 
+    int m_dc_port;
+    std::mutex m_mux;
+    std::string m_feat;
+    std::string m_syst;
     std::mutex m_qlock;
-
+    std::string m_dc_host;
+    tls m_dc_tls = tls::no;
+    uint8_t m_triggerFlags;
     std::list<Command> m_queue;
+    int m_pending_transfers = 0;
+    Direction m_currentDirection;
+    std::condition_variable m_cv;
+    bool m_uploadChannelReady = false;
+    SPSubject m_data_channel = nullptr;
+    std::function<void ()> m_idle_callback;
 
     #define NEXT 0x10
 
@@ -266,54 +236,36 @@ struct ftp : public protocol<uint8_t, uint8_t> {
     };
 
     virtual void StateMachine(SPMessage msg) override {
-
         std::lock_guard<std::mutex> lg(m_qlock);
-
         auto l = msg->GetPayloadLength();
         auto b = msg->GetPayloadBuffer();
-
         LOG << "Response : " << std::string(b, l);
-
         for (int i = 0; i < sizeof(FSM) / sizeof(FSM[0]); i++) {
-
             Transition t = FSM[i];
-
             if ((t.t_state == iCurrentState) && (t.t_response_code ==  b[0])) {
-
                 // DBG << +t.iState << " -> " << +t.iNextState
                 //   << ", " << +t.iFlags << ", " << m_queue.size();
-
                 iCurrentState = t.t_next_state;
-
                 if (!m_queue.empty()) {
-
                     auto cbk = m_queue.front().c_rcbk;
-
                     if (cbk) {
                         cbk(msg->GetPayloadString());
                     }
-
                     uint8_t f_skip = t.t_flags & 0x0F;
-
                     for (auto i = 0; i < f_skip; i++) {
                         m_queue.pop_front();
                     }
                 }
-
                 if (t.t_transition_fn) {
                     t.t_transition_fn();
                 }
-
                 auto next = (t.t_flags >> 4) & 0x0F;
-
                 if (next) {
                     TriggerNextCommand();
                 }
-
                 break;
             }
         }
-
         if (m_queue.empty()) {
             if (m_idle_callback)
                 m_idle_callback();
@@ -321,9 +273,7 @@ struct ftp : public protocol<uint8_t, uint8_t> {
     }
 
     virtual SPMessage IsMessageComplete(const std::vector<uint8_t>& b) override {
-        
         size_t l = b.size();
-
         if (l >= 4) {
             if ((b[l-2] == '\r') && (b[l-1] == '\n')) {
                 uint8_t code[4] = { 0, 0, 0, ' '};
@@ -335,20 +285,14 @@ struct ftp : public protocol<uint8_t, uint8_t> {
                 }
             }
         }
-
         return nullptr;
     }
 
     virtual void SendCommand(const std::string& c, const std::string& arg = "") {
-
         SetCurrentDirection(c);
-
         auto cmd = c + " " + arg + "\r\n";
-        
         LOG << "Command  : " << cmd;
-
         auto target = m_target.lock();
-
         if (target) {
             target->Write((uint8_t *)cmd.c_str(), cmd.size(), 0);
             if (IsTransferCommand(cmd)) {
@@ -398,9 +342,7 @@ struct ftp : public protocol<uint8_t, uint8_t> {
     virtual void CheckExplicitFTPS(void) {
         auto tls = GetChannelTLS();
         if (tls == tls::yes) {
-            m_queue.push_front({
-                "AUTH",
-                "TLS",
+            m_queue.push_front({"AUTH", "TLS",
                 [this](const auto& res) {
                     if (!IsPositiveCompletionReply(res[0]))
                         SetChannelTLS(tls::no);
@@ -436,7 +378,6 @@ struct ftp : public protocol<uint8_t, uint8_t> {
                 std::static_pointer_cast<socket_device>(m_data_channel)->StopSocket();
                 m_data_channel.reset();
             }
-
             if (m_currentDirection == ftp::upload){
                 NotifyUploadChannelReady();
             }
@@ -447,25 +388,21 @@ struct ftp : public protocol<uint8_t, uint8_t> {
         auto& m = iMessages.back();
         auto& pasv = m->GetPayloadString();
         auto spec = pasv.substr(pasv.find('('));
-
         uint32_t h1, h2, h3, h4, p1, p2;
         int fRet = sscanf(spec.c_str(), "(%d,%d,%d,%d,%d,%d)", &h1, &h2, &h3, &h4, &p1, &p2);
-
         if (fRet < 6) {
             LOG << "Faled to parse PASV response";
         }
-
         m_dc_host = std::to_string(h1) + "." +
                     std::to_string(h2) + "." +
                     std::to_string(h3) + "." +
                     std::to_string(h4);
-
         m_dc_port = (p1 << 8) + p2;
     }
 
     virtual void OpenDataChannel() {
         m_data_channel = std::make_shared<socket_device>("sock-dc");
-        get_last_target(shared_from_this())->AddEventListener(m_data_channel);
+        get_last_target(shared_from_this())->add_listener(m_data_channel);
         auto dc = std::static_pointer_cast<socket_device>(m_data_channel);
         dc->SetHostAndPort(m_dc_host, m_dc_port);
         AttachDataChannelObserver();
@@ -493,8 +430,7 @@ struct ftp : public protocol<uint8_t, uint8_t> {
                 OnDataChannelDisconnect();
             }
         );
-
-        m_data_channel->AddEventListener(observer);
+        m_data_channel->add_listener(observer);
     }
 
     virtual void OnDataChannelConnect(void) {
@@ -510,7 +446,6 @@ struct ftp : public protocol<uint8_t, uint8_t> {
                     std::static_pointer_cast<socket_device>(m_data_channel)->StopSocket
                         (direction == ftp::download ? true : false);
                 }
-
                 if (direction == ftp::upload) {
                     NotifyUploadChannelReady();
                 }
@@ -540,8 +475,7 @@ struct ftp : public protocol<uint8_t, uint8_t> {
             if (m_dc_tls == tls::yes) {
                 auto cc = std::static_pointer_cast<socket_device>(m_target.lock());
                 std::static_pointer_cast<socket_device>
-                (m_data_channel)->InitializeSSL(
-                    cc->GetSslObject(),
+                (m_data_channel)->InitializeSSL(cc->GetSslObject(),
                     [this](){
                         if (m_currentDirection == ftp::upload)
                             m_queue.front().c_tcbk((char *)0xABCDEF, 0);
@@ -570,15 +504,13 @@ struct ftp : public protocol<uint8_t, uint8_t> {
             }
         } else {
             m_queue.push_front({
-                "SYST",
-                "",
+                "SYST", "",
                 [this](auto res) {
                     m_syst = res;
                 }
             });
             m_queue.push_front({
-                "FEAT",
-                "",
+                "FEAT", "",
                 [this](auto res) {
                     m_feat = res;
                     if (m_login_callback)
@@ -645,6 +577,6 @@ struct ftp : public protocol<uint8_t, uint8_t> {
 
 using SPProtocolFTP = std::shared_ptr<ftp>;
 
-} //namespace npl
+}
 
-#endif //PROTOCOLFTP_HPP
+#endif

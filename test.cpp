@@ -3,33 +3,25 @@
 #ifdef _WIN32
 #include <fxc/fxc>
 #endif
-
 #include <npl/npl>
 #include <cvl/cvl>
 #include <osl/lcs>
 
 void show_usage(void);
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
     auto arguments = osl::GetArgumentsVector(argc, argv);
-
     if (!arguments.size()) {
         show_usage();
         return 0;
     }
-
     osl::log::SetLogLevel(osl::log::info);
-
     osl::log::SetLogSink<std::string>(
-        [](int level, int key, auto log){
+        [](int level, int key, auto log) {
             std::cout << log << std::endl;
         });
-
     npl::make_dispatcher();
-
     auto ns = arguments[0];
-
     #ifdef _WIN32
     if (ns == "fxc") {
         fxc::entry(arguments);
@@ -44,11 +36,9 @@ int main(int argc, char *argv[])
     } else {
         show_usage();
     }
-
     return 0;
 }
 
-void show_usage(void)
-{
+void show_usage(void) {
     std::cout << "test npl ftp <host> <port> <user> <pass>" << std::endl;
 }

@@ -310,7 +310,7 @@ bool TransferManager::InitializeFTPSessions(void) {
 
 void TransferManager::CheckAndReconnectSessions(void) {
     for (size_t i = 0; i < MAX_SESSIONS; i++) {
-        if (!m_sessions[i]->IsConnected()) {
+        if (!m_sessions[i]->is_connected()) {
             m_sessions[i] = npl::make_ftp(
                 m_ftpModel->m_host,
                 m_ftpModel->m_port,

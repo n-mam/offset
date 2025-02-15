@@ -179,8 +179,8 @@ class file_device : public subject<uint8_t, uint8_t>
     }
 
     virtual void * Read(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override {
-        if (!IsConnected()) {
-            ERR << GetName() << " file_device::Read() not connected";
+        if (!is_connected()) {
+            ERR << get_name() << " file_device::Read() not connected";
             return nullptr;
         }
         context *ctx = (context *) calloc(1, sizeof(context));
@@ -198,12 +198,12 @@ class file_device : public subject<uint8_t, uint8_t>
         (ctx->ol).OffsetHigh = (o & 0xFFFFFFFF00000000) >> 32;
         BOOL fRet = ReadFile(_fd_async, (LPVOID) ctx->b, static_cast<DWORD>(l), NULL, &ctx->ol);
         if (!fRet && GetLastError() != ERROR_IO_PENDING) {
-            ERR << GetName() << " ReadFile failed : " << GetLastError();
+            ERR << get_name() << " ReadFile failed : " << GetLastError();
         }
         return nullptr;
         #else
         ctx->n = read(_fd_async, (void *) ctx->b, l);
-        DBG << GetName() << " read() " << (ssize_t) ctx->n
+        DBG << get_name() << " read() " << (ssize_t) ctx->n
             << " error : " << strerror(errno);
         if ((ssize_t)ctx->n == -1) {
             if (!b) {
@@ -216,12 +216,12 @@ class file_device : public subject<uint8_t, uint8_t>
     }
 
     virtual bool Write(const uint8_t *b = nullptr , size_t l = 0, uint64_t o = 0) override {
-        if (!IsConnected()) {
-            ERR << GetName() << " file_device::Write() not connected";
+        if (!is_connected()) {
+            ERR << get_name() << " file_device::Write() not connected";
             return false;
         }
         if (!b || !l) {
-            ERR << GetName() << " file_device::Write() invalid arguments";
+            ERR << get_name() << " file_device::Write() invalid arguments";
             return false;
         }
         bool fRet = true;
@@ -238,13 +238,13 @@ class file_device : public subject<uint8_t, uint8_t>
             if ((GetLastError() == ERROR_IO_PENDING)) {
                 fRet = true;
             } else {
-                ERR << GetName() << " file_device::Write() WriteFile() failed : " << GetLastError();
+                ERR << get_name() << " file_device::Write() WriteFile() failed : " << GetLastError();
             }
         }
         #else
         auto rc = write(_fd_async, b, l);
         if (rc == -1) {
-            ERR << GetName() << " file_device::Write() write() failed : " << strerror(errno);
+            ERR << get_name() << " file_device::Write() write() failed : " << strerror(errno);
             fRet = false;
         }
         #endif
@@ -260,7 +260,7 @@ class file_device : public subject<uint8_t, uint8_t>
         if (fRet) {
             fRet = ReadFile(_fd_sync, (LPVOID) b, static_cast<DWORD>(l), &nBytesRead, NULL);
             if (fRet == FALSE) {
-                ERR << GetName() << " ReadSync ReadFile failed : " << GetLastError();
+                ERR << get_name() << " ReadSync ReadFile failed : " << GetLastError();
             }
         }
         return nBytesRead;
@@ -268,7 +268,7 @@ class file_device : public subject<uint8_t, uint8_t>
 
     virtual int32_t WriteSync(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override {
         if (!b || !l) {
-            ERR << GetName() << " file_device::WriteSync() invalid arguments";
+            ERR << get_name() << " file_device::WriteSync() invalid arguments";
             return false;
         }
         DWORD nBytesWritten = 0;
@@ -279,7 +279,7 @@ class file_device : public subject<uint8_t, uint8_t>
             fRet = WriteFile(_fd_sync, (LPVOID)b, static_cast<DWORD>(l), &nBytesWritten, NULL);
             if (fRet == FALSE)
             {
-                ERR << GetName() << " WriteSync WriteFile failed : " << GetLastError();
+                ERR << get_name() << " WriteSync WriteFile failed : " << GetLastError();
             }
         }
         return nBytesWritten;

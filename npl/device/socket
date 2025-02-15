@@ -51,7 +51,7 @@ class socket_device : public file_device {
         StopSocket();
         shutdown((SOCKET)_fd_async, 0); //sd_recv
         closesocket((SOCKET)_fd_async);
-        DBG << "~socket_device() <-- " << GetName() << " shutdown(sd_recv)";
+        DBG << "~socket_device() <-- " << get_name() << " shutdown(sd_recv)";
         if (m_ssl) {
             if (ssl_session_map[m_ssl].size()) {
                 ssl_session_map[m_ssl].clear();
@@ -66,7 +66,7 @@ class socket_device : public file_device {
                 int flag = SSL_get_shutdown(m_ssl);
                 if (!(flag & SSL_SENT_SHUTDOWN)) {
                     int rc = SSL_shutdown(m_ssl);
-                    DBG << GetName() << " ssl_shutdown() rc : " << rc;
+                    DBG << get_name() << " ssl_shutdown() rc : " << rc;
                     UpdateWriteBIO();
                 }
             }
@@ -75,7 +75,7 @@ class socket_device : public file_device {
             if (stopWrite) {
                 shutdown((SOCKET)_fd_async, 0); //sd_recv
             }
-            DBG << GetName() << " shutdown(sd_send)";
+            DBG << get_name() << " shutdown(sd_send)";
         }
     }
 
@@ -132,19 +132,19 @@ class socket_device : public file_device {
         sa.sin_family = AF_INET;
         inet_pton(AF_INET, m_host.c_str(), &sa.sin_addr);
         sa.sin_port = htons(m_port);
-        int fRet = bind((SOCKET)_fd_async, (const sockaddr *) &sa, sizeof(sa));
+        int fRet = bind((SOCKET)_fd_async, (const sockaddr *)&sa, sizeof(sa));
         if (fRet == -1) {
-            DBG << GetName() << " bind failed. error : " << strerror(errno);
+            DBG << get_name() << " bind failed. error: " << strerror(errno);
         }
         assert(fRet == 0);
         memset(&sa, 0, sizeof(sa));
         socklen_t len = sizeof(sa);
         getsockname((SOCKET)_fd_async, (struct sockaddr *) &sa, &len);
         m_port = ntohs(sa.sin_port);
-        DBG << GetName() << " server bound to " << m_port << " port";
+        DBG << get_name() << " server bound at port " << m_port;
         fRet = listen((SOCKET)_fd_async, SOMAXCONN);
         if (fRet == -1) {
-            DBG << "listen failed. error : " << strerror(errno);
+            DBG << "listen failed. error: " << strerror(errno);
         }
         assert(fRet == 0);
         #ifndef WIN32
@@ -178,7 +178,6 @@ class socket_device : public file_device {
 
     virtual bool SetSocketBlockingEnabled(FD sock, bool blocking) {
         bool fret = false;
-
         #ifndef WIN32
             int flags = fcntl(sock, F_GETFL, 0);
             if (flags == -1) return false;
@@ -190,23 +189,19 @@ class socket_device : public file_device {
         #endif
     }
 
-    virtual uint32_t GetSocketType(void)
-    {
+    virtual uint32_t GetSocketType(void) {
         return m_type;
     }
 
-    virtual bool IsClientSocket(void)
-    {
+    virtual bool IsClientSocket(void) {
         return (m_type == ESocketType::client);
     }
 
-    virtual bool IsListeningSocket(void)
-    {
+    virtual bool IsListeningSocket(void) {
         return (m_type == ESocketType::listening);
     }
 
-    virtual bool IsAcceptedSocket(void)
-    {
+    virtual bool IsAcceptedSocket(void) {
         return (m_type == ESocketType::accepted);
     }
 
@@ -264,7 +259,7 @@ class socket_device : public file_device {
     virtual void CheckPeerSSLShutdown() {
         int flag = SSL_get_shutdown(m_ssl);
         if (flag & SSL_RECEIVED_SHUTDOWN) {
-            DBG << GetName() << " SSL_RECEIVED_SHUTDOWN, flags : " << flag;
+            DBG << get_name() << " SSL_RECEIVED_SHUTDOWN, flags : " << flag;
             if (!(flag & SSL_SENT_SHUTDOWN)) {
             StopSocket();
             }
@@ -339,7 +334,7 @@ class socket_device : public file_device {
         m_connected_client = std::make_shared<socket_device>(m_accepted_socket);
         m_connected_client->m_type = ESocketType::accepted;
         m_connected_client->MarkConnected(true);
-        get_last_target(shared_from_this())->AddEventListener(m_connected_client);
+        get_last_target(shared_from_this())->add_listener(m_connected_client);
         file_device::OnAccept();
         #ifdef _WIN32
         m_connected_client->Read();
@@ -354,7 +349,7 @@ class socket_device : public file_device {
 
     virtual void OnConnect() override {
         assert(IsClientSocket());
-        DBG << GetName() << " OnConnect()";
+        DBG << get_name() << " OnConnect()";
         file_device::OnConnect();
         #ifdef _WIN32
         file_device::Read();
@@ -364,7 +359,7 @@ class socket_device : public file_device {
 
     virtual void OnDisconnect() override {
         if (m_ssl) {
-            // DBG << GetName() <<
+            // DBG << get_name() <<
             // " shutdown mode : " << SSL_get_shutdown(m_ssl);
             CheckPeerSSLShutdown();
         }
@@ -387,12 +382,12 @@ class socket_device : public file_device {
                 if (rc == 1) {
                     m_handshake_done = true;
                     m_tls_version = SSL_get_version(m_ssl);
-                    DBG << GetName() << " " << m_tls_version << " handshake done, session reused : " << SSL_session_reused(m_ssl);
+                    DBG << get_name() << " " << m_tls_version << " handshake done, session reused : " << SSL_session_reused(m_ssl);
                     if (m_onHandShake) {
                         m_onHandShake();
                     }
                 } else {
-                    DBG << GetName() << " SSL_do_handshake : " << rc << " " << SSL_get_error(m_ssl, rc);
+                    DBG << get_name() << " SSL_do_handshake : " << rc << " " << SSL_get_error(m_ssl, rc);
                 }
             }
 

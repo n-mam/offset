@@ -5,223 +5,163 @@
 
 namespace npl {
 
-class http_message : public message
-{
-  protected:
+class http_message : public message {
 
-  std::string iPayload;
+    protected:
 
-  std::map<std::string, std::string> iHeaders;
+    std::string iPayload;
+    std::map<std::string, std::string> iHeaders;
 
-  virtual void ParseMessage() override
-  {
-    bool firstLineReceived = false;
-    bool headersReceived = false;
-    bool bodyReceived = false;
-    bool chunksReceived = false;
-
-    if (iMessage.find("\r\n") != std::string::npos)
-    {
-      firstLineReceived = true;
-
-      size_t endofHeaders = iMessage.find("\r\n\r\n");
-
-      if (endofHeaders != std::string::npos)
-      {
-        headersReceived = true;
-
-        if (iMessage.find("Content-Length") != std::string::npos)
-        {
-          size_t pos = iMessage.find("Content-Length") + strlen("Content-Length: ");
-
-          // substring [pos, pos+count)
-          int bodyLength = std::stoi(
-            std::string(iMessage, pos,
-              iMessage.find("\r\n", pos) - pos)
-          );
-
-          if (bodyLength)
-          {
-            size_t total = endofHeaders + strlen("\r\n\r\n") + bodyLength;
-
-            if (iMessage.size() == total)
-            {
-              bodyReceived = true;
-              iPayload = iMessage.substr(endofHeaders + strlen("\r\n\r\n"), bodyLength);
+    virtual void ParseMessage() override {
+        bool bodyReceived = false;
+        bool chunksReceived = false;
+        bool headersReceived = false;
+        bool firstLineReceived = false;
+        if (iMessage.find("\r\n") != std::string::npos) {
+            firstLineReceived = true;
+            size_t endofHeaders = iMessage.find("\r\n\r\n");
+            if (endofHeaders != std::string::npos) {
+                headersReceived = true;
+                if (iMessage.find("Content-Length") != std::string::npos) {
+                    size_t pos = iMessage.find("Content-Length") + strlen("Content-Length: ");
+                    // substring [pos, pos+count)
+                    int bodyLength = std::stoi(
+                        std::string(iMessage, pos,
+                            iMessage.find("\r\n", pos) - pos));
+                    if (bodyLength) {
+                        size_t total = endofHeaders + strlen("\r\n\r\n") + bodyLength;
+                        if (iMessage.size() == total) {
+                            bodyReceived = true;
+                            iPayload = iMessage.substr(endofHeaders + strlen("\r\n\r\n"), bodyLength);
+                        }
+                    }
+                } else if (iMessage.find("Transfer-Encoding: chunked") != std::string::npos) {
+                    // \r\n\r\n -- endofHeaders
+                    // 2e\r\n
+                    // {
+                    //   chunkLength
+                    // }\r\n
+                    // 2f\r\n
+                    // {
+                    //   chunkLength
+                    // }\r\n
+                    // 0\r\n
+                    size_t pos = endofHeaders + strlen("\r\n\r\n");
+                    while (iMessage.find("\r\n", pos) != std::string::npos) {
+                        int chunkLength = std::stoi(
+                            std::string(iMessage, pos,
+                            iMessage.find("\r\n", pos) - pos),
+                            nullptr, 16);
+                        pos = iMessage.find("\r\n", pos) + strlen("\r\n");
+                        if (iMessage.size() < (pos + chunkLength + strlen("\r\n"))) break;
+                        auto chunk = iMessage.substr(pos, chunkLength);
+                        iPayload += chunk;
+                        if (chunkLength == 0) {
+                            chunksReceived = true;
+                            break;
+                        }
+                        pos += chunkLength + strlen("\r\n");
+                    }
+                } else {
+                    LOG << iMessage;
+                    bodyReceived = chunksReceived = true;
+                }
             }
-          }
         }
-        else if (iMessage.find("Transfer-Encoding: chunked") != std::string::npos)
-        {
-          // \r\n\r\n -- endofHeaders
-          // 2e\r\n
-          // {
-          //   chunkLength
-          // }\r\n
-          // 2f\r\n
-          // {
-          //   chunkLength
-          // }\r\n
-          // 0\r\n
 
-          size_t pos = endofHeaders + strlen("\r\n\r\n");
-
-          while (iMessage.find("\r\n", pos) != std::string::npos)
-          {
-            int chunkLength = std::stoi(
-              std::string(iMessage, pos,
-                iMessage.find("\r\n", pos) - pos),
-              nullptr, 16);
-
-            pos = iMessage.find("\r\n", pos) + strlen("\r\n");
-
-            if (iMessage.size() < (pos + chunkLength + strlen("\r\n"))) break;
-
-            auto chunk = iMessage.substr(pos, chunkLength);
-
-            iPayload += chunk;
-
-            if (chunkLength == 0) {
-              chunksReceived = true;
-              break;
+        if (firstLineReceived &&
+            headersReceived &&
+            (bodyReceived || chunksReceived)) {
+            std::istringstream ss(
+                iMessage.substr(0, iMessage.find("\r\n\r\n")));
+            std::string line;
+            while (std::getline(ss, line, '\n')) {
+                line.pop_back();
+                size_t index = line.find(": ");
+                if (index != std::string::npos) {
+                    std::string key, value;
+                    key = line.substr(0, index);
+                    value = line.substr(index + 2);
+                    SetHeader(key, value);
+                }
             }
-
-            pos += chunkLength + strlen("\r\n");
-          }
         }
-        else
-        {
-          LOG << iMessage;
-          bodyReceived = chunksReceived = true;
-        }
-      }
     }
 
-    if (firstLineReceived &&
-        headersReceived &&
-        (bodyReceived || chunksReceived))
-    {
-      std::istringstream ss(
-        iMessage.substr(0, iMessage.find("\r\n\r\n"))
-      );
+    public:
 
-      std::string line;
+    http_message(const std::vector<uint8_t>& m) : message(m) {
+        ParseMessage();
+    }
 
-      while (std::getline(ss, line, '\n'))
-      {
-        line.pop_back();
+    virtual std::string GetHeader(const std::string& key) {
+        return iHeaders[key];
+    }
 
-        size_t index = line.find(": ");
+    virtual size_t HeaderCount(void) {
+        return iHeaders.size();
+    }
 
-        if (index != std::string::npos)
-        {
-          std::string key, value;
+    virtual void SetHeader(const std::string& key, const std::string& value) {
+        iHeaders[key] = value;
+    }
 
-          key = line.substr(0, index);
-
-          value = line.substr(index + 2);
-
-          SetHeader(key, value);
+    virtual size_t GetPayloadLength(void) override {
+        const auto& h = GetHeader("Content-Length");
+        if (h.size()) {
+            return std::stoi(h);
         }
-      }
+        return 0;
     }
 
-  }
-
-  public:
-
-  http_message(const std::vector<uint8_t>& m) : message(m)
-  {
-    ParseMessage();
-  }
-
-  virtual std::string GetHeader(const std::string& key)
-  {
-    return iHeaders[key];
-  }
-
-  virtual size_t HeaderCount(void)
-  {
-    return iHeaders.size();
-  }
-
-  virtual void SetHeader(const std::string& key, const std::string& value)
-  {
-    iHeaders[key] = value;
-  }
-
-  virtual size_t GetPayloadLength(void) override
-  {
-    const auto& h = GetHeader("Content-Length");
-
-    if (h.size())
-    {
-      return std::stoi(h);
+    virtual const std::string& GetPayloadString(void) override {
+        return iPayload;
     }
 
-    return 0;
-  }
-
-  virtual const std::string& GetPayloadString(void) override
-  {
-    return iPayload;
-  }
-
-  virtual const char * GetPayloadBuffer(void) override
-  {
-    return GetPayloadString().c_str();
-  }
+    virtual const char * GetPayloadBuffer(void) override {
+        return GetPayloadString().c_str();
+    }
 };
 
 using SPHTTPMessage = std::shared_ptr<http_message>;
 
-class http_client : public protocol<uint8_t, uint8_t>
-{
-  public:
+class http_client : public protocol<uint8_t, uint8_t> {
 
-  http_client(const std::string& name) : protocol(name) {}
+    public:
 
-  void Post(const std::string& url, const std::string& body, TResponseCbk cbk = nullptr)
-  {
-    std::stringstream req;
+    http_client(const std::string& name) : protocol(name) {}
 
-    req << "POST " << url << " HTTP/1.1\r\n";
-    req << "Host: 127.0.0.1\r\n";
-    req << "Content-type: text/plain\r\n";
-    req << "Content-length: " << body.size() << "\r\n";      
-    req << "\r\n";
-    req << body;
-
-    SetResponseCallback(cbk);
-
-    Write((uint8_t *) req.str().c_str(), req.str().size(), 0);
-  }
-
-  protected:
-
-  virtual void StateMachine(SPMessage m) override
-  {
-    if (iResponseCallback)
-    {
-      iResponseCallback(m->GetPayloadString()); 
-    }
-  }
-
-  virtual SPMessage IsMessageComplete(const std::vector<uint8_t>& b) override
-  {
-    auto m = std::make_shared<http_message>(b);
-
-    if (m->HeaderCount())
-    {
-      return m;
+    void Post(const std::string& url, const std::string& body, TResponseCbk cbk = nullptr) {
+        std::stringstream req;
+        req << "POST " << url << " HTTP/1.1\r\n";
+        req << "Host: 127.0.0.1\r\n";
+        req << "Content-type: text/plain\r\n";
+        req << "Content-length: " << body.size() << "\r\n";
+        req << "\r\n";
+        req << body;
+        SetResponseCallback(cbk);
+        Write((uint8_t *) req.str().c_str(), req.str().size(), 0);
     }
 
-    return nullptr;
-  }
+    protected:
+
+    virtual void StateMachine(SPMessage m) override {
+        if (iResponseCallback) {
+            iResponseCallback(m->GetPayloadString());
+        }
+    }
+
+    virtual SPMessage IsMessageComplete(const std::vector<uint8_t>& b) override {
+        auto m = std::make_shared<http_message>(b);
+        if (m->HeaderCount()) {
+            return m;
+        }
+        return nullptr;
+    }
 };
 
 using SPProtocolHttpClient = std::shared_ptr<http_client>;
 
-} //namespace npl
+}
 
-#endif //PROTOCOLHTTP_HPP
+#endif

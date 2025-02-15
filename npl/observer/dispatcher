@@ -78,7 +78,7 @@ class dispatcher : public subject<uint8_t, uint8_t> {
     ~dispatcher() {
         _exit_loop = true;
         if (_ctrl_client) {
-            if (_ctrl_client->IsConnected()) {
+            if (_ctrl_client->is_connected()) {
                 _ctrl_client->StopSocket(true);
             }
         }
@@ -111,17 +111,15 @@ class dispatcher : public subject<uint8_t, uint8_t> {
                             memmove(ctx, m.data(), sizeof(context));
                             process_event_context((subject *) ctx->k, ctx);
                             m.clear();
-                        }
-                    }
-                );
-                this->_ctrl_server->GetConnectedClient()->AddEventListener(aso);
+                        }});
+                this->_ctrl_server->GetConnectedClient()->add_listener(aso);
             }
         );
-        this->AddEventListener(_ctrl_server)->AddEventListener(ls);
+        this->add_listener(_ctrl_server)->add_listener(ls);
         _ctrl_server->StartSocketServer();
         _ctrl_client = std::make_shared<socket_device>("DC-CT");
         _ctrl_client->SetHostAndPort("127.0.0.1", _ctrl_server->get_port());
-        this->AddEventListener(_ctrl_client);
+        this->add_listener(_ctrl_client);
         _ctrl_client->StartSocketClient();
     }
 
@@ -149,8 +147,8 @@ class dispatcher : public subject<uint8_t, uint8_t> {
         #endif
     }
 
-    virtual const SPSubject& AddEventListener(const SPSubject& observer) override {
-        subject::AddEventListener(observer);
+    virtual const SPSubject& add_listener(const SPSubject& observer) override {
+        subject::add_listener(observer);
         #ifdef _WIN32
         add_subject(observer);
         #endif
@@ -173,7 +171,7 @@ class dispatcher : public subject<uint8_t, uint8_t> {
             if (!rc) {
                 error = GetLastError();
                 DBG << "GQCS failed : " << error << " " <<
-                        ((subject<uint8_t, uint8_t> *) k)->GetName();
+                        ((subject<uint8_t, uint8_t> *) k)->get_name();
             }
             if (n == 0 && k == 0 && ol == 0) break;
             #elif linux
@@ -185,7 +183,7 @@ class dispatcher : public subject<uint8_t, uint8_t> {
                 error = errno;
                 if (errno == EINTR) continue;
                 DBG << "epoll_wait failed : " << strerror(error) << " " << (k ?
-                ((subject<uint8_t, uint8_t> *) k)->GetName() : "");
+                ((subject<uint8_t, uint8_t> *) k)->get_name() : "");
             }
             Event e {ee.events};
             #elif __has_include(<sys/event.h>)
@@ -195,7 +193,7 @@ class dispatcher : public subject<uint8_t, uint8_t> {
             if (rc < 0) {
                 error = errno;
                 DBG << "kevent failed : " << strerror(error) << " " <<
-                        ((subject<uint8_t, uint8_t> *) k)->GetName();
+                        ((subject<uint8_t, uint8_t> *) k)->get_name();
                 break;
             }
             k = ke.udata;
@@ -226,7 +224,7 @@ class dispatcher : public subject<uint8_t, uint8_t> {
 
     void process_event_context(void *key, context *ctx, int rc = 1, uint64_t error = 0) {
         auto k = (subject<uint8_t, uint8_t> *) key;
-        DBG << k->GetName() << " process_event_context " << std::hex << (uint64_t) k << " "
+        DBG << k->get_name() << " process_event_context " << std::hex << (uint64_t) k << " "
                 <<  npl::EIOToString(ctx->type) << " n " << std::dec << (ssize_t) ctx->n;
         if (rc <= 0) {
             k->OnError(error);
@@ -257,7 +255,7 @@ class dispatcher : public subject<uint8_t, uint8_t> {
     std::vector<context *> get_event_context(SPSubject o, Event& e) {
         std::vector<context *> contexts;
         auto dev = std::dynamic_pointer_cast<socket_device> (o);
-        auto isConnected = dev->IsConnected();
+        auto isConnected = dev->is_connected();
         auto isClientSocket = dev->IsClientSocket();
         auto isListentingSocket = dev->IsListeningSocket();
         if (e.is_write()) {
