@@ -261,7 +261,7 @@ class socket_device : public file_device {
         if (flag & SSL_RECEIVED_SHUTDOWN) {
             DBG << get_name() << " SSL_RECEIVED_SHUTDOWN, flags : " << flag;
             if (!(flag & SSL_SENT_SHUTDOWN)) {
-            StopSocket();
+                StopSocket();
             }
         }
     }
@@ -420,8 +420,7 @@ class socket_device : public file_device {
         file_device::OnWrite(b, n);
     }
 
-    virtual void * Read(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override
-    {
+    virtual void * Read(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override {
         return file_device::Read(b, l, o);
     }
 
@@ -437,28 +436,27 @@ class socket_device : public file_device {
         return false;
     }
 
-    virtual tls GetTLS(void)
-    {
+    virtual tls GetTLS(void) {
         return m_tls;
     }
 
-    virtual void SetTLS(tls tls)
-    {
+    virtual void SetTLS(tls tls) {
         m_tls = tls;
     }
 
-    virtual int get_port(void)
-    {
+    auto get_host(void) {
+        return m_host;
+    }
+
+    virtual int get_port(void) {
         return m_port;
     }
 
-    auto GetConnectedClient(void)
-    {
+    auto GetConnectedClient(void) {
         return m_connected_client;
     }
 
-    auto GetSslObject(void)
-    {
+    auto GetSslObject(void) {
         return m_ssl;
     }
 

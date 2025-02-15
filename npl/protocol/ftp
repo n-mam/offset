@@ -3,6 +3,7 @@
 
 #include <list>
 #include <mutex>
+#include <regex>
 #include <atomic>
 #include <vector>
 #include <string>
@@ -390,14 +391,25 @@ struct ftp : public protocol<uint8_t, uint8_t> {
         auto spec = pasv.substr(pasv.find('('));
         uint32_t h1, h2, h3, h4, p1, p2;
         int fRet = sscanf(spec.c_str(), "(%d,%d,%d,%d,%d,%d)", &h1, &h2, &h3, &h4, &p1, &p2);
-        if (fRet < 6) {
-            LOG << "Faled to parse PASV response";
+        if (fRet == 6) {
+            m_dc_host = std::to_string(h1) + "." +
+                        std::to_string(h2) + "." +
+                        std::to_string(h3) + "." +
+                        std::to_string(h4);
+            m_dc_port = (p1 << 8) + p2;
+        } else {
+            LOG << "Failed to parse PASV response; checking EPASV..";
+            std::regex regex(R"(\(\|\|\|(\d+)\|)");
+            std::smatch match;
+            if (std::regex_search(pasv, match, regex)) {
+                m_dc_port = std::stoi(match[1].str());
+                std::cout << "EPASV port: " << m_dc_port << std::endl;
+            } else {
+                std::cout << "No port found in the response!" << std::endl;
+            }
+            auto cc = std::static_pointer_cast<socket_device>(m_target.lock());
+            m_dc_host = cc->get_host();
         }
-        m_dc_host = std::to_string(h1) + "." +
-                    std::to_string(h2) + "." +
-                    std::to_string(h3) + "." +
-                    std::to_string(h4);
-        m_dc_port = (p1 << 8) + p2;
     }
 
     virtual void OpenDataChannel() {
@@ -475,7 +487,7 @@ struct ftp : public protocol<uint8_t, uint8_t> {
             if (m_dc_tls == tls::yes) {
                 auto cc = std::static_pointer_cast<socket_device>(m_target.lock());
                 std::static_pointer_cast<socket_device>
-                (m_data_channel)->InitializeSSL(cc->GetSslObject(),
+                    (m_data_channel)->InitializeSSL(cc->GetSslObject(),
                     [this](){
                         if (m_currentDirection == ftp::upload)
                             m_queue.front().c_tcbk((char *)0xABCDEF, 0);
