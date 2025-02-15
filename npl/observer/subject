@@ -49,54 +49,38 @@ struct subject : public std::enable_shared_from_this<subject<T1, T2>> {
     }
 
     virtual void * Read(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) {
-
         std::lock_guard<std::mutex> lg(m_lock);
-
         auto target = m_target.lock();
-
         if (target) {
             return target->Read(b, l, o);
         }
-
         return nullptr;
     }
 
     virtual bool Write(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) {
-
         std::lock_guard<std::mutex> lg(m_lock);
-
         auto target = m_target.lock();
-
         if (target) {
             return target->Write(b, l, o);
         }
-
         return false;
     }
 
     virtual int32_t ReadSync(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) {
-
         std::lock_guard<std::mutex> lg(m_lock);
-
         auto target = m_target.lock();
-
         if (target) {
             return target->ReadSync(b, l, o);
         }
-
         return -1;
     }
 
     virtual int32_t WriteSync(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) {
-
         std::lock_guard<std::mutex> lg(m_lock);
-
         auto target = m_target.lock();
-
         if (target) {
             return target->WriteSync(b, l, o);
         }
-
         return -1;
     }
 
@@ -198,23 +182,18 @@ struct subject : public std::enable_shared_from_this<subject<T1, T2>> {
     }
 
     virtual std::string GetProperty(const std::string& key) {
-
         std::lock_guard<std::mutex> lg(m_lock);
-
         std::string value = "";
-
         try {
             value = m_properties.at(key);
         }
         catch (const std::exception& e) {
             DBG << e.what();
         }
-
         return value;
     }
 
-    virtual int GetPropertyAsInt(const std::string& key)
-    {
+    virtual int GetPropertyAsInt(const std::string& key) {
         auto value = GetProperty(key);
         return std::stoi(value);
     }
@@ -227,21 +206,14 @@ struct subject : public std::enable_shared_from_this<subject<T1, T2>> {
     protected:
 
     std::mutex m_lock;
-
     WPSubject m_target;
-
     std::string m_name = "xxx";
 
     bool m_stopped = false;
-
     bool m_connected = false;
-
     bool m_removeAllListeners = false;
-
     bool m_removeSelfAsListener = false;
-
     std::vector<SPSubject> m_observers;
-
     std::unordered_map<std::string, std::string> m_properties;
 
     virtual void ResetSubject(SPSubject& subject) {
@@ -254,7 +226,6 @@ struct subject : public std::enable_shared_from_this<subject<T1, T2>> {
         if (this->m_removeAllListeners) {
             this->RemoveAllEventListenersInternal();
         }
-
         for (auto ob = m_observers.begin(); ob != m_observers.end(); ) {
             if ((*ob)->IsRemoveSelfAsListenerMarked()) {
                 ob = this->RemoveEventListenerInternal(*ob);
@@ -276,65 +247,51 @@ struct subject : public std::enable_shared_from_this<subject<T1, T2>> {
     }
 
     virtual void NotifyError(uint64_t error) {
-
         for (auto& observer : m_observers) {
             observer->OnError(error);
         }
-
         ProcessListenersMarkedForRemoval();
     }
 
     virtual void NotifyConnect() {
-
         for (auto& observer : m_observers) {
             observer->OnConnect();
         }
-
         ProcessListenersMarkedForRemoval();
     }
 
     virtual void NotifyRead(const T2 *b, size_t n) {
-
         for (auto& observer : m_observers) {
             observer->OnRead(b, n);
         }
-
         ProcessListenersMarkedForRemoval();
     }
 
     virtual void NotifyWrite(const T2 *b, size_t n) {
-
         for (auto& observer : m_observers) {
             observer->OnWrite(b, n);
         }
-
         ProcessListenersMarkedForRemoval();
     }
 
     virtual void NotifyDisconnect() {
-
         for (auto& observer : m_observers) {
             observer->OnDisconnect();
         }
-
         ProcessListenersMarkedForRemoval();
     }
 
     virtual void NotifyAccept(void) {
-
         for (auto& observer : m_observers) {
             observer->OnAccept();
         }
-
         ProcessListenersMarkedForRemoval();
     }
 
     virtual void NotifyEvent(std::any e) {
-
         for (auto& observer : m_observers) {
             observer->OnEvent(e);
         }
-
         ProcessListenersMarkedForRemoval();
     }
 };

@@ -23,657 +23,480 @@ inline std::map<SSL *, std::vector<SSL_SESSION *>> ssl_session_map;
 
 using TOnHandshake = std::function<void (void)>;
 
-class socket_device : public file_device
-{
-  using SPSocketDevice = std::shared_ptr<socket_device>;
-  using WPSocketDevice = std::weak_ptr<socket_device>;
+class socket_device : public file_device {
 
-  enum ESocketType {
-    invalid,
-    client,
-    accepted,
-    listening,
-  };
+    using SPSocketDevice = std::shared_ptr<socket_device>;
+    using WPSocketDevice = std::weak_ptr<socket_device>;
 
-  public:
+    enum ESocketType {
+        invalid,
+        client,
+        accepted,
+        listening,
+    };
 
-  socket_device(const std::string& name) : file_device(name)
-  {
-    _fd_async = (FD) socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    _device_type = EDeviceType::Socket;
-  }
+    public:
 
-  socket_device(FD socket)
-  {
-    _fd_async = socket;
-    _device_type = EDeviceType::Socket;
-  }
-
-  ~socket_device()
-  {
-    StopSocket();
-    shutdown((SOCKET)_fd_async, 0); //sd_recv
-    closesocket((SOCKET)_fd_async);
-    DBG << "~socket_device() <-- " << GetName() << " shutdown(sd_recv)";
-
-    if (m_ssl) {
-      if (ssl_session_map[m_ssl].size()) {
-        ssl_session_map[m_ssl].clear();
-      }
-      SSL_free(m_ssl);
-    }
-  }
-
-  virtual void StopSocket(bool stopWrite = false)
-  {
-    if (!IsStopped())
-    {
-      if (m_ssl)
-      {
-        int flag = SSL_get_shutdown(m_ssl);
-
-        if (!(flag & SSL_SENT_SHUTDOWN))
-        {
-          int rc = SSL_shutdown(m_ssl);
-          DBG << GetName() << " ssl_shutdown() rc : " << rc;
-          UpdateWriteBIO();
-        }
-      }
-
-      file_device::MarkStopped(true);
-
-      shutdown((SOCKET)_fd_async, 1); //sd_send
-
-      if (stopWrite)
-        shutdown((SOCKET)_fd_async, 0); //sd_recv
-
-      DBG << GetName() << " shutdown(sd_send)";
-    }
-  }
-
-  virtual void StartSocketClient(void)
-  {
-    DBG << "StartSocketClient " << m_host << ":" << m_port;
-
-    m_type = ESocketType::client;
-
-    #ifdef _WIN32
-
-    struct sockaddr_in addr;
-    ZeroMemory(&addr, sizeof(addr));
-    addr.sin_addr.s_addr = INADDR_ANY;
-    addr.sin_family = AF_INET;
-    addr.sin_port = 0;
-
-    int rc = bind((SOCKET)_fd_async, (SOCKADDR*) &addr, sizeof(addr));
-
-    assert(rc == 0);
-
-    context *ctx = (context *) calloc(1, sizeof(context));
-
-    ctx->type = EIOType::CONNECT;
-
-    sockaddr_in sa;
-    memset(&sa, 0, sizeof(sa));
-    sa.sin_family = AF_INET;
-
-    inet_pton(AF_INET, m_host.c_str(), &sa.sin_addr);
-
-    sa.sin_port = htons(m_port);
-
-    auto ConnectEx = GetExtentionPfn(WSAID_CONNECTEX, _fd_async);
-
-    bool fRet = ((LPFN_CONNECTEX)ConnectEx)(
-      (SOCKET)_fd_async,
-      (SOCKADDR*) &sa,
-      sizeof(sa),
-      NULL, 0, NULL,
-      (LPOVERLAPPED)ctx);
-
-    if (fRet)
-    {
-      #ifdef _WIN32
-      setsockopt((SOCKET)_fd_async, SOL_SOCKET, SO_UPDATE_CONNECT_CONTEXT, NULL, 0 );
-      #endif
-      OnConnect();
-    }
-    else if (WSAGetLastError() == ERROR_IO_PENDING)
-    {
-
-    }
-    else
-    {
-      DBG << "ConnectEx failed : " << WSAGetLastError();
+    socket_device(const std::string& name) : file_device(name) {
+        _fd_async = (FD) socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+        _device_type = EDeviceType::Socket;
     }
 
-    #else
-
-    SetSocketBlockingEnabled(_fd_async, false);
-
-    sockaddr_in sa;
-    memset(&sa, 0, sizeof(sa));
-    sa.sin_family = AF_INET;
-
-    inet_pton(AF_INET, m_host.c_str(), &sa.sin_addr);
-
-    sa.sin_port = htons(m_port);
-
-    int rc = connect((SOCKET)_fd_async, (const sockaddr *) &sa, sizeof(sa));
-
-    get_last_target(shared_from_this())->add_subject(shared_from_this());
-
-    #endif
-  }
-
-  virtual void StartSocketServer(void)
-  {
-    sockaddr_in sa;
-    memset(&sa, 0, sizeof(sa));
-    sa.sin_family = AF_INET;
-
-    inet_pton(AF_INET, m_host.c_str(), &sa.sin_addr);
-
-    sa.sin_port = htons(m_port);
-
-    int fRet = bind((SOCKET)_fd_async, (const sockaddr *) &sa, sizeof(sa));
-
-    if (fRet == -1)
-    {
-      DBG << GetName() << " bind failed. error : " << strerror(errno);
+    socket_device(FD socket) {
+        _fd_async = socket;
+        _device_type = EDeviceType::Socket;
     }
 
-    assert(fRet == 0);
-
-    memset(&sa, 0, sizeof(sa));
-    socklen_t len = sizeof(sa);
-    getsockname((SOCKET)_fd_async, (struct sockaddr *) &sa, &len);
-    m_port = ntohs(sa.sin_port);
-
-    DBG << GetName() << " server bound to " << m_port << " port";
-
-    fRet = listen((SOCKET)_fd_async, SOMAXCONN);
-
-    if (fRet == -1)
-    {
-      DBG << "listen failed. error : " << strerror(errno);
-    }
-
-    assert(fRet == 0);
-
-    #ifndef WIN32
-    SetSocketBlockingEnabled(_fd_async, false);
-    get_last_target(shared_from_this())->add_subject(shared_from_this());
-    #endif
-
-    m_type = ESocketType::listening;
-
-    #ifdef _WIN32
-    AcceptNewConnection();
-    #endif
-  }
-
-  #ifdef _WIN32
-  virtual void AcceptNewConnection(void)
-  {
-    auto AcceptEx = GetExtentionPfn(WSAID_ACCEPTEX, _fd_async);
-
-    uint8_t *b = (uint8_t *) calloc(1, 2 * (sizeof(SOCKADDR_STORAGE) + 16) + sizeof(context));
-
-    ((context *)b)->type = EIOType::ACCEPT;
-
-    m_accepted_socket = (FD) socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-
-    DWORD bytesReceived;
-
-    bool rc = ((LPFN_ACCEPTEX)AcceptEx)(
-                    (SOCKET)_fd_async,
-                    (SOCKET)m_accepted_socket,
-                    b + sizeof(context),
-                    0,
-                    sizeof(SOCKADDR_STORAGE) + 16,
-                    sizeof(SOCKADDR_STORAGE) + 16,
-                    &bytesReceived,
-                    (LPOVERLAPPED)b);
-  }
-  #endif
-
-  virtual bool SetSocketBlockingEnabled(FD sock, bool blocking)
-  {
-    bool fret = false;
-
-    #ifndef WIN32
-      int flags = fcntl(sock, F_GETFL, 0);
-      if (flags == -1) return false;
-      flags = blocking ? (flags & ~O_NONBLOCK) : (flags | O_NONBLOCK);
-      return (fcntl((SOCKET)sock, F_SETFL, flags) == 0) ? true : false;
-    #else
-      unsigned long mode = blocking ? 0 : 1;
-      return (ioctlsocket((SOCKET)sock, FIONBIO, &mode) == 0) ? true : false;
-    #endif
-  }
-
-  virtual uint32_t GetSocketType(void)
-  {
-    return m_type;
-  }
-
-  virtual bool IsClientSocket(void)
-  {
-    return (m_type == ESocketType::client);
-  }
-
-  virtual bool IsListeningSocket(void)
-  {
-    return (m_type == ESocketType::listening);
-  }
-
-  virtual bool IsAcceptedSocket(void)
-  {
-    return (m_type == ESocketType::accepted);
-  }
-
-  virtual bool SetHostAndPort(const std::string& host, int port)
-  {
-    int fRet = 0;
-
-    if (!std::isalpha(host[0]))
-    {
-      m_host = host;
-      m_port = port;
-    }
-    else
-    {
-      struct addrinfo hints;
-      struct addrinfo *ptr = NULL;
-      struct addrinfo *result = NULL;
-      struct sockaddr_in *sockaddr_ipv4;
-      struct sockaddr_in6 * sockaddr_ipv6;
-
-      memset(&hints, 0, sizeof(hints));
-      hints.ai_flags = AI_ALL;
-      hints.ai_family = AF_INET; //AF_UNSPEC;
-      hints.ai_socktype = SOCK_STREAM;
-      hints.ai_protocol = IPPROTO_TCP;
-
-      fRet = getaddrinfo(host.c_str(), nullptr, &hints, &result);
-
-      if (fRet == 0) {
-        m_port = port;
-        for (ptr = result; ptr != nullptr; ptr = ptr->ai_next) {
-          switch (ptr->ai_family) {
-            case AF_UNSPEC:
-                break;
-            case AF_INET:
-            {
-              sockaddr_ipv4 = (struct sockaddr_in *) ptr->ai_addr;
-              char ipaddr[INET_ADDRSTRLEN] = {'\0'};
-              auto ip = inet_ntop(AF_INET, &sockaddr_ipv4->sin_addr, ipaddr, INET_ADDRSTRLEN);
-              m_host = std::string(ip);
-              break;
-            }
-            case AF_INET6:
-            {
-              sockaddr_ipv6 = (struct sockaddr_in6 *) ptr->ai_addr;
-              char ipaddr[INET6_ADDRSTRLEN] = {'\0'};
-              auto ip = inet_ntop(AF_INET6, &sockaddr_ipv6->sin6_addr, ipaddr, INET6_ADDRSTRLEN);
-              m_host = std::string(ip);
-              break;
-            }
-            default: break;
-          }
-          break;
-        }
-      } else {
-        ERR << "getaddrinfo failed " << fRet;
-      }
-
-      freeaddrinfo(result);
-    }
-
-    return fRet == 0;
-  }
-
-  virtual void CheckPeerSSLShutdown()
-  {
-    int flag = SSL_get_shutdown(m_ssl);
-
-    if (flag & SSL_RECEIVED_SHUTDOWN)
-    {
-      DBG << GetName() << " SSL_RECEIVED_SHUTDOWN, flags : " << flag;
-
-      if (!(flag & SSL_SENT_SHUTDOWN))
-      {
+    ~socket_device() {
         StopSocket();
-      }
-    }
-  }
-
-  virtual bool UpdateWriteBIO(void)
-  {
-    bool fRet = true;
-
-    int pending = BIO_pending(m_write_bio);
-
-    uint8_t buf[DEVICE_BUFFER_SIZE];
-
-    while (pending)
-    {
-      auto rc = BIO_read(m_write_bio, buf, DEVICE_BUFFER_SIZE);
-
-      if (rc > 0)
-      {
-        fRet = file_device::Write(buf, rc);
-      }
-
-      pending = BIO_pending(m_write_bio);
-
-      if (rc <= 0) break;
+        shutdown((SOCKET)_fd_async, 0); //sd_recv
+        closesocket((SOCKET)_fd_async);
+        DBG << "~socket_device() <-- " << GetName() << " shutdown(sd_recv)";
+        if (m_ssl) {
+            if (ssl_session_map[m_ssl].size()) {
+                ssl_session_map[m_ssl].clear();
+            }
+            SSL_free(m_ssl);
+        }
     }
 
-    return fRet;
-  }
-
-  virtual void InitializeSSL(SSL *cc_ssl, TOnHandshake cbk = nullptr)
-  {
-    m_onHandShake = cbk;
-
-    m_ssl_ctx = SSL_CTX_new(TLS_client_method());
-
-    SSL_CTX_set_verify(m_ssl_ctx, SSL_VERIFY_NONE, NULL);
-
-    SSL_CTX_set_session_cache_mode(m_ssl_ctx, SSL_SESS_CACHE_CLIENT);
-    /**
-     * In TLSv1.3, sessions are established after the main handshake has completed.
-     * The server decides when to send the client the session information and this
-     * may occur some time after the end of the handshake (or not at all). This means
-     * that applications should expect the new_session_cb() function to be invoked
-     * during the handshake (for <= TLSv1.2) or after the handshake (for TLSv1.3).
-     * It is also possible in TLSv1.3 for multiple sessions to be established with a
-     * single connection. In these case the new_session_cb() function will be invoked
-     * multiple times.
-     */
-    SSL_CTX_sess_set_new_cb(m_ssl_ctx,
-      [](SSL *ssl, SSL_SESSION *session) {
-        ssl_session_map[ssl].push_back(session);
-        DBG << "new session callback " << SSL_get_version(ssl);
-        return 0;
-      });
-
-    m_ssl = SSL_new(m_ssl_ctx);
-
-    if (ssl_session_map[cc_ssl ? cc_ssl : m_ssl].size())
-    {
-      SSL_set_session(m_ssl, ssl_session_map[cc_ssl].back());
+    virtual void StopSocket(bool stopWrite = false) {
+        if (!IsStopped()) {
+            if (m_ssl) {
+                int flag = SSL_get_shutdown(m_ssl);
+                if (!(flag & SSL_SENT_SHUTDOWN)) {
+                    int rc = SSL_shutdown(m_ssl);
+                    DBG << GetName() << " ssl_shutdown() rc : " << rc;
+                    UpdateWriteBIO();
+                }
+            }
+            file_device::MarkStopped(true);
+            shutdown((SOCKET)_fd_async, 1); //sd_send
+            if (stopWrite) {
+                shutdown((SOCKET)_fd_async, 0); //sd_recv
+            }
+            DBG << GetName() << " shutdown(sd_send)";
+        }
     }
 
-    m_read_bio = BIO_new(BIO_s_mem());
-    m_write_bio = BIO_new(BIO_s_mem());
+    virtual void StartSocketClient(void) {
+        DBG << "StartSocketClient " << m_host << ":" << m_port;
+        m_type = ESocketType::client;
+        #ifdef _WIN32
+        struct sockaddr_in addr;
+        ZeroMemory(&addr, sizeof(addr));
+        addr.sin_addr.s_addr = INADDR_ANY;
+        addr.sin_family = AF_INET;
+        addr.sin_port = 0;
+        int rc = bind((SOCKET)_fd_async, (SOCKADDR*) &addr, sizeof(addr));
+        assert(rc == 0);
+        context *ctx = (context *) calloc(1, sizeof(context));
+        ctx->type = EIOType::CONNECT;
+        sockaddr_in sa;
+        memset(&sa, 0, sizeof(sa));
+        sa.sin_family = AF_INET;
+        inet_pton(AF_INET, m_host.c_str(), &sa.sin_addr);
+        sa.sin_port = htons(m_port);
+        auto ConnectEx = GetExtentionPfn(WSAID_CONNECTEX, _fd_async);
+        bool fRet = ((LPFN_CONNECTEX)ConnectEx)(
+            (SOCKET)_fd_async,
+            (SOCKADDR*) &sa,
+            sizeof(sa),
+            NULL, 0, NULL,
+            (LPOVERLAPPED)ctx);
+        if (fRet) {
+            #ifdef _WIN32
+            setsockopt((SOCKET)_fd_async, SOL_SOCKET, SO_UPDATE_CONNECT_CONTEXT, NULL, 0 );
+            #endif
+            OnConnect();
+        } else if (WSAGetLastError() == ERROR_IO_PENDING) {
 
-    SSL_set_bio(m_ssl, m_read_bio, m_write_bio);
-
-    if (IsClientSocket())
-    {
-      SSL_set_connect_state(m_ssl);
-
-      SSL_do_handshake(m_ssl);
-
-      UpdateWriteBIO();
+        } else {
+            DBG << "ConnectEx failed : " << WSAGetLastError();
+        }
+        #else
+        SetSocketBlockingEnabled(_fd_async, false);
+        sockaddr_in sa;
+        memset(&sa, 0, sizeof(sa));
+        sa.sin_family = AF_INET;
+        inet_pton(AF_INET, m_host.c_str(), &sa.sin_addr);
+        sa.sin_port = htons(m_port);
+        int rc = connect((SOCKET)_fd_async, (const sockaddr *) &sa, sizeof(sa));
+        get_last_target(shared_from_this())->add_subject(shared_from_this());
+        #endif
     }
-    else
-    {
-      SSL_set_accept_state(m_ssl);
+
+    virtual void StartSocketServer(void) {
+        sockaddr_in sa;
+        memset(&sa, 0, sizeof(sa));
+        sa.sin_family = AF_INET;
+        inet_pton(AF_INET, m_host.c_str(), &sa.sin_addr);
+        sa.sin_port = htons(m_port);
+        int fRet = bind((SOCKET)_fd_async, (const sockaddr *) &sa, sizeof(sa));
+        if (fRet == -1) {
+            DBG << GetName() << " bind failed. error : " << strerror(errno);
+        }
+        assert(fRet == 0);
+        memset(&sa, 0, sizeof(sa));
+        socklen_t len = sizeof(sa);
+        getsockname((SOCKET)_fd_async, (struct sockaddr *) &sa, &len);
+        m_port = ntohs(sa.sin_port);
+        DBG << GetName() << " server bound to " << m_port << " port";
+        fRet = listen((SOCKET)_fd_async, SOMAXCONN);
+        if (fRet == -1) {
+            DBG << "listen failed. error : " << strerror(errno);
+        }
+        assert(fRet == 0);
+        #ifndef WIN32
+        SetSocketBlockingEnabled(_fd_async, false);
+        get_last_target(shared_from_this())->add_subject(shared_from_this());
+        #endif
+        m_type = ESocketType::listening;
+        #ifdef _WIN32
+        AcceptNewConnection();
+        #endif
     }
-  }
-
-  virtual void OnAccept(void) override
-  {
-    assert(IsListeningSocket());
-
-    #ifndef WIN32
-
-    struct sockaddr_storage ca;
-    socklen_t alen = sizeof(struct sockaddr_storage);
-
-    m_accepted_socket = (FD) accept((SOCKET)_fd_async, (struct sockaddr *) &ca, &alen);
-
-    if (m_accepted_socket == -1)
-    {
-      DBG << "accept failed. error : " << strerror(errno) << " " << m_type;
-      return;
-    }
-
-    SetSocketBlockingEnabled(m_accepted_socket, false);
-
-    #endif
-
-    m_connected_client.reset();
-
-    m_connected_client = std::make_shared<socket_device>(m_accepted_socket);
-
-    m_connected_client->m_type = ESocketType::accepted;
-
-    m_connected_client->MarkConnected(true);
-
-    get_last_target(shared_from_this())->AddEventListener(m_connected_client);
-
-    file_device::OnAccept();
 
     #ifdef _WIN32
-    m_connected_client->Read();
-    setsockopt((SOCKET)m_accepted_socket, SOL_SOCKET, SO_UPDATE_ACCEPT_CONTEXT, (char*)&(_fd_async), sizeof(_fd_async));
-    AcceptNewConnection();
+    virtual void AcceptNewConnection(void) {
+        auto AcceptEx = GetExtentionPfn(WSAID_ACCEPTEX, _fd_async);
+        uint8_t *b = (uint8_t *) calloc(1, 2 * (sizeof(SOCKADDR_STORAGE) + 16) + sizeof(context));
+        ((context *)b)->type = EIOType::ACCEPT;
+        m_accepted_socket = (FD) socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+        DWORD bytesReceived;
+        bool rc = ((LPFN_ACCEPTEX)AcceptEx)(
+            (SOCKET)_fd_async,
+            (SOCKET)m_accepted_socket,
+            b + sizeof(context),
+            0,
+            sizeof(SOCKADDR_STORAGE) + 16,
+            sizeof(SOCKADDR_STORAGE) + 16,
+            &bytesReceived,
+            (LPOVERLAPPED)b);
+    }
     #endif
-  }
 
-  virtual void OnError(uint64_t error) override
-  {
-    file_device::OnError(error);
-  }
+    virtual bool SetSocketBlockingEnabled(FD sock, bool blocking) {
+        bool fret = false;
 
-  virtual void OnConnect() override
-  {
-    assert(IsClientSocket());
+        #ifndef WIN32
+            int flags = fcntl(sock, F_GETFL, 0);
+            if (flags == -1) return false;
+            flags = blocking ? (flags & ~O_NONBLOCK) : (flags | O_NONBLOCK);
+            return (fcntl((SOCKET)sock, F_SETFL, flags) == 0) ? true : false;
+        #else
+            unsigned long mode = blocking ? 0 : 1;
+            return (ioctlsocket((SOCKET)sock, FIONBIO, &mode) == 0) ? true : false;
+        #endif
+    }
 
-    DBG << GetName() << " OnConnect()";
+    virtual uint32_t GetSocketType(void)
+    {
+        return m_type;
+    }
 
-    file_device::OnConnect();
+    virtual bool IsClientSocket(void)
+    {
+        return (m_type == ESocketType::client);
+    }
+
+    virtual bool IsListeningSocket(void)
+    {
+        return (m_type == ESocketType::listening);
+    }
+
+    virtual bool IsAcceptedSocket(void)
+    {
+        return (m_type == ESocketType::accepted);
+    }
+
+    virtual bool SetHostAndPort(const std::string& host, int port) {
+        int fRet = 0;
+        if (!std::isalpha(host[0])) {
+            m_host = host;
+            m_port = port;
+        } else {
+            struct addrinfo hints;
+            struct addrinfo *ptr = NULL;
+            struct addrinfo *result = NULL;
+            struct sockaddr_in *sockaddr_ipv4;
+            struct sockaddr_in6 * sockaddr_ipv6;
+
+            memset(&hints, 0, sizeof(hints));
+            hints.ai_flags = AI_ALL;
+            hints.ai_family = AF_INET; //AF_UNSPEC;
+            hints.ai_socktype = SOCK_STREAM;
+            hints.ai_protocol = IPPROTO_TCP;
+            fRet = getaddrinfo(host.c_str(), nullptr, &hints, &result);
+
+            if (fRet == 0) {
+                m_port = port;
+                for (ptr = result; ptr != nullptr; ptr = ptr->ai_next) {
+                    switch (ptr->ai_family) {
+                        case AF_UNSPEC:
+                            break;
+                        case AF_INET: {
+                            sockaddr_ipv4 = (struct sockaddr_in *) ptr->ai_addr;
+                            char ipaddr[INET_ADDRSTRLEN] = {'\0'};
+                            auto ip = inet_ntop(AF_INET, &sockaddr_ipv4->sin_addr, ipaddr, INET_ADDRSTRLEN);
+                            m_host = std::string(ip);
+                            break;
+                        }
+                        case AF_INET6: {
+                            sockaddr_ipv6 = (struct sockaddr_in6 *) ptr->ai_addr;
+                            char ipaddr[INET6_ADDRSTRLEN] = {'\0'};
+                            auto ip = inet_ntop(AF_INET6, &sockaddr_ipv6->sin6_addr, ipaddr, INET6_ADDRSTRLEN);
+                            m_host = std::string(ip);
+                            break;
+                        }
+                        default: break;
+                    }
+                    break;
+                }
+            } else {
+                ERR << "getaddrinfo failed " << fRet;
+            }
+            freeaddrinfo(result);
+        }
+        return fRet == 0;
+    }
+
+    virtual void CheckPeerSSLShutdown() {
+        int flag = SSL_get_shutdown(m_ssl);
+        if (flag & SSL_RECEIVED_SHUTDOWN) {
+            DBG << GetName() << " SSL_RECEIVED_SHUTDOWN, flags : " << flag;
+            if (!(flag & SSL_SENT_SHUTDOWN)) {
+            StopSocket();
+            }
+        }
+    }
+
+    virtual bool UpdateWriteBIO(void) {
+        bool fRet = true;
+        int pending = BIO_pending(m_write_bio);
+        uint8_t buf[DEVICE_BUFFER_SIZE];
+        while (pending) {
+            auto rc = BIO_read(m_write_bio, buf, DEVICE_BUFFER_SIZE);
+            if (rc > 0) {
+            fRet = file_device::Write(buf, rc);
+            }
+            pending = BIO_pending(m_write_bio);
+            if (rc <= 0) break;
+        }
+        return fRet;
+    }
+
+    virtual void InitializeSSL(SSL *cc_ssl, TOnHandshake cbk = nullptr) {
+        m_onHandShake = cbk;
+        m_ssl_ctx = SSL_CTX_new(TLS_client_method());
+        SSL_CTX_set_verify(m_ssl_ctx, SSL_VERIFY_NONE, NULL);
+        SSL_CTX_set_session_cache_mode(m_ssl_ctx, SSL_SESS_CACHE_CLIENT);
+        /**
+         * In TLSv1.3, sessions are established after the main handshake has completed.
+         * The server decides when to send the client the session information and this
+         * may occur some time after the end of the handshake (or not at all). This means
+         * that applications should expect the new_session_cb() function to be invoked
+         * during the handshake (for <= TLSv1.2) or after the handshake (for TLSv1.3).
+         * It is also possible in TLSv1.3 for multiple sessions to be established with a
+         * single connection. In these case the new_session_cb() function will be invoked
+         * multiple times.
+         */
+        SSL_CTX_sess_set_new_cb(m_ssl_ctx,
+            [](SSL *ssl, SSL_SESSION *session) {
+            ssl_session_map[ssl].push_back(session);
+            DBG << "new session callback " << SSL_get_version(ssl);
+            return 0;
+            });
+        m_ssl = SSL_new(m_ssl_ctx);
+        if (ssl_session_map[cc_ssl ? cc_ssl : m_ssl].size()) {
+            SSL_set_session(m_ssl, ssl_session_map[cc_ssl].back());
+        }
+        m_read_bio = BIO_new(BIO_s_mem());
+        m_write_bio = BIO_new(BIO_s_mem());
+        SSL_set_bio(m_ssl, m_read_bio, m_write_bio);
+        if (IsClientSocket()) {
+            SSL_set_connect_state(m_ssl);
+            SSL_do_handshake(m_ssl);
+            UpdateWriteBIO();
+        } else {
+            SSL_set_accept_state(m_ssl);
+        }
+    }
+
+    virtual void OnAccept(void) override {
+        assert(IsListeningSocket());
+        #ifndef WIN32
+        struct sockaddr_storage ca;
+        socklen_t alen = sizeof(struct sockaddr_storage);
+        m_accepted_socket = (FD) accept((SOCKET)_fd_async, (struct sockaddr *) &ca, &alen);
+        if (m_accepted_socket == -1) {
+            DBG << "accept failed. error : " << strerror(errno) << " " << m_type;
+            return;
+        }
+        SetSocketBlockingEnabled(m_accepted_socket, false);
+        #endif
+        m_connected_client.reset();
+        m_connected_client = std::make_shared<socket_device>(m_accepted_socket);
+        m_connected_client->m_type = ESocketType::accepted;
+        m_connected_client->MarkConnected(true);
+        get_last_target(shared_from_this())->AddEventListener(m_connected_client);
+        file_device::OnAccept();
+        #ifdef _WIN32
+        m_connected_client->Read();
+        setsockopt((SOCKET)m_accepted_socket, SOL_SOCKET, SO_UPDATE_ACCEPT_CONTEXT, (char*)&(_fd_async), sizeof(_fd_async));
+        AcceptNewConnection();
+        #endif
+    }
+
+    virtual void OnError(uint64_t error) override {
+        file_device::OnError(error);
+    }
+
+    virtual void OnConnect() override {
+        assert(IsClientSocket());
+        DBG << GetName() << " OnConnect()";
+        file_device::OnConnect();
+        #ifdef _WIN32
+        file_device::Read();
+        setsockopt((SOCKET)_fd_async, SOL_SOCKET, SO_UPDATE_CONNECT_CONTEXT, NULL, 0 );
+        #endif
+    }
+
+    virtual void OnDisconnect() override {
+        if (m_ssl) {
+            // DBG << GetName() <<
+            // " shutdown mode : " << SSL_get_shutdown(m_ssl);
+            CheckPeerSSLShutdown();
+        }
+        file_device::OnDisconnect();
+    }
+
+    virtual void OnRead(const uint8_t *b, size_t n) override {
+        #ifdef _WIN32
+        file_device::Read();
+        #endif
+        size_t _n = n;
+        std::string msg;
+        const uint8_t *_b = b;
+
+        if (m_ssl) {
+            int rc = BIO_write(m_read_bio, b, static_cast<int>(n));
+            assert(rc == n);
+            if (!m_handshake_done) {
+                rc = SSL_do_handshake(m_ssl);
+                if (rc == 1) {
+                    m_handshake_done = true;
+                    m_tls_version = SSL_get_version(m_ssl);
+                    DBG << GetName() << " " << m_tls_version << " handshake done, session reused : " << SSL_session_reused(m_ssl);
+                    if (m_onHandShake) {
+                        m_onHandShake();
+                    }
+                } else {
+                    DBG << GetName() << " SSL_do_handshake : " << rc << " " << SSL_get_error(m_ssl, rc);
+                }
+            }
+
+            if (m_handshake_done) {
+                while (true) {
+                    char buf[DEVICE_BUFFER_SIZE];
+                    rc = SSL_read(m_ssl, buf, DEVICE_BUFFER_SIZE);
+                    if (rc > 0) {
+                        msg.append(buf, rc);
+                    } else {
+                        break;
+                    }
+                }
+            }
+            UpdateWriteBIO();
+            if (msg.size()) {
+                _b = (uint8_t *)msg.data(), _n = msg.size();
+            } else {
+                return;
+            }
+        }
+        file_device::OnRead(_b, _n);
+    }
+
+    virtual void OnWrite(const uint8_t *b, size_t n) override {
+        if (m_ssl && !m_handshake_done) {
+            SSL_do_handshake(m_ssl);
+            return;
+        }
+        file_device::OnWrite(b, n);
+    }
+
+    virtual void * Read(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override
+    {
+        return file_device::Read(b, l, o);
+    }
+
+    virtual bool Write(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override {
+        if (m_ssl) {
+            auto rc = SSL_write(m_ssl, b, static_cast<int>(l));
+            if (rc) {
+                return UpdateWriteBIO();
+            }
+        } else {
+            return file_device::Write(b, l);
+        }
+        return false;
+    }
+
+    virtual tls GetTLS(void)
+    {
+        return m_tls;
+    }
+
+    virtual void SetTLS(tls tls)
+    {
+        m_tls = tls;
+    }
+
+    virtual int get_port(void)
+    {
+        return m_port;
+    }
+
+    auto GetConnectedClient(void)
+    {
+        return m_connected_client;
+    }
+
+    auto GetSslObject(void)
+    {
+        return m_ssl;
+    }
+
+    protected:
+
+    int m_port = 0;
+    std::string m_host;
+    tls m_tls = tls::no;
+    FD m_accepted_socket;
+    SSL *m_ssl = nullptr;
+    BIO *m_read_bio = nullptr;
+    std::string m_tls_version;
+    BIO *m_write_bio = nullptr;
+    SSL_CTX *m_ssl_ctx = nullptr;
+    bool m_handshake_done = false;
+    int m_type = ESocketType::invalid;
+    TOnHandshake m_onHandShake = nullptr;
+    SPSocketDevice m_connected_client = nullptr;
 
     #ifdef _WIN32
-    file_device::Read();
-    setsockopt((SOCKET)_fd_async, SOL_SOCKET, SO_UPDATE_CONNECT_CONTEXT, NULL, 0 );
+    void * GetExtentionPfn(GUID guid, FD fd) {
+        void *pfn;
+        DWORD n;
+        int rc = WSAIoctl(
+            (SOCKET)fd,
+            SIO_GET_EXTENSION_FUNCTION_POINTER,
+            &guid, sizeof(guid),
+            &pfn, sizeof(pfn),
+            &n, NULL, NULL);
+        assert(rc == 0);
+        return pfn;
+    }
     #endif
-  }
-
-  virtual void OnDisconnect() override
-  {
-    if (m_ssl) {
-      // DBG << GetName() <<
-      // " shutdown mode : " << SSL_get_shutdown(m_ssl);
-      CheckPeerSSLShutdown();
-    }
-
-    file_device::OnDisconnect();
-  }
-
-  virtual void OnRead(const uint8_t *b, size_t n) override
-  {
-    #ifdef _WIN32
-    file_device::Read();
-    #endif
-
-    size_t _n = n;
-    std::string msg;
-    const uint8_t *_b = b;
-
-    if (m_ssl)
-    {
-      int rc = BIO_write(m_read_bio, b, static_cast<int>(n));
-
-      assert(rc == n);
-
-      if (!m_handshake_done)
-      {
-        rc = SSL_do_handshake(m_ssl);
-
-        if (rc == 1)
-        {
-          m_handshake_done = true;
-
-          m_tls_version = SSL_get_version(m_ssl);
-
-          DBG << GetName() << " " << m_tls_version << " handshake done, session reused : " << SSL_session_reused(m_ssl);
-
-          if (m_onHandShake)
-          {
-            m_onHandShake();
-          }
-        }
-        else
-        {
-          DBG << GetName() << " SSL_do_handshake : " << rc << " " << SSL_get_error(m_ssl, rc);
-        }
-      }
-
-      if (m_handshake_done)
-      {
-        while (true)
-        {
-          char buf[DEVICE_BUFFER_SIZE];
-
-          rc = SSL_read(m_ssl, buf, DEVICE_BUFFER_SIZE);
-
-          if (rc > 0)
-          {
-            msg.append(buf, rc);
-          }
-          else
-          {
-            break;
-          }
-        }
-      }
-
-      UpdateWriteBIO();
-
-      if (msg.size())
-      {
-        _b = (uint8_t *)msg.data(), _n = msg.size();
-      }
-      else
-      {
-        return;
-      }
-    }
-
-    file_device::OnRead(_b, _n);
-  }
-
-  virtual void OnWrite(const uint8_t *b, size_t n) override
-  {
-    if (m_ssl && !m_handshake_done)
-    {
-      SSL_do_handshake(m_ssl);
-      return;
-    }
-
-    file_device::OnWrite(b, n);
-  }
-
-  virtual void * Read(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override
-  {
-    return file_device::Read(b, l, o);
-  }
-
-  virtual bool Write(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override
-  {
-    if (m_ssl)
-    {
-      auto rc = SSL_write(m_ssl, b, static_cast<int>(l));
-
-      if (rc)
-      {
-        return UpdateWriteBIO();
-      }
-    }
-    else
-    {
-      return file_device::Write(b, l);
-    }
-
-    return false;
-  }
-
-  virtual tls GetTLS(void)
-  {
-    return m_tls;
-  }
-
-  virtual void SetTLS(tls tls)
-  {
-    m_tls = tls;
-  }
-
-  virtual int get_port(void)
-  {
-    return m_port;
-  }
-
-  auto GetConnectedClient(void)
-  {
-    return m_connected_client;
-  }
-
-  auto GetSslObject(void)
-  {
-    return m_ssl;
-  }
-
-  protected:
-
-  FD m_accepted_socket;
-
-  int m_port = 0;
-
-  std::string m_host;
-
-  tls m_tls = tls::no;
-
-  SSL *m_ssl = nullptr;
-
-  SSL_CTX *m_ssl_ctx = nullptr;
-
-  BIO *m_read_bio = nullptr;
-
-  BIO *m_write_bio = nullptr;
-
-  bool m_handshake_done = false;
-
-  std::string m_tls_version;
-
-  TOnHandshake m_onHandShake = nullptr;
-
-  int m_type = ESocketType::invalid;
-
-  SPSocketDevice m_connected_client = nullptr;
-
-  #ifdef _WIN32
-  void * GetExtentionPfn(GUID guid, FD fd)
-  {
-    void *pfn;
-    DWORD n;
-
-    int rc = WSAIoctl(
-      (SOCKET)fd,
-      SIO_GET_EXTENSION_FUNCTION_POINTER,
-      &guid, sizeof(guid),
-      &pfn, sizeof(pfn),
-      &n, NULL, NULL);
-
-    assert(rc == 0);
-
-    return pfn;
-  }
-  #endif
 };
 
 using SPSocketDevice = std::shared_ptr<socket_device>;

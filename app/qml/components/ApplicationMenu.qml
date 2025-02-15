@@ -6,7 +6,6 @@ Rectangle {
     // border.width: 1
     // border.color: borderColor
     color: Material.background
-    y: (parent.height - height) / 2
 
     property var startIndex: 0
     signal menuSelectionSignal(var index)
@@ -14,7 +13,7 @@ Rectangle {
     ListView {
         id: menuList
         clip: true
-        spacing: 25
+        spacing: 18
         height: 378
         width: parent.width
         currentIndex: startIndex

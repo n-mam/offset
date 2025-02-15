@@ -6,23 +6,23 @@
 #include <observer/subject>
 
 #ifdef _WIN32
-  #include <winsock2.h>
-  #include <MSWSock.h>
-  #include <Ws2tcpip.h>
-  using FD = HANDLE;
+#include <winsock2.h>
+#include <MSWSock.h>
+#include <Ws2tcpip.h>
+using FD = HANDLE;
 #else
-  #include <netdb.h>
-  #include <fcntl.h>
-  #include <string.h>
-  #include <unistd.h>
-  #include <arpa/inet.h>
-  #include <sys/types.h>
-  #include <sys/socket.h>
-  #include <netinet/in.h>
-  #include <netinet/tcp.h>
-  using FD = int;
-  using SOCKET = int;
-  #define closesocket close;
+#include <netdb.h>
+#include <fcntl.h>
+#include <string.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
+using FD = int;
+using SOCKET = int;
+#define closesocket close;
 #endif
 
 namespace npl {
@@ -30,350 +30,266 @@ namespace npl {
 constexpr uint32_t DEVICE_BUFFER_SIZE = 65536;
 
 enum EDeviceType : uint8_t {
-  None = 0,
-  File,
-  Socket
+    None = 0,
+    File,
+    Socket
 };
 
 enum EIOType : uint8_t {
-  CONNECT = 0,
-  ACCEPT,
-  READ,
-  WRITE,
-  IOCTL
+    CONNECT = 0,
+    ACCEPT,
+    READ,
+    WRITE,
+    IOCTL
 };
 
-struct context
-{
-  #ifdef _WIN32
-  OVERLAPPED      ol;
-  #endif
-
-  EIOType         type;
-  void          * k;
-  const uint8_t * b;
-  unsigned long   n;
-  bool            bFree;
+struct context {
+    #ifdef _WIN32
+    OVERLAPPED      ol;
+    #endif
+    EIOType         type;
+    void          * k;
+    const uint8_t * b;
+    unsigned long   n;
+    bool            bFree;
 };
 
-inline auto EIOToString(EIOType t)
-{
-  switch(t)
-  {
-    case EIOType::ACCEPT:
-      return "OnAccept";
-      break;
-    case EIOType::CONNECT:
-      return "OnConnect";
-      break;
-    case EIOType::READ:
-      return "OnRead";
-      break;
-    case EIOType::WRITE:
-      return "OnWrite";
-      break;
-    default:
-      return "INVALID";
-  }
+inline auto EIOToString(EIOType t) {
+    switch(t) {
+        case EIOType::ACCEPT:
+            return "OnAccept";
+            break;
+        case EIOType::CONNECT:
+            return "OnConnect";
+            break;
+        case EIOType::READ:
+            return "OnRead";
+            break;
+        case EIOType::WRITE:
+            return "OnWrite";
+            break;
+        default:
+            return "INVALID";
+    }
 }
 
 class file_device : public subject<uint8_t, uint8_t>
 {
-  public:
+    public:
 
-  FD _fd_async;
+    FD _fd_async;
+    FD _fd_sync;
 
-  FD _fd_sync;
+    protected:
 
-  protected:
+    EDeviceType _device_type = EDeviceType::None;
 
-  EDeviceType _device_type = EDeviceType::None;
+    public:
 
-  public:
+    file_device(){};
 
-  file_device(){};
+    file_device(const std::string& name) : subject(name) {};
 
-  file_device(const std::string& name) : subject(name) {};
-
-  file_device(const std::string& file, bool create) : subject("file")
-  {
-    MarkConnected(true);
-
-    #ifdef _WIN32
-    _fd_async = CreateFileA(
-      file.c_str(),
-      GENERIC_READ|GENERIC_WRITE,
-      FILE_SHARE_READ|FILE_SHARE_WRITE,
-      NULL,
-      (create ? CREATE_ALWAYS : OPEN_EXISTING),
-      FILE_FLAG_OVERLAPPED|FILE_FLAG_SEQUENTIAL_SCAN,
-      NULL);
-
-    if (_fd_async == INVALID_HANDLE_VALUE)
-    {
-      MarkConnected(false);
-      ERR << file << ", _fd_async CreateFile failed : " << GetLastError();
-    }
-
-    _fd_sync = CreateFileA(
-      file.c_str(),
-      GENERIC_READ|GENERIC_WRITE,
-      FILE_SHARE_READ|FILE_SHARE_WRITE,
-      NULL,
-      OPEN_EXISTING,
-      FILE_ATTRIBUTE_NORMAL,
-      NULL);
-
-    if (_fd_sync == INVALID_HANDLE_VALUE)
-    {
-      MarkConnected(false);
-      ERR << file << ", _fd_sync CreateFile failed : " << GetLastError();
-    }
-    #else
-    int flags = 0|O_RDWR ;
-
-    if (create)
-    {
-      flags |= O_CREAT;
-    }
-
-    _fd_async = open(file.c_str(), flags, 0640);
-
-    if (_fd_async < 0)
-    {
-      MarkConnected(false);
-      ERR << file << ", error : " << strerror(errno);
-    }
-    #endif
-
-    _device_type = EDeviceType::File;
-  }
-
-  #ifdef _WIN32
-  file_device(const std::wstring& file, bool create)
-  {
-    MarkConnected(true);
-
-    _fd_async = CreateFileW(
-      file.c_str(),
-      GENERIC_READ|GENERIC_WRITE,
-      FILE_SHARE_READ|FILE_SHARE_WRITE,
-      NULL,
-      (create ? CREATE_ALWAYS : OPEN_EXISTING),
-      FILE_FLAG_OVERLAPPED|FILE_FLAG_SEQUENTIAL_SCAN,
-      NULL);
-
-    if (_fd_async == INVALID_HANDLE_VALUE)
-    {
-      MarkConnected(false);
-      ERR << L"Device() " << file << L", _fd_async error : " << GetLastError();
-    }
-
-    _fd_sync = CreateFileW(
-      file.c_str(),
-      GENERIC_READ|GENERIC_WRITE,
-      FILE_SHARE_READ|FILE_SHARE_WRITE,
-      NULL,
-      OPEN_EXISTING,
-      FILE_ATTRIBUTE_NORMAL,
-      NULL);
-
-    if (_fd_sync == INVALID_HANDLE_VALUE)
-    {
-      MarkConnected(false);
-      ERR << L"Device() " << file << L", _fd_sync CreateFile failed : " << GetLastError();
-    }
-
-    _device_type = EDeviceType::File;
-  }
-  #endif
-
-  virtual ~file_device()
-  {
-    if (_device_type == EDeviceType::File)
-    {
-      #ifdef _WIN32
-      CloseHandle(_fd_async);
-      CloseHandle(_fd_sync);
-      #else
-      close(_fd_async);
-      close(_fd_sync);
-      #endif
-    }
-  }
-
-  virtual EDeviceType GetDeviceType(void)
-  {
-    return _device_type;
-  }
-
-  virtual void * Read(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override
-  {
-    if (!IsConnected()) {
-      ERR << GetName() << " file_device::Read() not connected";
-      return nullptr;
-    }
-
-    context *ctx = (context *) calloc(1, sizeof(context));
-
-    ctx->type = EIOType::READ;
-
-    if (b)
-    {
-      ctx->b = b;
-      ctx->bFree = false;
-    }
-    else
-    {
-      ctx->b = (uint8_t *) calloc(1, DEVICE_BUFFER_SIZE);
-      ctx->bFree = true;
-      l = DEVICE_BUFFER_SIZE;
+    file_device(const std::string& file, bool create) : subject("file") {
+        MarkConnected(true);
+        #ifdef _WIN32
+        _fd_async = CreateFileA(
+            file.c_str(),
+            GENERIC_READ|GENERIC_WRITE,
+            FILE_SHARE_READ|FILE_SHARE_WRITE,
+            NULL,
+            (create ? CREATE_ALWAYS : OPEN_EXISTING),
+            FILE_FLAG_OVERLAPPED|FILE_FLAG_SEQUENTIAL_SCAN,
+            NULL);
+        if (_fd_async == INVALID_HANDLE_VALUE) {
+            MarkConnected(false);
+            ERR << file << ", _fd_async CreateFile failed : " << GetLastError();
+        }
+        _fd_sync = CreateFileA(
+            file.c_str(),
+            GENERIC_READ|GENERIC_WRITE,
+            FILE_SHARE_READ|FILE_SHARE_WRITE,
+            NULL,
+            OPEN_EXISTING,
+            FILE_ATTRIBUTE_NORMAL,
+            NULL);
+        if (_fd_sync == INVALID_HANDLE_VALUE) {
+            MarkConnected(false);
+            ERR << file << ", _fd_sync CreateFile failed : " << GetLastError();
+        }
+        #else
+        int flags = 0|O_RDWR ;
+        if (create) {
+            flags |= O_CREAT;
+        }
+        _fd_async = open(file.c_str(), flags, 0640);
+        if (_fd_async < 0) {
+            MarkConnected(false);
+            ERR << file << ", error : " << strerror(errno);
+        }
+        #endif
+        _device_type = EDeviceType::File;
     }
 
     #ifdef _WIN32
-
-    (ctx->ol).Offset = o & 0x00000000FFFFFFFF;
-    (ctx->ol).OffsetHigh = (o & 0xFFFFFFFF00000000) >> 32;
-
-    BOOL fRet = ReadFile(_fd_async, (LPVOID) ctx->b, static_cast<DWORD>(l), NULL, &ctx->ol);
-
-    if (!fRet && GetLastError() != ERROR_IO_PENDING)
-    {
-      ERR << GetName() << " ReadFile failed : " << GetLastError();
+    file_device(const std::wstring& file, bool create) {
+        MarkConnected(true);
+        _fd_async = CreateFileW(
+            file.c_str(),
+            GENERIC_READ|GENERIC_WRITE,
+            FILE_SHARE_READ|FILE_SHARE_WRITE,
+            NULL,
+            (create ? CREATE_ALWAYS : OPEN_EXISTING),
+            FILE_FLAG_OVERLAPPED|FILE_FLAG_SEQUENTIAL_SCAN,
+            NULL);
+        if (_fd_async == INVALID_HANDLE_VALUE) {
+            MarkConnected(false);
+            ERR << L"Device() " << file << L", _fd_async error : " << GetLastError();
+        }
+        _fd_sync = CreateFileW(
+            file.c_str(),
+            GENERIC_READ|GENERIC_WRITE,
+            FILE_SHARE_READ|FILE_SHARE_WRITE,
+            NULL,
+            OPEN_EXISTING,
+            FILE_ATTRIBUTE_NORMAL,
+            NULL);
+        if (_fd_sync == INVALID_HANDLE_VALUE) {
+            MarkConnected(false);
+            ERR << L"Device() " << file << L", _fd_sync CreateFile failed : " << GetLastError();
+        }
+        _device_type = EDeviceType::File;
     }
-
-    return nullptr;
-
-    #else
-
-    ctx->n = read(_fd_async, (void *) ctx->b, l);
-
-    DBG << GetName() << " read() " << (ssize_t) ctx->n
-      << " error : " << strerror(errno);
-
-    if ((ssize_t)ctx->n == -1) {
-      if (!b) {
-        free ((void *)ctx->b);
-      }
-      free (ctx), ctx = nullptr;
-    }
-
-    return ctx;
-
     #endif
-  }
 
-  virtual bool Write(const uint8_t *b = nullptr , size_t l = 0, uint64_t o = 0) override
-  {
-    if (!IsConnected()) {
-      ERR << GetName() << " file_device::Write() not connected";
-      return false;
+    virtual ~file_device() {
+        if (_device_type == EDeviceType::File) {
+            #ifdef _WIN32
+            CloseHandle(_fd_async);
+            CloseHandle(_fd_sync);
+            #else
+            close(_fd_async);
+            close(_fd_sync);
+            #endif
+        }
     }
 
-    if (!b || !l) {
-      ERR << GetName() << " file_device::Write() invalid arguments";
-      return false;
+    virtual EDeviceType GetDeviceType(void) {
+        return _device_type;
     }
 
-    bool fRet = true;
+    virtual void * Read(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override {
+        if (!IsConnected()) {
+            ERR << GetName() << " file_device::Read() not connected";
+            return nullptr;
+        }
+        context *ctx = (context *) calloc(1, sizeof(context));
+        ctx->type = EIOType::READ;
+        if (b) {
+            ctx->b = b;
+            ctx->bFree = false;
+        } else {
+            ctx->b = (uint8_t *) calloc(1, DEVICE_BUFFER_SIZE);
+            ctx->bFree = true;
+            l = DEVICE_BUFFER_SIZE;
+        }
+        #ifdef _WIN32
+        (ctx->ol).Offset = o & 0x00000000FFFFFFFF;
+        (ctx->ol).OffsetHigh = (o & 0xFFFFFFFF00000000) >> 32;
+        BOOL fRet = ReadFile(_fd_async, (LPVOID) ctx->b, static_cast<DWORD>(l), NULL, &ctx->ol);
+        if (!fRet && GetLastError() != ERROR_IO_PENDING) {
+            ERR << GetName() << " ReadFile failed : " << GetLastError();
+        }
+        return nullptr;
+        #else
+        ctx->n = read(_fd_async, (void *) ctx->b, l);
+        DBG << GetName() << " read() " << (ssize_t) ctx->n
+            << " error : " << strerror(errno);
+        if ((ssize_t)ctx->n == -1) {
+            if (!b) {
+            free ((void *)ctx->b);
+            }
+            free (ctx), ctx = nullptr;
+        }
+        return ctx;
+        #endif
+    }
+
+    virtual bool Write(const uint8_t *b = nullptr , size_t l = 0, uint64_t o = 0) override {
+        if (!IsConnected()) {
+            ERR << GetName() << " file_device::Write() not connected";
+            return false;
+        }
+        if (!b || !l) {
+            ERR << GetName() << " file_device::Write() invalid arguments";
+            return false;
+        }
+        bool fRet = true;
+        #ifdef _WIN32
+        context *ctx = (context *) calloc(1, sizeof(context));
+        ctx->type = EIOType::WRITE;
+        ctx->b = (uint8_t *) calloc(l, 1);
+        memmove((void *)ctx->b, b, l);
+        ctx->bFree = true;
+        (ctx->ol).Offset = o & 0x00000000FFFFFFFF;
+        (ctx->ol).OffsetHigh = (o & 0xFFFFFFFF00000000) >> 32;
+        auto rc = WriteFile(_fd_async, (LPVOID) ctx->b, static_cast<DWORD>(l), NULL, &ctx->ol);
+        if (!rc) {
+            if ((GetLastError() == ERROR_IO_PENDING)) {
+                fRet = true;
+            } else {
+                ERR << GetName() << " file_device::Write() WriteFile() failed : " << GetLastError();
+            }
+        }
+        #else
+        auto rc = write(_fd_async, b, l);
+        if (rc == -1) {
+            ERR << GetName() << " file_device::Write() write() failed : " << strerror(errno);
+            fRet = false;
+        }
+        #endif
+        return fRet;
+    }
 
     #ifdef _WIN32
-
-    context *ctx = (context *) calloc(1, sizeof(context));
-
-    ctx->type = EIOType::WRITE;
-
-    ctx->b = (uint8_t *) calloc(l, 1);
-
-    memmove((void *)ctx->b, b, l);
-
-    ctx->bFree = true;
-
-    (ctx->ol).Offset = o & 0x00000000FFFFFFFF;
-    (ctx->ol).OffsetHigh = (o & 0xFFFFFFFF00000000) >> 32;
-
-    auto rc = WriteFile(_fd_async, (LPVOID) ctx->b, static_cast<DWORD>(l), NULL, &ctx->ol);
-
-    if (!rc)
-    {
-      if ((GetLastError() == ERROR_IO_PENDING))
-      {
-        fRet = true;
-      }
-      else
-      {
-        ERR << GetName() << " file_device::Write() WriteFile() failed : " << GetLastError();
-      }
+    virtual int32_t ReadSync(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override {
+        DWORD nBytesRead = 0;
+        LARGE_INTEGER offset;
+        offset.QuadPart = o;
+        BOOL fRet = SetFilePointerEx(_fd_sync, offset, NULL, FILE_BEGIN);
+        if (fRet) {
+            fRet = ReadFile(_fd_sync, (LPVOID) b, static_cast<DWORD>(l), &nBytesRead, NULL);
+            if (fRet == FALSE) {
+                ERR << GetName() << " ReadSync ReadFile failed : " << GetLastError();
+            }
+        }
+        return nBytesRead;
     }
 
-    #else
-
-    auto rc = write(_fd_async, b, l);
-
-    if (rc == -1) {
-      ERR << GetName() << " file_device::Write() write() failed : " << strerror(errno);
-      fRet = false;
+    virtual int32_t WriteSync(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override {
+        if (!b || !l) {
+            ERR << GetName() << " file_device::WriteSync() invalid arguments";
+            return false;
+        }
+        DWORD nBytesWritten = 0;
+        LARGE_INTEGER offset;
+        offset.QuadPart = o;
+        BOOL fRet = SetFilePointerEx(_fd_sync, offset, NULL, FILE_BEGIN);
+        if (fRet) {
+            fRet = WriteFile(_fd_sync, (LPVOID)b, static_cast<DWORD>(l), &nBytesWritten, NULL);
+            if (fRet == FALSE)
+            {
+                ERR << GetName() << " WriteSync WriteFile failed : " << GetLastError();
+            }
+        }
+        return nBytesWritten;
     }
-
     #endif
-
-    return fRet;
-  }
-
-  #ifdef _WIN32
-  virtual int32_t ReadSync(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override
-  {
-    DWORD nBytesRead = 0;
-
-    LARGE_INTEGER offset;
-    offset.QuadPart = o;
-
-    BOOL fRet = SetFilePointerEx(_fd_sync, offset, NULL, FILE_BEGIN);
-
-    if (fRet)
-    {
-      fRet = ReadFile(_fd_sync, (LPVOID) b, static_cast<DWORD>(l), &nBytesRead, NULL);
-
-      if (fRet == FALSE)
-      {
-        ERR << GetName() << " ReadSync ReadFile failed : " << GetLastError();
-      }
-    }
-
-    return nBytesRead;
-  }
-
-  virtual int32_t WriteSync(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override
-  {
-    if (!b || !l) {
-      ERR << GetName() << " file_device::WriteSync() invalid arguments";
-      return false;
-    }
-
-    DWORD nBytesWritten = 0;
-    LARGE_INTEGER offset;
-    offset.QuadPart = o;
-
-    BOOL fRet = SetFilePointerEx(_fd_sync, offset, NULL, FILE_BEGIN);
-
-    if (fRet)
-    {
-      fRet = WriteFile(_fd_sync, (LPVOID)b, static_cast<DWORD>(l), &nBytesWritten, NULL);
-
-      if (fRet == FALSE)
-      {
-        ERR << GetName() << " WriteSync WriteFile failed : " << GetLastError();
-      }
-    }
-
-    return nBytesWritten;
-  }
-  #endif
 };
 
 using SPFileDevice = std::shared_ptr<file_device>;
 using WPFileDevice = std::weak_ptr<file_device>;
 
-} //namespace npl
+}
 
-#endif //FILE_DEVICE_HPP
+#endif

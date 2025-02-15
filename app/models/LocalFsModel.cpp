@@ -9,8 +9,8 @@ LocalFsModel::~LocalFsModel(){}
 
 void LocalFsModel::QueueTransfer(int index, bool start) {
     auto fileName = m_model[index].m_name;
-    auto fileIsDir = IsElementDirectory(index);
     auto fileSize = GetElementSize(index);
+    auto fileIsDir = IsElementDirectory(index);
     UploadInternal(
         fileName,
         m_currentDirectory,
@@ -93,7 +93,7 @@ void LocalFsModel::Rename(QString from, QString to) {
 void LocalFsModel::setCurrentDirectory(QString directory) {
     if (directory.isEmpty())
         directory = QString::fromStdString(
-        std::filesystem::current_path().string());
+            std::filesystem::current_path().string());
     m_currentDirectory = directory.toStdString();
     beginResetModel();
     m_model.clear();

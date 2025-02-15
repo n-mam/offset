@@ -52,40 +52,29 @@ Camera<br/>
 
 ```
 git clone https://github.com/microsoft/vcpkg.git
-cd vcpkg
-bootstrap-vcpkg.bat
-
-vcpkg.exe install openssl:x64-windows crc32c:x64-windows rapidjson:x64-windows zlib:x64-windows opencv4[contrib,core,default-features,dnn,ffmpeg]:x64-windows --recurse
-
+cd vcpkg && bootstrap-vcpkg.bat
+vcpkg.exe install openssl crc32c rapidjson zlib opencv4[contrib,core,dnn,ffmpeg, highgui] --recurse
 sudo apt-get install build-essential zip curl vim bison meson pkg-config
-
-./vcpkg install tinyxml2 libzip openssl:x64-linux crc32c:x64-linux rapidjson:x64-linux zlib:x64-linux opencv4[contrib,core,default-features,dnn,ffmpeg]:x64-linux --recurse
-
-vcpkg.exe integrate install
-
+./vcpkg install tinyxml2 libzip openssl crc32c rapidjson zlib opencv4[contrib,core,dnn,ffmpeg,highgui] --recurse
 use the resulting toolchain file in cmake configure step as highlited under the build section
 ```
 
-#### qt-6.5.3 source build
-
+#### QT-6.8.2 source build
 ```
 make sure ninja and python3.9 are under PATH
-
-C:\>set PATH=D:\Python39;%PATH%
-
-C:\>where python
+set PATH=D:\Python39;%PATH%
+where python
 D:\Python39\python.exe
 C:\Users\nmam\AppData\Local\Microsoft\WindowsApps\python.exe
-
-C:\>where ninja
+where ninja
 C:\Windows\System32\ninja.exe
 C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\Ninja\ninja.exe
 
-\qt-everywhere-src-6.5.3\configure.bat -prefix D:\qt-6.5.3\install -skip qtconnectivity -nomake examples -nomake tests -skip speech -skip scxml -skip qtsensors -skip qtserialbus -skip qtserialport -skip qtspeech -skip qtdoc -skip qtandroidextras -release
+\qt-everywhere-src-6.5.3\configure.bat -prefix D:\QT-6.8.2\install -skip qtconnectivity -nomake examples -nomake tests -skip speech -skip scxml -skip qtsensors -skip qtserialbus -skip qtserialport -skip qtspeech -skip qtdoc -skip qtandroidextras -release
 
 Qt is now configured for building. Just run 'cmake --build . --parallel'
 Once everything is built, you must run 'cmake --install .'
-Qt will be installed into 'D:/qt-6.5.3/install'
+Qt will be installed into 'D:/QT-6.8.2/install'
 ```
 
 #### Build
@@ -93,13 +82,13 @@ Qt will be installed into 'D:/qt-6.5.3/install'
 ```sh
 git clone https://github.com/n-mam/offset.git
 cd offset && mkdir build && cd build
-SET Qt6_DIR=C:\Qt-6.5.3\install\lib\cmake\Qt6
+SET Qt6_DIR=D:\QT-6.8.2\install\lib\cmake\Qt6
 cmake -DCMAKE_TOOLCHAIN_FILE=D:/vcpkg/scripts/buildsystems/vcpkg.cmake ..
 cmake -DCMAKE_TOOLCHAIN_FILE=~/vcpkg/scripts/buildsystems/vcpkg.cmake ..
 cmake --build . --config Release
 
 Run as admin (needed for FXC):
-SET PATH=%PATH%;C:\Qt-6.5.3\install\bin
+SET PATH=D:\QT-6.8.2\install\bin;%PATH%
 qml\Release\offset.exe
 ```
 

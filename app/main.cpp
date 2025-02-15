@@ -25,7 +25,7 @@ int main(int argc, char *argv[])
     qputenv("QSG_RENDER_LOOP", "threaded");
 
     #if QT_VERSION >= QT_VERSION_CHECK(5, 6, 0)
-    QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling); 
+    QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
     #endif
 
     qInstallMessageHandler(q_logger);
@@ -48,9 +48,7 @@ int main(int argc, char *argv[])
     app.setFont(font);
 
     QQmlApplicationEngine engine;
-
     const QUrl url(u"qrc:/main.qml"_qs);
-
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreated, &app,
       [url](QObject *obj, const QUrl &objUrl) {
         if (!obj && url == objUrl)
@@ -73,7 +71,6 @@ int main(int argc, char *argv[])
     #endif
 
     engine.load(url);
-
     return app.exec();
 }
 
