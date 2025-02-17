@@ -9,8 +9,8 @@ ApplicationWindow {
     id: mainWindow
     visible: true
     title: qsTr("Offset")
-    height: 860 - (860 * 0.22)
-    width: 1430 - (1430 * 0.30)
+    height: 860 - (860 * 0.18)
+    width: 1430 - (1430 * 0.25)
 
     property var appSpacing: 5
     property var pointSize: 10
