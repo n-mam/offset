@@ -7,6 +7,7 @@
 
 #include <Logger.h>
 #include <AppConfig.h>
+#include <osl/singleton>
 #include <LocalFsModel.h>
 #include <RemoteFsModel.h>
 #include <VideoRenderer.h>

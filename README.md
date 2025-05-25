@@ -2,10 +2,7 @@
 
 #### The following 3 tools are currently implemented
 
-Block level backup
-<p align="center">
- <img src="https://lh3.googleusercontent.com/d/193lB9OfdeZ-hfUxqmythLaAwk1ExGaEE" width="65%">
-</p>
+Block level backup tool
 - Requires elevation. Please run as admin.<br/>
 - Creates volume level images using either VSS snapshots or from live volume.<br/>
 - Creates volume level images of already existing persistent VSS snapshots on the system.<br/>
@@ -21,21 +18,12 @@ Block level backup
   - ftps://username:password@hostname:port/a/b/c<br/><br/>
 
 FTP(S) client<br/>
-<p align="center">
- <img src="https://lh3.googleusercontent.com/d/1L9AJ0i0d4H2kKGp-TRFpxCeYFjPgzDnW" width="70%">
-</p>
 - Supports plain and secure FTPS (using openssl async bio).<br/>
 - Ability to browse while transfers are in progress.<br/>
 - Directory listing support for Linux, Windows and MLSD.<br/>
 - FTPS supports TLS1.3<br/><br/>
 
 Camera<br/>
-<p align="center">
- <img src="https://lh3.googleusercontent.com/d/1LiNTVr3Ps8EfEbSOOcoRaBLHk4ymfEf7" width="70%">
-</p>
-<p align="center">
- <img src="https://lh3.googleusercontent.com/d/1gClqVfeIM45I8YqFpaDt0jUphnuAlqP1" width="70%">
-</p>
 - Face detection, Motion detection, Face recognition.<br/>
 - Uses default opencv built-in models and DNN based detectors.<br/>
 - Detection configurability on a per camera basis.<br/>
@@ -70,7 +58,7 @@ where ninja
 C:\Windows\System32\ninja.exe
 C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\Ninja\ninja.exe
 
-\qt-everywhere-src-6.5.3\configure.bat -prefix D:\QT-6.8.2\install -skip qtconnectivity -nomake examples -nomake tests -skip speech -skip scxml -skip qtsensors -skip qtserialbus -skip qtserialport -skip qtspeech -skip qtdoc -skip qtandroidextras -release
+\qt-everywhere-src-6.9.0\configure.bat -prefix D:\Qt-6.9.0\install -skip qtconnectivity -nomake examples -nomake tests -skip speech -skip scxml -skip qtsensors -skip qtserialbus -skip qtspeech -skip qtdoc -skip qtandroidextras -release
 
 Qt is now configured for building. Just run 'cmake --build . --parallel'
 Once everything is built, you must run 'cmake --install .'
@@ -82,13 +70,13 @@ Qt will be installed into 'D:/QT-6.8.2/install'
 ```sh
 git clone https://github.com/n-mam/offset.git
 cd offset && mkdir build && cd build
-SET Qt6_DIR=D:\QT-6.8.2\install\lib\cmake\Qt6
+SET Qt6_DIR=D:\QT-6.9.0\install\lib\cmake\Qt6
 cmake -DCMAKE_TOOLCHAIN_FILE=D:/vcpkg/scripts/buildsystems/vcpkg.cmake ..
 cmake -DCMAKE_TOOLCHAIN_FILE=~/vcpkg/scripts/buildsystems/vcpkg.cmake ..
 cmake --build . --config Release
 
 Run as admin (needed for FXC):
-SET PATH=D:\QT-6.8.2\install\bin;%PATH%
+SET PATH=D:\QT-6.9.0\install\bin;%PATH%
 qml\Release\offset.exe
 ```
 
@@ -98,6 +86,19 @@ qml\Release\offset.exe
 windeployqt --qmldir D:\offset\app\qml D:\offset\build\app\Release\offset.exe
 ```
 vc redist is bundled with package zip; in case your system does not have that installed already
+
+<p align="center">
+ <img src="https://lh3.googleusercontent.com/d/193lB9OfdeZ-hfUxqmythLaAwk1ExGaEE" width="65%">
+</p>
+<p align="center">
+ <img src="https://lh3.googleusercontent.com/d/1L9AJ0i0d4H2kKGp-TRFpxCeYFjPgzDnW" width="70%">
+</p>
+<p align="center">
+ <img src="https://lh3.googleusercontent.com/d/1LiNTVr3Ps8EfEbSOOcoRaBLHk4ymfEf7" width="70%">
+</p>
+<p align="center">
+ <img src="https://lh3.googleusercontent.com/d/1gClqVfeIM45I8YqFpaDt0jUphnuAlqP1" width="70%">
+</p>
 
 #### Contact:
 Telegram: https://t.me/neelabhm

@@ -1,3 +1,4 @@
+#include <osl/singleton>
 #include <LocalFsModel.h>
 #include <RemoteFsModel.h>
 

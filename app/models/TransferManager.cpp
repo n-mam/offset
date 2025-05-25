@@ -1,3 +1,4 @@
+#include <osl/singleton>
 #include <RemoteFsModel.h>
 #include <TransferManager.h>
 

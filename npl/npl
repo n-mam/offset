@@ -1,7 +1,7 @@
 #ifndef NPL_HPP
 #define NPL_HPP
 
-#include <osl/singleton>
+//#include <osl/singleton>
 #include <observer/dispatcher>
 #include <device/socket>
 #include <protocol/ftp>
