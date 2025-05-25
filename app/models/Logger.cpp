@@ -4,8 +4,8 @@
 #include <Logger.h>
 
 Logger::Logger() {
-  osl::log::SetLogLevel(osl::log::debug);
-  osl::log::SetLogSink<std::wstring>(
+  osl::log::setLogLevel(osl::log::debug);
+  osl::log::setLogSink<std::wstring>(
     [this](int level, int key, const std::wstring& log){
       if (!log.empty()) {
         QMetaObject::invokeMethod(this, [this, level, key, log](){
@@ -16,7 +16,7 @@ Logger::Logger() {
         }, Qt::QueuedConnection);
       }
     });
-  osl::log::SetLogSink<std::string>(
+  osl::log::setLogSink<std::string>(
     [this](int level, int key, const std::string& log){
       if (!log.empty()) {
         QMetaObject::invokeMethod(this, [this, level, key, log](){

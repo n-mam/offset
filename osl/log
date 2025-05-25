@@ -46,12 +46,12 @@ struct log {
         critical = 5
     };
 
-    static void SetLogLevel(decltype(osl::log::debug) level) {
+    static void setLogLevel(decltype(osl::log::debug) level) {
         s_app_log_level = level;
     }
 
     template<typename T>
-    static void SetLogSink(TLogCallback<T> cbk) {
+    static void setLogSink(TLogCallback<T> cbk) {
         if constexpr(std::is_same<T, std::string>::value) {
             a_sink = cbk;
         }

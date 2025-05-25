@@ -15,8 +15,8 @@ int main(int argc, char *argv[]) {
         show_usage();
         return 0;
     }
-    osl::log::SetLogLevel(osl::log::info);
-    osl::log::SetLogSink<std::string>(
+    osl::log::setLogLevel(osl::log::info);
+    osl::log::setLogSink<std::string>(
         [](int level, int key, auto log) {
             std::cout << log << std::endl;
         });

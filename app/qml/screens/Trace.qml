@@ -3,21 +3,16 @@ import QtQuick.Controls
 import "qrc:/components"
 
 Item {
-
     width: parent.width
     height: parent.height
-
     Column {
-
         anchors.fill: parent
-
         ListModel {
             id: traceModel
             ListElement {
                 line: ""
             }
         }
-
         ListView {
             id: traceList
             clip: true
@@ -49,7 +44,6 @@ Item {
                 }
             }
         }
-
         Row {
             id: logActions
             spacing: 5
@@ -84,7 +78,6 @@ Item {
         }
 
     }
-
     onVisibleChanged: {
         if (visible) {
           traceList.positionViewAtEnd()
