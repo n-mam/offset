@@ -37,12 +37,15 @@ class FsModel : public QAbstractListModel {
     Q_PROPERTY(QString totalFilesAndFolders READ getTotalFilesAndFolder);
     Q_PROPERTY(QString currentDirectory READ getCurrentDirectory WRITE setCurrentDirectory);
 
-    Q_INVOKABLE virtual QVariant get(int index, QString role);
-    Q_INVOKABLE virtual void QueueTransfer(int index, bool start = false) = 0;
+    Q_INVOKABLE virtual void UnselectAll();
     Q_INVOKABLE virtual void RemoveFile(QString path) = 0;
+    Q_INVOKABLE virtual void SelectRange(int start, int end);
+    Q_INVOKABLE virtual QVariant get(int index, QString role);
     Q_INVOKABLE virtual void RemoveDirectory(QString path) = 0;
     Q_INVOKABLE virtual void CreateDirectory(QString path) = 0;
+    Q_INVOKABLE virtual void SelectIndex(int index, bool select);
     Q_INVOKABLE virtual void Rename(QString from, QString to) = 0;
+    Q_INVOKABLE virtual void QueueTransfers(bool start = false) = 0;
 
     signals:
 

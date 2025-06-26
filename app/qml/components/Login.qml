@@ -14,7 +14,7 @@ Item {
       anchors.right: parent.right
       TextField {
         id: hostname
-        text: "ftp.gnu.org"
+        text: "localhost" //"ftp.gnu.org"
         height: textFieldHeight
         width: parent.width * 0.78
         placeholderText: qsTr("Host")
@@ -41,7 +41,7 @@ Item {
       anchors.right: parent.right
       TextField {
         id: username
-        text: "anonymous"
+        text: "nmam" //"anonymous"
         width: parent.width
         height: textFieldHeight
         placeholderText: qsTr("User")
@@ -57,7 +57,7 @@ Item {
       anchors.right: parent.right
       TextField {
         id: password
-        text: "welcome123"
+        text: "qqq" //"welcome123"
         width: parent.width
         height: textFieldHeight
         echoMode: TextInput.Password

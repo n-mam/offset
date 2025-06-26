@@ -108,7 +108,7 @@ class socket_device : public file_device {
             #ifdef _WIN32
             setsockopt((SOCKET)_fd_async, SOL_SOCKET, SO_UPDATE_CONNECT_CONTEXT, NULL, 0 );
             #endif
-            OnConnect();
+            onConnect();
         } else if (WSAGetLastError() == ERROR_IO_PENDING) {
 
         } else {
@@ -318,7 +318,7 @@ class socket_device : public file_device {
         }
     }
 
-    virtual void OnAccept(void) override {
+    virtual void onAccept(void) override {
         assert(IsListeningSocket());
         #ifndef WIN32
         struct sockaddr_storage ca;
@@ -334,8 +334,8 @@ class socket_device : public file_device {
         m_connected_client = std::make_shared<socket_device>(m_accepted_socket);
         m_connected_client->m_type = ESocketType::accepted;
         m_connected_client->MarkConnected(true);
-        get_last_target(shared_from_this())->add_listener(m_connected_client);
-        file_device::OnAccept();
+        get_last_target(shared_from_this())->AddEventListener(m_connected_client);
+        file_device::onAccept();
         #ifdef _WIN32
         m_connected_client->Read();
         setsockopt((SOCKET)m_accepted_socket, SOL_SOCKET, SO_UPDATE_ACCEPT_CONTEXT, (char*)&(_fd_async), sizeof(_fd_async));
@@ -343,30 +343,30 @@ class socket_device : public file_device {
         #endif
     }
 
-    virtual void OnError(uint64_t error) override {
-        file_device::OnError(error);
+    virtual void onError(uint64_t error) override {
+        file_device::onError(error);
     }
 
-    virtual void OnConnect() override {
+    virtual void onConnect() override {
         assert(IsClientSocket());
-        DBG << get_name() << " OnConnect()";
-        file_device::OnConnect();
+        DBG << get_name() << " onConnect()";
+        file_device::onConnect();
         #ifdef _WIN32
         file_device::Read();
         setsockopt((SOCKET)_fd_async, SOL_SOCKET, SO_UPDATE_CONNECT_CONTEXT, NULL, 0 );
         #endif
     }
 
-    virtual void OnDisconnect() override {
+    virtual void onDisconnect() override {
         if (m_ssl) {
             // DBG << get_name() <<
             // " shutdown mode : " << SSL_get_shutdown(m_ssl);
             CheckPeerSSLShutdown();
         }
-        file_device::OnDisconnect();
+        file_device::onDisconnect();
     }
 
-    virtual void OnRead(const uint8_t *b, size_t n) override {
+    virtual void onRead(const uint8_t *b, size_t n) override {
         #ifdef _WIN32
         file_device::Read();
         #endif
@@ -409,15 +409,15 @@ class socket_device : public file_device {
                 return;
             }
         }
-        file_device::OnRead(_b, _n);
+        file_device::onRead(_b, _n);
     }
 
-    virtual void OnWrite(const uint8_t *b, size_t n) override {
+    virtual void onWrite(const uint8_t *b, size_t n) override {
         if (m_ssl && !m_handshake_done) {
             SSL_do_handshake(m_ssl);
             return;
         }
-        file_device::OnWrite(b, n);
+        file_device::onWrite(b, n);
     }
 
     virtual void * Read(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override {

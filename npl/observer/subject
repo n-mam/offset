@@ -2,10 +2,12 @@
 #define SUBJECT_HPP
 
 #include <any>
+#include <set>
 #include <mutex>
 #include <vector>
 #include <memory>
 #include <string>
+#include <assert.h>
 #include <iostream>
 #include <algorithm>
 #include <unordered_map>
@@ -37,8 +39,10 @@ struct subject : public std::enable_shared_from_this<subject<T1, T2>> {
     }
 
     static SPSubject get_last_target(SPSubject s) {
-        while (s && s->m_target.lock()) {
-            s = s->m_target.lock();
+        while (s) {
+            auto t = s->m_target.lock();
+            if (!t) break;
+            s = t;
         }
         return s;
     }
@@ -84,33 +88,33 @@ struct subject : public std::enable_shared_from_this<subject<T1, T2>> {
         return -1;
     }
 
-    virtual void OnError(uint64_t error) {
+    virtual void onRead(const T1 *b, size_t n) {
+        std::lock_guard<std::mutex> lg(m_lock);
+        NotifyRead((const T2 *)b, n);
+    }
+
+    virtual void onWrite(const T1 *b, size_t n) {
+        std::lock_guard<std::mutex> lg(m_lock);
+        NotifyWrite(b, n);
+    }
+
+    virtual void onError(uint64_t error) {
         std::lock_guard<std::mutex> lg(m_lock);
         NotifyError(error);
     }
 
-    virtual void OnAccept(void) {
+    virtual void onAccept(void) {
         std::lock_guard<std::mutex> lg(m_lock);
         NotifyAccept();
     }
 
-    virtual void OnConnect(void) {
+    virtual void onConnect(void) {
         std::lock_guard<std::mutex> lg(m_lock);
         m_connected = true;
         NotifyConnect();
     }
 
-    virtual void OnRead(const T1 *b, size_t n) {
-        std::lock_guard<std::mutex> lg(m_lock);
-        NotifyRead((const T2 *)b, n);
-    }
-
-    virtual void OnWrite(const T1 *b, size_t n) {
-        std::lock_guard<std::mutex> lg(m_lock);
-        NotifyWrite(b, n);
-    }
-
-    virtual void OnDisconnect(void) {
+    virtual void onDisconnect(void) {
         std::lock_guard<std::mutex> lg(m_lock);
         m_connected = false;
         NotifyDisconnect();
@@ -118,14 +122,14 @@ struct subject : public std::enable_shared_from_this<subject<T1, T2>> {
         MarkRemoveSelfAsListener();
     }
 
-    virtual void OnEvent(std::any e) {
+    virtual void onEvent(std::any e) {
         std::lock_guard<std::mutex> lg(m_lock);
         NotifyEvent(e);
     }
 
-    virtual const SPSubject& add_listener(const SPSubject& observer) {
+    virtual const SPSubject& AddEventListener(const SPSubject& observer) {
         std::lock_guard<std::mutex> lg(m_lock);
-        m_observers.push_back(observer);
+        m_observers.insert(observer);
         observer->set_target(this->weak_from_this());
         return observer;
     }
@@ -152,7 +156,7 @@ struct subject : public std::enable_shared_from_this<subject<T1, T2>> {
         m_connected = connected;
     }
 
-    virtual bool is_connected(void) {
+    virtual bool IsConnected(void) {
         return m_connected;
     }
 
@@ -168,13 +172,7 @@ struct subject : public std::enable_shared_from_this<subject<T1, T2>> {
         return m_removeSelfAsListener;
     }
 
-    virtual bool IsDispatcher(void) {
-        return false;
-    }
-
-    virtual void add_subject(SPSubject subject) {
-
-    }
+    virtual void add_subject(SPSubject subject) {}
 
     virtual void set_property(const std::string& key, const std::string& value) {
         std::lock_guard<std::mutex> lg(m_lock);
@@ -213,7 +211,7 @@ struct subject : public std::enable_shared_from_this<subject<T1, T2>> {
     bool m_connected = false;
     bool m_removeAllListeners = false;
     bool m_removeSelfAsListener = false;
-    std::vector<SPSubject> m_observers;
+    std::set<SPSubject> m_observers;
     std::unordered_map<std::string, std::string> m_properties;
 
     virtual void ResetSubject(SPSubject& subject) {
@@ -225,12 +223,13 @@ struct subject : public std::enable_shared_from_this<subject<T1, T2>> {
     virtual void ProcessListenersMarkedForRemoval(void) {
         if (this->m_removeAllListeners) {
             this->RemoveAllEventListenersInternal();
+            return;
         }
-        for (auto ob = m_observers.begin(); ob != m_observers.end(); ) {
-            if ((*ob)->IsRemoveSelfAsListenerMarked()) {
-                ob = this->RemoveEventListenerInternal(*ob);
+        for (auto it = m_observers.begin(); it != m_observers.end(); ) {
+            if ((*it)->IsRemoveSelfAsListenerMarked()) {
+                it = this->RemoveEventListenerInternal(*it);
             } else {
-                ob++;
+                it++;
             }
         }
     }
@@ -240,57 +239,57 @@ struct subject : public std::enable_shared_from_this<subject<T1, T2>> {
         m_removeAllListeners = false;
     }
 
-    auto RemoveEventListenerInternal(const SPSubject& consumer) {
-        return m_observers.erase(
-            std::remove(m_observers.begin(), m_observers.end(), consumer),
-            m_observers.end());
+    auto RemoveEventListenerInternal(const SPSubject& observer) {
+        auto it = m_observers.find(observer);
+        assert(it != m_observers.end());
+        return m_observers.erase(it);
     }
 
     virtual void NotifyError(uint64_t error) {
         for (auto& observer : m_observers) {
-            observer->OnError(error);
+            observer->onError(error);
         }
         ProcessListenersMarkedForRemoval();
     }
 
     virtual void NotifyConnect() {
         for (auto& observer : m_observers) {
-            observer->OnConnect();
+            observer->onConnect();
         }
         ProcessListenersMarkedForRemoval();
     }
 
     virtual void NotifyRead(const T2 *b, size_t n) {
         for (auto& observer : m_observers) {
-            observer->OnRead(b, n);
+            observer->onRead(b, n);
         }
         ProcessListenersMarkedForRemoval();
     }
 
     virtual void NotifyWrite(const T2 *b, size_t n) {
         for (auto& observer : m_observers) {
-            observer->OnWrite(b, n);
+            observer->onWrite(b, n);
         }
         ProcessListenersMarkedForRemoval();
     }
 
     virtual void NotifyDisconnect() {
         for (auto& observer : m_observers) {
-            observer->OnDisconnect();
+            observer->onDisconnect();
         }
         ProcessListenersMarkedForRemoval();
     }
 
     virtual void NotifyAccept(void) {
         for (auto& observer : m_observers) {
-            observer->OnAccept();
+            observer->onAccept();
         }
         ProcessListenersMarkedForRemoval();
     }
 
     virtual void NotifyEvent(std::any e) {
         for (auto& observer : m_observers) {
-            observer->OnEvent(e);
+            observer->onEvent(e);
         }
         ProcessListenersMarkedForRemoval();
     }

@@ -2,15 +2,18 @@ import QtQuick
 import QtQuick.Shapes
 import QtQuick.Dialogs
 import QtQuick.Controls
-import Qt5Compat.GraphicalEffects
 
 Item {
 
+    id: root
     implicitWidth: parent.width / 2
+
+    required property var model
+    required property var textlabel
+    property int lastSelectedIndex: -1
 
     TextField {
         id: currentDirectory
-        enabled: false
         font.pointSize: 10
         anchors.margins: 10
         anchors.topMargin: 12
@@ -18,164 +21,55 @@ Item {
         anchors.top: parent.top
         anchors.left: parent.left
         anchors.right: parent.right
-        placeholderText: qsTr("Remote Directory")
+        enabled: root.model.connected
+        placeholderText: root.textlabel
         verticalAlignment: TextInput.AlignVCenter
-        onAccepted: remoteFsModel.currentDirectory = currentDirectory.text
+        onAccepted: root.model.currentDirectory = currentDirectory.text
     }
 
     ListView {
-        id: remoteListView
+        id: listView
         clip: true
         focus: true
         currentIndex: -1
         cacheBuffer: 1024
-        model: remoteFsModel
+        model: root.model
+        anchors.topMargin: 7
         anchors.leftMargin: 5
         anchors.rightMargin: 5
         anchors.left: parent.left
         delegate: listItemDelegate
-        highlightMoveDuration: 100
-        highlightMoveVelocity: 800
         anchors.right: parent.right
         anchors.top: currentDirectory.bottom
+        anchors.bottom: spacer.top
         boundsBehavior: Flickable.StopAtBounds
-        highlight: Rectangle { color: "lightsteelblue"; radius: 3 }
-        height: parent.height - currentDirectory.height - spacer.height - statusRect.height - 2
         Connections {
-            target: remoteFsModel
+            target: root.model
             function onConnected(isConnected) {
                 if (!isConnected) {
                     currentDirectory.text = ""
                     status.text = "Not connected"
                 }
-                currentDirectory.enabled = isConnected
             }
             function onDirectoryList() {
-                remoteListView.currentIndex = -1
-                currentDirectory.text = remoteFsModel.currentDirectory
-                var files, folders
-                [files, folders] = remoteFsModel.totalFilesAndFolders.split(":")
+                root.model.UnselectAll()
+                currentDirectory.text = root.model.currentDirectory
+                var [files, folders] = root.model.totalFilesAndFolders.split(":")
                 status.text = files + " files " + folders + " folders "
             }
         }
-    }
-
-    Rectangle {
-        id: toolBar
-        width: 26
-        radius: 3
-        height: 175
-        border.width: 1
-        border.color: borderColor
-        visible: remoteFsModel.connected
-        anchors.topMargin: 7
-        anchors.rightMargin: 10
-        anchors.right: parent.right
-        anchors.top: currentDirectory.bottom
-        color: Qt.lighter(Material.background, 1.8)
-        Image {
-            id: downloadTool
-            width: 18; height: 18
-            source: "qrc:/download.png"
-            anchors.top: parent.top
-            anchors.horizontalCenter: parent.horizontalCenter
-            anchors.margins: 5
-            MouseArea {
-                anchors.fill: parent
-                hoverEnabled: true
-                onClicked: processToolBarAction("Download")
-                cursorShape: Qt.PointingHandCursor
-                onContainsMouseChanged: downloadTool.scale = 1 + (containsMouse ? 0.2 : 0)
-            }
-        }
-        Image {
-            id: queueTool
-            width: 18; height: 18
-            source: "qrc:/addq.png"
-            anchors.top: downloadTool.bottom
-            anchors.horizontalCenter: parent.horizontalCenter
-            anchors.margins: 7
-            MouseArea {
-                anchors.fill: parent
-                hoverEnabled: true
-                onClicked: processToolBarAction("Queue")
-                cursorShape: Qt.PointingHandCursor
-                onContainsMouseChanged: queueTool.scale = 1 + (containsMouse ? 0.2 : 0)
-            }
-        }
-        Image {
-            id: newTool
-            width: 18; height: 18
-            source: "qrc:/new.png"
-            anchors.top: queueTool.bottom
-            anchors.horizontalCenter: parent.horizontalCenter
-            anchors.margins: 7
-            MouseArea {
-                anchors.fill: parent
-                hoverEnabled: true
-                onClicked: processToolBarAction("New folder")
-                cursorShape: Qt.PointingHandCursor
-                onContainsMouseChanged: newTool.scale = 1 + (containsMouse ? 0.2 : 0)
-            }
-        }
-        Image {
-            id: renameTool
-            width: 18; height: 18
-            source: "qrc:/rename.png"
-            anchors.top: newTool.bottom
-            anchors.horizontalCenter: parent.horizontalCenter
-            anchors.margins: 5
-            MouseArea {
-                anchors.fill: parent
-                hoverEnabled: true
-                onClicked: processToolBarAction("Rename")
-                cursorShape: Qt.PointingHandCursor
-                onContainsMouseChanged: renameTool.scale = 1 + (containsMouse ? 0.2 : 0)
-            }
-        }
-        Image {
-            id: deleteTool
-            width: 18; height: 18
-            source: "qrc:/filedelete.png"
-            anchors.top: renameTool.bottom
-            anchors.horizontalCenter: parent.horizontalCenter
-            anchors.margins: 5
-            MouseArea {
-                anchors.fill: parent
-                hoverEnabled: true
-                onClicked: processToolBarAction("Delete")
-                cursorShape: Qt.PointingHandCursor
-                onContainsMouseChanged: deleteTool.scale = 1 + (containsMouse ? 0.2 : 0)
-            }
-        }
-        Image {
-            id: refreshTool
-            width: 18; height: 18
-            source: "qrc:/refresh.png"
-            anchors.top: deleteTool.bottom
-            anchors.horizontalCenter: parent.horizontalCenter
-            anchors.margins: 5
-            MouseArea {
-                anchors.fill: parent
-                hoverEnabled: true
-                onClicked: processToolBarAction("Refresh")
-                cursorShape: Qt.PointingHandCursor
-                onContainsMouseChanged: refreshTool.scale = 1 + (containsMouse ? 0.2 : 0)
-            }
-        }
-        Image {
-            id: quitTool
-            width: 18; height: 18
-            source: "qrc:/exit.png"
-            anchors.top: refreshTool.bottom
-            anchors.horizontalCenter: parent.horizontalCenter
-            anchors.margins: 7
-            MouseArea {
-                anchors.fill: parent
-                hoverEnabled: true
-                onClicked: remoteFsModel.Quit()
-                cursorShape: Qt.PointingHandCursor
-                onContainsMouseChanged: quitTool.scale = 1 + (containsMouse ? 0.2 : 0)
+        MouseArea {
+            z: -1
+            anchors.fill: parent
+            acceptedButtons: Qt.AllButtons
+            onClicked: (mouse) => {
+                if (mouse.button === Qt.RightButton) {
+                    if (root.model.connected){
+                        contextMenu.selectedIndex = -1;
+                        let localPos = root.mapFromItem(listView, mouse.x, mouse.y);
+                        contextMenu.popup(localPos.x, localPos.y);
+                    }
+                }
             }
         }
     }
@@ -225,9 +119,9 @@ Item {
         id: listItemDelegate
         Rectangle {
             id: delegateRect
-            implicitWidth: ListView.view.width
             implicitHeight: 24
-            color: "transparent"
+            implicitWidth: ListView.view.width
+            color: fileIsSelected ? "lightsteelblue" : "transparent"
             // radius: 3
             // border.width: 1
             // border.color: "#123"
@@ -245,91 +139,49 @@ Item {
                 verticalAlignment: Text.AlignVCenter
                 x: listItemIcon.x + listItemIcon.width + 5
                 anchors.verticalCenter: parent.verticalCenter
-                color: delegateRect.ListView.isCurrentItem ? "black" : textColor
+                color: fileIsSelected ? "black" : textColor
             }
             MouseArea {
                 anchors.fill: parent
+                preventStealing: true
+                propagateComposedEvents: true
                 acceptedButtons: Qt.AllButtons
                 onDoubleClicked: {
                     if (fileIsDir) {
                         if (fileName === "..")
-                            remoteFsModel.currentDirectory = remoteFsModel.getParentDirectory()
+                            root.model.currentDirectory = root.model.getParentDirectory()
                         else
-                            remoteFsModel.currentDirectory = remoteFsModel.currentDirectory +
-                        (remoteFsModel.currentDirectory.endsWith("/") ? fileName : ("/" + fileName))
+                            root.model.currentDirectory = root.model.currentDirectory +
+                                (root.model.currentDirectory.endsWith("/") ?
+                                    fileName : ("/" + fileName))
                     }
                 }
                 onClicked: (mouse) => {
-                    remoteListView.currentIndex = index
+                    if (mouse.button === Qt.RightButton) {
+                        if (!fileIsSelected){
+                            root.model.UnselectAll();
+                            fileIsSelected = true;
+                        }
+                        contextMenu.selectedIndex = index;
+                        let localPos = root.mapFromItem(delegateRect, mouse.x, mouse.y);
+                        contextMenu.popup(localPos.x, localPos.y);
+                    } else {
+                        let shiftPressed = mouse.modifiers & Qt.ShiftModifier;
+                        let ctrlPressed = mouse.modifiers & Qt.ControlModifier;
+                        if (shiftPressed && lastSelectedIndex >= 0) {
+                            let start = Math.min(index, lastSelectedIndex)
+                            let end = Math.max(index, lastSelectedIndex)
+                            root.model.SelectRange(start, end);
+                        } else if (ctrlPressed) {
+                            root.model.SelectIndex(index, !root.model.get(index, "fileIsSelected"))
+                            lastSelectedIndex = index
+                        } else {
+                            root.model.UnselectAll();
+                            fileIsSelected = true;
+                            lastSelectedIndex = index;
+                        }
+                    }
                 }
-            }
-        }
-    }
-
-    function processToolBarAction(action) {
-        var fileName = remoteFsModel.get(remoteListView.currentIndex, "fileName")
-        var fileIsDir = remoteFsModel.get(remoteListView.currentIndex, "fileIsDir")
-        var fileSize = remoteFsModel.get(remoteListView.currentIndex, "fileSize")
-        switch (action) {
-            case "Queue":
-            case "Download": {
-                if (!remoteFsModel.connected) {
-                    logger.updateStatus(1, "Please connect to a server first")
-                    return;
-                }
-                if (remoteListView.currentIndex < 0) {
-                    logger.updateStatus(1, "Please select a file to " + action.toLowerCase())
-                    return;
-                }
-                remoteFsModel.QueueTransfer(remoteListView.currentIndex, action === "Download")
-                return;
-            }
-            case "Delete": {
-                if (!remoteFsModel.connected) {
-                    logger.updateStatus(1, "Please connect to a server first")
-                    return;
-                }
-                if (remoteListView.currentIndex < 0) {
-                    logger.updateStatus(1, "Please select a file to delete")
-                    return;
-                }
-                newRenamePopup.context = "Delete \"" + fileName + "\""
-                newRenamePopup.elementName = fileName
-                newRenamePopup.elementIsDir = fileIsDir
-                newRenamePopup.inputHint = "Folder name"
-                newRenamePopup.inputValue = fileName
-                newRenamePopup.open()
-                return;
-            }
-            case "New folder": {
-                if (!remoteFsModel.connected) {
-                    logger.updateStatus(1, "Please connect to a server first")
-                    return;
-                }
-                newRenamePopup.context = "New folder"
-                newRenamePopup.inputHint = "Folder name"
-                newRenamePopup.inputValue = ""
-                newRenamePopup.open()
-                return;
-            }
-            case "Rename": {
-                if (!remoteFsModel.connected) {
-                    logger.updateStatus(1, "Please connect to a server first")
-                    return;
-                }
-                if (remoteListView.currentIndex < 0) {
-                    logger.updateStatus(1, "Please select a file to rename")
-                    return;
-                }
-                newRenamePopup.context = "Rename \"" + fileName + "\""
-                newRenamePopup.elementName = fileName
-                newRenamePopup.inputHint = "New name"
-                newRenamePopup.inputValue = ""
-                newRenamePopup.open()
-                return;
-            }
-            case "Refresh": {
-                remoteFsModel.currentDirectory = remoteFsModel.currentDirectory
             }
         }
     }
@@ -339,36 +191,93 @@ Item {
         context: ""
         elementName: ""
         elementIsDir: ""
-        parent: remoteListView
+        parent: listView
         onDismissed: (userInput) => {
             newRenamePopup.close()
             if (userInput.length) {
                 if (context.startsWith("New folder")) {
-                    remoteFsModel.CreateDirectory(userInput)
+                    root.model.CreateDirectory(userInput)
                 } else if (context.startsWith("Rename")) {
-                    remoteFsModel.Rename(elementName, userInput)
+                    root.model.Rename(elementName, userInput)
                 } else if (context.startsWith("Delete")) {
-                    var path = remoteFsModel.currentDirectory +
-                    (remoteFsModel.currentDirectory.endsWith("/") ? userInput : ("/" + userInput))
+                    var path = root.model.currentDirectory +
+                    (root.model.currentDirectory.endsWith("/") ? userInput : ("/" + userInput))
                     if (elementIsDir) {
-                        remoteFsModel.RemoveDirectory(path)
+                        root.model.RemoveDirectory(path)
                     } else {
-                        remoteFsModel.RemoveFile(path)
-                        remoteFsModel.currentDirectory = remoteFsModel.currentDirectory
+                        root.model.RemoveFile(path)
+                        root.model.currentDirectory = root.model.currentDirectory
                     }
                 }
             }
         }
     }
 
+    Menu {
+        id: contextMenu
+        property int selectedIndex: -1
+        MenuItem {
+            text: "Download"
+            onTriggered: root.model.QueueTransfers(true);
+        }
+        MenuItem {
+            text: "Queue"
+            onTriggered: root.model.QueueTransfers(false);
+        }
+        MenuItem {
+            text: "New folder"
+            onTriggered: {
+                newRenamePopup.context = "New folder"
+                newRenamePopup.inputHint = "Folder name"
+                newRenamePopup.inputValue = ""
+                newRenamePopup.open()
+            }
+        }
+        MenuItem {
+            text: "Rename"
+            onTriggered: {
+                var fileName = root.model.get(contextMenu.selectedIndex, "fileName")
+                newRenamePopup.context = "Rename \"" + fileName + "\""
+                newRenamePopup.elementName = fileName
+                newRenamePopup.inputHint = "New name"
+                newRenamePopup.inputValue = ""
+                newRenamePopup.open()
+            }
+        }
+        MenuItem {
+            text: "Refresh"
+            onTriggered: {
+                logger.updateStatus(1, "Ready")
+                root.model.currentDirectory = root.model.currentDirectory
+            }
+        }
+        MenuItem {
+            text: "Delete"
+            onTriggered: {
+                var fileName = root.model.get(contextMenu.selectedIndex, "fileName")
+                var fileIsDir = root.model.get(contextMenu.selectedIndex, "fileIsDir")
+                newRenamePopup.context = "Delete \"" + fileName + "\""
+                newRenamePopup.elementName = fileName
+                newRenamePopup.elementIsDir = fileIsDir
+                newRenamePopup.inputHint = fileIsDir ? "Folder" : "File"
+                newRenamePopup.inputValue = fileName
+                newRenamePopup.open()
+            }
+        }
+        MenuItem {
+            text: "Quit"
+            onTriggered: root.model.Quit()
+        }
+    }
+
     Login {
         anchors.topMargin: 45
         width: parent.width - 100
-        visible: !remoteFsModel.connected
+        visible: !root.model.connected
         anchors.top: currentDirectory.bottom
         anchors.horizontalCenter: parent.horizontalCenter
         onLogin: (host, port, user, password, protocol) => {
-            remoteFsModel.Connect(host, port, user, password, protocol)
+            root.model.Connect(host, port, user, password, protocol)
         }
     }
 

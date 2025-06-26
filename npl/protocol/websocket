@@ -204,16 +204,16 @@ class websocket_server : public http_client {
         return true; //todo
     }
 
-    virtual void OnAccept(void) override {
+    virtual void onAccept(void) override {
         auto sock = GetTargetSocketDevice();
         if (sock) {
             auto aso = std::make_shared<websocket_server>("DC-AS");
             aso->SetClientMessageCallback(iClientMessageCallback);
-            sock->GetConnectedClient()->add_listener(aso);
+            sock->GetConnectedClient()->AddEventListener(aso);
         }
     }
 
-    virtual void OnConnect(void) override {
+    virtual void onConnect(void) override {
         SendClientHello();
     }
 };

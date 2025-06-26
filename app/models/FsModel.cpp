@@ -18,6 +18,22 @@ int FsModel::rowCount(const QModelIndex &parent) const {
     return static_cast<int>(m_model.size());
 }
 
+void FsModel::UnselectAll() {
+    for (auto i = 0; i <= m_model.size(); i++) {
+        setData(createIndex(i, 0, nullptr), false, EFileIsSelected);
+    }
+}
+
+void FsModel::SelectIndex(int index, bool select) {
+    setData(createIndex(index, 0, nullptr), select, EFileIsSelected);
+}
+
+void FsModel::SelectRange(int start, int end) {
+    for (auto i = 0; i <= m_model.size(); i++) {
+        setData(createIndex(i, 0, nullptr), (i >= start && i <= end), EFileIsSelected);
+    }
+}
+
 QVariant FsModel::get(int row, QString role) {
     if (role == "fileName") {
         return data(index(row, 0), EFileName);
@@ -25,6 +41,8 @@ QVariant FsModel::get(int row, QString role) {
         return data(index(row, 0), EFileSize);
     } else if (role == "fileIsDir") {
         return data(index(row, 0), EFileIsDir);
+    } else if (role == "fileIsSelected") {
+        return data(index(row, 0), EFileIsSelected);
     }
     return QVariant();
 }
@@ -67,32 +85,31 @@ bool FsModel::setData(const QModelIndex &index, const QVariant &value, int role)
 }
 
 bool FsModel::IsElementDirectory(int index) const {
-  return m_model[index].m_attributes[0] == 'd';
+    return m_model[index].m_attributes[0] == 'd';
 }
 
 uint64_t FsModel::GetElementSize(int index) const {
-  return IsElementDirectory(index) ? 0 :
-    std::stoll(m_model[index].m_size);
+    return IsElementDirectory(index) ? 0 :
+        std::stoll(m_model[index].m_size);
 }
 
 QString FsModel::getCurrentDirectory(void) {
-  return QString::fromStdString(m_currentDirectory);
+    return QString::fromStdString(m_currentDirectory);
 }
 
 void FsModel::setCurrentDirectory(QString directory) {
-  m_currentDirectory = directory.toStdString();
+    m_currentDirectory = directory.toStdString();
 }
 
 QString FsModel::getPathSeperator(void) {
-  return QString(path_sep);
+    return QString(path_sep);
 }
 
 QString FsModel::getTotalFilesAndFolder(void) {
-  return QString::number(m_fileCount) + ":" + QString::number(m_folderCount);
+    return QString::number(m_fileCount) + ":" + QString::number(m_folderCount);
 }
 
 QString FsModel::getParentDirectory(void) {
-  return QString::fromStdString(
-    std::filesystem::path(m_currentDirectory).parent_path().string()
-  );
+    return QString::fromStdString(
+        std::filesystem::path(m_currentDirectory).parent_path().string());
 }

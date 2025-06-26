@@ -2,11 +2,15 @@ import QtQuick
 import QtQuick.Shapes
 import QtQuick.Dialogs
 import QtQuick.Controls
-import Qt5Compat.GraphicalEffects
 
 Item {
 
+    id: root
     implicitWidth: parent.width / 2
+
+    required property var model
+    required property var textlabel
+    property int lastSelectedIndex: -1
 
     TextField {
         id: currentDirectory
@@ -17,141 +21,46 @@ Item {
         anchors.top: parent.top
         anchors.left: parent.left
         anchors.right: parent.right
-        placeholderText: qsTr("Local Directory")
+        placeholderText: root.textlabel
         verticalAlignment: TextInput.AlignVCenter
-        onAccepted: localFsModel.currentDirectory = currentDirectory.text
+        onAccepted: root.model.currentDirectory = currentDirectory.text
     }
 
     ListView {
-        id: localListView
+        id: listView
         clip: true
         focus: true
         currentIndex: -1
         cacheBuffer: 1024
-        model: localFsModel
+        model: root.model
         anchors.topMargin: 7
         anchors.leftMargin: 5
         anchors.rightMargin: 5
         anchors.left: parent.left
         delegate: listItemDelegate
-        highlightMoveDuration: 100
-        highlightMoveVelocity: 800
         anchors.right: parent.right
         anchors.top: currentDirectory.bottom
+        anchors.bottom: spacer.top
         boundsBehavior: Flickable.StopAtBounds
-        highlight: Rectangle { color: "lightsteelblue"; radius: 3 }
-        height: parent.height - currentDirectory.height - spacer.height - statusRect.height - 2
         Connections {
-            target: localFsModel
+            target: root.model
             function onDirectoryList() {
-                localListView.currentIndex = -1
-                currentDirectory.text = localFsModel.currentDirectory
-                var [files, folders] = localFsModel.totalFilesAndFolders.split(":")
+                root.model.UnselectAll()
+                currentDirectory.text = root.model.currentDirectory
+                var [files, folders] = root.model.totalFilesAndFolders.split(":")
                 status.text = files + " files " + folders + " folders "
             }
         }
-    }
-
-    Rectangle {
-        id: toolBar
-        width: 26
-        radius: 3
-        height: 147
-        border.width: 1
-        border.color: borderColor
-        anchors.topMargin: 7
-        anchors.rightMargin: 10
-        anchors.right: parent.right
-        anchors.top: currentDirectory.bottom
-        color: Qt.lighter(Material.background, 1.8)
-        Image {
-            id: uploadTool
-            width: 18; height: 18
-            source: "qrc:/upload.png"
-            anchors.top: parent.top
-            anchors.horizontalCenter: parent.horizontalCenter
-            anchors.margins: 5
-            MouseArea {
-                anchors.fill: parent
-                hoverEnabled: true
-                onClicked: processToolBarAction("Upload")
-                cursorShape: Qt.PointingHandCursor
-                onContainsMouseChanged: uploadTool.scale = 1 + (containsMouse ? 0.2 : 0)
-            }
-        }
-        Image {
-            id: queueTool
-            width: 18; height: 18
-            source: "qrc:/addq.png"
-            anchors.top: uploadTool.bottom
-            anchors.horizontalCenter: parent.horizontalCenter
-            anchors.margins: 7
-            MouseArea {
-                anchors.fill: parent
-                hoverEnabled: true
-                onClicked: processToolBarAction("Queue")
-                cursorShape: Qt.PointingHandCursor
-                onContainsMouseChanged: queueTool.scale = 1 + (containsMouse ? 0.2 : 0)
-            }
-        }
-        Image {
-            id: newTool
-            width: 18; height: 18
-            source: "qrc:/new.png"
-            anchors.top: queueTool.bottom
-            anchors.horizontalCenter: parent.horizontalCenter
-            anchors.margins: 7
-            MouseArea {
-                anchors.fill: parent
-                hoverEnabled: true
-                onClicked: processToolBarAction("New folder")
-                cursorShape: Qt.PointingHandCursor
-                onContainsMouseChanged: newTool.scale = 1 + (containsMouse ? 0.2 : 0)
-            }
-        }
-        Image {
-            id: renameTool
-            width: 18; height: 18
-            source: "qrc:/rename.png"
-            anchors.top: newTool.bottom
-            anchors.horizontalCenter: parent.horizontalCenter
-            anchors.margins: 7
-            MouseArea {
-                anchors.fill: parent
-                hoverEnabled: true
-                onClicked: processToolBarAction("Rename")
-                cursorShape: Qt.PointingHandCursor
-                onContainsMouseChanged: renameTool.scale = 1 + (containsMouse ? 0.2 : 0)
-            }
-        }
-        Image {
-            id: refreshTool
-            width: 18; height: 18
-            source: "qrc:/refresh.png"
-            anchors.top: renameTool.bottom
-            anchors.horizontalCenter: parent.horizontalCenter
-            anchors.margins: 5
-            MouseArea {
-                anchors.fill: parent
-                hoverEnabled: true
-                onClicked: processToolBarAction("Refresh")
-                cursorShape: Qt.PointingHandCursor
-                onContainsMouseChanged: refreshTool.scale = 1 + (containsMouse ? 0.2 : 0)
-            }
-        }
-        Image {
-            id: deleteTool
-            width: 18; height: 18
-            source: "qrc:/filedelete.png"
-            anchors.top: refreshTool.bottom
-            anchors.horizontalCenter: parent.horizontalCenter
-            anchors.margins: 5
-            MouseArea {
-                anchors.fill: parent
-                hoverEnabled: true
-                onClicked: processToolBarAction("Delete")
-                cursorShape: Qt.PointingHandCursor
-                onContainsMouseChanged: deleteTool.scale = 1 + (containsMouse ? 0.2 : 0)
+        MouseArea {
+            z: -1
+            anchors.fill: parent
+            acceptedButtons: Qt.AllButtons
+            onClicked: (mouse) => {
+                if (mouse.button === Qt.RightButton) {
+                    contextMenu.selectedIndex = -1;
+                    let localPos = root.mapFromItem(listView, mouse.x, mouse.y);
+                    contextMenu.popup(localPos.x, localPos.y);
+                }
             }
         }
     }
@@ -200,15 +109,9 @@ Item {
         id: listItemDelegate
         Rectangle {
             id: delegateRect
-            implicitWidth: ListView.view.width
             implicitHeight: 24
-            Component.onCompleted: {
-                if (fileName === ".") {
-                    height = 0
-                    visible = false
-                }
-            }
-            color: "transparent"
+            implicitWidth: ListView.view.width
+            color: fileIsSelected ? "lightsteelblue" : "transparent"
             // radius: 3
             // border.width: 1
             // border.color: "#123"
@@ -222,85 +125,60 @@ Item {
             Text {
                 id: feText
                 text: fileName
-                font.pointSize: 10
                 height: parent.height
                 verticalAlignment: Text.AlignVCenter
                 x: listItemIcon.x + listItemIcon.width + 5
                 anchors.verticalCenter: parent.verticalCenter
-                color: delegateRect.ListView.isCurrentItem ? "black" : textColor
+                color: fileIsSelected ? "black" : textColor
             }
             MouseArea {
                 anchors.fill: parent
+                preventStealing: true
+                propagateComposedEvents: false
                 acceptedButtons: Qt.AllButtons
                 onDoubleClicked: {
                     if (fileIsDir) {
-                    if (fileName === "..")
-                        localFsModel.currentDirectory = localFsModel.getParentDirectory()
-                    else
-                        localFsModel.currentDirectory = localFsModel.currentDirectory +
-                        (localFsModel.currentDirectory.endsWith(localFsModel.pathSeperator) ?
-                            fileName : (localFsModel.pathSeperator + fileName))
+                        if (fileName === "..")
+                            root.model.currentDirectory = root.model.getParentDirectory()
+                        else
+                            root.model.currentDirectory = root.model.currentDirectory +
+                                (root.model.currentDirectory.endsWith(root.model.pathSeperator) ?
+                                    fileName : (root.model.pathSeperator + fileName))
                     }
                 }
                 onClicked: (mouse) => {
-                    localListView.currentIndex = index
+                    console.log("item mouse")
+                    if (mouse.button === Qt.RightButton) {
+                        if (!fileIsSelected){
+                            root.model.UnselectAll();
+                            fileIsSelected = true;
+                        }
+                        contextMenu.selectedIndex = index;
+                        let localPos = root.mapFromItem(delegateRect, mouse.x, mouse.y);
+                        contextMenu.popup(localPos.x, localPos.y);
+                    } else {
+                        let shiftPressed = mouse.modifiers & Qt.ShiftModifier;
+                        let ctrlPressed = mouse.modifiers & Qt.ControlModifier;
+                        if (shiftPressed && lastSelectedIndex >= 0) {
+                            let start = Math.min(index, lastSelectedIndex)
+                            let end = Math.max(index, lastSelectedIndex)
+                            root.model.SelectRange(start, end);
+                        } else if (ctrlPressed) {
+                            root.model.SelectIndex(index, !root.model.get(index, "fileIsSelected"))
+                            lastSelectedIndex = index
+                        } else {
+                            root.model.UnselectAll();
+                            fileIsSelected = true;
+                            lastSelectedIndex = index;
+                        }
+                    }
                 }
             }
-        }
-    }
-
-    function processToolBarAction(action) {
-        var fileName = localFsModel.get(localListView.currentIndex, "fileName")
-        var fileIsDir = localFsModel.get(localListView.currentIndex, "fileIsDir")
-        var fileSize = localFsModel.get(localListView.currentIndex, "fileSize")
-        switch (action) {
-            case "Queue":
-            case "Upload": {
-                if (!remoteFsModel.connected) {
-                    logger.updateStatus(1, "Please connect to a server first")
-                    return;
+            Component.onCompleted: {
+                if (fileName === ".") {
+                    height = 0
+                    visible = false
                 }
-                if (localListView.currentIndex < 0) {
-                    logger.updateStatus(1, "Please select a file to upload")
-                    return;
-                }
-                localFsModel.QueueTransfer(localListView.currentIndex, action === "Upload")
-                return;
-            }
-            case "Delete": {
-                if (localListView.currentIndex < 0) {
-                    logger.updateStatus(1, "Please select a file to delete")
-                    return;
-                }
-                newRenamePopup.context = "Delete \"" + fileName + "\""
-                newRenamePopup.elementName = fileName
-                newRenamePopup.elementIsDir = fileIsDir
-                newRenamePopup.inputHint = "Folder name"
-                newRenamePopup.inputValue = fileName
-                newRenamePopup.open()
-                return;
-            }
-            case "New folder": {
-                newRenamePopup.context = "New folder"
-                newRenamePopup.inputHint = "Folder name"
-                newRenamePopup.inputValue = ""
-                newRenamePopup.open()
-                return;
-            }
-            case "Rename": {
-                if (localListView.currentIndex < 0) {
-                    logger.updateStatus(1, "Please select a file to rename")
-                    return;
-                }
-                newRenamePopup.context = "Rename \"" + fileName + "\""
-                newRenamePopup.elementName = fileName
-                newRenamePopup.inputHint = "New name"
-                newRenamePopup.inputValue = ""
-                newRenamePopup.open()
-                return;
-            }
-            case "Refresh": {
-                localFsModel.currentDirectory = localFsModel.currentDirectory
             }
         }
     }
@@ -310,25 +188,78 @@ Item {
         context: ""
         elementName: ""
         elementIsDir: ""
-        parent: localListView
+        parent: listView
         onDismissed: (userInput) => {
             newRenamePopup.close()
             if (userInput.length) {
                 if (context.startsWith("New folder")) {
-                    localFsModel.CreateDirectory(currentDirectory.text + "/" + userInput, true)
+                    root.model.CreateDirectory(currentDirectory.text + "/" + userInput)
                 } else if (context.startsWith("Rename")) {
-                    localFsModel.Rename(
+                    root.model.Rename(
                     currentDirectory.text + "/" + elementName,
-                    currentDirectory.text + "/" + userInput, true)
+                    currentDirectory.text + "/" + userInput)
                 } else if (context.startsWith("Delete")) {
                     var path = currentDirectory.text + "/" + elementName
-                    elementIsDir ? localFsModel.RemoveDirectory(path, true) :
-                    localFsModel.RemoveFile(path, true)
+                    elementIsDir ? root.model.RemoveDirectory(path) :
+                    root.model.RemoveFile(path)
                 }
-                localFsModel.currentDirectory = localFsModel.currentDirectory
+                root.model.currentDirectory = root.model.currentDirectory
             }
         }
     }
 
-    Component.onCompleted: localFsModel.currentDirectory = ""
+    Menu {
+        id: contextMenu
+        property int selectedIndex: -1
+        MenuItem {
+            text: "Upload"
+            onTriggered: root.model.QueueTransfers(true);
+        }
+        MenuItem {
+            text: "Queue"
+            onTriggered: root.model.QueueTransfers(false);
+        }
+        MenuItem {
+            text: "New folder"
+            onTriggered: {
+                newRenamePopup.context = "New folder"
+                newRenamePopup.inputHint = "Folder name"
+                newRenamePopup.inputValue = ""
+                newRenamePopup.open()
+            }
+        }
+        MenuItem {
+            text: "Rename"
+            onTriggered: {
+                var fileName = root.model.get(contextMenu.selectedIndex, "fileName")
+                newRenamePopup.context = "Rename \"" + fileName + "\""
+                newRenamePopup.elementName = fileName
+                newRenamePopup.inputHint = "New name"
+                newRenamePopup.inputValue = ""
+                newRenamePopup.open()
+            }
+        }
+        MenuItem {
+            text: "Refresh"
+            onTriggered: {
+                logger.updateStatus(1, "Ready")
+                root.model.currentDirectory = root.model.currentDirectory
+            }
+        }
+        MenuItem {
+            text: "Delete"
+            onTriggered: {
+                var fileName = root.model.get(contextMenu.selectedIndex, "fileName")
+                var fileIsDir = root.model.get(contextMenu.selectedIndex, "fileIsDir")
+                newRenamePopup.context = "Delete \"" + fileName + "\""
+                newRenamePopup.elementName = fileName
+                newRenamePopup.elementIsDir = fileIsDir
+                newRenamePopup.inputHint = fileIsDir ? "Folder" : "File"
+                newRenamePopup.inputValue = fileName
+                newRenamePopup.open()
+            }
+        }
+    }
+
+    Component.onCompleted: root.model.currentDirectory = ""
 }

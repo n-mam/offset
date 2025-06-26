@@ -188,7 +188,7 @@ auto create_base_vhd(const std::wstring& volume, npl::SPSubject<uint8_t, uint8_t
   target->WriteSync((uint8_t *) bat.get(), disk->iBATSize, sizeof(VHD_FOOTER_HEADER));
 
   // set target for io operations on disk
-  target->add_listener(disk);
+  target->AddEventListener(disk);
 
   disk->CommitPartitionTable();
 
@@ -409,7 +409,7 @@ auto create_fixed_vhd(const std::wstring& device, npl::SPSubject<uint8_t, uint8_
   auto disk = std::make_shared<VirtualHardDisk>(length, _2M, VirtualHardDisk::EVHDType::Fixed);
 
   // set target for io operations on disk
-  target->add_listener(disk);
+  target->AddEventListener(disk);
 
   auto rc = disk->CommitPartitionTable();
 
@@ -610,7 +610,7 @@ void create_base_vhdx(const std::wstring& volume, npl::SPSubject<uint8_t, uint8_
   target->WriteSync((uint8_t *) bat.get(), disk->iBATSize, _3M);
 
   // set target for io operations on disk
-  target->add_listener(disk);
+  target->AddEventListener(disk);
 
   disk->CommitPartitionTable();
 

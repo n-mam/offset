@@ -54,19 +54,21 @@ bool RemoteFsModel::Connect(QString host, QString port, QString user, QString pa
     return false;
 }
 
-void RemoteFsModel::QueueTransfer(int index, bool start) {
-    auto fileName = m_model[index].m_name;
-    auto fileIsDir = IsElementDirectory(index);
-    auto fileSize = GetElementSize(index);
-    if (fileName.find("->") != std::string::npos) {
-        fileName = osl::trim(osl::split<std::string>(fileName, "->")[1]);
+void RemoteFsModel::QueueTransfers(bool start) {
+    for (auto i = 0; i < m_model.size(); i++) {
+        auto fileName = m_model[i].m_name;
+        auto fileIsDir = IsElementDirectory(i);
+        auto fileSize = GetElementSize(i);
+        if (fileName.find("->") != std::string::npos) {
+            fileName = osl::trim(osl::split<std::string>(fileName, "->")[1]);
+        }
+        DownloadInternal(
+            fileName,
+            m_currentDirectory,
+            getInstance<LocalFsModel>()->getCurrentDirectory().toStdString(),
+            fileIsDir,
+            fileSize);
     }
-    DownloadInternal(
-        fileName,
-        m_currentDirectory,
-        getInstance<LocalFsModel>()->getCurrentDirectory().toStdString(),
-        fileIsDir,
-        fileSize);
 }
 
 void RemoteFsModel::DownloadInternal(const std::string& file, const std::string& folder, const std::string& localFolder, bool isFolder, uint64_t size) {
@@ -172,7 +174,7 @@ void RemoteFsModel::setConnected(bool isConnected) {
         m_connected = isConnected;
         emit connected(m_connected);
         STATUS(1) << (isConnected ? "Connected to " :
-        "Disconnected from ") << m_host;
+            "Disconnected from ") << m_host;
     }
 }
 

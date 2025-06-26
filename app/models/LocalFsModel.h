@@ -6,16 +6,19 @@
 #include <QAbstractListModel>
 
 class LocalFsModel : public FsModel {
+
     Q_OBJECT
+
     public:
+
     LocalFsModel();
     ~LocalFsModel();
 
-    Q_INVOKABLE virtual void QueueTransfer(int index, bool start = false) override;
     Q_INVOKABLE virtual void RemoveFile(QString path) override;
     Q_INVOKABLE virtual void RemoveDirectory(QString path) override;
     Q_INVOKABLE virtual void CreateDirectory(QString path) override;
     Q_INVOKABLE virtual void Rename(QString from, QString to) override;
+    Q_INVOKABLE virtual void QueueTransfers(bool start = false) override;
 
     public slots:
 

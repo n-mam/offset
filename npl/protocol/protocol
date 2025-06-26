@@ -130,40 +130,40 @@ class protocol : public subject<T1, T2> {
         }
     }
 
-    virtual bool is_connected(void) override {
+    virtual bool IsConnected(void) override {
         auto sock = GetTargetSocketDevice();
         if (sock) {
-            return sock->is_connected() && (iCurrentState != EStateDisconnected);
+            return sock->IsConnected() && (iCurrentState != EStateDisconnected);
         }
         return false;
     }
 
-    virtual void OnError(uint64_t error) override {
+    virtual void onError(uint64_t error) override {
         LOG << "connection error " << error;
     }
 
-    virtual void OnConnect(void) override {
+    virtual void onConnect(void) override {
         if (iConnectCbk) {
             iConnectCbk(std::static_pointer_cast<protocol<T1, T2>>(this->shared_from_this()), true);
         }
         iCurrentState = EStateConnected;
     }
 
-    virtual void OnDisconnect(void) override {
+    virtual void onDisconnect(void) override {
         if (iConnectCbk) {
             iConnectCbk(std::static_pointer_cast<protocol<T1, T2>>(this->shared_from_this()), false);
         }
         iCurrentState = EStateDisconnected;
     }
 
-    virtual void OnRead(const T1 *b, size_t n) override {
+    virtual void onRead(const T1 *b, size_t n) override {
         for (size_t i = 0; i < n; i++) {
             iBuffer.push_back(b[i]);
             auto message = IsMessageComplete(iBuffer);
             if (message) {
                 iMessages.push_back(message);
                 StateMachine(message);
-                subject<T1, T2>::OnRead(
+                subject<T1, T2>::onRead(
                     iBuffer.data(),
                     iBuffer.size());
                 iBuffer.clear();

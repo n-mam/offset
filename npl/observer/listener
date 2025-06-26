@@ -37,37 +37,37 @@ class Listener : public subject<uint8_t, uint8_t> {
 
     virtual ~Listener(){}
 
-    virtual void OnRead(const uint8_t *b, size_t n) {
+    virtual void onRead(const uint8_t *b, size_t n) override {
         if (iCbkRead) {
             iCbkRead(b, n);
         }
     }
 
-    virtual void OnWrite(const uint8_t *b, size_t n) {
+    virtual void onWrite(const uint8_t *b, size_t n) override {
         if (iCbkWrite) {
             iCbkWrite(b, n);
         }
     }
 
-    virtual void OnConnect(void) {
+    virtual void onConnect(void) override {
         if (iCbkConnect) {
             iCbkConnect();
         }
     }
 
-    virtual void OnAccept() {
+    virtual void onAccept() override {
         if (iCbkAccept) {
             iCbkAccept();
         }
     }
 
-    virtual void OnDisconnect(void) {
+    virtual void onDisconnect(void) {
         if (iCbkDisconnect) {
             iCbkDisconnect();
         }
     }
 
-    virtual void OnError(int error) {
+    virtual void onError(int error) {
         if (iCbkError) {
             iCbkError(error);
         }

@@ -23,7 +23,7 @@ FTP(S) client<br/>
 - Directory listing support for Linux, Windows and MLSD.<br/>
 - FTPS supports TLS1.3<br/><br/>
 
-Camera<br/>
+Camera tool<br/>
 - Face detection, Motion detection, Face recognition.<br/>
 - Uses default opencv built-in models and DNN based detectors.<br/>
 - Detection configurability on a per camera basis.<br/>
@@ -47,7 +47,7 @@ sudo apt-get install build-essential zip curl vim bison meson pkg-config
 use the resulting toolchain file in cmake configure step as highlited under the build section
 ```
 
-#### QT-6.8.2 source build
+#### QT-6.9.0 source build
 ```
 make sure ninja and python3.9 are under PATH
 set PATH=D:\Python39;%PATH%
@@ -75,7 +75,7 @@ cmake -DCMAKE_TOOLCHAIN_FILE=D:/vcpkg/scripts/buildsystems/vcpkg.cmake ..
 cmake -DCMAKE_TOOLCHAIN_FILE=~/vcpkg/scripts/buildsystems/vcpkg.cmake ..
 cmake --build . --config Release
 
-Run as admin (needed for FXC):
+Run as admin (elevation needed only for the block level backup tool):
 SET PATH=D:\QT-6.9.0\install\bin;%PATH%
 qml\Release\offset.exe
 ```

@@ -414,7 +414,7 @@ struct ftp : public protocol<uint8_t, uint8_t> {
 
     virtual void OpenDataChannel() {
         m_data_channel = std::make_shared<socket_device>("sock-dc");
-        get_last_target(shared_from_this())->add_listener(m_data_channel);
+        get_last_target(shared_from_this())->AddEventListener(m_data_channel);
         auto dc = std::static_pointer_cast<socket_device>(m_data_channel);
         dc->SetHostAndPort(m_dc_host, m_dc_port);
         AttachDataChannelObserver();
@@ -442,7 +442,7 @@ struct ftp : public protocol<uint8_t, uint8_t> {
                 OnDataChannelDisconnect();
             }
         );
-        m_data_channel->add_listener(observer);
+        m_data_channel->AddEventListener(observer);
     }
 
     virtual void OnDataChannelConnect(void) {
@@ -548,16 +548,16 @@ struct ftp : public protocol<uint8_t, uint8_t> {
         return (c == '1');
     }
 
-    virtual void OnError(uint64_t error) override {
+    virtual void onError(uint64_t error) override {
         STATUS(1) << "control channel error " << error;
     }
 
-    virtual void OnDisconnect(void) override {
-        protocol::OnDisconnect();
+    virtual void onDisconnect(void) override {
+        protocol::onDisconnect();
     }
 
-    virtual void OnConnect(void) override {
-        protocol::OnConnect();
+    virtual void onConnect(void) override {
+        protocol::onConnect();
         auto tls = GetChannelTLS();
         if (tls == tls::implicit){
             DoCCHandshake();

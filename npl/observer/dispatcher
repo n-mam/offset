@@ -47,7 +47,7 @@ struct Event {
     #endif
 };
 
-class dispatcher : public subject<uint8_t, uint8_t> {
+struct dispatcher : public subject<uint8_t, uint8_t> {
 
     private:
 
@@ -78,7 +78,7 @@ class dispatcher : public subject<uint8_t, uint8_t> {
     ~dispatcher() {
         _exit_loop = true;
         if (_ctrl_client) {
-            if (_ctrl_client->is_connected()) {
+            if (_ctrl_client->IsConnected()) {
                 _ctrl_client->StopSocket(true);
             }
         }
@@ -112,14 +112,14 @@ class dispatcher : public subject<uint8_t, uint8_t> {
                             process_event_context((subject *) ctx->k, ctx);
                             m.clear();
                         }});
-                this->_ctrl_server->GetConnectedClient()->add_listener(aso);
+                this->_ctrl_server->GetConnectedClient()->AddEventListener(aso);
             }
         );
-        this->add_listener(_ctrl_server)->add_listener(ls);
+        this->AddEventListener(_ctrl_server)->AddEventListener(ls);
         _ctrl_server->StartSocketServer();
         _ctrl_client = std::make_shared<socket_device>("DC-CT");
         _ctrl_client->SetHostAndPort("127.0.0.1", _ctrl_server->get_port());
-        this->add_listener(_ctrl_client);
+        this->AddEventListener(_ctrl_client);
         _ctrl_client->StartSocketClient();
     }
 
@@ -147,8 +147,8 @@ class dispatcher : public subject<uint8_t, uint8_t> {
         #endif
     }
 
-    virtual const SPSubject& add_listener(const SPSubject& observer) override {
-        subject::add_listener(observer);
+    virtual const SPSubject& AddEventListener(const SPSubject& observer) override {
+        subject::AddEventListener(observer);
         #ifdef _WIN32
         add_subject(observer);
         #endif
@@ -227,19 +227,19 @@ class dispatcher : public subject<uint8_t, uint8_t> {
         DBG << k->get_name() << " process_event_context " << std::hex << (uint64_t) k << " "
                 <<  npl::EIOToString(ctx->type) << " n " << std::dec << (ssize_t) ctx->n;
         if (rc <= 0) {
-            k->OnError(error);
+            k->onError(error);
         } else if (ctx->type == EIOType::READ) {
             if (ctx->n != 0) {
-                k->OnRead(ctx->b, ctx->n);
+                k->onRead(ctx->b, ctx->n);
             } else {
-                k->OnDisconnect();
+                k->onDisconnect();
             }
         } else if (ctx->type == EIOType::WRITE) {
-            k->OnWrite(ctx->b, ctx->n);
+            k->onWrite(ctx->b, ctx->n);
         } else if (ctx->type == EIOType::CONNECT) {
-            k->OnConnect();
+            k->onConnect();
         } else if (ctx->type == EIOType::ACCEPT) {
-            k->OnAccept();
+            k->onAccept();
         } else {
             assert(false);
         }
@@ -255,7 +255,7 @@ class dispatcher : public subject<uint8_t, uint8_t> {
     std::vector<context *> get_event_context(SPSubject o, Event& e) {
         std::vector<context *> contexts;
         auto dev = std::dynamic_pointer_cast<socket_device> (o);
-        auto isConnected = dev->is_connected();
+        auto isConnected = dev->IsConnected();
         auto isClientSocket = dev->IsClientSocket();
         auto isListentingSocket = dev->IsListeningSocket();
         if (e.is_write()) {
@@ -335,10 +335,6 @@ class dispatcher : public subject<uint8_t, uint8_t> {
         ((context *)c)->k = s.get();
         _ctrl_client->Write((const uint8_t *)c, sizeof(context));
         free(c);
-    }
-
-    virtual bool IsDispatcher(void) override {
-        return true;
     }
 };
 

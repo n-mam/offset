@@ -22,7 +22,7 @@ using FD = HANDLE;
 #include <netinet/tcp.h>
 using FD = int;
 using SOCKET = int;
-#define closesocket close;
+#define closesocket close
 #endif
 
 namespace npl {
@@ -54,19 +54,19 @@ struct context {
     bool            bFree;
 };
 
-inline auto EIOToString(EIOType t) {
+constexpr inline auto EIOToString(EIOType t) {
     switch(t) {
         case EIOType::ACCEPT:
-            return "OnAccept";
+            return "onAccept";
             break;
         case EIOType::CONNECT:
-            return "OnConnect";
+            return "onConnect";
             break;
         case EIOType::READ:
-            return "OnRead";
+            return "onRead";
             break;
         case EIOType::WRITE:
-            return "OnWrite";
+            return "onWrite";
             break;
         default:
             return "INVALID";
@@ -77,8 +77,8 @@ class file_device : public subject<uint8_t, uint8_t>
 {
     public:
 
-    FD _fd_async;
     FD _fd_sync;
+    FD _fd_async;
 
     protected:
 
@@ -179,7 +179,7 @@ class file_device : public subject<uint8_t, uint8_t>
     }
 
     virtual void * Read(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override {
-        if (!is_connected()) {
+        if (!IsConnected()) {
             ERR << get_name() << " file_device::Read() not connected";
             return nullptr;
         }
@@ -216,7 +216,7 @@ class file_device : public subject<uint8_t, uint8_t>
     }
 
     virtual bool Write(const uint8_t *b = nullptr , size_t l = 0, uint64_t o = 0) override {
-        if (!is_connected()) {
+        if (!IsConnected()) {
             ERR << get_name() << " file_device::Write() not connected";
             return false;
         }

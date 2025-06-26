@@ -8,16 +8,21 @@ LocalFsModel::LocalFsModel(){}
 
 LocalFsModel::~LocalFsModel(){}
 
-void LocalFsModel::QueueTransfer(int index, bool start) {
-    auto fileName = m_model[index].m_name;
-    auto fileSize = GetElementSize(index);
-    auto fileIsDir = IsElementDirectory(index);
-    UploadInternal(
-        fileName,
-        m_currentDirectory,
-        getInstance<RemoteFsModel>()->getCurrentDirectory().toStdString(),
-        fileIsDir,
-        fileSize);
+void LocalFsModel::QueueTransfers(bool start) {
+    for (auto i = 0; i < m_model.size(); i++) {
+        if (m_model[i].m_selected) {
+            auto fileName = m_model[i].m_name;
+            auto fileSize = GetElementSize(i);
+            auto fileIsDir = IsElementDirectory(i);
+            UploadInternal(
+                fileName,
+                m_currentDirectory,
+                getInstance<RemoteFsModel>()->getCurrentDirectory().toStdString(),
+                fileIsDir,
+                fileSize);
+        }
+    }
+
 }
 
 void LocalFsModel::UploadInternal(const std::string& file, const std::string& localFolder, const std::string& remoteFolder, bool isFolder, uint64_t size) {
