@@ -57,7 +57,7 @@ Item {
       Connections {
         target: transferManager
         function onTransferQueueSize(n) {
-          queueCount.text = "Q:" + n
+          queueCount.text = "Q: " + n
         }
       }
     }

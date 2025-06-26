@@ -157,6 +157,7 @@ Item {
                     }
                 }
                 onClicked: (mouse) => {
+                    if (fileName === "..") return
                     if (mouse.button === Qt.RightButton) {
                         if (!fileIsSelected){
                             root.model.UnselectAll();

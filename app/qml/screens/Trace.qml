@@ -49,14 +49,6 @@ Item {
             spacing: 5
             height: parent.height * 0.10
             anchors.horizontalCenter: parent.horizontalCenter
-            CheckBox {
-                id: traceEnable
-                z: 2
-                checked: true
-                anchors.topMargin: 3
-                text: qsTr("Enable")
-                anchors.verticalCenter: parent.verticalCenter
-            }
             ButtonX {
                 id: clearButton
                 width: 54
@@ -73,6 +65,14 @@ Item {
                 onButtonXClicked: {}
                 height: parent.height * 0.40
                 enabled: (diskListModel.transfer !== 0)
+                anchors.verticalCenter: parent.verticalCenter
+            }
+            CheckBox {
+                id: traceEnable
+                z: 2
+                checked: true
+                anchors.topMargin: 3
+                text: qsTr("Enable")
                 anchors.verticalCenter: parent.verticalCenter
             }
         }
