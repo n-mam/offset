@@ -19,7 +19,7 @@ int FsModel::rowCount(const QModelIndex &parent) const {
 }
 
 void FsModel::UnselectAll() {
-    for (auto i = 0; i <= m_model.size(); i++) {
+    for (auto i = 0; i < m_model.size(); i++) {
         setData(createIndex(i, 0, nullptr), false, EFileIsSelected);
     }
 }
@@ -29,7 +29,7 @@ void FsModel::SelectIndex(int index, bool select) {
 }
 
 void FsModel::SelectRange(int start, int end) {
-    for (auto i = 0; i <= m_model.size(); i++) {
+    for (auto i = 0; i < m_model.size(); i++) {
         setData(createIndex(i, 0, nullptr), (i >= start && i <= end), EFileIsSelected);
     }
 }
@@ -112,4 +112,17 @@ QString FsModel::getTotalFilesAndFolder(void) {
 QString FsModel::getParentDirectory(void) {
     return QString::fromStdString(
         std::filesystem::path(m_currentDirectory).parent_path().string());
+}
+
+void FsModel::RemoveSelectedItems() {
+    for (auto i = 0; i < m_model.size(); i++) {
+        if (m_model[i].m_selected) {
+            auto path = m_currentDirectory + std::string("/") + m_model[i].m_name;
+            if (IsElementDirectory(i)) {
+                RemoveDirectory(QString::fromStdString(path));
+            } else {
+                RemoveFile(QString::fromStdString(path));
+            }
+        }
+    }
 }

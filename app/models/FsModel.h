@@ -38,6 +38,7 @@ class FsModel : public QAbstractListModel {
     Q_PROPERTY(QString currentDirectory READ getCurrentDirectory WRITE setCurrentDirectory);
 
     Q_INVOKABLE virtual void UnselectAll();
+    Q_INVOKABLE virtual void RemoveSelectedItems();
     Q_INVOKABLE virtual void RemoveFile(QString path) = 0;
     Q_INVOKABLE virtual void SelectRange(int start, int end);
     Q_INVOKABLE virtual QVariant get(int index, QString role);

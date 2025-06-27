@@ -80,7 +80,7 @@ Rectangle {
                 highlightMoveVelocity: 800
                 delegate: TransferQueueDelegate{}
                 boundsBehavior: Flickable.StopAtBounds
-                highlight: Rectangle { color: "lightsteelblue"; radius: 3 }
+                highlight: Rectangle { color: "gainsboro"; radius: 3 }
                 Connections {
                     target: transferManager
                     function onTransferStarted(index) {

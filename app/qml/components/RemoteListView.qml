@@ -201,15 +201,9 @@ Item {
                 } else if (context.startsWith("Rename")) {
                     root.model.Rename(elementName, userInput)
                 } else if (context.startsWith("Delete")) {
-                    var path = root.model.currentDirectory +
-                    (root.model.currentDirectory.endsWith("/") ? userInput : ("/" + userInput))
-                    if (elementIsDir) {
-                        root.model.RemoveDirectory(path)
-                    } else {
-                        root.model.RemoveFile(path)
-                        root.model.currentDirectory = root.model.currentDirectory
-                    }
+                    root.model.RemoveSelectedItems()
                 }
+                root.model.currentDirectory = root.model.currentDirectory
             }
         }
     }

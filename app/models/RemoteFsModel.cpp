@@ -141,7 +141,8 @@ void RemoteFsModel::RemoveDirectory(QString path) {
             }
             if (fe_list.empty() || onlyFiles) {
                 m_ftp->RemoveDirectory(path.toStdString(),
-                [](const std::string& res) { STATUS(1) << res; });
+                    [](const std::string& res) { STATUS(1) << res; });
+                RefreshRemoteView();
             } else {
                 m_directories_to_remove.push_back(path.toStdString());
             }

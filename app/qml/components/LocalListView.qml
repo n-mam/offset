@@ -199,9 +199,7 @@ Item {
                     currentDirectory.text + "/" + elementName,
                     currentDirectory.text + "/" + userInput)
                 } else if (context.startsWith("Delete")) {
-                    var path = currentDirectory.text + "/" + elementName
-                    elementIsDir ? root.model.RemoveDirectory(path) :
-                    root.model.RemoveFile(path)
+                    root.model.RemoveSelectedItems()
                 }
                 root.model.currentDirectory = root.model.currentDirectory
             }
