@@ -42,7 +42,7 @@ Camera tool<br/>
 git clone https://github.com/microsoft/vcpkg.git
 cd vcpkg && bootstrap-vcpkg.bat
 vcpkg.exe install openssl crc32c rapidjson zlib opencv4[contrib,core,dnn,ffmpeg, highgui] --recurse
-sudo apt-get install build-essential zip curl vim bison meson pkg-config
+sudo apt-get install build-essential zip curl vim bison nasm meson pkg-config
 ./vcpkg install tinyxml2 libzip openssl crc32c rapidjson zlib opencv4[contrib,core,dnn,ffmpeg,highgui] --recurse
 use the resulting toolchain file in cmake configure step as highlited under the build section
 ```

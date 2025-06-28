@@ -15,7 +15,7 @@ qt6_add_resources(QT_RESOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/assets/assets.qrc
 )
 
-add_executable(offset WIN32 ${QT_RESOURCES})
+add_executable(offset ${QT_RESOURCES})
 
 target_sources(offset PRIVATE main.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/models/Logger.cpp
@@ -64,7 +64,7 @@ target_link_libraries(
 if(WIN32)
   target_link_libraries(
     offset PRIVATE
-    Ws2_32.lib 
+    Ws2_32.lib
     VssApi.lib
   )
 endif(WIN32)

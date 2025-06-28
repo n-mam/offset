@@ -1,7 +1,6 @@
 import QtQuick
 import QtQuick.Shapes
 import QtQuick.Controls
-import Qt5Compat.GraphicalEffects
 import "qrc:/components"
 
 Item {
@@ -122,11 +121,6 @@ Item {
         onContainsMouseChanged: queue.scale = 1 + (containsMouse ? 0.4 : 0)
       }
     }
-    ColorOverlay {
-      source: queue
-      color: "#69BAE8"
-      anchors.fill: queue
-    }
 
     Image {
       id: stop
@@ -142,11 +136,6 @@ Item {
         onClicked: transferManager.StopAllTransfers()
         onContainsMouseChanged: stop.scale = 1 + (containsMouse ? 0.4 : 0)
       }
-    }
-    ColorOverlay {
-      source: stop
-      color: "#FF7471"
-      anchors.fill: stop
     }
 
     Image {

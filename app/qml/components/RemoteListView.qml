@@ -267,7 +267,7 @@ Item {
 
     Login {
         anchors.topMargin: 45
-        width: parent.width - 100
+        width: parent.width * 0.65
         visible: !root.model.connected
         anchors.top: currentDirectory.bottom
         anchors.horizontalCenter: parent.horizontalCenter
