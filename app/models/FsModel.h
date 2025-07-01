@@ -14,7 +14,9 @@ struct FileElement {
 };
 
 class FsModel : public QAbstractListModel {
+
     Q_OBJECT
+
     enum Roles {
         EFileName = Qt::UserRole,
         EFileSize,
@@ -69,6 +71,11 @@ class FsModel : public QAbstractListModel {
     int m_folderCount = 0;
     std::string m_currentDirectory;
     std::vector<FileElement> m_model;
+    #if defined _WIN32
+    char path_sep = '\\';
+    #else
+    char path_sep = '/';
+    #endif
 };
 
 #endif

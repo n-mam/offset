@@ -134,7 +134,7 @@ Item {
             MouseArea {
                 anchors.fill: parent
                 preventStealing: true
-                propagateComposedEvents: false
+                propagateComposedEvents: true
                 acceptedButtons: Qt.AllButtons
                 onDoubleClicked: {
                     if (fileIsDir) {

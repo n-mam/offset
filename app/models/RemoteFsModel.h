@@ -10,8 +10,11 @@
 using TFileElementListCallback = std::function<void (const std::vector<FileElement>&)>;
 
 class RemoteFsModel : public FsModel {
+
     Q_OBJECT
+
     public:
+
     RemoteFsModel();
     ~RemoteFsModel();
 
@@ -47,12 +50,11 @@ class RemoteFsModel : public FsModel {
 
     void RefreshRemoteView(void);
     void WalkRemoteDirectory(const std::string& path, TFileElementListCallback callback);
-    void DownloadInternal(const std::string& file, const std::string& folder, const std::string& localFolder, bool isFolder, uint64_t size = 0);
-
-    void ParseDirectoryList(const std::string& list, std::vector<FileElement>& fe_list, int *pfc = nullptr, int *pdc = nullptr);
     void ParseMLSDList(const std::string& list, std::vector<FileElement>& fe_list, int *pfc = nullptr, int * pdc = nullptr);
-    void ParseWindowsList(const std::string& list, std::vector<FileElement>& fe_list, int *pfc = nullptr, int *pdc = nullptr);
     void ParseLinuxList(const std::string& list, std::vector<FileElement>& fe_list, int *pfc = nullptr, int *pdc = nullptr);
+    void ParseWindowsList(const std::string& list, std::vector<FileElement>& fe_list, int *pfc = nullptr, int *pdc = nullptr);
+    void ParseDirectoryList(const std::string& list, std::vector<FileElement>& fe_list, int *pfc = nullptr, int *pdc = nullptr);
+    void DownloadInternal(const std::string& file, const std::string& folder, const std::string& localFolder, bool isFolder, uint64_t size = 0);
 
     bool m_connected = false;
     npl::SPProtocolFTP m_ftp;

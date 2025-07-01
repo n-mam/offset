@@ -30,8 +30,11 @@ class RemoteFsModel;
 constexpr size_t MAX_SESSIONS = 2;
 
 class TransferManager : public QAbstractListModel {
+
     Q_OBJECT
+
     public:
+
     enum Roles {
         ELocal = Qt::UserRole,
         ERemote,
@@ -88,11 +91,5 @@ class TransferManager : public QAbstractListModel {
     std::atomic<bool> m_stop{false};
     std::vector<npl::SPProtocolFTP> m_sessions;
 };
-
-#if defined _WIN32
-constexpr char path_sep = '\\';
-#else
-constexpr char path_sep = '/';
-#endif
 
 #endif
