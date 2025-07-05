@@ -14,11 +14,11 @@ TransferManager::~TransferManager(){}
 
 QHash<int, QByteArray> TransferManager::roleNames() const {
     auto roles = QAbstractListModel::roleNames();
+    roles.insert(EType, "type");
     roles.insert(ELocal, "local");
     roles.insert(ERemote, "remote");
-    roles.insert(EDirection, "direction");
-    roles.insert(EType, "type");
     roles.insert(EProgress, "progress");
+    roles.insert(EDirection, "direction");
     return roles;
 }
 
@@ -102,12 +102,15 @@ void TransferManager::TransferFinished(int i) {
         }
         return;
     }
+
     for (int j = i + 1; j < m_queue.size(); j++) {
         if (m_queue[j].m_state == Transfer::state::queued) {
             ProcessTransfer(j, m_queue[i].m_sid, false);
-            break;
+            return;
         }
     }
+
+    STATUS(1) << "Transfer finished";
 }
 
 void TransferManager::ProcessAllTransfers(void) {

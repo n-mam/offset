@@ -488,10 +488,10 @@ struct ftp : public protocol<uint8_t, uint8_t> {
                 auto cc = std::static_pointer_cast<socket_device>(m_target.lock());
                 std::static_pointer_cast<socket_device>
                     (m_data_channel)->InitializeSSL(cc->GetSslObject(),
-                    [this](){
-                        if (m_currentDirection == ftp::upload)
-                            m_queue.front().c_tcbk((char *)0xABCDEF, 0);
-                    });
+                        [this](){
+                            if (m_currentDirection == ftp::upload)
+                                m_queue.front().c_tcbk((char *)0xABCDEF, 0);
+                        });
             } else {
                 if (m_currentDirection == ftp::upload)
                     m_queue.front().c_tcbk((char *)0xABCDEF, 0);
