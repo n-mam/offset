@@ -22,7 +22,6 @@ void LocalFsModel::QueueTransfers(bool start) {
                 fileSize);
         }
     }
-
 }
 
 void LocalFsModel::UploadInternal(const std::string& file, const std::string& localFolder, const std::string& remoteFolder, bool isFolder, uint64_t size) {
@@ -54,8 +53,7 @@ void LocalFsModel::UploadInternal(const std::string& file, const std::string& lo
                     'I',
                     size});
         }
-    }
-    catch(const std::exception& e) {
+    } catch(const std::exception& e) {
         LOG << e.what();
     }
 }

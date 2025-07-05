@@ -36,11 +36,11 @@ class TransferManager : public QAbstractListModel {
     public:
 
     enum Roles {
-        ELocal = Qt::UserRole,
+        EType = Qt::UserRole,
+        ELocal,
         ERemote,
-        EDirection,
-        EType,
-        EProgress
+        EProgress,
+        EDirection
     };
 
     TransferManager();
@@ -53,10 +53,10 @@ class TransferManager : public QAbstractListModel {
     void AddToTransferQueue(const Transfer& transfer);
 
     Q_INVOKABLE void StopAllTransfers(void);
+    Q_INVOKABLE void RemoveTransfer(int row);
+    Q_INVOKABLE void RemoveAllTransfers(void);
     Q_INVOKABLE void ProcessAllTransfers(void);
     Q_INVOKABLE void ProcessTransfer(int row, int sid, bool oneoff);
-    Q_INVOKABLE void RemoveAllTransfers(void);
-    Q_INVOKABLE void RemoveTransfer(int row);
 
     public slots:
 
@@ -65,11 +65,11 @@ class TransferManager : public QAbstractListModel {
     signals:
 
     void activeTransfers(int count);
-    void transferCancelled(int index);
     void transferStarted(int index);
+    void transferCancelled(int index);
     void transferQueueSize(int count);
-    void transferSuccessful(int index, int count);
     void transferFailed(int index, int count);
+    void transferSuccessful(int index, int count);
 
     private:
 
