@@ -75,8 +75,8 @@ int main(int argc, char *argv[])
     return app.exec();
 }
 
-void q_logger(QtMsgType type, const QMessageLogContext &context, const QString &msg)
-{
+void q_logger(QtMsgType type, const QMessageLogContext &context, const QString &msg) {
+
     char buffer[2048];
     QByteArray localMsg = msg.toLocal8Bit();
 

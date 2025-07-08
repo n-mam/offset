@@ -338,7 +338,12 @@ class FaceRecognizer {
             std::getline(liness, classlabel, separator);
             std::getline(liness, frtag);
             if(!path.empty() && !classlabel.empty() && !frtag.empty()) {
-                images.push_back(cv::imread(modelRoot + path, 0));
+                auto img = cv::imread(modelRoot + path, cv::IMREAD_GRAYSCALE);
+                if (img.empty()) {
+                    std::cerr << "Warning: Could not load image: " << modelRoot + path << std::endl;
+                    continue;
+                }
+                images.push_back(img);
                 int id = std::atoi(classlabel.c_str());
                 labels.push_back(id);
                 tags.push_back(frtag);

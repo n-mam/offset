@@ -49,10 +49,9 @@ StackScreen {
                 onButtonXClicked: {
                     if (cameraUrl.text) {
                         createPlayerObject({
-                            "cfg": {
-                                "source": cameraUrl.text,
-                                "stages": 0
-                            }})
+                            "source": cameraUrl.text,
+                            "stages": 0
+                        })
                         cameraUrl.text = ""
                     }
                 }

@@ -12,112 +12,107 @@
 #define IMAGE_HEIGHT (100)
 #define BUFFER_SIZE (IMAGE_WIDTH * IMAGE_HEIGHT)
 
-class VideoRenderer : public QQuickItem
-{
-  Q_OBJECT
-  QML_ELEMENT
+class VideoRenderer : public QQuickItem {
 
-  public:
+    Q_OBJECT
 
-  VideoRenderer(QQuickItem *parent = nullptr);
-  ~VideoRenderer();
+    QML_ELEMENT
 
-  void componentComplete() override;
-  QSGNode *updatePaintNode(QSGNode *node, UpdatePaintNodeData *) override;
+    public:
 
-  Q_INVOKABLE void stop();
-  Q_INVOKABLE void start();
+    VideoRenderer(QQuickItem *parent = nullptr);
+    ~VideoRenderer();
 
-  Q_PROPERTY(QVariantMap cfg READ getCfg WRITE setCfg NOTIFY cfgChanged);
-  Q_PROPERTY(QString name READ getName WRITE setName NOTIFY nameChanged);
-  Q_PROPERTY(double scalef READ getScaleF WRITE setScaleF NOTIFY scaleFChanged);
-  Q_PROPERTY(QString source READ getSource WRITE setSource NOTIFY sourceChanged);
-  Q_PROPERTY(int mocapAlgo READ getMocapAlgo WRITE setMocapAlgo NOTIFY mocapAlgoChanged);
-  Q_PROPERTY(int skipFrames READ getSkipFrames WRITE setSkipFrames NOTIFY skipFramesChanged);
-  Q_PROPERTY(int bbSizeIncrement READ getBbSizeIncrement WRITE setBbSizeIncrement NOTIFY bbSizeIncrementChanged);
-  Q_PROPERTY(QString resultsFolder READ getResultsFolder WRITE setResultsFolder NOTIFY resultsFolderChanged);
-  Q_PROPERTY(int bboxThickness READ getBboxThickness WRITE setBboxThickness NOTIFY bboxThicknessChanged);
-  Q_PROPERTY(int areaThreshold READ getAreaThreshold WRITE setAreaThreshold NOTIFY areaThresholdChanged);
-  Q_PROPERTY(double faceConfidence READ getFaceConfidence WRITE setFaceConfidence NOTIFY faceConfidenceChanged);
-  Q_PROPERTY(double objectConfidence READ getObjectConfidence WRITE setObjectConfidence NOTIFY objectConfidenceChanged);
-  Q_PROPERTY(double facerecConfidence READ getFacerecConfidence WRITE setFacerecConfidence NOTIFY facerecConfidenceChanged);
-  Q_PROPERTY(int waitKeyTimeout READ getWaitKeyTimeout WRITE setWaitKeyTimeout NOTIFY waitKeyTimeoutChanged);
-  Q_PROPERTY(int stages READ getStages WRITE setStages NOTIFY stagesChanged);
+    void componentComplete() override;
+    QSGNode *updatePaintNode(QSGNode *node, UpdatePaintNodeData *) override;
 
-  public slots:
+    Q_INVOKABLE void stop();
+    Q_INVOKABLE void start();
 
-  int getSkipFrames();
-  void setSkipFrames(int);
-  int getBbSizeIncrement();
-  void setBbSizeIncrement(int);
-  QVariantMap getCfg();
-  void setCfg(QVariantMap);
-  int getMocapAlgo();
-  void setMocapAlgo(int);
-  int getBboxThickness();
-  void setBboxThickness(int);
-  double getFaceConfidence();
-  void setFaceConfidence(double);
-  double getObjectConfidence();
-  void setObjectConfidence(double);
-  int getFacerecConfidence();
-  void setFacerecConfidence(int);
-  QString getResultsFolder();
-  void setResultsFolder(QString);
-  double getScaleF(void);
-  void setScaleF(double scalef);
-  QString getSource(void);
-  void setSource(QString source);
-  QString getName(void);
-  void setName(QString source);
-  int getWaitKeyTimeout(void);
-  void setWaitKeyTimeout(int source);
-  int getStages(void);
-  void setStages(int stageFlags);
-  int getAreaThreshold(void);
-  void setAreaThreshold(int area);
+    Q_PROPERTY(QVariantMap cfg READ getCfg WRITE setCfg NOTIFY cfgChanged);
+    Q_PROPERTY(QString name READ getName WRITE setName NOTIFY nameChanged);
+    Q_PROPERTY(int stages READ getStages WRITE setStages NOTIFY stagesChanged);
+    Q_PROPERTY(double scalef READ getScaleF WRITE setScaleF NOTIFY scaleFChanged);
+    Q_PROPERTY(QString source READ getSource WRITE setSource NOTIFY sourceChanged);
+    Q_PROPERTY(int mocapAlgo READ getMocapAlgo WRITE setMocapAlgo NOTIFY mocapAlgoChanged);
+    Q_PROPERTY(int skipFrames READ getSkipFrames WRITE setSkipFrames NOTIFY skipFramesChanged);
+    Q_PROPERTY(int bboxThickness READ getBboxThickness WRITE setBboxThickness NOTIFY bboxThicknessChanged);
+    Q_PROPERTY(int areaThreshold READ getAreaThreshold WRITE setAreaThreshold NOTIFY areaThresholdChanged);
+    Q_PROPERTY(QString resultsFolder READ getResultsFolder WRITE setResultsFolder NOTIFY resultsFolderChanged);
+    Q_PROPERTY(int waitKeyTimeout READ getWaitKeyTimeout WRITE setWaitKeyTimeout NOTIFY waitKeyTimeoutChanged);
+    Q_PROPERTY(double faceConfidence READ getFaceConfidence WRITE setFaceConfidence NOTIFY faceConfidenceChanged);
+    Q_PROPERTY(int bbSizeIncrement READ getBbSizeIncrement WRITE setBbSizeIncrement NOTIFY bbSizeIncrementChanged);
+    Q_PROPERTY(double objectConfidence READ getObjectConfidence WRITE setObjectConfidence NOTIFY objectConfidenceChanged);
+    Q_PROPERTY(double facerecConfidence READ getFacerecConfidence WRITE setFacerecConfidence NOTIFY facerecConfidenceChanged);
 
-  signals:
+    public slots:
 
-  void mocapAlgoChanged(int);
-  void skipFramesChanged(int);
-  void cfgChanged(QVariantMap);
-  void bboxThicknessChanged(int);
-  void bbSizeIncrementChanged(int);
-  void areaThresholdChanged(int);
-  void resultsFolderChanged(QString);
-  void faceConfidenceChanged(double);
-  void objectConfidenceChanged(double);
-  void facerecConfidenceChanged(double);
-  void nameChanged(QString);
-  void sourceChanged(QString);
-  void scaleFChanged(double);
-  void waitKeyTimeoutChanged(int);
-  void stagesChanged(int);
+    int getMocapAlgo();
+    int getSkipFrames();
+    int getStages(void);
+    QVariantMap getCfg();
+    QString getName(void);
+    void setMocapAlgo(int);
+    int getBboxThickness();
+    double getScaleF(void);
+    void setSkipFrames(int);
+    QString getSource(void);
+    int getBbSizeIncrement();
+    void setCfg(QVariantMap);
+    void setBboxThickness(int);
+    double getFaceConfidence();
+    int getFacerecConfidence();
+    QString getResultsFolder();
+    int getAreaThreshold(void);
+    int getWaitKeyTimeout(void);
+    void setBbSizeIncrement(int);
+    double getObjectConfidence();
+    void setName(QString source);
+    void setScaleF(double scalef);
+    void setFaceConfidence(double);
+    void setFacerecConfidence(int);
+    void setResultsFolder(QString);
+    void setSource(QString source);
+    void setStages(int stageFlags);
+    void setAreaThreshold(int area);
+    void setObjectConfidence(double);
+    void setWaitKeyTimeout(int source);
 
-  protected:
+    signals:
 
-  void createStatic();
-  void updateStatic();
-  void updateFrame(const cv::Mat& frame = cv::Mat());
-  void createImageFromMat(const cv::Mat& frame);
-  QImage MatToQImage(const cv::Mat& mat);
+    void stagesChanged(int);
+    void nameChanged(QString);
+    void mocapAlgoChanged(int);
+    void scaleFChanged(double);
+    void skipFramesChanged(int);
+    void sourceChanged(QString);
+    void cfgChanged(QVariantMap);
+    void bboxThicknessChanged(int);
+    void areaThresholdChanged(int);
+    void waitKeyTimeoutChanged(int);
+    void bbSizeIncrementChanged(int);
+    void resultsFolderChanged(QString);
+    void faceConfidenceChanged(double);
+    void objectConfidenceChanged(double);
+    void facerecConfidenceChanged(double);
 
-  private:
+    protected:
 
-  QVariantMap m_cfg;
+    void createStatic();
+    void updateStatic();
+    QImage MatToQImage(const cv::Mat& mat);
+    void createImageFromMat(const cv::Mat& frame);
+    void updateFrame(const cv::Mat& frame = cv::Mat());
 
-  QTimer m_timer;
+    private:
 
-  double m_scalef = 0.6;
-
-  cvl::SPCamera m_camera;
-
-  uint32_t m_buffer[BUFFER_SIZE] = {};
-
-  QSGTexture *m_texture = nullptr;
-
-  QSGTexture *m_newTexture = nullptr;
+    QTimer m_timer;
+    QVariantMap m_cfg;
+    double m_scalef = 0.6;
+    cvl::SPCamera m_camera;
+    QSGTexture *m_texture = nullptr;
+    QSGTexture *m_newTexture = nullptr;
+    uint32_t m_buffer[BUFFER_SIZE] = {};
 };
 
 #endif

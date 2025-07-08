@@ -24,7 +24,7 @@ Item {
         height: fullScreen ? flickableGrid.height : defaultHeight
         border.width: 1
         color: "transparent"
-        border.color: borderColor
+        border.color: Qt.lighter(borderColor)
         VideoRenderer {
             id: vr
             cfg: playerRoot.cfg

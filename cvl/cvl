@@ -15,12 +15,12 @@
 
 namespace cvl {
 
-using namespace std::chrono;
 using TFrameCallback = std::function<void (const cv::Mat&)>;
 
 struct camera {
 
     public:
+
     camera() {
         iPipelineConfig[IDX_SKIP_FRAMES] = 4;
         iPipelineConfig[IDX_MOCAP_ALGO] = 3;
@@ -76,10 +76,11 @@ struct camera {
 
         cv::VideoCapture cap;
         cap.set(cv::CAP_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_ANY);
-        if (iSource.length() == 1 && isdigit(iSource[0]))
+        if (iSource.length() == 1 && isdigit(iSource[0])) {
             cap.open(std::stoi(iSource), cv::CAP_ANY);
-        else
+        } else {
             cap.open(iSource, cv::CAP_ANY);
+        }
 
         if (!cap.isOpened()) {
             ERR << "queue_frames, error: unable to open camera";
@@ -95,7 +96,7 @@ struct camera {
             if (!f_out.empty()) {
                 if (_frame_cbk) {
                     _frame_cbk(f_out);
-                }  else {
+                } else {
                     cv::imshow("live", f_out);
                 }
             }
@@ -115,7 +116,7 @@ struct camera {
         while (!_stop) {
             auto frame = q_in.dequeue();
             if (frame.empty()) {
-                std::this_thread::sleep_for(milliseconds(50));
+                std::this_thread::sleep_for(std::chrono::milliseconds(50));
                 continue;
             }
             if (iPipelineConfig[IDX_PIPELINE_STAGES]) {
