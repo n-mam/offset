@@ -120,9 +120,8 @@ class Detector {
 
     inline static auto FilterDetections(Detections& detections, cv::Mat& m) {
         for (auto&& it = detections.begin(); it != detections.end(); ) {
-            bool remove = false;
             auto& roi = *it;
-            remove = (roi.x < 0 || roi.x + roi.width > m.cols || roi.x < 0 || roi.y + roi.height > m.rows);
+            bool remove = (roi.x < 0 || roi.x + roi.width > m.cols || roi.y < 0 || roi.y + roi.height > m.rows);
             //exclude near-to-frame detections, mark white
             if ((roi.y < 5) || ((roi.y + roi.height) > (m.rows - 5))) {
                 cv::rectangle(m, roi, cv::Scalar(255, 255, 255), 1, 1);
@@ -243,7 +242,9 @@ class ObjectDetector : public Detector {
 };
 
 class BackgroundSubtractor : public Detector {
+
     public:
+
     BackgroundSubtractor() : Detector() {
         pBackgroundSubtractor[0] = cv::bgsegm::createBackgroundSubtractorMOG();
         pBackgroundSubtractor[1] = cv::bgsegm::createBackgroundSubtractorCNT();
@@ -275,7 +276,9 @@ class BackgroundSubtractor : public Detector {
 };
 
 class FaceRecognizer {
+
     public:
+
     FaceRecognizer(const std::string& csv) {
         _id_frtag_map.reserve(256);
         try {
@@ -287,8 +290,8 @@ class FaceRecognizer {
         _model = cv::face::LBPHFaceRecognizer::create();
         _model->setRadius(1);
         _model->setNeighbors(8);
-        _model->setGridX(8);
-        _model->setGridY(8);
+        _model->setGridX(4);
+        _model->setGridY(4);
         _model->train(_images, _labels);
     }
 
@@ -298,8 +301,7 @@ class FaceRecognizer {
         std::string tag;
         try {
             tag = _id_frtag_map.at(id);
-        }
-        catch(const std::exception& e) {
+        } catch(const std::exception& e) {
             ERR << e.what() << " " << id;
         }
         return tag;
@@ -343,6 +345,7 @@ class FaceRecognizer {
                     std::cerr << "Warning: Could not load image: " << modelRoot + path << std::endl;
                     continue;
                 }
+                cv::resize(img, img, cv::Size(100, 100));
                 images.push_back(img);
                 int id = std::atoi(classlabel.c_str());
                 labels.push_back(id);

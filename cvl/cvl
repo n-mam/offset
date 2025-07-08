@@ -48,7 +48,7 @@ struct camera {
         }
     }
 
-    void stop(){
+    void stop() {
         _stop = true;
         if (_queue_thread.joinable())
             _queue_thread.join();
@@ -76,6 +76,7 @@ struct camera {
 
         cv::VideoCapture cap;
         cap.set(cv::CAP_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_ANY);
+
         if (iSource.length() == 1 && isdigit(iSource[0])) {
             cap.open(std::stoi(iSource), cv::CAP_ANY);
         } else {
@@ -83,7 +84,7 @@ struct camera {
         }
 
         if (!cap.isOpened()) {
-            ERR << "queue_frames, error: unable to open camera";
+            ERR << "queue_frames error: unable to open camera";
             _stop = true;
         }
 

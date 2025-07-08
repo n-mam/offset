@@ -12,8 +12,6 @@
 
 namespace cvl {
 
-using namespace std::chrono;
-
 struct pipeline {
 
     public:
@@ -29,8 +27,9 @@ struct pipeline {
 
     ~pipeline() {
         _stop = true;
-        if (_thread.joinable())
-        _thread.join();
+        if (_thread.joinable()) {
+            _thread.join();
+        }
     }
 
     inline auto filterRightAngleContours(const cv::Mat& frame) {
@@ -98,6 +97,7 @@ struct pipeline {
     }
 
     inline auto execute(cv::Mat& frame, int *config, const std::string& resultsPath) {
+
         if (frame.empty()) {
             ERR << "empty frame grabbed";
             return;
@@ -135,6 +135,7 @@ struct pipeline {
                 cv::Mat gray;
                 r._roi = frame(roi).clone();
                 cv::cvtColor(r._roi, gray, cv::COLOR_BGR2GRAY);
+                cv::resize(gray, gray, cv::Size(100, 100));
                 const auto& [tag, confidence] = faceRecognition(gray, config);
                 if (tag.length() && confidence > 0) {
                     cv::putText(frame, tag + " : " + geometry::toStringWithPrecision<2>(confidence),
@@ -150,8 +151,8 @@ struct pipeline {
                 if (r._roi.empty()) {
                     r._roi = frame(roi).clone();
                 }
-                r._ts = duration_cast<seconds>(system_clock::now()
-                    .time_since_epoch()).count();
+                r._ts = duration_cast<std::chrono::seconds>(
+                    std::chrono::system_clock::now().time_since_epoch()).count();
                 _detectionsQueue.enqueue(r);
             }
 
@@ -175,12 +176,12 @@ struct pipeline {
     void detectionSaveThread() {
         while (!_stop) {
             if (!_save || _save_path.length() == 0) {
-                std::this_thread::sleep_for(milliseconds(350));
+                std::this_thread::sleep_for(std::chrono::milliseconds(350));
                 continue;
             }
             auto d = _detectionsQueue.dequeue();
             if (d.empty()) {
-                std::this_thread::sleep_for(milliseconds(50));
+                std::this_thread::sleep_for(std::chrono::milliseconds(50));
                 continue;
             }
             cvl::geometry::saveMatAsImage(d._roi, _save_path + "/" +

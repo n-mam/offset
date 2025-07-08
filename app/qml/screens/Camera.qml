@@ -74,7 +74,7 @@ StackScreen {
                     decodeURIComponent(path).replace(/\//g, "/"))
                 var cfgs = JSON.parse(camera_cfgs);
                 for (var i in cfgs) {
-                    createPlayerObject({"cfg": cfgs[i]})
+                    createPlayerObject(cfgs[i])
                 }
             }
             onRejected: {
