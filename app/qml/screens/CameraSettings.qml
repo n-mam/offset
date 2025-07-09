@@ -1,6 +1,7 @@
 import QtQuick
-import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Controls
+import "qrc:/components"
 
 Item {
 
@@ -10,6 +11,7 @@ Item {
 
     Flickable {
         clip: true
+        interactive: false
         anchors.fill: parent
         anchors.margins: 15
         contentHeight: parent.height
@@ -173,10 +175,10 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                 }
                 Row {
-                    spacing: 5
+                    spacing: 15
                     anchors.verticalCenter: parent.verticalCenter
                     TextField {
-                        id: resultsFolderId
+                        id: resultsFolder
                         width: 300
                         height: rowHeight - 10
                         placeholderText: qsTr("folder")
@@ -184,10 +186,9 @@ Item {
                         anchors.verticalCenter: parent.verticalCenter
                         verticalAlignment: TextInput.AlignVCenter
                         onEditingFinished: {
-                            vr.resultsFolder = resultsFolderId.text
+                            vr.resultsFolder = resultsFolder.text
                         }
                     }
-                    Text { width: 35 }
                     Text {
                         text: "Skip:"
                         width: labelWidth / 3
@@ -207,6 +208,71 @@ Item {
                             vr.skipFrames = skipFramesId.text
                         }
                     }
+                }
+            }
+            Row {
+                spacing: 4
+                Text {
+                    text: "FaceRec:"
+                    width: labelWidth
+                    color: textColor
+                    verticalAlignment: Text.AlignVCenter
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+                TextField {
+                    id: tagFolder
+                    width: 300
+                    height: rowHeight - 10
+                    placeholderText: qsTr("images")
+                    text: ""
+                    anchors.verticalCenter: parent.verticalCenter
+                    verticalAlignment: TextInput.AlignVCenter
+                }
+                Text {
+                    text: "  Tag:"
+                    width: labelWidth / 3
+                    color: textColor
+                    verticalAlignment: Text.AlignVCenter
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+                TextField {
+                    id: tagName
+                    width: 100
+                    height: rowHeight - 10
+                    placeholderText: qsTr("name")
+                    text: ""
+                    anchors.verticalCenter: parent.verticalCenter
+                    verticalAlignment: TextInput.AlignVCenter
+                }
+                TextField {
+                    id: tagId
+                    width: 100
+                    height: rowHeight - 10
+                    placeholderText: qsTr("id")
+                    text: ""
+                    anchors.verticalCenter: parent.verticalCenter
+                    verticalAlignment: TextInput.AlignVCenter
+                }
+                Button {
+                    text: "Train"
+                    onClicked: {
+                        if (!tagFolder.text.length) {
+                            settingsStatus.text = " tag folder empty"
+                        } else if (!tagName.text.length) {
+                            settingsStatus.text = " tag name empty"
+                        } else if (!tagId.text.length) {
+                            settingsStatus.text = " tag id empty"
+                        }
+                        vr.AddResultsForTraining(tagFolder.text, tagName.text, tagId.text)
+                    }
+                }
+                Text {
+                    id: settingsStatus
+                    text: ""
+                    width: labelWidth
+                    color: textColor
+                    verticalAlignment: Text.AlignVCenter
+                    anchors.verticalCenter: parent.verticalCenter
                 }
             }
             Row {

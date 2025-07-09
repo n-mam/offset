@@ -28,6 +28,7 @@ class VideoRenderer : public QQuickItem {
 
     Q_INVOKABLE void stop();
     Q_INVOKABLE void start();
+    Q_INVOKABLE void AddResultsForTraining(QString path, QString name, QString id);
 
     Q_PROPERTY(QVariantMap cfg READ getCfg WRITE setCfg NOTIFY cfgChanged);
     Q_PROPERTY(QString name READ getName WRITE setName NOTIFY nameChanged);

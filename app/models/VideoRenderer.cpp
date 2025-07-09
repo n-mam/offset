@@ -335,3 +335,31 @@ void VideoRenderer::setCfg(QVariantMap cfg) {
         emit cfgChanged(cfg);
     }
 }
+
+void VideoRenderer::AddResultsForTraining(QString path, QString tagName, QString tagId) {
+    namespace fs = std::filesystem;
+    if (!path.isEmpty()) {
+        std::filesystem::path p(path.toStdString());
+        if (!fs::exists(p) || !fs::is_directory(p)) {
+            std::cout << "AddResultsForTraining Error: Directory does not exist or is not a directory." << std::endl;
+            return;
+        }
+        std::ofstream fr_csv(std::getenv("CVL_MODELS_ROOT") +
+            std::string("FaceRecognition/fr.csv"), std::ios::app);
+        if (!fr_csv) {
+            std::cout << "Error opening frsv for writing." << std::endl;
+            return;
+        }
+        std::string sep1 = "/";
+        std::string sep2 = ";";
+        for (const auto& entry : fs::directory_iterator(p)) {
+            if (fs::is_regular_file(entry.path())) {
+                //std::cout << entry.path().filename() << std::endl;
+                std::string line = entry.path().parent_path().string() + sep1 +
+                    entry.path().filename().string() + sep2 + tagId.toStdString() + sep2 + tagName.toStdString();
+                std::replace(line.begin(), line.end(), '\\', '/');
+                fr_csv << line << '\n';
+            }
+        }
+    }
+}

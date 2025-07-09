@@ -11,6 +11,7 @@ StackScreen {
         Flickable {
             id: flickableGrid
             clip: true
+            interactive: false
             anchors.margins: appSpacing
             anchors.left: baseId.left
             anchors.right: baseId.right

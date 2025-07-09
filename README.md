@@ -32,7 +32,8 @@ Camera tool<br/>
 - For NVIDIA GPU it is recommended to do a custom opencv CUDA/CUDNN variant build via vcpkg.<br/>
 - The code either ways supports both CUDA/CPU backend and target for DNN inference; in order.<br/>
 - Set CVL_MODELS_ROOT env variable to the local MODELS folder from repo for detections to work.<br/>
-- Currently the model trains itself off a set of around 10 trump and 10 obama images.<br/>
+- Define a new camera with face detection and specify a results folder. Run face detection for 5-10 secs and then stop. <br/>
+- Then use the facerec "train" option to register the above face detection with facerec. (camera settings)
 - The system can be tested by defining a "Window capture" source in OBS studio against youtube running inside the browser.<br/>
 - Then expose the webbrowser feed over RTSP(using OBS RSTP server plugin). This can then be captured via a cam configuration in offset using the obs rtsp url for running detections.<br/>
 

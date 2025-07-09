@@ -283,8 +283,7 @@ class FaceRecognizer {
         _id_frtag_map.reserve(256);
         try {
             read_csv(csv, _images, _labels, _frTags);
-        }
-        catch (const std::exception& e) {
+        } catch (const std::exception& e) {
             std::cerr << e.what() << std::endl;
         }
         _model = cv::face::LBPHFaceRecognizer::create();
@@ -292,7 +291,9 @@ class FaceRecognizer {
         _model->setNeighbors(8);
         _model->setGridX(4);
         _model->setGridY(4);
-        _model->train(_images, _labels);
+        if (_images.size() && _labels.size()) {
+            _model->train(_images, _labels);
+        }
     }
 
     ~FaceRecognizer(){}
@@ -311,7 +312,7 @@ class FaceRecognizer {
         int label = -1;
         double confidence = 0.0;
         _model->predict(roi, label, confidence);
-        std::pair<std::string, double> fRet;
+        std::pair<std::string, double> fRet = {"", 0.0};
         if (confidence <= config[cvl::IDX_FACEREC_CONFIDENCE]) {
             fRet = std::make_pair(getTagFromId(label), confidence);
         }
@@ -327,22 +328,22 @@ class FaceRecognizer {
     std::unordered_map<int, std::string> _id_frtag_map;
 
     void read_csv(const std::string& filename, std::vector<cv::Mat>& images,
-            std::vector<int>& labels, std::vector<std::string>& tags, char separator = ';') {
+        std::vector<int>& labels, std::vector<std::string>& tags, char separator = ';') {
+
         std::ifstream file(filename.c_str(), std::ifstream::in);
         if (!file) {
             ERR << "No valid input file was given, please check the given filename";
         }
         std::string line, path, classlabel, frtag;
-        std::string modelRoot = std::getenv("CVL_MODELS_ROOT");
         while (getline(file, line)) {
             std::stringstream liness(line);
             std::getline(liness, path, separator);
             std::getline(liness, classlabel, separator);
             std::getline(liness, frtag);
             if(!path.empty() && !classlabel.empty() && !frtag.empty()) {
-                auto img = cv::imread(modelRoot + path, cv::IMREAD_GRAYSCALE);
+                auto img = cv::imread(path, cv::IMREAD_GRAYSCALE);
                 if (img.empty()) {
-                    std::cerr << "Warning: Could not load image: " << modelRoot + path << std::endl;
+                    std::cerr << "Warning: Could not load image: " << path << std::endl;
                     continue;
                 }
                 cv::resize(img, img, cv::Size(100, 100));
