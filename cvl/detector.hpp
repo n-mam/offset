@@ -42,17 +42,14 @@ inline auto getModelRootDir() {
 }
 
 struct DetectionResult {
-    int           _age;
+    int64_t       _ts;
     cv::Mat       _roi;
     cv::Size      _dim;
-    std::string   _frTag;
-    int           _stages;
-    char          _gender;
-    int64_t       _ts = -1;
+    std::string   _frId;
     uint32_t      _frame;
-    uint32_t      _detection;
+    int           _stages;
 
-    DetectionResult(){}
+    DetectionResult(){ _ts = -1; }
 
     inline auto empty() {
         return (_ts == -1);
@@ -280,9 +277,9 @@ class FaceRecognizer {
     public:
 
     FaceRecognizer(const std::string& csv) {
-        _id_frtag_map.reserve(256);
+        _id_tag_map.reserve(256);
         try {
-            read_csv(csv, _images, _labels, _frTags);
+            read_csv(csv);
         } catch (const std::exception& e) {
             std::cerr << e.what() << std::endl;
         }
@@ -291,8 +288,8 @@ class FaceRecognizer {
         _model->setNeighbors(8);
         _model->setGridX(4);
         _model->setGridY(4);
-        if (_images.size() && _labels.size()) {
-            _model->train(_images, _labels);
+        if (_images.size() && _ids.size()) {
+            _model->train(_images, _ids);
         }
     }
 
@@ -301,7 +298,7 @@ class FaceRecognizer {
     auto getTagFromId(int id) {
         std::string tag;
         try {
-            tag = _id_frtag_map.at(id);
+            tag = _id_tag_map.at(id);
         } catch(const std::exception& e) {
             ERR << e.what() << " " << id;
         }
@@ -321,37 +318,37 @@ class FaceRecognizer {
 
     private:
 
-    std::vector<int> _labels;
+    std::vector<int> _ids;
     std::vector<cv::Mat> _images;
-    std::vector<std::string> _frTags;
+    std::vector<std::string> _tags;
     cv::Ptr<cv::face::LBPHFaceRecognizer> _model;
-    std::unordered_map<int, std::string> _id_frtag_map;
+    std::unordered_map<int, std::string> _id_tag_map;
 
-    void read_csv(const std::string& filename, std::vector<cv::Mat>& images,
-        std::vector<int>& labels, std::vector<std::string>& tags, char separator = ';') {
+    void read_csv(const std::string& filename, char separator = ';') {
 
         std::ifstream file(filename.c_str(), std::ifstream::in);
         if (!file) {
-            ERR << "No valid input file was given, please check the given filename";
+            ERR << "read_csv Invalid input file";
+            return;
         }
-        std::string line, path, classlabel, frtag;
+        std::string line, path, id, tag;
         while (getline(file, line)) {
             std::stringstream liness(line);
             std::getline(liness, path, separator);
-            std::getline(liness, classlabel, separator);
-            std::getline(liness, frtag);
-            if(!path.empty() && !classlabel.empty() && !frtag.empty()) {
+            std::getline(liness, id, separator);
+            std::getline(liness, tag);
+            if(!path.empty() && !id.empty() && !tag.empty()) {
                 auto img = cv::imread(path, cv::IMREAD_GRAYSCALE);
                 if (img.empty()) {
-                    std::cerr << "Warning: Could not load image: " << path << std::endl;
+                    std::cout << "Warning: Could not load image: " << path << std::endl;
                     continue;
                 }
                 cv::resize(img, img, cv::Size(100, 100));
-                images.push_back(img);
-                int id = std::atoi(classlabel.c_str());
-                labels.push_back(id);
-                tags.push_back(frtag);
-                _id_frtag_map.emplace(id, frtag);
+                _images.push_back(img);
+                _tags.push_back(tag);
+                auto i = std::atoi(id.c_str());
+                _ids.push_back(i);
+                _id_tag_map.emplace(i, tag);
             }
         }
     }

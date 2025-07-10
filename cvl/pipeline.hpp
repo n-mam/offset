@@ -144,7 +144,6 @@ struct pipeline {
                 }
             }
             if (_save && ((_count % config[IDX_SKIP_FRAMES])) == 0) {
-                r._detection = i;
                 r._frame = _count;
                 r._stages = stages;
                 r._ts = duration_cast<std::chrono::seconds>(
@@ -182,7 +181,6 @@ struct pipeline {
             }
             cvl::geometry::saveMatAsImage(d._roi, _save_path + "/" +
                     std::to_string(d._frame) + "_" +
-                    std::to_string(d._detection) + "_" +
                     std::to_string(d._ts), ".jpg");
         }
     }
