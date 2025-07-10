@@ -22,8 +22,8 @@ struct camera {
     public:
 
     camera() {
-        iPipelineConfig[IDX_SKIP_FRAMES] = 4;
         iPipelineConfig[IDX_MOCAP_ALGO] = 3;
+        iPipelineConfig[IDX_SKIP_FRAMES] = 4;
         iPipelineConfig[IDX_PIPELINE_STAGES] = 0;
         iPipelineConfig[IDX_FACE_CONFIDENCE] = 5;
         iPipelineConfig[IDX_OBJECT_CONFIDENCE] = 5;
@@ -59,7 +59,7 @@ struct camera {
 
     std::string iName;
     std::string iSource;
-    int iWaitKeyTimeout = 18;
+    int iWaitKeyTimeout = 0;
     std::string iResultsFolder;
     int iPipelineConfig[16] = { 0 };
 
@@ -76,20 +76,16 @@ struct camera {
 
         cv::VideoCapture cap;
         cap.set(cv::CAP_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_ANY);
-
         if (iSource.length() == 1 && isdigit(iSource[0])) {
             cap.open(std::stoi(iSource), cv::CAP_ANY);
         } else {
             cap.open(iSource, cv::CAP_ANY);
         }
-
         if (!cap.isOpened()) {
             ERR << "queue_frames error: unable to open camera";
             _stop = true;
         }
-
         cv::Mat f_in;
-
         while (!_stop) {
             cap >> f_in;
             q_in.enqueue(f_in);
@@ -101,14 +97,13 @@ struct camera {
                     cv::imshow("live", f_out);
                 }
             }
-            if (iWaitKeyTimeout >= 0) {
+            if (iWaitKeyTimeout > 0) {
                 if (cv::waitKey(iWaitKeyTimeout) >= 0) {
                     _stop = true;
                     break;
                 }
             }
         }
-
         DBG << "queue_frames thread returning";
     }
 
@@ -131,7 +126,9 @@ struct camera {
 
 inline auto entry(std::vector<std::string> arguments) {
     std::string source = "0";
-    source = arguments[1];
+    if (arguments.size() > 1) {
+        source = arguments[1];
+    }
     auto cam = std::make_unique<cvl::camera>();
     cam->iSource = source;
     cam->iPipelineConfig[IDX_PIPELINE_STAGES] = 16;

@@ -65,7 +65,7 @@ struct pipeline {
             cv::rectangle(frame, bb, cv::Scalar(0, 255, 0), 1);
             cv::putText(frame, std::to_string((int)(bb.width * bb.height)),
                 cv::Point((int)bb.x, (int)(bb.y - 5)), cv::FONT_HERSHEY_SIMPLEX,
-                0.5, cv::Scalar(0, 0, 255), 1);
+                    0.5, cv::Scalar(0, 0, 255), 1);
         }
         return bbs;
     }
@@ -78,7 +78,7 @@ struct pipeline {
             auto rect = cv::boundingRect(contour);
             cv::putText(frame, "[" + geometry::toStringWithPrecision<1>(rect.width * cmpp) +
                 "," + geometry::toStringWithPrecision<1>(rect.height * cmpp) + "]" ,
-                cv::Point(rect.x, rect.y - 2), cv::FONT_HERSHEY_SIMPLEX, 0.3, {0,0,0}, 1);
+                    cv::Point(rect.x, rect.y - 2), cv::FONT_HERSHEY_SIMPLEX, 0.3, {0,0,0}, 1);
         }
         // draw filtered contours on the original image
         cv::drawContours(frame, filtered_contours, -1, cv::Scalar(0, 255, 0), 2);
@@ -131,26 +131,22 @@ struct pipeline {
         for (auto i = 0; i < detections.size(); i++) {
             auto roi = detections[i];
             cvl::DetectionResult r;
+            r._roi = frame(roi).clone();
             if ((stages & 8) && (stages & 1)) {
                 cv::Mat gray;
-                r._roi = frame(roi).clone();
                 cv::cvtColor(r._roi, gray, cv::COLOR_BGR2GRAY);
                 cv::resize(gray, gray, cv::Size(100, 100));
                 const auto& [tag, confidence] = faceRecognition(gray, config);
                 if (tag.length() && confidence > 0) {
                     cv::putText(frame, tag + " : " + geometry::toStringWithPrecision<2>(confidence),
                         cv::Point((int)roi.x, (int)(roi.y - 5)), cv::FONT_HERSHEY_SIMPLEX,
-                        1.0, cv::Scalar(255, 255, 255), config[IDX_BOUNDINGBOX_THICKNESS]);
+                            1.0, cv::Scalar(255, 255, 255), config[IDX_BOUNDINGBOX_THICKNESS]);
                 }
             }
-
             if (_save && ((_count % config[IDX_SKIP_FRAMES])) == 0) {
-                r._stages = stages;
-                r._frame = _count;
                 r._detection = i;
-                if (r._roi.empty()) {
-                    r._roi = frame(roi).clone();
-                }
+                r._frame = _count;
+                r._stages = stages;
                 r._ts = duration_cast<std::chrono::seconds>(
                     std::chrono::system_clock::now().time_since_epoch()).count();
                 _detectionsQueue.enqueue(r);
