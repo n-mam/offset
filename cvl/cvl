@@ -76,6 +76,8 @@ struct camera {
 
         cv::VideoCapture cap;
         cap.set(cv::CAP_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_ANY);
+        cap.set(cv::CAP_PROP_FRAME_WIDTH, 1280);
+        cap.set(cv::CAP_PROP_FRAME_HEIGHT, 720);
         if (iSource.length() == 1 && isdigit(iSource[0])) {
             cap.open(std::stoi(iSource), cv::CAP_ANY);
         } else {

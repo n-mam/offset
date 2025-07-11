@@ -264,6 +264,7 @@ Item {
                             settingsStatus.text = " tag id empty"
                         }
                         vr.AddResultsForTraining(tagFolder.text, tagName.text, tagId.text)
+                        settingsStatus.text = " Done"
                     }
                 }
                 Text {

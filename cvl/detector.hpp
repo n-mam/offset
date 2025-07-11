@@ -306,14 +306,14 @@ class FaceRecognizer {
     }
 
     auto predict(const cv::Mat& roi, int *config) {
-        int label = -1;
+        int id = -1;
         double confidence = 0.0;
-        _model->predict(roi, label, confidence);
-        std::pair<std::string, double> fRet = {"", 0.0};
+        _model->predict(roi, id, confidence);
+        std::pair<int, double> pair = {-1, 0.0};
         if (confidence <= config[cvl::IDX_FACEREC_CONFIDENCE]) {
-            fRet = std::make_pair(getTagFromId(label), confidence);
+            pair = std::make_pair(id, confidence);
         }
-        return fRet;
+        return pair;
     }
 
     private:
@@ -325,7 +325,6 @@ class FaceRecognizer {
     std::unordered_map<int, std::string> _id_tag_map;
 
     void read_csv(const std::string& filename, char separator = ';') {
-
         std::ifstream file(filename.c_str(), std::ifstream::in);
         if (!file) {
             ERR << "read_csv Invalid input file";

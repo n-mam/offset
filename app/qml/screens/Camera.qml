@@ -126,5 +126,14 @@ StackScreen {
             }
         }
     }
-    Component.onCompleted: {}
+    Component.onCompleted: {
+        createPlayerObject({
+            "source": 0,
+            "stages": 0
+        })
+        createPlayerObject({
+            "source": 1,
+            "stages": 0
+        })
+    }
 }

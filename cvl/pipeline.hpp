@@ -136,11 +136,14 @@ struct pipeline {
                 cv::Mat gray;
                 cv::cvtColor(r._roi, gray, cv::COLOR_BGR2GRAY);
                 cv::resize(gray, gray, cv::Size(100, 100));
-                const auto& [tag, confidence] = faceRecognition(gray, config);
-                if (tag.length() && confidence > 0) {
-                    cv::putText(frame, tag + " : " + geometry::toStringWithPrecision<2>(confidence),
+                const auto& [id, confidence] = faceRecognition(gray, config);
+                if (id > 0 && confidence > 0) {
+                    cv::putText(frame, _faceRecognizer->getTagFromId(id) + " : " + geometry::toStringWithPrecision<2>(confidence),
                         cv::Point((int)roi.x, (int)(roi.y - 5)), cv::FONT_HERSHEY_SIMPLEX,
                             1.0, cv::Scalar(255, 255, 255), config[IDX_BOUNDINGBOX_THICKNESS]);
+                    if (_rule) {
+
+                    }
                 }
             }
             if (_save && ((_count % config[IDX_SKIP_FRAMES])) == 0) {
@@ -157,6 +160,7 @@ struct pipeline {
 
     protected:
 
+    bool _rule = false;
     bool _stop = false;
     bool _save = false;
     uint32_t _count = 0;
@@ -167,6 +171,10 @@ struct pipeline {
     std::unique_ptr<cvl::FaceDetector> _faceDetector = nullptr;
     std::unique_ptr<cvl::ObjectDetector> _objectDetector = nullptr;
     std::unique_ptr<cvl::BackgroundSubtractor> _backgroundSubtractor = nullptr;
+
+    auto compute_ema(double current, double previous, double alpha) {
+        return alpha * current + (1.0 - alpha) * previous;
+    }
 
     void detectionSaveThread() {
         while (!_stop) {
