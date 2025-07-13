@@ -9,6 +9,7 @@
 #include <queue.hpp>
 #include <pipeline.hpp>
 
+#include <curl/curl.h>
 #include <opencv2/core.hpp>
 #include <opencv2/videoio.hpp>
 #include <opencv2/highgui.hpp>
@@ -126,7 +127,27 @@ struct camera {
     }
 };
 
+inline auto send_telegram_message(const std::string& bot_token, const std::string& chat_id, const std::string& message) {
+    CURL* curl = curl_easy_init();
+    if(curl) {
+        std::string url = "https://api.telegram.org/bot" + bot_token + "/sendMessage";
+        std::string post_fields = "chat_id=" + chat_id + "&text=" + curl_easy_escape(curl, message.c_str(), 0);
+
+        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, post_fields.c_str());
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L); // set to 0 for testing only
+
+        CURLcode res = curl_easy_perform(curl);
+        if(res != CURLE_OK)
+            fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+
+        curl_easy_cleanup(curl);
+    }
+}
+
 inline auto entry(std::vector<std::string> arguments) {
+    // send_telegram_message("", "", "hello from offset bot");
+    // return;
     std::string source = "0";
     if (arguments.size() > 1) {
         source = arguments[1];

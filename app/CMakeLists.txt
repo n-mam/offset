@@ -4,6 +4,7 @@ set(CMAKE_AUTORCC ON)
 
 #SET(CMAKE_VERBOSE_MAKEFILE ON)
 
+find_package(CURL REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(OpenCV CONFIG REQUIRED)
 find_package(libzip CONFIG REQUIRED)
@@ -55,7 +56,9 @@ target_link_libraries(
   OpenSSL::SSL
   opencv_aruco
   opencv_bgsegm
+  CURL::libcurl
   Crc32c::crc32c
+  opencv_tracking
   OpenSSL::Crypto
   tinyxml2::tinyxml2
   Qt6::QuickControls2

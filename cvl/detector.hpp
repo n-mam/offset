@@ -118,7 +118,8 @@ class Detector {
     inline static auto FilterDetections(Detections& detections, cv::Mat& m) {
         for (auto&& it = detections.begin(); it != detections.end(); ) {
             auto& roi = *it;
-            bool remove = (roi.x < 0 || roi.x + roi.width > m.cols || roi.y < 0 || roi.y + roi.height > m.rows);
+            bool remove = (roi.x < 0 || roi.x + roi.width > m.cols
+                || roi.y < 0 || roi.y + roi.height > m.rows);
             //exclude near-to-frame detections, mark white
             if ((roi.y < 5) || ((roi.y + roi.height) > (m.rows - 5))) {
                 cv::rectangle(m, roi, cv::Scalar(255, 255, 255), 1, 1);

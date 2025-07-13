@@ -4,6 +4,7 @@ project(offset)
 
 #SET(CMAKE_VERBOSE_MAKEFILE ON)
 
+find_package(CURL REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(OpenSSL REQUIRED)
 find_package(Crc32c CONFIG REQUIRED)
@@ -35,17 +36,19 @@ target_link_libraries(
     Test
     PRIVATE
     rapidjson
-    ZLIB::ZLIB
-    OpenSSL::SSL
-    Crc32c::crc32c
     opencv_ml
+    ZLIB::ZLIB
     opencv_dnn
     opencv_dpm
     opencv_hdf
     opencv_face
     opencv_core
+    OpenSSL::SSL
     opencv_aruco
     opencv_bgsegm
+    CURL::libcurl
+    Crc32c::crc32c
+    opencv_tracking
     OpenSSL::Crypto
 )
 

@@ -6,6 +6,7 @@
 #include <fstream>
 
 #include <detector.hpp>
+#include <tracker.hpp>
 #include <geometry.hpp>
 
 #include <opencv2/core.hpp>
@@ -14,10 +15,9 @@ namespace cvl {
 
 struct pipeline {
 
-    public:
-
     pipeline() {
         _thread = std::thread(&pipeline::detectionSaveThread, this);
+        _tracker = std::make_unique<cvl::Tracker>();
         _faceDetector = std::make_unique<cvl::FaceDetector>();
         _objectDetector = std::make_unique<cvl::ObjectDetector>("person");
         _backgroundSubtractor = std::make_unique<cvl::BackgroundSubtractor>();
@@ -103,6 +103,9 @@ struct pipeline {
             return;
         }
 
+        // update all active trackers
+        //auto updates = _tracker->updateTrackingContexts(frame);
+
         Detections detections;
         int stages = config[IDX_PIPELINE_STAGES];
 
@@ -168,6 +171,7 @@ struct pipeline {
     std::string _save_path;
     cvl::queue<cvl::DetectionResult> _detectionsQueue;
     std::unique_ptr<cvl::FaceRecognizer> _faceRecognizer;
+    std::unique_ptr<cvl::Tracker> _tracker = nullptr;
     std::unique_ptr<cvl::FaceDetector> _faceDetector = nullptr;
     std::unique_ptr<cvl::ObjectDetector> _objectDetector = nullptr;
     std::unique_ptr<cvl::BackgroundSubtractor> _backgroundSubtractor = nullptr;
