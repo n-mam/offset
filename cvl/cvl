@@ -30,7 +30,7 @@ struct camera {
         iPipelineConfig[IDX_OBJECT_CONFIDENCE] = 5;
         iPipelineConfig[IDX_FACEREC_CONFIDENCE] = 60;
         iPipelineConfig[IDX_MOCAP_EXCLUDE_AREA] = 2500;
-        iPipelineConfig[IDX_BOUNDINGBOX_THICKNESS] = 2;
+        iPipelineConfig[IDX_BOUNDINGBOX_THICKNESS] = 1;
         iPipelineConfig[IDX_BOUNDINGBOX_INCREMENT] = 0;
     }
 

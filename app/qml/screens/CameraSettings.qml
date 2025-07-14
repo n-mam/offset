@@ -337,6 +337,14 @@ Item {
                         }
                     }
                 }
+                CheckBox {
+                    id: track
+                    checked: vr.stages & 32
+                    text: qsTr("Track")
+                    onCheckedChanged: {
+                        checked ? (vr.stages |= 32) : (vr.stages &= ~32)
+                    }
+                }
             }
             Row {
                 visible: (vr.stages && (vr.stages !== 4)) ? true : false

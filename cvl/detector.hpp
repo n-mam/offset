@@ -43,7 +43,7 @@ inline auto getModelRootDir() {
 
 struct DetectionResult {
     int64_t       _ts;
-    cv::Mat       _roi;
+    cv::Mat       _mat;
     cv::Size      _dim;
     std::string   _frId;
     uint32_t      _frame;
@@ -57,7 +57,7 @@ struct DetectionResult {
 
     inline auto clone() {
         DetectionResult out = *this;
-        out._roi = this->_roi.clone();
+        out._mat = this->_mat.clone();
         return std::move(out);
     }
 };

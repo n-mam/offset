@@ -103,12 +103,12 @@ struct pipeline {
             return;
         }
 
-        // update all active trackers
-        //auto updates = _tracker->updateTrackingContexts(frame);
-
         Detections detections;
         int stages = config[IDX_PIPELINE_STAGES];
 
+        if (stages & 32) {
+            _tracker->updateTrackingContexts(frame);
+        }
         if (stages & 1) {
             detections = detectFaces(frame, config);
         }
@@ -132,21 +132,24 @@ struct pipeline {
         _save_path = resultsPath;
 
         for (auto i = 0; i < detections.size(); i++) {
-            auto roi = detections[i];
+            std::string label;
             cvl::DetectionResult r;
-            r._roi = frame(roi).clone();
+            const auto& roi = detections[i];
+            r._mat = frame(roi).clone();
+            if (stages & 32) {
+                if (_tracker->matchDetectionWithTrackingContext(roi, frame)) {
+                    label += "T ";
+                } else {
+                    _tracker->addNewTrackingContext(roi, frame);
+                }
+            }
             if ((stages & 8) && (stages & 1)) {
                 cv::Mat gray;
-                cv::cvtColor(r._roi, gray, cv::COLOR_BGR2GRAY);
+                cv::cvtColor(r._mat, gray, cv::COLOR_BGR2GRAY);
                 cv::resize(gray, gray, cv::Size(100, 100));
                 const auto& [id, confidence] = faceRecognition(gray, config);
                 if (id > 0 && confidence > 0) {
-                    cv::putText(frame, _faceRecognizer->getTagFromId(id) + " : " + geometry::toStringWithPrecision<2>(confidence),
-                        cv::Point((int)roi.x, (int)(roi.y - 5)), cv::FONT_HERSHEY_SIMPLEX,
-                            1.0, cv::Scalar(255, 255, 255), config[IDX_BOUNDINGBOX_THICKNESS]);
-                    if (_rule) {
-
-                    }
+                    label += _faceRecognizer->getTagFromId(id) + ": " + geometry::toStringWithPrecision<2>(confidence);
                 }
             }
             if (_save && ((_count % config[IDX_SKIP_FRAMES])) == 0) {
@@ -158,12 +161,13 @@ struct pipeline {
             }
 
             cv::rectangle(frame, roi, cv::Scalar(0, 255, 0), config[IDX_BOUNDINGBOX_THICKNESS]);
+            cv::putText(frame, label, cv::Point((int)roi.x, (int)(roi.y - 5)), cv::FONT_HERSHEY_SIMPLEX,
+                    0.7, cv::Scalar(0, 255, 0), config[IDX_BOUNDINGBOX_THICKNESS]);
         }
     }
 
     protected:
 
-    bool _rule = false;
     bool _stop = false;
     bool _save = false;
     uint32_t _count = 0;
@@ -191,7 +195,7 @@ struct pipeline {
                 std::this_thread::sleep_for(std::chrono::milliseconds(50));
                 continue;
             }
-            cvl::geometry::saveMatAsImage(d._roi, _save_path + "/" +
+            cvl::geometry::saveMatAsImage(d._mat, _save_path + "/" +
                     std::to_string(d._frame) + "_" +
                     std::to_string(d._ts), ".jpg");
         }
