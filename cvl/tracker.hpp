@@ -1,6 +1,7 @@
 #ifndef TRACKER_HPP
 #define TRACKER_HPP
 
+#include <thread>
 #include <vector>
 #include <functional>
 
@@ -9,29 +10,18 @@
 
 #include <opencv2/opencv.hpp>
 #include <opencv2/tracking/tracking.hpp>
+#include <curl/curl.h>
 
 namespace cvl {
 
 struct TrackingContext {
-
     size_t id;
     int _lostCount = 0;
-    std::vector<cv::Rect2d> _trail;
+    int _foundCount = 0;
+    bool _notified = false;
     cv::Ptr<cv::Tracker> cvTracker;
+    std::vector<cv::Rect2d> _trail;
     std::vector<cv::Mat> _thumbnails;
-
-    bool is_frozen(void) {
-        // valid only for FOV where the subject is
-        // moving either top-down or left to right
-        if (_trail.size() >= 8) {
-            auto& last = _trail[_trail.size() - 1];
-            auto& prev = _trail[_trail.size() - 8];
-            auto d = cvl::geometry::distance(cvl::geometry::getRectCenter(last),
-                cvl::geometry::getRectCenter(prev));
-            if (d <= 2) return true;
-        }
-        return false;
-    }
 };
 
 struct Tracker {
@@ -50,42 +40,28 @@ struct Tracker {
         return _trackingContexts.size();
     }
 
-    virtual void RenderDisplacementAndPaths(cv::Mat& m, bool isTest = true) {
-        for (auto& tc : _trackingContexts) {
-            // Displacement
-            auto first = cvl::geometry::getRectCenter(tc._trail.front());
-            auto last = cvl::geometry::getRectCenter(tc._trail.back());
-            cv::line(m, first, last, cv::Scalar(0, 0, 255), 1);
-            // path
-            for (size_t i = 1; i < tc._trail.size() - 1; ++i)
-            {
-                auto&& f = cvl::geometry::getRectCenter(tc._trail[i]);
-                auto&& b = cvl::geometry::getRectCenter(tc._trail[i-1]);
-                cv::line(m, f, b, cv::Scalar(0, 255, 0), 1);
-            }
-            auto& bb = tc._trail.back();
-            cv::rectangle(m, bb, cv::Scalar(0, 0, 255), 1, 1); //tracking red
-        }
-    }
-
     auto updateTrackingContexts(cv::Mat& frame) {
         for (int i = _trackingContexts.size() - 1; i >= 0; i--) {
-            auto& tc = _trackingContexts[i];
+            auto& t = _trackingContexts[i];
             cv::Rect bb;
-            bool rc = tc.cvTracker->update(frame, bb);
+            bool rc = t.cvTracker->update(frame, bb);
             if (rc && cvl::geometry::isRectInsideMat(bb, frame)) {
-                tc._trail.push_back(bb);
-                tc._lostCount = 0;
+                t._trail.push_back(bb);
+                t._foundCount++;
             } else {
-                tc._lostCount++;
-                std::cout << "Tracker " << tc.id << " _lostCount: " << tc._lostCount << std::endl;
+                t._lostCount++;
+                std::cout << "Tracker " << t.id << " _lostCount: " << t._lostCount << std::endl;
             }
-            if (tc._lostCount > 5) {
-                auto id = tc.id;
-                tc.cvTracker.release();
+            if (t._lostCount > 50) {
+                auto id = t.id;
+                t.cvTracker.release();
                 _trackingContexts.erase(_trackingContexts.begin() + i);
-                std::cout << "Removed Tracker with id: " << id << " (frozen)" << std::endl;
+                std::cout << "-- Tracker with id: " << id << " (frozen)" << std::endl;
                 continue;
+            }
+            if (t._foundCount > 5 && !t._notified) {
+                notify_callback(t._thumbnails);
+                t._notified = true;
             }
         }
     }
@@ -94,26 +70,114 @@ struct Tracker {
         for (auto& t : _trackingContexts) {
             auto& last = t._trail.back();
             if (cvl::geometry::doesRectOverlapRect(roi, last)) {
-                t._thumbnails.emplace_back(mat(roi).clone());
+                t._thumbnails.push_back(mat(roi));
                 return true;
             }
         }
         return false;
     }
 
-    void addNewTrackingContext(const cv::Rect2d& roi, const cv::Mat& mat) {
-        TrackingContext tc;
-        tc.id = _trackingContexts.size();
+    auto addNewTrackingContext(const cv::Rect2d& roi, const cv::Mat& mat) {
+        TrackingContext t;
+        t.id = _trackingContexts.size();
         cv::TrackerCSRT::Params params;
         params.psr_threshold = 0.04f; //0.035f;
         //param.template_size = 150;
         //param.admm_iterations = 3;
-        tc.cvTracker = cv::TrackerCSRT::create(params);
-        tc._trail.push_back(roi);
-        tc.cvTracker->init(mat, roi);
+        t.cvTracker = cv::TrackerCSRT::create(params);
+        t._trail.push_back(roi);
+        t.cvTracker->init(mat, roi);
         cv::rectangle(mat, roi, cv::Scalar(0, 0, 0 ), 2, 1);  // white
-        _trackingContexts.push_back(tc);
-        std::cout << "+ Tracker with id: " << tc.id << std::endl;
+        _trackingContexts.push_back(t);
+        std::cout << "++ Tracker with id: " << t.id << std::endl;
+    }
+
+    void RenderDisplacementAndPaths(cv::Mat& m, bool isTest = true) {
+        for (auto& t : _trackingContexts) {
+            // Displacement
+            auto first = cvl::geometry::getRectCenter(t._trail.front());
+            auto last = cvl::geometry::getRectCenter(t._trail.back());
+            cv::line(m, first, last, cv::Scalar(0, 0, 255), 1);
+            // path
+            for (size_t i = 1; i < t._trail.size() - 1; ++i)
+            {
+                auto&& f = cvl::geometry::getRectCenter(t._trail[i]);
+                auto&& b = cvl::geometry::getRectCenter(t._trail[i-1]);
+                cv::line(m, f, b, cv::Scalar(0, 255, 0), 1);
+            }
+            auto& bb = t._trail.back();
+            cv::rectangle(m, bb, cv::Scalar(0, 0, 255), 1, 1);
+        }
+    }
+
+    void send_telegram_message(const std::string& bot_token, const std::string& chat_id, const std::string& message) {
+        CURL* curl = curl_easy_init();
+        if(curl) {
+            std::string url = "https://api.telegram.org/bot" + bot_token + "/sendMessage";
+            std::string post_fields = "chat_id=" + chat_id + "&text=" + curl_easy_escape(curl, message.c_str(), 0);
+            curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+            curl_easy_setopt(curl, CURLOPT_POSTFIELDS, post_fields.c_str());
+            curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L); // set to 0 for testing only
+            CURLcode res = curl_easy_perform(curl);
+            if(res != CURLE_OK)
+                fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+            curl_easy_cleanup(curl);
+        }
+    }
+
+    void send_telegram_photos(const std::string& bot_token, const std::string& chat_id, const std::vector<std::string>& image_paths) {
+        CURL* curl = curl_easy_init();
+        if (!curl) return;
+        std::string url = "https://api.telegram.org/bot" + bot_token + "/sendMediaGroup";
+        // Build JSON media array
+        std::string media = "[";
+        for (size_t i = 0; i < image_paths.size(); ++i) {
+            if (i > 0) media += ",";
+            std::string filename = "photo" + std::to_string(i) + ".jpg";
+            media += "{\"type\":\"photo\",\"media\":\"attach://" + filename + "\",\"caption\":\"Image " + std::to_string(i+1) + "\"}";
+        }
+        media += "]";
+        curl_mime* mime = curl_mime_init(curl);
+        // Add chat_id
+        curl_mimepart* part = curl_mime_addpart(mime);
+        curl_mime_name(part, "chat_id");
+        curl_mime_data(part, chat_id.c_str(), CURL_ZERO_TERMINATED);
+        // Add media JSON
+        part = curl_mime_addpart(mime);
+        curl_mime_name(part, "media");
+        curl_mime_data(part, media.c_str(), CURL_ZERO_TERMINATED);
+        // Add each image
+        for (size_t i = 0; i < image_paths.size(); ++i) {
+            part = curl_mime_addpart(mime);
+            curl_mime_name(part, ("photo" + std::to_string(i) + ".jpg").c_str());
+            curl_mime_filedata(part, image_paths[i].c_str());
+        }
+        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+        curl_easy_setopt(curl, CURLOPT_MIMEPOST, mime);
+        CURLcode res = curl_easy_perform(curl);
+        if (res != CURLE_OK) {
+            std::cerr << "curl error: " << curl_easy_strerror(res) << std::endl;
+        }
+        curl_mime_free(mime);
+        curl_easy_cleanup(curl);
+    }
+
+    void notify_callback(const std::vector<cv::Mat>& thumbnails) {
+        std::cout << "notify_callback" << std::endl;
+        std::vector<std::string> paths;
+        for (int i = 0; i < 5; ++i) {
+            int idx = thumbnails.size() - 5 + i;
+            std::string path = "./thumb_" + std::to_string(i) + ".jpg";
+            cv::imwrite(path, thumbnails[idx]);
+            paths.push_back(path);
+        }
+        std::thread([this, paths]() {
+            std::string chat_id = "1799980801";
+            std::string message = "Face Detection Alert";
+            std::string bot_token = "xxxx";
+            send_telegram_message(bot_token, chat_id, message);
+            send_telegram_photos(bot_token, chat_id, paths);
+        }).detach();
     }
 
     protected:

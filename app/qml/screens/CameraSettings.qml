@@ -498,6 +498,38 @@ Item {
                     onClicked: vr.mocapAlgo = 4
                 }
             }
+            Row {
+                spacing: 4
+                Text {
+                    text: "Telegram:"
+                    color: textColor
+                    width: labelWidth
+                    verticalAlignment: Text.AlignVCenter
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+                TextField {
+                    id: token
+                    width: 200
+                    implicitHeight: rowHeight - 10
+                    placeholderText: qsTr("bot-token")
+                    text: vr.botToken
+                    verticalAlignment: TextInput.AlignVCenter
+                    onEditingFinished: {
+                        vr.botToken = token.text
+                    }
+                }
+                TextField {
+                    id: chatids
+                    width: 200
+                    implicitHeight: rowHeight - 10
+                    placeholderText: qsTr("chat-ids")
+                    text: vr.chatids
+                    verticalAlignment: TextInput.AlignVCenter
+                    onEditingFinished: {
+                        vr.chatids = chatids.text
+                    }
+                }
+            }
         }
     }
 }

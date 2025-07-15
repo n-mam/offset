@@ -9,7 +9,6 @@
 #include <queue.hpp>
 #include <pipeline.hpp>
 
-#include <curl/curl.h>
 #include <opencv2/core.hpp>
 #include <opencv2/videoio.hpp>
 #include <opencv2/highgui.hpp>
@@ -20,18 +19,16 @@ using TFrameCallback = std::function<void (const cv::Mat&)>;
 
 struct camera {
 
-    public:
-
     camera() {
-        iPipelineConfig[IDX_MOCAP_ALGO] = 3;
-        iPipelineConfig[IDX_SKIP_FRAMES] = 4;
-        iPipelineConfig[IDX_PIPELINE_STAGES] = 0;
-        iPipelineConfig[IDX_FACE_CONFIDENCE] = 5;
-        iPipelineConfig[IDX_OBJECT_CONFIDENCE] = 5;
-        iPipelineConfig[IDX_FACEREC_CONFIDENCE] = 60;
-        iPipelineConfig[IDX_MOCAP_EXCLUDE_AREA] = 2500;
-        iPipelineConfig[IDX_BOUNDINGBOX_THICKNESS] = 1;
-        iPipelineConfig[IDX_BOUNDINGBOX_INCREMENT] = 0;
+        _pipelineConfig[IDX_MOCAP_ALGO] = 3;
+        _pipelineConfig[IDX_SKIP_FRAMES] = 4;
+        _pipelineConfig[IDX_PIPELINE_STAGES] = 0;
+        _pipelineConfig[IDX_FACE_CONFIDENCE] = 5;
+        _pipelineConfig[IDX_OBJECT_CONFIDENCE] = 5;
+        _pipelineConfig[IDX_FACEREC_CONFIDENCE] = 60;
+        _pipelineConfig[IDX_MOCAP_EXCLUDE_AREA] = 2500;
+        _pipelineConfig[IDX_BOUNDINGBOX_THICKNESS] = 1;
+        _pipelineConfig[IDX_BOUNDINGBOX_INCREMENT] = 0;
     }
 
     ~camera() {
@@ -58,11 +55,11 @@ struct camera {
         _stop = false;
     }
 
-    std::string iName;
-    std::string iSource;
-    int iWaitKeyTimeout = 0;
-    std::string iResultsFolder;
-    int iPipelineConfig[16] = { 0 };
+    std::string _name;
+    std::string _source;
+    int _waitKeyTimeout = 0;
+    std::string _resultsFolder;
+    int _pipelineConfig[16] = { 0 };
 
     private:
 
@@ -74,15 +71,12 @@ struct camera {
     std::thread _process_thread;
 
     void queue_frames(void) {
-
         cv::VideoCapture cap;
         cap.set(cv::CAP_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_ANY);
-        cap.set(cv::CAP_PROP_FRAME_WIDTH, 1280);
-        cap.set(cv::CAP_PROP_FRAME_HEIGHT, 720);
-        if (iSource.length() == 1 && isdigit(iSource[0])) {
-            cap.open(std::stoi(iSource), cv::CAP_ANY);
+        if (_source.length() == 1 && isdigit(_source[0])) {
+            cap.open(std::stoi(_source), cv::CAP_ANY);
         } else {
-            cap.open(iSource, cv::CAP_ANY);
+            cap.open(_source, cv::CAP_ANY);
         }
         if (!cap.isOpened()) {
             ERR << "queue_frames error: unable to open camera";
@@ -100,8 +94,8 @@ struct camera {
                     cv::imshow("live", f_out);
                 }
             }
-            if (iWaitKeyTimeout > 0) {
-                if (cv::waitKey(iWaitKeyTimeout) >= 0) {
+            if (_waitKeyTimeout > 0) {
+                if (cv::waitKey(_waitKeyTimeout) >= 0) {
                     _stop = true;
                     break;
                 }
@@ -118,8 +112,8 @@ struct camera {
                 std::this_thread::sleep_for(std::chrono::milliseconds(50));
                 continue;
             }
-            if (iPipelineConfig[IDX_PIPELINE_STAGES]) {
-                pipeLine.execute(frame, iPipelineConfig, iResultsFolder);
+            if (_pipelineConfig[IDX_PIPELINE_STAGES]) {
+                pipeLine.execute(frame, _pipelineConfig, _resultsFolder);
             }
             q_out.enqueue(frame);
         }
@@ -127,34 +121,14 @@ struct camera {
     }
 };
 
-inline auto send_telegram_message(const std::string& bot_token, const std::string& chat_id, const std::string& message) {
-    CURL* curl = curl_easy_init();
-    if(curl) {
-        std::string url = "https://api.telegram.org/bot" + bot_token + "/sendMessage";
-        std::string post_fields = "chat_id=" + chat_id + "&text=" + curl_easy_escape(curl, message.c_str(), 0);
-
-        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, post_fields.c_str());
-        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L); // set to 0 for testing only
-
-        CURLcode res = curl_easy_perform(curl);
-        if(res != CURLE_OK)
-            fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
-
-        curl_easy_cleanup(curl);
-    }
-}
-
 inline auto entry(std::vector<std::string> arguments) {
-    // send_telegram_message("", "", "hello from offset bot");
-    // return;
     std::string source = "0";
     if (arguments.size() > 1) {
         source = arguments[1];
     }
     auto cam = std::make_unique<cvl::camera>();
-    cam->iSource = source;
-    cam->iPipelineConfig[IDX_PIPELINE_STAGES] = 16;
+    cam->_source = source;
+    cam->_pipelineConfig[IDX_PIPELINE_STAGES] = 16;
     cam->start(nullptr);
     getchar();
 }

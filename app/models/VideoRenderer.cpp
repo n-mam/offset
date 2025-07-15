@@ -130,39 +130,39 @@ void VideoRenderer::createStatic() {
 }
 
 QString VideoRenderer::getSource(void) {
-    return QString::fromStdString(m_camera->iSource);
+    return QString::fromStdString(m_camera->_source);
 }
 
 void VideoRenderer::setSource(QString source) {
-    if (source.toStdString() != m_camera->iSource) {
-        m_camera->iSource = source.toStdString();
+    if (source.toStdString() != m_camera->_source) {
+        m_camera->_source = source.toStdString();
         emit sourceChanged(source);
     }
 }
 
 int VideoRenderer::getWaitKeyTimeout(void) {
     if (m_camera) {
-        return m_camera->iWaitKeyTimeout;
+        return m_camera->_waitKeyTimeout;
     }
     return 18;
 }
 
 void VideoRenderer::setWaitKeyTimeout(int timeout) {
     if (m_camera) {
-        if (timeout != m_camera->iWaitKeyTimeout) {
-            m_camera->iWaitKeyTimeout = timeout;
+        if (timeout != m_camera->_waitKeyTimeout) {
+            m_camera->_waitKeyTimeout = timeout;
             emit waitKeyTimeoutChanged(timeout);
         }
     }
 }
 
 QString VideoRenderer::getName(void) {
-    return QString::fromStdString(m_camera->iName);
+    return QString::fromStdString(m_camera->_name);
 }
 
 void VideoRenderer::setName(QString name) {
-    if (name.toStdString() != m_camera->iName) {
-        m_camera->iName = name.toStdString();
+    if (name.toStdString() != m_camera->_name) {
+        m_camera->_name = name.toStdString();
         emit nameChanged(name);
     }
 }
@@ -180,82 +180,82 @@ void VideoRenderer::setScaleF(double scalef) {
 
 int VideoRenderer::getStages(void) {
     if (m_camera) {
-        return m_camera->iPipelineConfig[cvl::IDX_PIPELINE_STAGES];
+        return m_camera->_pipelineConfig[cvl::IDX_PIPELINE_STAGES];
     }
     return 0;
 }
 
 void VideoRenderer::setStages(int stages) {
     if (m_camera) {
-        if (stages != m_camera->iPipelineConfig[cvl::IDX_PIPELINE_STAGES]) {
-            m_camera->iPipelineConfig[cvl::IDX_PIPELINE_STAGES] = stages;
+        if (stages != m_camera->_pipelineConfig[cvl::IDX_PIPELINE_STAGES]) {
+            m_camera->_pipelineConfig[cvl::IDX_PIPELINE_STAGES] = stages;
             emit stagesChanged(stages);
         }
     }
 }
 
 double VideoRenderer::getFaceConfidence() {
-    return (double)(m_camera->iPipelineConfig[cvl::IDX_FACE_CONFIDENCE]) / 10;
+    return (double)(m_camera->_pipelineConfig[cvl::IDX_FACE_CONFIDENCE]) / 10;
 }
 
 void VideoRenderer::setFaceConfidence(double confidence) {
-    if (confidence != m_camera->iPipelineConfig[cvl::IDX_FACE_CONFIDENCE]) {
-        m_camera->iPipelineConfig[cvl::IDX_FACE_CONFIDENCE] = (int)(confidence * 10);
+    if (confidence != m_camera->_pipelineConfig[cvl::IDX_FACE_CONFIDENCE]) {
+        m_camera->_pipelineConfig[cvl::IDX_FACE_CONFIDENCE] = (int)(confidence * 10);
         emit faceConfidenceChanged(confidence);
     }
 }
 
 double VideoRenderer::getObjectConfidence() {
-    return (double)(m_camera->iPipelineConfig[cvl::IDX_OBJECT_CONFIDENCE]) / 10;
+    return (double)(m_camera->_pipelineConfig[cvl::IDX_OBJECT_CONFIDENCE]) / 10;
 }
 
 void VideoRenderer::setObjectConfidence(double confidence) {
-    if (confidence != m_camera->iPipelineConfig[cvl::IDX_OBJECT_CONFIDENCE]) {
-        m_camera->iPipelineConfig[cvl::IDX_OBJECT_CONFIDENCE] = (int)(confidence * 10);
+    if (confidence != m_camera->_pipelineConfig[cvl::IDX_OBJECT_CONFIDENCE]) {
+        m_camera->_pipelineConfig[cvl::IDX_OBJECT_CONFIDENCE] = (int)(confidence * 10);
         emit objectConfidenceChanged(confidence);
     }
 }
 
 int VideoRenderer::getFacerecConfidence() {
-    return m_camera->iPipelineConfig[cvl::IDX_FACEREC_CONFIDENCE];
+    return m_camera->_pipelineConfig[cvl::IDX_FACEREC_CONFIDENCE];
 }
 
 void VideoRenderer::setFacerecConfidence(int confidence) {
-    if (confidence != m_camera->iPipelineConfig[cvl::IDX_FACEREC_CONFIDENCE]) {
-        m_camera->iPipelineConfig[cvl::IDX_FACEREC_CONFIDENCE] = confidence;
+    if (confidence != m_camera->_pipelineConfig[cvl::IDX_FACEREC_CONFIDENCE]) {
+        m_camera->_pipelineConfig[cvl::IDX_FACEREC_CONFIDENCE] = confidence;
         emit facerecConfidenceChanged(confidence);
     }
 }
 
 int VideoRenderer::getAreaThreshold() {
-    return m_camera->iPipelineConfig[cvl::IDX_MOCAP_EXCLUDE_AREA];
+    return m_camera->_pipelineConfig[cvl::IDX_MOCAP_EXCLUDE_AREA];
 }
 
 void VideoRenderer::setAreaThreshold(int area) {
-    if (area != m_camera->iPipelineConfig[cvl::IDX_MOCAP_EXCLUDE_AREA]) {
-        m_camera->iPipelineConfig[cvl::IDX_MOCAP_EXCLUDE_AREA] = area;
+    if (area != m_camera->_pipelineConfig[cvl::IDX_MOCAP_EXCLUDE_AREA]) {
+        m_camera->_pipelineConfig[cvl::IDX_MOCAP_EXCLUDE_AREA] = area;
         emit areaThresholdChanged(area);
     }
 }
 
 int VideoRenderer::getBboxThickness() {
-    return m_camera->iPipelineConfig[cvl::IDX_BOUNDINGBOX_THICKNESS];
+    return m_camera->_pipelineConfig[cvl::IDX_BOUNDINGBOX_THICKNESS];
 }
 
 void VideoRenderer::setBboxThickness(int px) {
-    if (px != m_camera->iPipelineConfig[cvl::IDX_BOUNDINGBOX_THICKNESS]) {
-        m_camera->iPipelineConfig[cvl::IDX_BOUNDINGBOX_THICKNESS] = px;
+    if (px != m_camera->_pipelineConfig[cvl::IDX_BOUNDINGBOX_THICKNESS]) {
+        m_camera->_pipelineConfig[cvl::IDX_BOUNDINGBOX_THICKNESS] = px;
         emit areaThresholdChanged(px);
     }
 }
 
 int VideoRenderer::getMocapAlgo() {
-    return m_camera->iPipelineConfig[cvl::IDX_MOCAP_ALGO];
+    return m_camera->_pipelineConfig[cvl::IDX_MOCAP_ALGO];
 }
 
 void VideoRenderer::setMocapAlgo(int algo) {
-    if (algo != m_camera->iPipelineConfig[cvl::IDX_MOCAP_ALGO]) {
-        m_camera->iPipelineConfig[cvl::IDX_MOCAP_ALGO] = algo;
+    if (algo != m_camera->_pipelineConfig[cvl::IDX_MOCAP_ALGO]) {
+        m_camera->_pipelineConfig[cvl::IDX_MOCAP_ALGO] = algo;
         emit mocapAlgoChanged(algo);
     }
 }
@@ -265,37 +265,37 @@ QVariantMap VideoRenderer::getCfg() {
 }
 
 QString VideoRenderer::getResultsFolder() {
-    return QString::fromStdString(m_camera->iResultsFolder);
+    return QString::fromStdString(m_camera->_resultsFolder);
 }
 
 void VideoRenderer::setResultsFolder(QString path) {
     if (path != getResultsFolder()) {
         QDir dir(path);
         if (dir.exists()) {
-            m_camera->iResultsFolder = path.toStdString();
+            m_camera->_resultsFolder = path.toStdString();
             emit resultsFolderChanged(path);
         }
     }
 }
 
 int VideoRenderer::getBbSizeIncrement() {
-    return m_camera->iPipelineConfig[cvl::IDX_BOUNDINGBOX_INCREMENT];
+    return m_camera->_pipelineConfig[cvl::IDX_BOUNDINGBOX_INCREMENT];
 }
 
 void VideoRenderer::setBbSizeIncrement(int increment) {
-    if (increment != m_camera->iPipelineConfig[cvl::IDX_BOUNDINGBOX_INCREMENT]) {
-        m_camera->iPipelineConfig[cvl::IDX_BOUNDINGBOX_INCREMENT] = increment;
+    if (increment != m_camera->_pipelineConfig[cvl::IDX_BOUNDINGBOX_INCREMENT]) {
+        m_camera->_pipelineConfig[cvl::IDX_BOUNDINGBOX_INCREMENT] = increment;
         emit bbSizeIncrementChanged(increment);
     }
 }
 
 int VideoRenderer::getSkipFrames() {
-    return m_camera->iPipelineConfig[cvl::IDX_SKIP_FRAMES];
+    return m_camera->_pipelineConfig[cvl::IDX_SKIP_FRAMES];
 }
 
 void VideoRenderer::setSkipFrames(int skip) {
-    if (skip != m_camera->iPipelineConfig[cvl::IDX_SKIP_FRAMES]) {
-        m_camera->iPipelineConfig[cvl::IDX_SKIP_FRAMES] = skip;
+    if (skip != m_camera->_pipelineConfig[cvl::IDX_SKIP_FRAMES]) {
+        m_camera->_pipelineConfig[cvl::IDX_SKIP_FRAMES] = skip;
         emit skipFramesChanged(skip);
     }
 }
@@ -334,6 +334,26 @@ void VideoRenderer::setCfg(QVariantMap cfg) {
         }
         emit cfgChanged(cfg);
     }
+}
+
+QString VideoRenderer::getBotToken() {
+    return botToken;
+}
+
+void VideoRenderer::setBotToken(QString token) {
+    if (token != botToken) {
+        botToken = token;
+        emit botTokenChanged(botToken);
+    }
+}
+
+QString VideoRenderer::getChatids() {
+    return chatids;
+}
+
+void VideoRenderer::setChatids(QString ids) {
+    chatids = ids;
+    emit chatidsChanged(chatids);
 }
 
 void VideoRenderer::AddResultsForTraining(QString path, QString tagName, QString tagId) {

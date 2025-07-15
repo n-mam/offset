@@ -16,9 +16,9 @@ namespace cvl {
 struct pipeline {
 
     pipeline() {
-        _thread = std::thread(&pipeline::detectionSaveThread, this);
         _tracker = std::make_unique<cvl::Tracker>();
         _faceDetector = std::make_unique<cvl::FaceDetector>();
+        _thread = std::thread(&pipeline::detectionSaveThread, this);
         _objectDetector = std::make_unique<cvl::ObjectDetector>("person");
         _backgroundSubtractor = std::make_unique<cvl::BackgroundSubtractor>();
         _faceRecognizer = std::make_unique<cvl::FaceRecognizer>(
@@ -98,10 +98,7 @@ struct pipeline {
 
     inline auto execute(cv::Mat& frame, int *config, const std::string& resultsPath) {
 
-        if (frame.empty()) {
-            ERR << "empty frame grabbed";
-            return;
-        }
+        if (frame.empty()) return;
 
         Detections detections;
         int stages = config[IDX_PIPELINE_STAGES];
@@ -137,6 +134,7 @@ struct pipeline {
             const auto& roi = detections[i];
             r._mat = frame(roi).clone();
             if (stages & 32) {
+                // match this detection with all tracking contexts
                 if (_tracker->matchDetectionWithTrackingContext(roi, frame)) {
                     label += "T ";
                 } else {
@@ -159,10 +157,9 @@ struct pipeline {
                     std::chrono::system_clock::now().time_since_epoch()).count();
                 _detectionsQueue.enqueue(r);
             }
-
             cv::rectangle(frame, roi, cv::Scalar(0, 255, 0), config[IDX_BOUNDINGBOX_THICKNESS]);
             cv::putText(frame, label, cv::Point((int)roi.x, (int)(roi.y - 5)), cv::FONT_HERSHEY_SIMPLEX,
-                    0.7, cv::Scalar(0, 255, 0), config[IDX_BOUNDINGBOX_THICKNESS]);
+                    0.5, cv::Scalar(0, 0, 255), config[IDX_BOUNDINGBOX_THICKNESS]);
         }
     }
 
@@ -173,9 +170,9 @@ struct pipeline {
     uint32_t _count = 0;
     std::thread _thread;
     std::string _save_path;
+    std::unique_ptr<cvl::Tracker> _tracker = nullptr;
     cvl::queue<cvl::DetectionResult> _detectionsQueue;
     std::unique_ptr<cvl::FaceRecognizer> _faceRecognizer;
-    std::unique_ptr<cvl::Tracker> _tracker = nullptr;
     std::unique_ptr<cvl::FaceDetector> _faceDetector = nullptr;
     std::unique_ptr<cvl::ObjectDetector> _objectDetector = nullptr;
     std::unique_ptr<cvl::BackgroundSubtractor> _backgroundSubtractor = nullptr;

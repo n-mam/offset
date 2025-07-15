@@ -35,6 +35,8 @@ class VideoRenderer : public QQuickItem {
     Q_PROPERTY(int stages READ getStages WRITE setStages NOTIFY stagesChanged);
     Q_PROPERTY(double scalef READ getScaleF WRITE setScaleF NOTIFY scaleFChanged);
     Q_PROPERTY(QString source READ getSource WRITE setSource NOTIFY sourceChanged);
+    Q_PROPERTY(QString chatids READ getChatids WRITE setChatids NOTIFY chatidsChanged);
+    Q_PROPERTY(QString botToken READ getBotToken WRITE setBotToken NOTIFY botTokenChanged);
     Q_PROPERTY(int mocapAlgo READ getMocapAlgo WRITE setMocapAlgo NOTIFY mocapAlgoChanged);
     Q_PROPERTY(int skipFrames READ getSkipFrames WRITE setSkipFrames NOTIFY skipFramesChanged);
     Q_PROPERTY(int bboxThickness READ getBboxThickness WRITE setBboxThickness NOTIFY bboxThicknessChanged);
@@ -51,15 +53,19 @@ class VideoRenderer : public QQuickItem {
     int getMocapAlgo();
     int getSkipFrames();
     int getStages(void);
+    QString getChatids();
     QVariantMap getCfg();
+    QString getBotToken();
     QString getName(void);
     void setMocapAlgo(int);
     int getBboxThickness();
     double getScaleF(void);
     void setSkipFrames(int);
     QString getSource(void);
+    void setChatids(QString);
     int getBbSizeIncrement();
     void setCfg(QVariantMap);
+    void setBotToken(QString);
     void setBboxThickness(int);
     double getFaceConfidence();
     int getFacerecConfidence();
@@ -87,7 +93,9 @@ class VideoRenderer : public QQuickItem {
     void scaleFChanged(double);
     void skipFramesChanged(int);
     void sourceChanged(QString);
+    void chatidsChanged(QString);
     void cfgChanged(QVariantMap);
+    void botTokenChanged(QString);
     void bboxThicknessChanged(int);
     void areaThresholdChanged(int);
     void waitKeyTimeoutChanged(int);
@@ -108,6 +116,8 @@ class VideoRenderer : public QQuickItem {
     private:
 
     QTimer m_timer;
+    QString chatids;
+    QString botToken;
     QVariantMap m_cfg;
     double m_scalef = 0.6;
     cvl::SPCamera m_camera;
