@@ -514,6 +514,7 @@ Item {
                     placeholderText: qsTr("bot-token")
                     text: vr.botToken
                     verticalAlignment: TextInput.AlignVCenter
+                    anchors.verticalCenter: parent.verticalCenter
                     onEditingFinished: {
                         vr.botToken = token.text
                     }
@@ -525,8 +526,17 @@ Item {
                     placeholderText: qsTr("chat-ids")
                     text: vr.chatids
                     verticalAlignment: TextInput.AlignVCenter
+                    anchors.verticalCenter: parent.verticalCenter
                     onEditingFinished: {
                         vr.chatids = chatids.text
+                    }
+                }
+                CheckBox {
+                    id: notify
+                    checked: vr.flags & 1
+                    text: qsTr("Notify")
+                    onCheckedChanged: {
+                        checked ? (vr.flags |= 1) : (vr.flags &= ~1)
                     }
                 }
             }
