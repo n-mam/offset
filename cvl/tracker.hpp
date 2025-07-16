@@ -52,14 +52,14 @@ struct Tracker {
                 t._lostCount++;
                 std::cout << "Tracker " << t.id << " _lostCount: " << t._lostCount << std::endl;
             }
-            if (t._lostCount > 50) {
+            if (t._lostCount > 10) {
                 auto id = t.id;
                 t.cvTracker.release();
                 _trackingContexts.erase(_trackingContexts.begin() + i);
                 std::cout << "-- Tracker with id: " << id << " (frozen)" << std::endl;
                 continue;
             }
-            if (t._foundCount > 5 && !t._notified) {
+            if (t._foundCount > 5 && t._thumbnails.size() > 10 && !t._notified) {
                 notify_callback(t._thumbnails);
                 t._notified = true;
             }
@@ -164,13 +164,19 @@ struct Tracker {
 
     void notify_callback(const std::vector<cv::Mat>& thumbnails) {
         std::cout << "notify_callback" << std::endl;
-        std::vector<std::string> paths;
-        for (int i = 0; i < 5; ++i) {
-            int idx = thumbnails.size() - 5 + i;
-            std::string path = "./thumb_" + std::to_string(i) + ".jpg";
-            cv::imwrite(path, thumbnails[idx]);
-            paths.push_back(path);
+        std::vector<std::pair<int, double>> lv_scores;
+        for (int i = 0; i < thumbnails.size(); i++) {
+            lv_scores.push_back({i, cvl::geometry::computeLaplacianVariance(thumbnails[i])});
         }
+        std::ranges::sort(lv_scores, [](auto& e1, auto& e2){ return e1.second < e2.second; });
+        for (const auto& e : lv_scores) {
+            std::cout << e.first << ": " << e.second << std::endl;
+        }
+        std::vector<std::string> paths;
+        int idx = lv_scores[lv_scores.size() - 1].first;
+        std::string path = "./thumb_" + std::to_string(idx) + ".jpg";
+        cv::imwrite(path, thumbnails[idx]);
+        paths.push_back(path);
         std::thread([this, paths]() {
             std::string chat_id = "1799980801";
             std::string message = "Face Detection Alert";

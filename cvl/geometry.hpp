@@ -88,6 +88,20 @@ inline auto saveMatAsImage(cv::Mat& mat, const std::string& fileName, const std:
     fout.close();
 }
 
+inline auto computeLaplacianVariance(const cv::Mat& img) {
+    cv::Mat gray, laplacian;
+    if (img.channels() == 3) {
+        cv::cvtColor(img, gray, cv::COLOR_BGR2GRAY);
+    } else {
+        gray = img.clone();
+    }
+    cv::Laplacian(gray, laplacian, CV_64F);
+    cv::Scalar mean, stddev;
+    cv::meanStdDev(laplacian, mean, stddev);
+    double variance = stddev[0] * stddev[0];
+    return variance;
+}
+
 }
 
 #endif
