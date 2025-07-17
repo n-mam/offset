@@ -238,6 +238,18 @@ void VideoRenderer::setAreaThreshold(int area) {
     }
 }
 
+int VideoRenderer::getFlags() {
+    return m_camera->_pipelineConfig[cvl::IDX_PIPELINE_FLAGS];
+}
+
+void VideoRenderer::setFlags(int flags) {
+    if (flags != m_camera->_pipelineConfig[cvl::IDX_PIPELINE_FLAGS]) {
+        m_camera->_pipelineConfig[cvl::IDX_PIPELINE_FLAGS] = flags;
+        emit flagsChanged(flags);
+    }
+}
+
+
 int VideoRenderer::getBboxThickness() {
     return m_camera->_pipelineConfig[cvl::IDX_BOUNDINGBOX_THICKNESS];
 }

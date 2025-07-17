@@ -29,13 +29,14 @@ constexpr double marker_length_cm = 5.3;
 
 constexpr int IDX_MOCAP_ALGO = 0;
 constexpr int IDX_SKIP_FRAMES = 1;
-constexpr int IDX_PIPELINE_STAGES = 2;
-constexpr int IDX_FACE_CONFIDENCE = 3;
-constexpr int IDX_OBJECT_CONFIDENCE = 4;
-constexpr int IDX_FACEREC_CONFIDENCE = 5;
-constexpr int IDX_MOCAP_EXCLUDE_AREA = 6;
-constexpr int IDX_BOUNDINGBOX_THICKNESS = 7;
-constexpr int IDX_BOUNDINGBOX_INCREMENT = 8;
+constexpr int IDX_PIPELINE_FLAGS = 2;
+constexpr int IDX_PIPELINE_STAGES = 3;
+constexpr int IDX_FACE_CONFIDENCE = 4;
+constexpr int IDX_OBJECT_CONFIDENCE = 5;
+constexpr int IDX_FACEREC_CONFIDENCE = 6;
+constexpr int IDX_MOCAP_EXCLUDE_AREA = 7;
+constexpr int IDX_BOUNDINGBOX_THICKNESS = 8;
+constexpr int IDX_BOUNDINGBOX_INCREMENT = 9;
 
 inline auto getModelRootDir() {
     return std::getenv("CVL_MODELS_ROOT");
@@ -82,7 +83,7 @@ class Detector {
             LOG << "CUDA backend and target enabled for inference";
         }
         else
-        #endif
+        #endif 
         {
             _network.setPreferableBackend(cv::dnn::Backend::DNN_BACKEND_OPENCV);
             _network.setPreferableTarget(cv::dnn::Target::DNN_TARGET_CPU);

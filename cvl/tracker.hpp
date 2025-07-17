@@ -41,7 +41,7 @@ struct Tracker {
         return _trackingContexts.size();
     }
 
-    auto updateTrackingContexts(cv::Mat& frame) {
+    auto updateTrackingContexts(cv::Mat& frame, bool notify) {
         for (int i = _trackingContexts.size() - 1; i >= 0; i--) {
             auto& t = _trackingContexts[i];
             cv::Rect bb;
@@ -61,8 +61,10 @@ struct Tracker {
                 continue;
             }
             if (t._foundCount > 5 && t._thumbnails.size() > 10 && !t._notified) {
-                notify_callback(t._thumbnails);
-                t._notified = true;
+                if (notify) {
+                    notify_callback(t._thumbnails);
+                    t._notified = true;
+                }
             }
         }
     }

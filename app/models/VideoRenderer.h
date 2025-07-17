@@ -30,6 +30,7 @@ class VideoRenderer : public QQuickItem {
     Q_INVOKABLE void start();
     Q_INVOKABLE void AddResultsForTraining(QString path, QString name, QString id);
 
+    Q_PROPERTY(int flags READ getFlags WRITE setFlags NOTIFY flagsChanged);
     Q_PROPERTY(QVariantMap cfg READ getCfg WRITE setCfg NOTIFY cfgChanged);
     Q_PROPERTY(QString name READ getName WRITE setName NOTIFY nameChanged);
     Q_PROPERTY(int stages READ getStages WRITE setStages NOTIFY stagesChanged);
@@ -50,6 +51,7 @@ class VideoRenderer : public QQuickItem {
 
     public slots:
 
+    int getFlags();
     int getMocapAlgo();
     int getSkipFrames();
     int getStages(void);
@@ -65,6 +67,7 @@ class VideoRenderer : public QQuickItem {
     void setChatids(QString);
     int getBbSizeIncrement();
     void setCfg(QVariantMap);
+    void setFlags(int flags);
     void setBotToken(QString);
     void setBboxThickness(int);
     double getFaceConfidence();
@@ -87,6 +90,7 @@ class VideoRenderer : public QQuickItem {
 
     signals:
 
+    void flagsChanged(int);
     void stagesChanged(int);
     void nameChanged(QString);
     void mocapAlgoChanged(int);

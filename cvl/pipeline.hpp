@@ -101,10 +101,12 @@ struct pipeline {
         if (frame.empty()) return;
 
         Detections detections;
+        int flags = config[IDX_PIPELINE_FLAGS];
         int stages = config[IDX_PIPELINE_STAGES];
 
-        if (stages & 32) {
-            _tracker->updateTrackingContexts(frame);
+        if (flags & 2) {
+            bool notify = flags & 1;
+            _tracker->updateTrackingContexts(frame, notify);
         }
         if (stages & 1) {
             detections = detectFaces(frame, config);
@@ -133,7 +135,7 @@ struct pipeline {
             cvl::DetectionResult r;
             const auto& roi = detections[i];
             r._mat = frame(roi).clone();
-            if (stages & 32) {
+            if (flags & 2) {
                 // match this detection with all tracking contexts
                 if (_tracker->matchDetectionWithTrackingContext(roi, frame)) {
                     label += "T ";

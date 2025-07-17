@@ -229,7 +229,7 @@ Item {
                     verticalAlignment: TextInput.AlignVCenter
                 }
                 Text {
-                    text: "  Tag:"
+                    text: " Tag: "
                     width: labelWidth / 3
                     color: textColor
                     verticalAlignment: Text.AlignVCenter
@@ -339,10 +339,10 @@ Item {
                 }
                 CheckBox {
                     id: track
-                    checked: vr.stages & 32
+                    checked: vr.flags & 2
                     text: qsTr("Track")
                     onCheckedChanged: {
-                        checked ? (vr.stages |= 32) : (vr.stages &= ~32)
+                        checked ? (vr.flags |= 2) : (vr.flags &= ~2)
                     }
                 }
             }

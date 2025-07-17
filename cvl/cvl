@@ -22,6 +22,7 @@ struct camera {
     camera() {
         _pipelineConfig[IDX_MOCAP_ALGO] = 3;
         _pipelineConfig[IDX_SKIP_FRAMES] = 4;
+        _pipelineConfig[IDX_PIPELINE_FLAGS] = 2;
         _pipelineConfig[IDX_PIPELINE_STAGES] = 0;
         _pipelineConfig[IDX_FACE_CONFIDENCE] = 5;
         _pipelineConfig[IDX_OBJECT_CONFIDENCE] = 5;
