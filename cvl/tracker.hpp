@@ -62,7 +62,7 @@ struct Tracker {
             }
             if (t._foundCount > 5 && t._thumbnails.size() > 10 && !t._notified) {
                 if (notify) {
-                    notify_callback(t._thumbnails);
+                    telegram_notify(t._thumbnails);
                     t._notified = true;
                 }
             }

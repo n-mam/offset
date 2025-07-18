@@ -62,7 +62,7 @@ inline void send_telegram_photos(const std::string& bot_token, const std::string
     curl_easy_cleanup(curl);
 }
 
-inline void notify_callback(const std::vector<cv::Mat>& thumbnails) {
+inline void telegram_notify(const std::vector<cv::Mat>& thumbnails) {
     std::vector<std::pair<int, double>> lv_scores;
     for (int i = 0; i < thumbnails.size(); i++) {
         lv_scores.push_back({i, cvl::geometry::computeLaplacianVariance(thumbnails[i])});

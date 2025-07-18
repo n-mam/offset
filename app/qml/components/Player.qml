@@ -20,8 +20,8 @@ Item {
 
     Rectangle {
         id: playerRect
-        width: fullScreen ? flickableGrid.width : defaultWidth
-        height: fullScreen ? flickableGrid.height : defaultHeight
+        width: fullScreen ? flickableGrid.width : (flickableGrid.width - 6) / 2
+        height: fullScreen ? flickableGrid.height : (flickableGrid.height - 12) / 2
         border.width: 1
         color: "transparent"
         border.color: Qt.lighter(borderColor)

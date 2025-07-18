@@ -58,6 +58,7 @@ struct camera {
 
     std::string _name;
     std::string _source;
+    double m_scalef = 1.0;
     int _waitKeyTimeout = 0;
     std::string _resultsFolder;
     int _pipelineConfig[16] = { 0 };

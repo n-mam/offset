@@ -168,12 +168,12 @@ void VideoRenderer::setName(QString name) {
 }
 
 double VideoRenderer::getScaleF(void) {
-    return m_scalef;
+    return m_camera->m_scalef;
 }
 
 void VideoRenderer::setScaleF(double scalef) {
-    if (scalef != m_scalef) {
-        m_scalef = scalef;
+    if (scalef != m_camera->m_scalef) {
+        m_camera->m_scalef = scalef;
         emit scaleFChanged(scalef);
     }
 }

@@ -21,8 +21,7 @@ StackScreen {
             flickableDirection: Flickable.VerticalFlick
             Grid {
                 id: camGrid
-                //defaultWidth 345
-                columns: flickableGrid.width / 345
+                columns: 2
                 spacing: appSpacing
                 //Player{}
             }
@@ -97,8 +96,8 @@ StackScreen {
     function finishCreation(component, config) {
         var object = component.createObject(camGrid, {
             cfg: config,
-            defaultWidth: 345,
-            defaultHeight: 210
+            defaultWidth: (flickableGrid.width - 6) / 2,
+            defaultHeight: (flickableGrid.height - 12) / 2
         });
         object.cameraFullScreenSignal.connect(cameraFullScreen)
         object.cameraDeleteClickedSignal.connect(cameraDeleteClicked)
@@ -133,6 +132,14 @@ StackScreen {
         })
         createPlayerObject({
             "source": 1,
+            "stages": 0
+        })
+        createPlayerObject({
+            "source": 2,
+            "stages": 0
+        })
+        createPlayerObject({
+            "source": 3,
             "stages": 0
         })
     }
