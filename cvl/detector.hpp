@@ -63,9 +63,8 @@ struct DetectionResult {
     }
 };
 
-class Detector {
+struct Detector {
 
-    public:
     Detector() {}
 
     Detector(const std::string& config, const std::string& weight) {
@@ -142,8 +141,8 @@ class Detector {
     std::string _weightFile;
 };
 
-class FaceDetector : public Detector {
-    public:
+struct FaceDetector : public Detector {
+
     FaceDetector() : Detector(
         "FaceDetection/deploy.prototxt",
         "FaceDetection/res10_300x300_ssd_iter_140000.caffemodel") {}
@@ -185,8 +184,8 @@ class FaceDetector : public Detector {
     }
 };
 
-class ObjectDetector : public Detector {
-    public:
+struct ObjectDetector : public Detector {
+
     ObjectDetector(const std::string& target) : Detector(
       "ObjectDetection/MobileNetSSD_deploy.prototxt",
       "ObjectDetection/MobileNetSSD_deploy.caffemodel"){
@@ -240,9 +239,7 @@ class ObjectDetector : public Detector {
     };
 };
 
-class BackgroundSubtractor : public Detector {
-
-    public:
+struct BackgroundSubtractor : public Detector {
 
     BackgroundSubtractor() : Detector() {
         pBackgroundSubtractor[0] = cv::bgsegm::createBackgroundSubtractorMOG();
@@ -254,7 +251,13 @@ class BackgroundSubtractor : public Detector {
 
     virtual Detections Detect(cv::Mat& frame, int *config) override {
         cv::Mat fgMask;
-        pBackgroundSubtractor[config[IDX_MOCAP_ALGO]]->apply(frame, fgMask, -1);
+        cv::Mat gray, blurred;
+        cv::cvtColor(frame, gray, cv::COLOR_BGR2GRAY);
+        cv::GaussianBlur(gray, blurred, cv::Size(5, 5), 0);
+        pBackgroundSubtractor[config[IDX_MOCAP_ALGO]]->apply(blurred, fgMask, 0.05);
+        cv::Mat kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3));
+        cv::morphologyEx(fgMask, fgMask, cv::MORPH_OPEN, kernel);
+        cv::morphologyEx(fgMask, fgMask, cv::MORPH_CLOSE, kernel);  // optional
         std::vector<std::vector<cv::Point>> contours;
         cv::findContours(fgMask, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
         Detections out;
@@ -274,9 +277,7 @@ class BackgroundSubtractor : public Detector {
     cv::Ptr<cv::BackgroundSubtractor> pBackgroundSubtractor[5] = {nullptr};
 };
 
-class FaceRecognizer {
-
-    public:
+struct FaceRecognizer {
 
     FaceRecognizer(const std::string& csv) {
         _id_tag_map.reserve(256);
@@ -307,10 +308,13 @@ class FaceRecognizer {
         return tag;
     }
 
-    auto predict(const cv::Mat& roi, int *config) {
+    auto predict(const cv::Mat& mat, int *config) {
         int id = -1;
         double confidence = 0.0;
-        _model->predict(roi, id, confidence);
+        cv::Mat gray;
+        cv::cvtColor(mat, gray, cv::COLOR_BGR2GRAY);
+        cv::resize(gray, gray, cv::Size(100, 100));
+        _model->predict(gray, id, confidence);
         std::pair<int, double> pair = {-1, 0.0};
         if (confidence <= config[cvl::IDX_FACEREC_CONFIDENCE]) {
             pair = std::make_pair(id, confidence);

@@ -76,6 +76,7 @@ cmake --build . --config Release
 
 Run as admin (elevation needed only for the block level backup tool):
 SET PATH=D:\QT-6.9.0\install\bin;%PATH%
+SET CVL_MODELS_ROOT=E:\offset\cvl\MODELS\ (only for camera app)
 qml\Release\offset.exe
 ```
 

@@ -144,10 +144,7 @@ struct pipeline {
                 }
             }
             if ((stages & 8) && (stages & 1)) {
-                cv::Mat gray;
-                cv::cvtColor(r._mat, gray, cv::COLOR_BGR2GRAY);
-                cv::resize(gray, gray, cv::Size(100, 100));
-                const auto& [id, confidence] = faceRecognition(gray, config);
+                const auto& [id, confidence] = faceRecognition(r._mat, config);
                 if (id > 0 && confidence > 0) {
                     label += _faceRecognizer->getTagFromId(id) + ": " + geometry::toStringWithPrecision<2>(confidence);
                 }
