@@ -47,7 +47,6 @@ struct DetectionResult {
     cv::Mat       _mat;
     cv::Size      _dim;
     std::string   _frId;
-    uint32_t      _frame;
     int           _stages;
 
     DetectionResult(){ _ts = -1; }
@@ -82,7 +81,7 @@ struct Detector {
             LOG << "CUDA backend and target enabled for inference";
         }
         else
-        #endif 
+        #endif
         {
             _network.setPreferableBackend(cv::dnn::Backend::DNN_BACKEND_OPENCV);
             _network.setPreferableTarget(cv::dnn::Target::DNN_TARGET_CPU);

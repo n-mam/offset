@@ -126,7 +126,6 @@ struct pipeline {
 
         cvl::Detector::FilterDetections(detections, frame);
 
-        _count++;
         _save = (bool)resultsPath.length();
         _save_path = resultsPath;
 
@@ -149,10 +148,9 @@ struct pipeline {
                     label += _faceRecognizer->getTagFromId(id) + ": " + geometry::toStringWithPrecision<2>(confidence);
                 }
             }
-            if (_save && ((_count % config[IDX_SKIP_FRAMES])) == 0) {
-                r._frame = _count;
+            if (_save) {
                 r._stages = stages;
-                r._ts = duration_cast<std::chrono::seconds>(
+                r._ts = duration_cast<std::chrono::microseconds>(
                     std::chrono::system_clock::now().time_since_epoch()).count();
                 _detectionsQueue.enqueue(r);
             }
@@ -166,7 +164,6 @@ struct pipeline {
 
     bool _stop = false;
     bool _save = false;
-    uint32_t _count = 0;
     std::thread _thread;
     std::string _save_path;
     std::unique_ptr<cvl::Tracker> _tracker = nullptr;
@@ -192,7 +189,6 @@ struct pipeline {
                 continue;
             }
             cvl::geometry::saveMatAsImage(d._mat, _save_path + "/" +
-                    std::to_string(d._frame) + "_" +
                     std::to_string(d._ts), ".jpg");
         }
     }

@@ -66,6 +66,7 @@ struct camera {
     private:
 
     bool _stop = false;
+    uint32_t _count = 0;
     cvl::queue<cv::Mat> q_in;
     cvl::queue<cv::Mat> q_out;
     TFrameCallback _frame_cbk;
@@ -86,20 +87,23 @@ struct camera {
         }
         cv::Mat f_in;
         while (!_stop) {
+            _count++;
             cap >> f_in;
-            q_in.enqueue(f_in);
-            auto f_out = q_out.dequeue();
-            if (!f_out.empty()) {
-                if (_frame_cbk) {
-                    _frame_cbk(f_out);
-                } else {
-                    cv::imshow("live", f_out);
+            if ((_count % _pipelineConfig[IDX_SKIP_FRAMES]) == 0) {
+                q_in.enqueue(f_in);
+                auto f_out = q_out.dequeue();
+                if (!f_out.empty()) {
+                    if (_frame_cbk) {
+                        _frame_cbk(f_out);
+                    } else {
+                        cv::imshow("live", f_out);
+                    }
                 }
-            }
-            if (_waitKeyTimeout > 0) {
-                if (cv::waitKey(_waitKeyTimeout) >= 0) {
-                    _stop = true;
-                    break;
+                if (_waitKeyTimeout > 0) {
+                    if (cv::waitKey(_waitKeyTimeout) >= 0) {
+                        _stop = true;
+                        break;
+                    }
                 }
             }
         }
