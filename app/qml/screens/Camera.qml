@@ -127,18 +127,22 @@ StackScreen {
     }
     Component.onCompleted: {
         createPlayerObject({
+            "name": "cam-0",
             "source": 0,
             "stages": 0
         })
         createPlayerObject({
+            "name": "cam-1",
             "source": 1,
             "stages": 0
         })
         createPlayerObject({
+            "name": "cam-2",
             "source": 2,
             "stages": 0
         })
         createPlayerObject({
+            "name": "cam-3",
             "source": 3,
             "stages": 0
         })

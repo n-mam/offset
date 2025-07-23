@@ -105,9 +105,9 @@ Item {
             Text {
                 text: vr.name
                 color: textColor
+                anchors.margins: 8
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
-                anchors.margins: 4
             }
         }
     }

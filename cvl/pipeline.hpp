@@ -59,7 +59,7 @@ struct pipeline {
         return filtered_contours;
     }
 
-    inline auto detectMotion(cv::Mat& frame, int *config) {
+    inline auto detectMotion(cv::Mat& frame, uint32_t *config) {
         auto bbs = _backgroundSubtractor->Detect(frame, config);
         for (const auto& bb : bbs) {
             cv::rectangle(frame, bb, cv::Scalar(0, 255, 0), 1);
@@ -84,19 +84,19 @@ struct pipeline {
         cv::drawContours(frame, filtered_contours, -1, cv::Scalar(0, 255, 0), 2);
     }
 
-    inline auto detectFaces(cv::Mat& frame, int *config) {
+    inline auto detectFaces(cv::Mat& frame, uint32_t *config) {
         return _faceDetector->Detect(frame, config);
     }
 
-    inline auto detectObjects(cv::Mat& frame, int *config) {
+    inline auto detectObjects(cv::Mat& frame, uint32_t *config) {
         return _objectDetector->Detect(frame, config);
     }
 
-    inline auto faceRecognition(cv::Mat& frame, int *config) {
+    inline auto faceRecognition(cv::Mat& frame, uint32_t *config) {
         return _faceRecognizer->predict(frame, config);
     }
 
-    inline auto execute(cv::Mat& frame, int *config, const std::string& resultsPath) {
+    inline auto execute(cv::Mat& frame, uint32_t *config, const std::string& resultsPath) {
 
         if (frame.empty()) return;
 
@@ -105,8 +105,7 @@ struct pipeline {
         int stages = config[IDX_PIPELINE_STAGES];
 
         if (flags & 2) {
-            bool notify = flags & 1;
-            _tracker->updateTrackingContexts(frame, notify);
+            _tracker->updateTrackingContexts(frame, flags);
         }
         if (stages & 1) {
             detections = detectFaces(frame, config);

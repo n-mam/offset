@@ -337,14 +337,6 @@ Item {
                         }
                     }
                 }
-                CheckBox {
-                    id: track
-                    checked: vr.flags & 2
-                    text: qsTr("Track")
-                    onCheckedChanged: {
-                        checked ? (vr.flags |= 2) : (vr.flags &= ~2)
-                    }
-                }
             }
             Row {
                 visible: (vr.stages && (vr.stages !== 4)) ? true : false
@@ -438,6 +430,62 @@ Item {
                             color: textColor
                             verticalAlignment: Text.AlignVCenter
                             anchors.verticalCenter: parent.verticalCenter
+                        }
+                    }
+                }
+            }
+            Row {
+                spacing: 4
+                Text {
+                    text: "Tracking:"
+                    width: labelWidth
+                    color: textColor
+                    verticalAlignment: Text.AlignVCenter
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+                CheckBox {
+                    id: trackEnable
+                    checked: vr.flags & 2
+                    text: qsTr("Enable")
+                    onCheckedChanged: {
+                        checked ? (vr.flags |= 2) : (vr.flags &= ~2)
+                    }
+                }
+                Text {
+                    text: "Show: "
+                    width: labelWidth / 3
+                    color: textColor
+                    verticalAlignment: Text.AlignVCenter
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+                Rectangle {
+                    id: trackingGroup
+                    radius: 3
+                    border.width: 1
+                    border.color: borderColor
+                    color: "transparent"
+                    implicitWidth: trackingOptions.width
+                    implicitHeight: rowHeight
+                    Row {
+                        id: trackingOptions
+                        spacing: 4
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        CheckBox {
+                            id: trackingOptionsPath
+                            checked: vr.flags & 4
+                            text: qsTr("Path")
+                            onCheckedChanged: {
+                                checked ? (vr.flags |= 4) : (vr.flags &= ~4)
+                            }
+                        }
+                        CheckBox {
+                            id: trackingOptionsDisplacemnet
+                            checked: vr.flags & 8
+                            text: qsTr("Displacement")
+                            onCheckedChanged: {
+                                checked ? (vr.flags |= 8) : (vr.flags &= ~8)
+                            }
                         }
                     }
                 }

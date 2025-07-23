@@ -91,7 +91,7 @@ struct Detector {
 
     virtual ~Detector() {}
 
-    virtual Detections Detect(cv::Mat& frame, int *config) = 0;
+    virtual Detections Detect(cv::Mat& frame, uint32_t *config) = 0;
 
     // auxiliary detections and filters
 
@@ -148,7 +148,7 @@ struct FaceDetector : public Detector {
 
     ~FaceDetector() {}
 
-    virtual Detections Detect(cv::Mat& frame, int *config) override {
+    virtual Detections Detect(cv::Mat& frame, uint32_t *config) override {
         Detections out;
         cv::Mat inputBlob = cv::dnn::blobFromImage(
                         frame,
@@ -191,7 +191,7 @@ struct ObjectDetector : public Detector {
       _target = target;
     }
 
-    virtual Detections Detect(cv::Mat& frame, int *config) override {
+    virtual Detections Detect(cv::Mat& frame, uint32_t *config) override {
         Detections out;
         cv::Mat inputBlob = cv::dnn::blobFromImage(
                         frame,
@@ -248,7 +248,7 @@ struct BackgroundSubtractor : public Detector {
         pBackgroundSubtractor[4] = cv::bgsegm::createBackgroundSubtractorLSBP();
     }
 
-    virtual Detections Detect(cv::Mat& frame, int *config) override {
+    virtual Detections Detect(cv::Mat& frame, uint32_t *config) override {
         cv::Mat fgMask;
         cv::Mat gray, blurred;
         cv::cvtColor(frame, gray, cv::COLOR_BGR2GRAY);
@@ -307,7 +307,7 @@ struct FaceRecognizer {
         return tag;
     }
 
-    auto predict(const cv::Mat& mat, int *config) {
+    auto predict(const cv::Mat& mat, uint32_t *config) {
         int id = -1;
         double confidence = 0.0;
         cv::Mat gray;

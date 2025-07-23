@@ -41,7 +41,7 @@ struct Tracker {
         return _trackingContexts.size();
     }
 
-    auto updateTrackingContexts(cv::Mat& frame, bool notify) {
+    auto updateTrackingContexts(cv::Mat& frame, int flags) {
         for (int i = _trackingContexts.size() - 1; i >= 0; i--) {
             auto& t = _trackingContexts[i];
             cv::Rect bb;
@@ -61,11 +61,12 @@ struct Tracker {
                 continue;
             }
             if (t._foundCount > 5 && t._thumbnails.size() > 10 && !t._notified) {
-                if (notify) {
+                if (flags & 1) {
                     telegram_notify(t._thumbnails);
                     t._notified = true;
                 }
             }
+            RenderDisplacementAndPaths(t, frame, flags);
         }
     }
 
@@ -95,22 +96,22 @@ struct Tracker {
         std::cout << "++ Tracker with id: " << t.id << std::endl;
     }
 
-    void RenderDisplacementAndPaths(cv::Mat& m, bool isTest = true) {
-        for (auto& t : _trackingContexts) {
+    void RenderDisplacementAndPaths(const TrackingContext& t, cv::Mat& mat, int flags) {
             // Displacement
-            auto first = cvl::geometry::getRectCenter(t._trail.front());
-            auto last = cvl::geometry::getRectCenter(t._trail.back());
-            cv::line(m, first, last, cv::Scalar(0, 0, 255), 1);
-            // path
-            for (size_t i = 1; i < t._trail.size() - 1; ++i)
-            {
-                auto&& f = cvl::geometry::getRectCenter(t._trail[i]);
-                auto&& b = cvl::geometry::getRectCenter(t._trail[i-1]);
-                cv::line(m, f, b, cv::Scalar(0, 255, 0), 1);
+            if (flags & 8) {
+                auto first = cvl::geometry::getRectCenter(t._trail.front());
+                auto last = cvl::geometry::getRectCenter(t._trail.back());
+                cv::line(mat, first, last, cv::Scalar(0, 255, 0), 1);
             }
-            auto& bb = t._trail.back();
-            cv::rectangle(m, bb, cv::Scalar(0, 0, 255), 1, 1);
-        }
+            // path
+            if (flags & 4) {
+                for (size_t i = 1; i < t._trail.size() - 1; ++i) {
+                    auto&& f = cvl::geometry::getRectCenter(t._trail[i]);
+                    auto&& b = cvl::geometry::getRectCenter(t._trail[i-1]);
+                    cv::line(mat, f, b, cv::Scalar(0, 0, 255), 1);
+                }
+            }
+            cv::rectangle(mat, t._trail.back(), cv::Scalar(0, 0, 255), 1, 1);
     }
 
     protected:
