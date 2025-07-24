@@ -60,13 +60,16 @@ struct Tracker {
                 std::cout << "-- Tracker with id: " << id << " (frozen)" << std::endl;
                 continue;
             }
-            if (t._foundCount > 5 && t._thumbnails.size() > 10 && !t._notified) {
-                if (flags & 1) {
-                    telegram_notify(t._thumbnails);
+            if (t._foundCount > 10 && t._thumbnails.size() > 10) {
+                if ((flags & 1) && !t._notified) {
                     t._notified = true;
+                    telegram_notify(t._thumbnails);
                 }
             }
             RenderDisplacementAndPaths(t, frame, flags);
+            if (t._thumbnails.size() > 20) t._thumbnails.clear();
+            // keep the last element in trail
+            if (t._trail.size() > 20) t._trail.erase(t._trail.begin(), t._trail.end() - 1);
         }
     }
 

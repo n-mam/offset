@@ -289,10 +289,10 @@ Item {
                     id: detectionGroup
                     radius: 3
                     border.width: 1
-                    border.color: borderColor
                     color: "transparent"
-                    implicitWidth: detectionOptions.width + 36
+                    border.color: borderColor
                     implicitHeight: rowHeight
+                    implicitWidth: detectionOptions.width
                     Row {
                         id: detectionOptions
                         spacing: 4
@@ -443,21 +443,6 @@ Item {
                     verticalAlignment: Text.AlignVCenter
                     anchors.verticalCenter: parent.verticalCenter
                 }
-                CheckBox {
-                    id: trackEnable
-                    checked: vr.flags & 2
-                    text: qsTr("Enable")
-                    onCheckedChanged: {
-                        checked ? (vr.flags |= 2) : (vr.flags &= ~2)
-                    }
-                }
-                Text {
-                    text: "Show: "
-                    width: labelWidth / 3
-                    color: textColor
-                    verticalAlignment: Text.AlignVCenter
-                    anchors.verticalCenter: parent.verticalCenter
-                }
                 Rectangle {
                     id: trackingGroup
                     radius: 3
@@ -471,6 +456,14 @@ Item {
                         spacing: 4
                         anchors.verticalCenter: parent.verticalCenter
                         anchors.horizontalCenter: parent.horizontalCenter
+                        CheckBox {
+                            id: trackEnable
+                            checked: vr.flags & 2
+                            text: qsTr("Enable")
+                            onCheckedChanged: {
+                                checked ? (vr.flags |= 2) : (vr.flags &= ~2)
+                            }
+                        }
                         CheckBox {
                             id: trackingOptionsPath
                             checked: vr.flags & 4

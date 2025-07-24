@@ -14,21 +14,43 @@ struct queue {
     queue(){}
     ~queue(){}
 
-    auto enqueue(T& frame) {
+    auto enqueue(const T& frame) {
         std::lock_guard<std::mutex> lg(_mux);
-        _queue[_write_index % _queue.max_size()] = frame;
-        _write_index = (_write_index + 1) % _queue.max_size();
+        _queue[_write_index % N] = frame;
+        _write_index = (_write_index + 1) % N;
     }
 
     auto dequeue() {
         std::lock_guard<std::mutex> lg(_mux);
-        auto& e = _queue[_read_index % _queue.max_size()];
+        auto& e = _queue[_read_index % N];
         if (!e.empty()) {
-            _read_index = (_read_index + 1) % _queue.max_size();
+            _read_index = (_read_index + 1) % N;
         }
         auto clone = e.clone();
         e = T();
         return clone;
+    }
+
+    auto clear() {
+        _read_index = 0;
+        _write_index = 0;
+        std::ranges::fill(_queue, T());
+    }
+
+    auto size() const {
+        return N;
+    }
+
+    const T& latest() const {
+        return _queue[_write_index];
+    }
+
+    const T& oldest() const {
+        return _queue[_read_index];
+    }
+
+    const T& operator [](int i) const {
+        return _queue[i];
     }
 
     private:
