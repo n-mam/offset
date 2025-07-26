@@ -27,17 +27,6 @@ using Detections = std::vector<cv::Rect2d>;
 
 constexpr double marker_length_cm = 5.3;
 
-constexpr int IDX_MOCAP_ALGO = 0;
-constexpr int IDX_SKIP_FRAMES = 1;
-constexpr int IDX_PIPELINE_FLAGS = 2;
-constexpr int IDX_PIPELINE_STAGES = 3;
-constexpr int IDX_FACE_CONFIDENCE = 4;
-constexpr int IDX_OBJECT_CONFIDENCE = 5;
-constexpr int IDX_FACEREC_CONFIDENCE = 6;
-constexpr int IDX_MOCAP_EXCLUDE_AREA = 7;
-constexpr int IDX_BOUNDINGBOX_THICKNESS = 8;
-constexpr int IDX_BOUNDINGBOX_INCREMENT = 9;
-
 inline auto getModelRootDir() {
     return std::getenv("CVL_MODELS_ROOT");
 }
@@ -91,7 +80,7 @@ struct Detector {
 
     virtual ~Detector() {}
 
-    virtual Detections Detect(cv::Mat& frame, uint32_t *config) = 0;
+    virtual Detections Detect(cv::Mat& frame, spcc cc) = 0;
 
     // auxiliary detections and filters
 
@@ -148,7 +137,7 @@ struct FaceDetector : public Detector {
 
     ~FaceDetector() {}
 
-    virtual Detections Detect(cv::Mat& frame, uint32_t *config) override {
+    virtual Detections Detect(cv::Mat& frame, spcc cc) override {
         Detections out;
         cv::Mat inputBlob = cv::dnn::blobFromImage(
                         frame,
@@ -163,7 +152,7 @@ struct FaceDetector : public Detector {
         cv::Mat detectionMat(detection.size[2], detection.size[3], CV_32F, detection.ptr<float>());
         for (int i = 0; i < detectionMat.rows; ++i) {
             float _confidence = detectionMat.at<float>(i, 2);
-            if (_confidence > ((double)config[IDX_FACE_CONFIDENCE] / 10)) {
+            if (_confidence > (cc->_faceConfidence / 10)) {
                 int x1 = static_cast<int>(detectionMat.at<float>(i, 3) * frame.cols);
                 int y1 = static_cast<int>(detectionMat.at<float>(i, 4) * frame.rows);
                 int x2 = static_cast<int>(detectionMat.at<float>(i, 5) * frame.cols);
@@ -173,9 +162,9 @@ struct FaceDetector : public Detector {
 
                 if (cvl::geometry::isRectInsideMat(rect, frame)) {
                     out.emplace_back(
-                        config[cvl::IDX_BOUNDINGBOX_INCREMENT] != 0 ?
+                        cc->_bbIncrement != 0 ?
                             cvl::geometry::resizeRectByWidth(rect,
-                                config[cvl::IDX_BOUNDINGBOX_INCREMENT]) : rect);
+                                cc->_bbIncrement) : rect);
                 }
             }
         }
@@ -191,7 +180,7 @@ struct ObjectDetector : public Detector {
       _target = target;
     }
 
-    virtual Detections Detect(cv::Mat& frame, uint32_t *config) override {
+    virtual Detections Detect(cv::Mat& frame, spcc cc) override {
         Detections out;
         cv::Mat inputBlob = cv::dnn::blobFromImage(
                         frame,
@@ -206,7 +195,7 @@ struct ObjectDetector : public Detector {
         cv::Mat detectionMat(detection.size[2], detection.size[3], CV_32F, detection.ptr<float>());
         for (int i = 0; i < detectionMat.rows; ++i) {
             float _confidence = detectionMat.at<float>(i, 2);
-            if (_confidence > ((double)config[IDX_OBJECT_CONFIDENCE] / 10)) {
+            if (_confidence > (cc->_objectConfidence / 10)) {
                 int idx, x1, y1, x2, y2;
                 idx = static_cast<int>(detectionMat.at<float>(i, 1));
                 if (1) {//_objectClass[idx] == _target)
@@ -218,9 +207,9 @@ struct ObjectDetector : public Detector {
                     auto rect = cv::Rect2d(x1, y1, x2 - x1, y2 - y1);
                     if (cvl::geometry::isRectInsideMat(rect, frame)) {
                         out.emplace_back(
-                            config[cvl::IDX_BOUNDINGBOX_INCREMENT] != 0 ?
+                            cc->_bbIncrement != 0 ?
                                 cvl::geometry::resizeRectByWidth(rect,
-                                    config[cvl::IDX_BOUNDINGBOX_INCREMENT]) : rect);
+                                    cc->_bbIncrement) : rect);
                     }
                 }
             }
@@ -248,19 +237,19 @@ struct BackgroundSubtractor : public Detector {
         pBackgroundSubtractor[4] = cv::bgsegm::createBackgroundSubtractorLSBP();
     }
 
-    virtual Detections Detect(cv::Mat& frame, uint32_t *config) override {
+    virtual Detections Detect(cv::Mat& frame, spcc cc) override {
         cv::Mat fgMask;
         cv::Mat gray, blurred;
         cv::cvtColor(frame, gray, cv::COLOR_BGR2GRAY);
         cv::GaussianBlur(gray, blurred, cv::Size(5, 5), 0);
-        pBackgroundSubtractor[config[IDX_MOCAP_ALGO]]->apply(blurred, fgMask, 0.05);
+        pBackgroundSubtractor[cc->_mocapAlgo]->apply(blurred, fgMask, 0.05);
         cv::Mat kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3));
         cv::morphologyEx(fgMask, fgMask, cv::MORPH_OPEN, kernel);
         cv::morphologyEx(fgMask, fgMask, cv::MORPH_CLOSE, kernel);  // optional
         std::vector<std::vector<cv::Point>> contours;
         cv::findContours(fgMask, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
         Detections out;
-        double areaThreshold = (double)config[IDX_MOCAP_EXCLUDE_AREA];
+        double areaThreshold = cc->_mocapExcludeArea;
         for (size_t i = 0; i < contours.size(); i++) {
             if (cv::contourArea(contours[i]) < areaThreshold) {
                 continue;
@@ -307,7 +296,7 @@ struct FaceRecognizer {
         return tag;
     }
 
-    auto predict(const cv::Mat& mat, uint32_t *config) {
+    auto predict(const cv::Mat& mat, spcc cc) {
         int id = -1;
         double confidence = 0.0;
         cv::Mat gray;
@@ -315,7 +304,7 @@ struct FaceRecognizer {
         cv::resize(gray, gray, cv::Size(100, 100));
         _model->predict(gray, id, confidence);
         std::pair<int, double> pair = {-1, 0.0};
-        if (confidence <= config[cvl::IDX_FACEREC_CONFIDENCE]) {
+        if (confidence <= cc->_facerecConfidence) {
             pair = std::make_pair(id, confidence);
         }
         return pair;

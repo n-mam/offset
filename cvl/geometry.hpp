@@ -7,7 +7,26 @@
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
-namespace cvl::geometry {
+namespace cvl {
+
+struct cam_config {
+    int _flags;
+    int _stages;
+    int _mocapAlgo;
+    int _skipFrames;
+    int _bbIncrement;
+    int _bbThickness;
+    std::string _chatids;
+    std::string _botToken;
+    double _faceConfidence;
+    int _facerecConfidence;
+    double _objectConfidence;
+    double _mocapExcludeArea;
+};
+
+using spcc = std::shared_ptr<cvl::cam_config>;
+
+namespace geometry {
 
 // finds a cosine of angle between vectors
 // from pt0->pt1 and from pt0->pt2
@@ -29,12 +48,24 @@ inline bool isRectInsideRect(const cv::Rect2d& r1, const cv::Rect2d& r2) {
         ((static_cast<cv::Rect>(r1) & static_cast<cv::Rect>(r2))).area());
 }
 
+inline double computeIOU(const cv::Rect2d& r1, const cv::Rect2d& r2) {
+    double intersectionArea = (r1 & r2).area();
+    double unionArea = r1.area() + r2.area() - intersectionArea;
+    if (unionArea <= 0.0) return 0.0;
+    return intersectionArea / unionArea;
+}
+
+inline bool isSameObject(const cv::Rect2d& trackedBox, const cv::Rect2d& detectedBox, double iouThreshold = 0.5) {
+    double iou = computeIOU(trackedBox, detectedBox);
+    return iou >= iouThreshold;
+}
+
 inline bool doesRectOverlapMat(const cv::Rect2d& r, const cv::Mat& m) {
     return ((static_cast<cv::Rect>(r) & cv::Rect(0, 0, m.cols, m.rows)).area() > 0);
 }
 
 inline bool doesRectOverlapRect(const cv::Rect2d& r1, const cv::Rect2d& r2) {
-    return (((static_cast<cv::Rect>(r1) & static_cast<cv::Rect>(r2))).area() > 0);
+    return ((r1 & r2).area() > 0);
 }
 
 inline cv::Point getRectCenter(const cv::Rect2d& r) {
@@ -103,5 +134,5 @@ inline auto computeLaplacianVariance(const cv::Mat& img) {
 }
 
 }
-
+}
 #endif

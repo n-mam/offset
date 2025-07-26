@@ -17,6 +17,7 @@ namespace cvl {
 
 struct TrackingContext {
     size_t id;
+    bool _tracked;
     int _lostCount = 0;
     int _foundCount = 0;
     bool _notified = false;
@@ -41,19 +42,21 @@ struct Tracker {
         return _trackingContexts.size();
     }
 
-    auto updateTrackingContexts(cv::Mat& frame, int flags) {
+    auto updateTrackingContexts(cv::Mat& frame, spcc cc) {
         for (int i = _trackingContexts.size() - 1; i >= 0; i--) {
             auto& t = _trackingContexts[i];
             cv::Rect bb;
+            t._tracked = false;
             bool rc = t.cvTracker->update(frame, bb);
             if (rc && cvl::geometry::isRectInsideMat(bb, frame)) {
-                t._trail.push_back(bb);
                 t._foundCount++;
+                t._tracked = true;
+                t._trail.push_back(bb);
             } else {
                 t._lostCount++;
                 std::cout << "Tracker " << t.id << " _lostCount: " << t._lostCount << std::endl;
             }
-            if (t._lostCount > 10) {
+            if (t._lostCount >= 30) {
                 auto id = t.id;
                 t.cvTracker.release();
                 _trackingContexts.erase(_trackingContexts.begin() + i);
@@ -61,24 +64,26 @@ struct Tracker {
                 continue;
             }
             if (t._foundCount > 10 && t._thumbnails.size() > 10) {
-                if ((flags & 1) && !t._notified) {
+                if ((cc->_flags & 1) && !t._notified) {
                     t._notified = true;
-                    telegram_notify(t._thumbnails);
+                    telegram_notify(t._thumbnails, cc);
                 }
             }
-            RenderDisplacementAndPaths(t, frame, flags);
-            if (t._thumbnails.size() > 20) t._thumbnails.clear();
-            // keep the last element in trail
-            if (t._trail.size() > 20) t._trail.erase(t._trail.begin(), t._trail.end() - 1);
+            RenderDisplacementAndPaths(t, frame, cc->_flags);
+            if (t._thumbnails.size() > 20)
+                t._thumbnails.clear();
+            if (t._trail.size() > 20)
+                t._trail.erase(t._trail.begin(), t._trail.end() - 1);
         }
     }
 
     auto matchDetectionWithTrackingContext(const cv::Rect2d& roi, cv::Mat& mat) {
         for (auto& t : _trackingContexts) {
-            auto& last = t._trail.back();
-            if (cvl::geometry::doesRectOverlapRect(roi, last)) {
-                t._thumbnails.push_back(mat(roi));
-                return true;
+            if (t._tracked) {
+                if (cvl::geometry::isSameObject(roi, t._trail.back())) {
+                    t._thumbnails.push_back(mat(roi));
+                    return true;
+                }
             }
         }
         return false;
@@ -94,7 +99,7 @@ struct Tracker {
         t.cvTracker = cv::TrackerCSRT::create(params);
         t._trail.push_back(roi);
         t.cvTracker->init(mat, roi);
-        cv::rectangle(mat, roi, cv::Scalar(0, 0, 0 ), 2, 1);  // white
+        cv::rectangle(mat, roi, cv::Scalar(0, 0, 0 ), 2, 1);
         _trackingContexts.push_back(t);
         std::cout << "++ Tracker with id: " << t.id << std::endl;
     }

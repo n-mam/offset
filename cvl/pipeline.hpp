@@ -5,9 +5,9 @@
 #include <chrono>
 #include <fstream>
 
+#include <geometry.hpp>
 #include <detector.hpp>
 #include <tracker.hpp>
-#include <geometry.hpp>
 
 #include <opencv2/core.hpp>
 
@@ -59,8 +59,8 @@ struct pipeline {
         return filtered_contours;
     }
 
-    inline auto detectMotion(cv::Mat& frame, uint32_t *config) {
-        auto bbs = _backgroundSubtractor->Detect(frame, config);
+    inline auto detectMotion(cv::Mat& frame, spcc cc) {
+        auto bbs = _backgroundSubtractor->Detect(frame, cc);
         for (const auto& bb : bbs) {
             cv::rectangle(frame, bb, cv::Scalar(0, 255, 0), 1);
             cv::putText(frame, std::to_string((int)(bb.width * bb.height)),
@@ -84,37 +84,36 @@ struct pipeline {
         cv::drawContours(frame, filtered_contours, -1, cv::Scalar(0, 255, 0), 2);
     }
 
-    inline auto detectFaces(cv::Mat& frame, uint32_t *config) {
-        return _faceDetector->Detect(frame, config);
+    inline auto detectFaces(cv::Mat& frame, spcc cc) {
+        return _faceDetector->Detect(frame, cc);
     }
 
-    inline auto detectObjects(cv::Mat& frame, uint32_t *config) {
-        return _objectDetector->Detect(frame, config);
+    inline auto detectObjects(cv::Mat& frame, spcc cc) {
+        return _objectDetector->Detect(frame, cc);
     }
 
-    inline auto faceRecognition(cv::Mat& frame, uint32_t *config) {
-        return _faceRecognizer->predict(frame, config);
+    inline auto faceRecognition(cv::Mat& frame, spcc cc) {
+        return _faceRecognizer->predict(frame, cc);
     }
 
-    inline auto execute(cv::Mat& frame, uint32_t *config, const std::string& resultsPath) {
+    inline auto execute(cv::Mat& frame, spcc cc, const std::string& resultsPath) {
 
         if (frame.empty()) return;
 
         Detections detections;
-        int flags = config[IDX_PIPELINE_FLAGS];
-        int stages = config[IDX_PIPELINE_STAGES];
+        int stages = cc->_stages;
 
-        if (flags & 2) {
-            _tracker->updateTrackingContexts(frame, flags);
+        if (cc->_flags & 2) {
+            _tracker->updateTrackingContexts(frame, cc);
         }
         if (stages & 1) {
-            detections = detectFaces(frame, config);
+            detections = detectFaces(frame, cc);
         }
         if (stages & 2) {
-            detections = detectObjects(frame, config);
+            detections = detectObjects(frame, cc);
         }
         if (stages & 4) {
-            detections = detectMotion(frame, config);
+            detections = detectMotion(frame, cc);
         }
         if (stages & 8) {
 
@@ -133,7 +132,7 @@ struct pipeline {
             cvl::DetectionResult r;
             const auto& roi = detections[i];
             r._mat = frame(roi).clone();
-            if (flags & 2) {
+            if (cc->_flags & 2) {
                 // match this detection with all tracking contexts
                 if (_tracker->matchDetectionWithTrackingContext(roi, frame)) {
                     label += "T ";
@@ -142,7 +141,7 @@ struct pipeline {
                 }
             }
             if ((stages & 8) && (stages & 1)) {
-                const auto& [id, confidence] = faceRecognition(r._mat, config);
+                const auto& [id, confidence] = faceRecognition(r._mat, cc);
                 if (id > 0 && confidence > 0) {
                     label += _faceRecognizer->getTagFromId(id) + ": " + geometry::toStringWithPrecision<2>(confidence);
                 }
@@ -153,9 +152,9 @@ struct pipeline {
                     std::chrono::system_clock::now().time_since_epoch()).count();
                 _detectionsQueue.enqueue(r);
             }
-            cv::rectangle(frame, roi, cv::Scalar(0, 255, 0), config[IDX_BOUNDINGBOX_THICKNESS]);
+            cv::rectangle(frame, roi, cv::Scalar(0, 255, 0), cc->_bbThickness);
             cv::putText(frame, label, cv::Point((int)roi.x, (int)(roi.y - 5)), cv::FONT_HERSHEY_SIMPLEX,
-                    0.5, cv::Scalar(0, 0, 255), config[IDX_BOUNDINGBOX_THICKNESS]);
+                    0.5, cv::Scalar(0, 0, 255), cc->_bbThickness);
         }
     }
 

@@ -120,8 +120,6 @@ class VideoRenderer : public QQuickItem {
     private:
 
     QTimer m_timer;
-    QString chatids;
-    QString botToken;
     QVariantMap m_cfg;
     cvl::SPCamera m_camera;
     QSGTexture *m_texture = nullptr;

@@ -62,27 +62,33 @@ inline void send_telegram_photos(const std::string& bot_token, const std::string
     curl_easy_cleanup(curl);
 }
 
-inline void telegram_notify(const std::vector<cv::Mat>& thumbnails) {
+inline void telegram_notify(const std::vector<cv::Mat>& thumbnails, spcc cc) {
     std::vector<std::pair<int, double>> lv_scores;
     for (int i = 0; i < thumbnails.size(); i++) {
         lv_scores.push_back({i, cvl::geometry::computeLaplacianVariance(thumbnails[i])});
     }
     std::ranges::sort(lv_scores, [](auto& e1, auto& e2){ return e1.second < e2.second; });
-    for (const auto& e : lv_scores) {
-        std::cout << e.first << ": " << e.second << std::endl;
-    }
+    // for (const auto& e : lv_scores) {
+    //     std::cout << e.first << ": " << e.second << std::endl;
+    // }
     std::vector<std::string> paths;
     int idx = lv_scores[lv_scores.size() - 1].first;
     std::string path = "./thumb_" + std::to_string(idx) + ".jpg";
     cv::imwrite(path, thumbnails[idx]);
     paths.push_back(path);
-    std::thread([paths]() {
-        std::string message = "Face Detection Alert";
-        std::vector<std::string> chat_ids = {"1799980801", "7017371705"};
-        std::string bot_token = "xxxx";
-        for (const auto& chat_id : chat_ids) {
-            send_telegram_message(bot_token, chat_id, message);
-            send_telegram_photos(bot_token, chat_id, paths);
+    std::string chatids = cc->_chatids;
+    std::string bot_token = cc->_botToken;
+    std::thread([=]() {
+        std::string word;
+        std::istringstream iss(chatids);
+        std::vector<std::string> chat_ids;
+        while (iss >> word) chat_ids.push_back(word);
+        std::string message  = "Face Detection Alert";
+        if (bot_token.size() && chat_ids.size()) {
+            for (const auto& chat_id : chat_ids) {
+                //send_telegram_message(bot_token, chat_id, message);
+                send_telegram_photos(bot_token, chat_id, paths);
+            }
         }
     }).detach();
 }
