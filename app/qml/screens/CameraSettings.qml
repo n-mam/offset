@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
 import "qrc:/components"
+import QtQuick.Dialogs
 
 Item {
 
@@ -56,9 +57,25 @@ Item {
                     implicitHeight: rowHeight - 10
                     placeholderText: qsTr("url")
                     text: vr.source
+                    anchors.verticalCenter: parent.verticalCenter
                     verticalAlignment: TextInput.AlignVCenter
                     onEditingFinished: {
                         vr.source = sourceTextId.text
+                    }
+                }
+                Button {
+                    text: "File"
+                    onClicked: fileDialog.open()
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+                FileDialog {
+                    id: fileDialog
+                    title: "Select a File"
+                    nameFilters: ["All files (*)"]
+                    onAccepted: {
+                        var path = fileDialog.selectedFiles.toString();
+                        path = path.replace(/^(file:\/{3})|(qrc:\/{2})|(http:\/{2})/,"");
+                        vr.source = path
                     }
                 }
             }

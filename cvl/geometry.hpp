@@ -16,12 +16,16 @@ struct cam_config {
     int _skipFrames;
     int _bbIncrement;
     int _bbThickness;
+    std::string _name;
+    std::string _source;
+    int _waitKeyTimeout;
     std::string _chatids;
     std::string _botToken;
     double _faceConfidence;
     int _facerecConfidence;
     double _objectConfidence;
     double _mocapExcludeArea;
+    std::string _resultsFolder;
 };
 
 using spcc = std::shared_ptr<cvl::cam_config>;

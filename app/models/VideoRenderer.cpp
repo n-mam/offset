@@ -130,39 +130,39 @@ void VideoRenderer::createStatic() {
 }
 
 QString VideoRenderer::getSource(void) {
-    return QString::fromStdString(m_camera->_source);
+    return QString::fromStdString(m_camera->cc->_source);
 }
 
 void VideoRenderer::setSource(QString source) {
-    if (source.toStdString() != m_camera->_source) {
-        m_camera->_source = source.toStdString();
+    if (source.toStdString() != m_camera->cc->_source) {
+        m_camera->cc->_source = source.toStdString();
         emit sourceChanged(source);
     }
 }
 
 int VideoRenderer::getWaitKeyTimeout(void) {
     if (m_camera) {
-        return m_camera->_waitKeyTimeout;
+        return m_camera->cc->_waitKeyTimeout;
     }
     return 18;
 }
 
 void VideoRenderer::setWaitKeyTimeout(int timeout) {
     if (m_camera) {
-        if (timeout != m_camera->_waitKeyTimeout) {
-            m_camera->_waitKeyTimeout = timeout;
+        if (timeout != m_camera->cc->_waitKeyTimeout) {
+            m_camera->cc->_waitKeyTimeout = timeout;
             emit waitKeyTimeoutChanged(timeout);
         }
     }
 }
 
 QString VideoRenderer::getName(void) {
-    return QString::fromStdString(m_camera->_name);
+    return QString::fromStdString(m_camera->cc->_name);
 }
 
 void VideoRenderer::setName(QString name) {
-    if (name.toStdString() != m_camera->_name) {
-        m_camera->_name = name.toStdString();
+    if (name.toStdString() != m_camera->cc->_name) {
+        m_camera->cc->_name = name.toStdString();
         emit nameChanged(name);
     }
 }
@@ -277,14 +277,14 @@ QVariantMap VideoRenderer::getCfg() {
 }
 
 QString VideoRenderer::getResultsFolder() {
-    return QString::fromStdString(m_camera->_resultsFolder);
+    return QString::fromStdString(m_camera->cc->_resultsFolder);
 }
 
 void VideoRenderer::setResultsFolder(QString path) {
     if (path != getResultsFolder()) {
         QDir dir(path);
         if (dir.exists()) {
-            m_camera->_resultsFolder = path.toStdString();
+            m_camera->cc->_resultsFolder = path.toStdString();
             emit resultsFolderChanged(path);
         }
     }

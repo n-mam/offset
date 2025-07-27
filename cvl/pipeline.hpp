@@ -96,7 +96,7 @@ struct pipeline {
         return _faceRecognizer->predict(frame, cc);
     }
 
-    inline auto execute(cv::Mat& frame, spcc cc, const std::string& resultsPath) {
+    inline auto execute(cv::Mat& frame, spcc cc) {
 
         if (frame.empty()) return;
 
@@ -124,8 +124,8 @@ struct pipeline {
 
         cvl::Detector::FilterDetections(detections, frame);
 
-        _save = (bool)resultsPath.length();
-        _save_path = resultsPath;
+        _save_path = cc->_resultsFolder;
+        _save = (bool)cc->_resultsFolder.length();
 
         for (auto i = 0; i < detections.size(); i++) {
             std::string label;

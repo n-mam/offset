@@ -22,12 +22,12 @@ struct camera {
     camera() {
         cc = std::make_shared<cvl::cam_config>();
         cc->_flags = 0;
+        cc->_stages = 0;
         cc->_mocapAlgo = 3;
         cc->_skipFrames = 2;
         cc->_bbIncrement = 0;
         cc->_bbThickness = 1;
         cc->_faceConfidence = 5;
-        cc->_stages = 0;
         cc->_objectConfidence = 5;
         cc->_facerecConfidence = 60;
         cc->_mocapExcludeArea = 2500;
@@ -60,12 +60,7 @@ struct camera {
         q_out.clear();
     }
 
-    std::string _name;
-    std::string _source;
     double m_scalef = 1.0;
-    int _waitKeyTimeout = 0;
-    std::string _resultsFolder;
-    uint32_t _pipelineConfig[16] = { 0 };
     std::shared_ptr<cvl::cam_config> cc;
 
     private:
@@ -81,10 +76,10 @@ struct camera {
     void queue_frames(void) {
         cv::VideoCapture cap;
         cap.set(cv::CAP_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_ANY);
-        if (_source.length() == 1 && isdigit(_source[0])) {
-            cap.open(std::stoi(_source), cv::CAP_ANY);
+        if (cc->_source.length() == 1 && isdigit(cc->_source[0])) {
+            cap.open(std::stoi(cc->_source), cv::CAP_ANY);
         } else {
-            cap.open(_source, cv::CAP_ANY);
+            cap.open(cc->_source, cv::CAP_ANY);
         }
         if (!cap.isOpened()) {
             ERR << "queue_frames error: unable to open camera";
@@ -104,8 +99,8 @@ struct camera {
                         cv::imshow("live", f_out);
                     }
                 }
-                if (_waitKeyTimeout > 0) {
-                    if (cv::waitKey(_waitKeyTimeout) >= 0) {
+                if (cc->_waitKeyTimeout > 0) {
+                    if (cv::waitKey(cc->_waitKeyTimeout) >= 0) {
                         _stop = true;
                         break;
                     }
@@ -124,7 +119,7 @@ struct camera {
                 continue;
             }
             if (cc->_stages) {
-                pipeLine.execute(frame, cc, _resultsFolder);
+                pipeLine.execute(frame, cc);
             }
             q_out.enqueue(frame);
         }
@@ -138,7 +133,7 @@ inline auto entry(std::vector<std::string> arguments) {
         source = arguments[1];
     }
     auto cam = std::make_unique<cvl::camera>();
-    cam->_source = source;
+    cam->cc->_source = source;
     cam->cc->_stages = 16;
     cam->start(nullptr);
     getchar();
