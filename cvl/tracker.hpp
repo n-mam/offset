@@ -59,6 +59,10 @@ struct Tracker {
             if (t._lostCount >= 30) {
                 auto id = t.id;
                 t.cvTracker.release();
+                if ((cc->_flags & 1) && !t._notified) {
+                    t._notified = true;
+                    telegram_notify(t._thumbnails, cc);
+                }
                 _trackingContexts.erase(_trackingContexts.begin() + i);
                 std::cout << "-- Tracker with id: " << id << " (frozen)" << std::endl;
                 continue;

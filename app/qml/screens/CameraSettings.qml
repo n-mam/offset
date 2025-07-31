@@ -1,8 +1,6 @@
 import QtQuick
-import QtQuick.Layouts
-import QtQuick.Controls
-import "qrc:/components"
 import QtQuick.Dialogs
+import QtQuick.Controls
 
 Item {
 
@@ -13,10 +11,10 @@ Item {
     Flickable {
         clip: true
         interactive: false
-        anchors.fill: parent
         anchors.margins: 15
-        contentHeight: parent.height
+        anchors.fill: parent
         contentWidth: parent.width
+        contentHeight: parent.height
         Column {
             spacing: 15
             anchors.fill: parent
@@ -54,17 +52,17 @@ Item {
                 TextField {
                     id: sourceTextId
                     width: 350
-                    implicitHeight: rowHeight - 10
-                    placeholderText: qsTr("url")
                     text: vr.source
-                    anchors.verticalCenter: parent.verticalCenter
+                    placeholderText: qsTr("url")
+                    implicitHeight: rowHeight - 10
                     verticalAlignment: TextInput.AlignVCenter
+                    anchors.verticalCenter: parent.verticalCenter
                     onEditingFinished: {
                         vr.source = sourceTextId.text
                     }
                 }
                 Button {
-                    text: "File"
+                    text: "..."
                     onClicked: fileDialog.open()
                     anchors.verticalCenter: parent.verticalCenter
                 }
@@ -73,7 +71,7 @@ Item {
                     title: "Select a File"
                     nameFilters: ["All files (*)"]
                     onAccepted: {
-                        var path = fileDialog.selectedFiles.toString();
+                        var path = selectedFile.toString();
                         path = path.replace(/^(file:\/{3})|(qrc:\/{2})|(http:\/{2})/,"");
                         vr.source = path
                     }
@@ -198,13 +196,18 @@ Item {
                         id: resultsFolder
                         width: 300
                         height: rowHeight - 10
-                        placeholderText: qsTr("folder")
                         text: vr.resultsFolder
-                        anchors.verticalCenter: parent.verticalCenter
+                        placeholderText: qsTr("folder")
                         verticalAlignment: TextInput.AlignVCenter
+                        anchors.verticalCenter: parent.verticalCenter
                         onEditingFinished: {
                             vr.resultsFolder = resultsFolder.text
                         }
+                    }
+                    Button {
+                        text: "..."
+                        onClicked: resultsFolderDialog.open()
+                        anchors.verticalCenter: parent.verticalCenter
                     }
                     Text {
                         text: "Skip:"
@@ -216,13 +219,21 @@ Item {
                     TextField {
                         id: skipFramesId
                         width: 100
+                        text: vr.skipFrames
                         height: rowHeight - 10
                         placeholderText: qsTr("frames")
-                        text: vr.skipFrames
-                        anchors.verticalCenter: parent.verticalCenter
                         verticalAlignment: TextInput.AlignVCenter
+                        anchors.verticalCenter: parent.verticalCenter
                         onEditingFinished: {
                             vr.skipFrames = skipFramesId.text
+                        }
+                    }
+                    FolderDialog {
+                        id: resultsFolderDialog
+                        onAccepted: {
+                            var path = selectedFolder.toString();
+                            path = path.replace(/^(file:\/{3})|(qrc:\/{2})|(http:\/{2})/,"")
+                            vr.resultsFolder = decodeURIComponent(path).replace(/\//g, "\\")
                         }
                     }
                 }
@@ -236,61 +247,79 @@ Item {
                     verticalAlignment: Text.AlignVCenter
                     anchors.verticalCenter: parent.verticalCenter
                 }
-                TextField {
-                    id: tagFolder
-                    width: 300
-                    height: rowHeight - 10
-                    placeholderText: qsTr("images")
-                    text: ""
+                Row {
+                    spacing: 15
                     anchors.verticalCenter: parent.verticalCenter
-                    verticalAlignment: TextInput.AlignVCenter
-                }
-                Text {
-                    text: " Tag: "
-                    width: labelWidth / 3
-                    color: textColor
-                    verticalAlignment: Text.AlignVCenter
-                    anchors.verticalCenter: parent.verticalCenter
-                }
-                TextField {
-                    id: tagName
-                    width: 100
-                    height: rowHeight - 10
-                    placeholderText: qsTr("name")
-                    text: ""
-                    anchors.verticalCenter: parent.verticalCenter
-                    verticalAlignment: TextInput.AlignVCenter
-                }
-                TextField {
-                    id: tagId
-                    width: 100
-                    height: rowHeight - 10
-                    placeholderText: qsTr("id")
-                    text: ""
-                    anchors.verticalCenter: parent.verticalCenter
-                    verticalAlignment: TextInput.AlignVCenter
-                }
-                Button {
-                    text: "Train"
-                    onClicked: {
-                        if (!tagFolder.text.length) {
-                            settingsStatus.text = " tag folder empty"
-                        } else if (!tagName.text.length) {
-                            settingsStatus.text = " tag name empty"
-                        } else if (!tagId.text.length) {
-                            settingsStatus.text = " tag id empty"
-                        }
-                        vr.AddResultsForTraining(tagFolder.text, tagName.text, tagId.text)
-                        settingsStatus.text = " Done"
+                    TextField {
+                        id: tagFolder
+                        text: ""
+                        width: 300
+                        height: rowHeight - 10
+                        placeholderText: qsTr("images")
+                        verticalAlignment: TextInput.AlignVCenter
+                        anchors.verticalCenter: parent.verticalCenter
                     }
-                }
-                Text {
-                    id: settingsStatus
-                    text: ""
-                    width: labelWidth
-                    color: textColor
-                    verticalAlignment: Text.AlignVCenter
-                    anchors.verticalCenter: parent.verticalCenter
+                    Button {
+                        id: trainFolderButton
+                        text: "..."
+                        onClicked: trainFolderDialog.open()
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                    FolderDialog {
+                        id: trainFolderDialog
+                        onAccepted: {
+                            var path = selectedFolder.toString();
+                            path = path.replace(/^(file:\/{3})|(qrc:\/{2})|(http:\/{2})/,"")
+                            tagFolder.text = decodeURIComponent(path).replace(/\//g, "\\")
+                        }
+                    }
+                    Text {
+                        text: " Tag: "
+                        width: labelWidth / 3
+                        color: textColor
+                        verticalAlignment: Text.AlignVCenter
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                    TextField {
+                        id: tagName
+                        text: ""
+                        width: 100
+                        height: rowHeight - 10
+                        placeholderText: qsTr("name")
+                        verticalAlignment: TextInput.AlignVCenter
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                    TextField {
+                        id: tagId
+                        text: ""
+                        width: 100
+                        height: rowHeight - 10
+                        placeholderText: qsTr("id")
+                        verticalAlignment: TextInput.AlignVCenter
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                    Button {
+                        text: "Train"
+                        onClicked: {
+                            if (!tagFolder.text.length) {
+                                settingsStatus.text = " tag folder empty"
+                            } else if (!tagName.text.length) {
+                                settingsStatus.text = " tag name empty"
+                            } else if (!tagId.text.length) {
+                                settingsStatus.text = " tag id empty"
+                            }
+                            vr.AddResultsForTraining(tagFolder.text, tagName.text, tagId.text)
+                            settingsStatus.text = " Done"
+                        }
+                    }
+                    Text {
+                        id: settingsStatus
+                        text: ""
+                        width: labelWidth
+                        color: textColor
+                        verticalAlignment: Text.AlignVCenter
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
                 }
             }
             Row {
