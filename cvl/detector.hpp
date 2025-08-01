@@ -241,7 +241,7 @@ struct BackgroundSubtractor : public Detector {
         cv::Mat fgMask;
         cv::Mat gray, blurred;
         cv::cvtColor(frame, gray, cv::COLOR_BGR2GRAY);
-        cv::GaussianBlur(gray, blurred, cv::Size(5, 5), 0);
+        cv::GaussianBlur(gray, blurred, cv::Size(12, 12), 0);
         pBackgroundSubtractor[cc->_mocapAlgo]->apply(blurred, fgMask, 0.05);
         cv::Mat kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3));
         cv::morphologyEx(fgMask, fgMask, cv::MORPH_OPEN, kernel);
@@ -275,10 +275,10 @@ struct FaceRecognizer {
             std::cerr << e.what() << std::endl;
         }
         _model = cv::face::LBPHFaceRecognizer::create();
-        _model->setRadius(1);
-        _model->setNeighbors(8);
         _model->setGridX(4);
         _model->setGridY(4);
+        _model->setRadius(1);
+        _model->setNeighbors(8);
         if (_images.size() && _ids.size()) {
             _model->train(_images, _ids);
         }
@@ -298,10 +298,10 @@ struct FaceRecognizer {
 
     auto predict(const cv::Mat& mat, spcc cc) {
         int id = -1;
-        double confidence = 0.0;
         cv::Mat gray;
         cv::cvtColor(mat, gray, cv::COLOR_BGR2GRAY);
         cv::resize(gray, gray, cv::Size(100, 100));
+        double confidence = 0.0;
         _model->predict(gray, id, confidence);
         std::pair<int, double> pair = {-1, 0.0};
         if (confidence <= cc->_facerecConfidence) {

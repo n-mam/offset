@@ -87,10 +87,12 @@ struct camera {
         }
         cv::Mat f_in;
         while (!_stop) {
-            _count++;
             cap >> f_in;
+            if (f_in.empty() || f_in.cols <= 0 || f_in.rows <= 0) continue;
+            _count++;
+            auto f_square = cvl::geometry::makeSquare(f_in);
             if ((_count % cc->_skipFrames) == 0) {
-                q_in.enqueue(f_in);
+                q_in.enqueue(f_square);
                 auto f_out = q_out.dequeue();
                 if (!f_out.empty()) {
                     if (_frame_cbk) {

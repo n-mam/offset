@@ -74,6 +74,7 @@ Item {
                         var path = selectedFile.toString();
                         path = path.replace(/^(file:\/{3})|(qrc:\/{2})|(http:\/{2})/,"");
                         vr.source = path
+                        vr.waitKeyTimeout = 65
                     }
                 }
             }
@@ -89,11 +90,11 @@ Item {
                 TextField {
                     id: timeoutTextId
                     width: 100
+                    text: vr.waitKeyTimeout
                     implicitHeight: rowHeight - 10
                     placeholderText: qsTr("timeout")
-                    text: vr.waitKeyTimeout
-                    horizontalAlignment: TextInput.AlignHCenter
                     verticalAlignment: TextInput.AlignVCenter
+                    horizontalAlignment: TextInput.AlignHCenter
                     onEditingFinished: {
                         vr.waitKeyTimeout = parseInt(timeoutTextId.text)
                     }

@@ -137,6 +137,22 @@ inline auto computeLaplacianVariance(const cv::Mat& img) {
     return variance;
 }
 
+inline auto makeSquare(const cv::Mat& input, const cv::Scalar& paddingColor = cv::Scalar(0, 0, 0)) {
+    int width = input.cols;
+    int height = input.rows;
+    int maxDim = std::max(width, height);
+    // Create a square black image
+    cv::Mat square = cv::Mat::zeros(cv::Size(maxDim, maxDim), input.type());
+    square.setTo(paddingColor);
+    // Compute top-left corner where the image will be placed
+    int xOffset = (maxDim - width) / 2;
+    int yOffset = (maxDim - height) / 2;
+    // Define ROI and copy input frame into the center
+    cv::Rect roi(xOffset, yOffset, width, height);
+    input.copyTo(square(roi));
+    return square;
+}
+
 }
 }
 #endif
