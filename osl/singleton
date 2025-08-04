@@ -1,9 +1,11 @@
 #ifndef SINGLETON_H
 #define SINGLETON_H
 
-template <typename T>
-auto getInstance() {
-    static T s_instance;
+#include <utility>
+
+template <typename T, typename... Args>
+auto getInstance(Args&&... args) {
+    static T s_instance(std::forward<Args>(args)...);
     return &s_instance;
 }
 
