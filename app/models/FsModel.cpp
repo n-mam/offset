@@ -5,7 +5,7 @@ FsModel::FsModel(){}
 FsModel::~FsModel(){}
 
 QHash<int, QByteArray> FsModel::roleNames() const {
-    auto roles = QAbstractListModel::roleNames();
+    static auto roles = QAbstractListModel::roleNames();
     roles.insert(EFileName, "fileName");
     roles.insert(EFileSize, "fileSize");
     roles.insert(EFileIsDir, "fileIsDir");

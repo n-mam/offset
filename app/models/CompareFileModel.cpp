@@ -19,7 +19,7 @@ CompareFileModel::CompareFileModel() {
 CompareFileModel::~CompareFileModel() {}
 
 QHash<int, QByteArray> CompareFileModel::roleNames() const {
-    auto roles = QAbstractListModel::roleNames();
+    static auto roles = QAbstractListModel::roleNames();
     roles.insert(ElementReal, "elementReal");
     roles.insert(ElementHash, "elementHash");
     roles.insert(ElementText, "elementText");

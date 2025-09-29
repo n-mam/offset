@@ -13,7 +13,7 @@ TransferManager::TransferManager() {
 TransferManager::~TransferManager(){}
 
 QHash<int, QByteArray> TransferManager::roleNames() const {
-    auto roles = QAbstractListModel::roleNames();
+    static auto roles = QAbstractListModel::roleNames();
     roles.insert(EType, "type");
     roles.insert(ELocal, "local");
     roles.insert(ERemote, "remote");

@@ -8,7 +8,7 @@ BaseModel::BaseModel(){}
 BaseModel::~BaseModel(){}
 
 QHash<int, QByteArray> BaseModel::roleNames() const {
-    auto roles = QAbstractItemModel::roleNames();
+    static auto roles = QAbstractItemModel::roleNames();
     roles.insert(EDepth, "depth");
     roles.insert(EVisible, "visible");
     roles.insert(EEnabled, "enabled");

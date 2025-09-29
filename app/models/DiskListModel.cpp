@@ -12,7 +12,7 @@ DiskListModel::~DiskListModel() {
 }
 
 QHash<int, QByteArray> DiskListModel::roleNames() const {
-    QHash<int, QByteArray> roles = BaseModel::roleNames();
+    static auto roles = BaseModel::roleNames();
     roles.insert(ESize, "sizeRole");
     roles.insert(EFree, "freeRole");
     roles.insert(EIsDisk, "isDisk");

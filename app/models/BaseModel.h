@@ -29,8 +29,11 @@ struct BaseItem {
 using SPBaseItem = std::shared_ptr<BaseItem>;
 
 class BaseModel : public QAbstractItemModel {
+
     Q_OBJECT
+
     public:
+
     BaseModel();
     ~BaseModel();
     QHash<int, QByteArray> roleNames() const override;
@@ -44,8 +47,6 @@ class BaseModel : public QAbstractItemModel {
     Q_INVOKABLE int ToogleChildSelectionAtindex(int row, bool selected, bool isRoot = true);
     Q_INVOKABLE int ToggleTreeExpandedAtIndex(int index, bool expanded, bool isRoot = true);
 
-    std::vector<SPBaseItem> m_model;
-
     enum Roles {
         EDepth = Qt::UserRole,
         EVisible,
@@ -57,9 +58,15 @@ class BaseModel : public QAbstractItemModel {
     };
 
     public slots:
+
     virtual void refreshModel() {};
 
+    protected:
+
+    std::vector<SPBaseItem> m_model;
+
     private:
+
     QString m_colors[3] = {"#EB9CCD", "#FFFFFF", "#FFFFFF"};
 };
 
