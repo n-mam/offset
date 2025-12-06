@@ -16,8 +16,6 @@ using TLogCallback = std::function<void (int, int, const T&)>;
 
 struct log {
 
-    public:
-
     log(){}
 
     log(int level, int key = 0) {

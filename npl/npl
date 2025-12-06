@@ -146,22 +146,22 @@ inline void test_file_copy(const std::string& source, const std::string& dest) {
     auto wd = npl::make_file(dest, true);
     constexpr int bufSize = (1 * 1024 * 1024);
     uint8_t *buf = (uint8_t *) calloc(bufSize, 1);
-    auto obv = std::make_shared<npl::Listener>(
-        nullptr,
+    auto obv = std::make_shared<npl::listener>();
+    obv->setCallback<TListenerOnRead>({
         [wd, off = 0ULL](const uint8_t *b, size_t n) mutable {
             DBG << "onRead " << n << ", off " << off;
             if (n) {
                 wd->Write(b, n, off);
             }
             off += n;
-        },
+        }});
+    obv->setCallback<TListenerOnWrite>({
         [rd, off = 0ULL, bufSize](const uint8_t *b, size_t n) mutable {
             DBG << "onWrite " << n << ", off " << off;
             if (n) {
                 rd->Read(b, bufSize, off += n);
             }
-        }
-    );
+        }});
     rd->AddEventListener(obv);
     wd->AddEventListener(obv);
     rd->Read(buf, bufSize, 0);

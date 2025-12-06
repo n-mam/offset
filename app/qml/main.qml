@@ -33,7 +33,7 @@ ApplicationWindow {
         ApplicationMenu {
             id: appMenu
             width: 40
-            startIndex: 2
+            startIndex: 1
             height: parent.height
             anchors.verticalCenter: parent.verticalCenter
             onMenuSelectionSignal: (index) => {

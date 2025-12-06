@@ -37,7 +37,6 @@ struct Event {
     bool is_error() { return e & EPOLLERR; }
     bool is_hangup() { return e & EPOLLHUP; }
     #endif
-
     #if __has_include(<sys/event.h>)
     short filter;
     u_short flags;
@@ -48,16 +47,6 @@ struct Event {
 };
 
 struct dispatcher : public subject<uint8_t, uint8_t> {
-
-    private:
-
-    FD _event_port;
-    bool _exit_loop = false;
-    std::thread _event_thread;
-    SPSocketDevice _ctrl_server;
-    SPSocketDevice _ctrl_client;
-
-    public:
 
     dispatcher(const std::string& name = "D") : subject(name) {
         #if __has_include(<sys/event.h>)
@@ -100,10 +89,11 @@ struct dispatcher : public subject<uint8_t, uint8_t> {
     void initialize_control(void) {
         _ctrl_server = std::make_shared<socket_device>("DC-LS");
         _ctrl_server->SetHostAndPort("0.0.0.0", 0);
-        auto ls = std::make_shared<Listener>(
-            nullptr, nullptr, nullptr, nullptr,
+        auto ls = std::make_shared<listener>();
+        ls->setCallback<TListenerOnAccept>({
             [this] () {
-                auto aso = std::make_shared<Listener>(nullptr,
+                auto aso = std::make_shared<listener>();
+                aso->setCallback<TListenerOnRead>({
                     [this, m = std::string()](const uint8_t *b, size_t n) mutable {
                         m.append((char *)b, n);
                         if (m.size() == sizeof(context)) {
@@ -111,10 +101,10 @@ struct dispatcher : public subject<uint8_t, uint8_t> {
                             memmove(ctx, m.data(), sizeof(context));
                             process_event_context((subject *) ctx->k, ctx);
                             m.clear();
-                        }});
+                        }
+                    }});
                 this->_ctrl_server->GetConnectedClient()->AddEventListener(aso);
-            }
-        );
+            }});
         this->AddEventListener(_ctrl_server)->AddEventListener(ls);
         _ctrl_server->StartSocketServer();
         _ctrl_client = std::make_shared<socket_device>("DC-CT");
@@ -336,6 +326,14 @@ struct dispatcher : public subject<uint8_t, uint8_t> {
         _ctrl_client->Write((const uint8_t *)c, sizeof(context));
         free(c);
     }
+
+    private:
+
+    FD _event_port;
+    bool _exit_loop = false;
+    std::thread _event_thread;
+    SPSocketDevice _ctrl_server;
+    SPSocketDevice _ctrl_client;
 };
 
 using SPDispatcher = std::shared_ptr<dispatcher>;

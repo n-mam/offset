@@ -14,50 +14,35 @@ typedef struct __GUID {
   unsigned char  Data4[8];
 } __GUID;
 
-void PrintGuid(__GUID guid)
-{
-  char _buf[1024] = { '\0' };
-
-  sprintf_s(
-    _buf, 
-    "{%08lX-%04hX-%04hX-%02hhX%02hhX-%02hhX%02hhX%02hhX%02hhX%02hhX%02hhX}",
-    guid.Data1, guid.Data2, guid.Data3, 
-    guid.Data4[0], guid.Data4[1], guid.Data4[2], guid.Data4[3],
-    guid.Data4[4], guid.Data4[5], guid.Data4[6], guid.Data4[7]
-  );
-  
-  LOG << std::string(_buf);
+void PrintGuid(__GUID guid) {
+    char _buf[1024] = { '\0' };
+    sprintf_s(
+        _buf,
+        "{%08lX-%04hX-%04hX-%02hhX%02hhX-%02hhX%02hhX%02hhX%02hhX%02hhX%02hhX}",
+        guid.Data1, guid.Data2, guid.Data3,
+        guid.Data4[0], guid.Data4[1], guid.Data4[2], guid.Data4[3],
+        guid.Data4[4], guid.Data4[5], guid.Data4[6], guid.Data4[7]);
+    LOG << std::string(_buf);
 }
 
-auto GuidToWString(__GUID guid)
-{
-  char _buf[1024] = { '\0' };
-
-  sprintf_s(
-    _buf, 
-    "{%08lX-%04hX-%04hX-%02hhX%02hhX-%02hhX%02hhX%02hhX%02hhX%02hhX%02hhX}",
-    guid.Data1, guid.Data2, guid.Data3, 
-    guid.Data4[0], guid.Data4[1], guid.Data4[2], guid.Data4[3],
-    guid.Data4[4], guid.Data4[5], guid.Data4[6], guid.Data4[7]
-  );
-
-  std::string str(_buf);
-
-  return std::wstring(str.begin(), str.end());
+auto GuidToWString(__GUID guid) {
+    char _buf[1024] = { '\0' };
+    sprintf_s(
+        _buf,
+        "{%08lX-%04hX-%04hX-%02hhX%02hhX-%02hhX%02hhX%02hhX%02hhX%02hhX%02hhX}",
+        guid.Data1, guid.Data2, guid.Data3,
+        guid.Data4[0], guid.Data4[1], guid.Data4[2], guid.Data4[3],
+        guid.Data4[4], guid.Data4[5], guid.Data4[6], guid.Data4[7]);
+    std::string str(_buf);
+    return std::wstring(str.begin(), str.end());
 }
 
-void DumpBytes(const uint8_t *buf, int len, bool hex) 
-{
-  for (int i = 0; i < len; i++)
-  {
-    if (hex == true)
-    {
-      LOG << std::hex << std::uppercase << (int)buf[i] << " ";  
-    }
-    else 
-    {   
-      if (isascii(buf[i]))
-      {
+void DumpBytes(const uint8_t *buf, int len, bool hex) {
+  for (int i = 0; i < len; i++) {
+    if (hex == true) {
+      LOG << std::hex << std::uppercase << (int)buf[i] << " ";
+    } else {
+      if (isascii(buf[i])) {
         LOG << buf[i] ;
       }
     }
@@ -78,64 +63,61 @@ typedef struct PARTITION
   uint32_t total_sectors;      /* number of sectors in partition */
 } Partition, *pPartition;
 
-typedef struct MBR
-{
-  uint8_t      code[355];
-  uint8_t      messages[80];
-  uint8_t      x[5];
-  uint8_t      DiskID[4];
-  uint8_t      cp[2];
-  Partition    partitions[4];
-  uint16_t     signature;
+typedef struct MBR {
+    uint8_t      code[355];
+    uint8_t      messages[80];
+    uint8_t      x[5];
+    uint8_t      DiskID[4];
+    uint8_t      cp[2];
+    Partition    partitions[4];
+    uint16_t     signature;
 } MBR, *pMBR;
 
 /*
  * Complete GPT table header for revision 1.0.
  */
-typedef struct GptHdrRev1
-{
-  /* Signature ("EFI PART"). */
-  char abSignature[8];
-  /* Revision. */
-  uint32_t u32Revision;
-  /* Header size. */
-  uint32_t cbHeader;
-  /* CRC of header. */
-  uint32_t u32Crc;
-  /* Reserved. */
-  uint32_t u32Reserved;
-  /* Current LBA. */
-  uint64_t u64LbaCurrent;
-  /* Backup LBA. */
-  uint64_t u64LbaBackup;
-  /* First usable LBA for partitions. */
-  uint64_t u64FirstUsableLbaForPartitions;
-  /* Last usable LBA for partitions. */
-  uint64_t u64LastUsableLbaForPartitions;
-  /* Disk UUID. */
-  __GUID   DiskUuid;
-  /* LBA of first partition entry. */
-  uint64_t u64LbaFirstPartitionEntry;
-  /* Number of partition entries. */
-  uint32_t cPartitionEntries;
-  /* Partition entry size. */
-  uint32_t cbPartitionEntry;
-  /* CRC of partition entries. */
-  uint32_t u32CrcPartitionEntries;
+typedef struct GptHdrRev1 {
+    /* Signature ("EFI PART"). */
+    char abSignature[8];
+    /* Revision. */
+    uint32_t u32Revision;
+    /* Header size. */
+    uint32_t cbHeader;
+    /* CRC of header. */
+    uint32_t u32Crc;
+    /* Reserved. */
+    uint32_t u32Reserved;
+    /* Current LBA. */
+    uint64_t u64LbaCurrent;
+    /* Backup LBA. */
+    uint64_t u64LbaBackup;
+    /* First usable LBA for partitions. */
+    uint64_t u64FirstUsableLbaForPartitions;
+    /* Last usable LBA for partitions. */
+    uint64_t u64LastUsableLbaForPartitions;
+    /* Disk UUID. */
+    __GUID   DiskUuid;
+    /* LBA of first partition entry. */
+    uint64_t u64LbaFirstPartitionEntry;
+    /* Number of partition entries. */
+    uint32_t cPartitionEntries;
+    /* Partition entry size. */
+    uint32_t cbPartitionEntry;
+    /* CRC of partition entries. */
+    uint32_t u32CrcPartitionEntries;
 } GptHdrRev1, *pGptHdrRev1;
 
-typedef struct _GUID_Partition_Entry
-{
-  uint8_t     type_guid[16];
-  uint8_t     guid[16];
-  uint64_t    start_lba;
-  uint64_t    end_lba;
-  uint64_t    attributes;
-  uint8_t     name[72];
+typedef struct _GUID_Partition_Entry {
+    uint8_t     type_guid[16];
+    uint8_t     guid[16];
+    uint64_t    start_lba;
+    uint64_t    end_lba;
+    uint64_t    attributes;
+    uint8_t     name[72];
 } GPE, *pGPE;
 
 /*
- * Oracle VDI structures 
+ * Oracle VDI structures
  */
 /*******************************************************************************
 *   Constants And Macros, Structures and Typedefs                              *
@@ -150,8 +132,7 @@ typedef struct _GUID_Partition_Entry
  *          different to many other UUID implementation, and requires
  *          conversion if you need to achieve consistent results.
  */
-typedef union RTUUID
-{
+typedef union RTUUID {
     /** 8-bit view. */
     uint8_t       au8[16];
     /** 16-bit view. */
@@ -161,14 +142,13 @@ typedef union RTUUID
     /** 64-bit view. */
     uint64_t      au64[2];
     /** The way the UUID is declared by the DCE specification. */
-    struct
-    {
-      uint32_t    u32TimeLow;
-      uint16_t  u16TimeMid;
-      uint16_t  u16TimeHiAndVersion;
-      uint8_t     u8ClockSeqHiAndReserved;
-      uint8_t     u8ClockSeqLow;
-      uint8_t     au8Node[6];
+    struct {
+        uint32_t    u32TimeLow;
+        uint16_t    u16TimeMid;
+        uint16_t    u16TimeHiAndVersion;
+        uint8_t     u8ClockSeqHiAndReserved;
+        uint8_t     u8ClockSeqLow;
+        uint8_t     au8Node[6];
     } Gen;
 } RTUUID;
 
@@ -187,8 +167,7 @@ typedef union RTUUID
 /**
  * Harddisk geometry.
  */
-typedef struct VDIDISKGEOMETRY
-{
+typedef struct VDIDISKGEOMETRY {
     /** Cylinders. */
     uint32_t      cCylinders;
     /** Heads. */
@@ -202,8 +181,7 @@ typedef struct VDIDISKGEOMETRY
 /** Image signature. */
 #define VDI_IMAGE_SIGNATURE   (0xbeda107f)
 
-typedef struct VDIPREHEADER
-{
+typedef struct VDIPREHEADER {
     /** Just text info about image type, for eyes only. */
     char szFileInfo[64];
     /** The image signature (VDI_IMAGE_SIGNATURE). */
@@ -221,8 +199,7 @@ typedef struct VDIPREHEADER
  * Header to be stored in image file, VDI_IMAGE_VERSION_MAJOR = 0.
  * Prepended by VDIPREHEADER.
  */
-typedef struct VDIHEADER0
-{
+typedef struct VDIHEADER0 {
     /** The image type (VDI_IMAGE_TYPE_*). */
     uint32_t        u32Type;
     /** Image flags (VDI_IMAGE_FLAGS_*). */
@@ -251,8 +228,7 @@ typedef struct VDIHEADER0
  * Header to be stored in image file, VDI_IMAGE_VERSION_MAJOR = 1,
  * VDI_IMAGE_VERSION_MINOR = 1. Prepended by VDIPREHEADER.
  */
-typedef struct VDIHEADER1
-{
+typedef struct VDIHEADER1 {
     /** Size of this structure in uint8_ts. */
     uint32_t        cbHeader;
     /** The image type (VDI_IMAGE_TYPE_*). */
@@ -298,8 +274,7 @@ typedef struct VDIHEADER1
  * VDI_IMAGE_VERSION_MINOR = 1, the slightly changed variant necessary as the
  * old released code doesn't support changing the minor version at all.
  */
-typedef struct VDIHEADER1PLUS
-{
+typedef struct VDIHEADER1PLUS {
     /** Size of this structure in uint8_ts. */
     uint32_t        cbHeader;
     /** The image type (VDI_IMAGE_TYPE_*). */
@@ -345,8 +320,7 @@ typedef struct VDIHEADER1PLUS
 /**
  * Header structure for all versions.
  */
-typedef struct VDIHEADER
-{
+typedef struct VDIHEADER {
     unsigned uVersion;
     union
     {
@@ -359,14 +333,12 @@ typedef struct VDIHEADER
 /*
  * VHDX  structures
  */
-typedef struct VHDX_FILE_IDENTIFIER 
-{
+typedef struct VHDX_FILE_IDENTIFIER {
    uint64_t     Signature;
    uint16_t     Creator[256];
 } VHDX_FILE_IDENTIFIER, *pVHDX_FILE_IDENTIFIER;
 
-typedef struct VHDX_HEADER
-{
+typedef struct VHDX_HEADER {
     uint32_t    Signature;
     uint32_t    Checksum;
     uint64_t    SequenceNumber;
@@ -380,16 +352,14 @@ typedef struct VHDX_HEADER
     uint8_t	    Reserved[4016];
 } VHDX_HEADER, *pVHDX_HEADER;
 
-typedef struct VHDX_REGION_TABLE_HEADER
-{
+typedef struct VHDX_REGION_TABLE_HEADER {
     uint32_t     Signature;
     uint32_t     Checksum;
     uint32_t     EntryCount;
     uint32_t     Reserved;
 } VHDX_REGION_TABLE_HEADER, *pVHDX_REGION_TABLE_HEADER;
 
-typedef struct VHDX_REGION_TABLE_ENTRY
-{
+typedef struct VHDX_REGION_TABLE_ENTRY {
     __GUID       Guid;
     uint64_t     FileOffset;
     uint32_t     Length;
@@ -397,23 +367,20 @@ typedef struct VHDX_REGION_TABLE_ENTRY
     uint32_t     Reserved:31;
 } VHDX_REGION_TABLE_ENTRY, *pVHDX_REGION_TABLE_ENTRY;
 
-typedef struct VHDX_REGION_TABLE
-{
+typedef struct VHDX_REGION_TABLE {
   VHDX_REGION_TABLE_HEADER Header;
   VHDX_REGION_TABLE_ENTRY Entries[2];
   //.. only 2 regions are defined by the spec as of now
 } VHDX_REGION_TABLE, *pVHDX_REGION_TABLE;
 
-typedef struct VHDX_METADATA_TABLE_HEADER
-{
+typedef struct VHDX_METADATA_TABLE_HEADER {
     uint64_t     Signature;
     uint16_t     Reserved;
     uint16_t     EntryCount;
     uint32_t     Reserved2[5];
 } VHDX_METADATA_TABLE_HEADER, *pVHDX_METADATA_TABLE_HEADER;
 
-typedef struct VHDX_METADATA_TABLE_ENTRY
-{
+typedef struct VHDX_METADATA_TABLE_ENTRY {
     __GUID       ItemId;
     uint32_t     Offset;
     uint32_t     Length;
@@ -424,71 +391,60 @@ typedef struct VHDX_METADATA_TABLE_ENTRY
     uint32_t     Reserved2;
 } VHDX_METADATA_TABLE_ENTRY, *pVHDX_METADATA_TABLE_ENTRY;
 
-typedef struct VHDX_FILE_PARAMETERS
-{
+typedef struct VHDX_FILE_PARAMETERS {
     uint32_t     BlockSize;
     uint32_t     LeaveBlocksAllocated:1;
     uint32_t     HasParent:1;
     uint32_t     Reserved:30;
 } VHDX_FILE_PARAMETERS, *pVHDX_FILE_PARAMETERS;
 
-typedef struct VHDX_VIRTUAL_DISK_SIZE
-{
+typedef struct VHDX_VIRTUAL_DISK_SIZE {
   uint64_t VirtualDiskSize;
 } VHDX_VIRTUAL_DISK_SIZE, *pVHDX_VIRTUAL_DISK_SIZE;
 
-typedef struct VHDX_PAGE83_DATA
-{
+typedef struct VHDX_PAGE83_DATA {
   __GUID  Page83Data;
 } VHDX_PAGE83_DATA, *pVHDX_PAGE83_DATA;
 
-typedef struct VHDX_VIRTUAL_DISK_LOGICAL_SECTOR_SIZE
-{
+typedef struct VHDX_VIRTUAL_DISK_LOGICAL_SECTOR_SIZE {
   uint32_t LogicalSectorSize;
 } VHDX_VIRTUAL_DISK_LOGICAL_SECTOR_SIZE, *pVHDX_VIRTUAL_DISK_LOGICAL_SECTOR_SIZE;
 
-typedef struct VHDX_VIRTUAL_DISK_PHYSICAL_SECTOR_SIZE
-{
+typedef struct VHDX_VIRTUAL_DISK_PHYSICAL_SECTOR_SIZE {
   uint32_t PhysicalSectorSize;
 } VHDX_VIRTUAL_DISK_PHYSICAL_SECTOR_SIZE, *pVHDX_VIRTUAL_DISK_PHYSICAL_SECTOR_SIZE;
 
-typedef struct VHDX_PARENT_LOCATOR_HEADER
-{
+typedef struct VHDX_PARENT_LOCATOR_HEADER {
     __GUID     LocatorType;
     uint16_t   Reserved;
     uint16_t   KeyValueCount;
 } VHDX_PARENT_LOCATOR_HEADER, *pVHDX_PARENT_LOCATOR_HEADER;
 
-typedef struct VHDX_PARENT_LOCATOR_ENTRY
-{
+typedef struct VHDX_PARENT_LOCATOR_ENTRY {
     uint32_t   KeyOffset;
     uint32_t   ValueOffset;
     uint16_t   KeyLength;
     uint16_t   ValueLength;
 } VHDX_PARENT_LOCATOR_ENTRY, *pVHDX_PARENT_LOCATOR_ENTRY;
 
-typedef struct VHDX_PL_KV
-{
+typedef struct VHDX_PL_KV {
    wchar_t key[64];
    wchar_t value[256];
 } VHDX_PL_KV, *pVHDX_PL_KV;
 
-typedef struct VHDX_PARENT_LOCATOR
-{
+typedef struct VHDX_PARENT_LOCATOR {
   VHDX_PARENT_LOCATOR_HEADER iHeader;
   VHDX_PARENT_LOCATOR_ENTRY iEntries[2];
   VHDX_PL_KV iPlkv[5];
 } VHDX_PARENT_LOCATOR, *pVHDX_PARENT_LOCATOR;
 
 
-typedef struct VHDX_METADATA_TABLE
-{
+typedef struct VHDX_METADATA_TABLE {
     VHDX_METADATA_TABLE_HEADER Header;
     VHDX_METADATA_TABLE_ENTRY Entries[6];
 } VHDX_METADATA_TABLE, *pVHDX_METADATA_TABLE;
 
-typedef struct VHDX_METADATA_OBJECTS
-{
+typedef struct VHDX_METADATA_OBJECTS {
     VHDX_FILE_PARAMETERS                   iFileParameters;
     VHDX_VIRTUAL_DISK_SIZE                 iVirtualDiskSize;
     VHDX_VIRTUAL_DISK_LOGICAL_SECTOR_SIZE  iLogicalSectorSize;
@@ -497,15 +453,13 @@ typedef struct VHDX_METADATA_OBJECTS
     VHDX_PARENT_LOCATOR                    iParentLocator;
 } VHDX_METADATA_OBJECTS, *pVHDX_METADATA_OBJECTS;
 
-typedef struct VHDX_METADATA
-{
-    VHDX_METADATA_TABLE iTable;   
+typedef struct VHDX_METADATA {
+    VHDX_METADATA_TABLE iTable;
     //_64K boundary
     VHDX_METADATA_OBJECTS iObjects;
 } VHDX_METADATA, *pVHDX_METADATA;
 
-typedef struct VHDX_BAT_ENTRY
-{
+typedef struct VHDX_BAT_ENTRY {
     uint64_t   State:3;
     uint64_t   Reserved:17;
     uint64_t   FileOffsetMB:44;
@@ -514,8 +468,7 @@ typedef struct VHDX_BAT_ENTRY
 /*
  * VHD structures
  */
-typedef struct VHD_DISK_FOOTER
-{
+typedef struct VHD_DISK_FOOTER {
     uint8_t       Cookie[8];
     uint8_t       Features[4];
     uint8_t       FileFormatVersion[4];
@@ -536,8 +489,7 @@ typedef struct VHD_DISK_FOOTER
 
 constexpr int PLDataSpaceSize = 1024;
 
-typedef struct PARENT_LOCATER_ENTRY
-{
+typedef struct PARENT_LOCATER_ENTRY {
     uint8_t        PlatformCode[4];
     uint8_t        PlatformDataSpace[4];
     uint8_t        PlatformDataLength[4];
@@ -545,8 +497,7 @@ typedef struct PARENT_LOCATER_ENTRY
     uint8_t        PlatformDataOffset[8];
 } PLE, *pPLE;
 
-typedef struct VHD_SPARSE_HEADER
-{
+typedef struct VHD_SPARSE_HEADER {
     uint8_t       Cookie[8];
     uint64_t      DataOffset;
     uint64_t      TableOffset;
@@ -562,8 +513,7 @@ typedef struct VHD_SPARSE_HEADER
     uint8_t       Reserved3[256];
 } VHD_SPARSE_HEADER, *pVHD_SPARSE_HEADER;
 
-typedef struct VHD_FOOTER_HEADER
-{
+typedef struct VHD_FOOTER_HEADER {
     VHD_DISK_FOOTER     footer;
     VHD_SPARSE_HEADER   header;
 } VHD_FOOTER_HEADER, *pVHD_FOOTER_HEADER;
@@ -571,10 +521,9 @@ typedef struct VHD_FOOTER_HEADER
 /*
  * T2 image format
  */
-typedef struct FC_HDR_CLEAR
-{
+typedef struct FC_HDR_CLEAR {
   /*  "flxcrypt"  */
-  unsigned char   magic[8]; 
+  unsigned char   magic[8];
   unsigned char   salt[128];
   unsigned char   flags[4];
   uint32_t        blocksize;
@@ -583,28 +532,22 @@ typedef struct FC_HDR_CLEAR
    */
 } FCHDR, *pFCHDR;
 
-typedef struct Differencing_Disk_Keys
-{
+typedef struct Differencing_Disk_Keys {
    FCHDR            clear;
    wchar_t        * szImage;
    unsigned char  * keys;              /* up-to 3, 256 bit keys */
    const char     * cascade;        /* cipher cascade        */
-   struct Differencing_Disk_Keys *next;   
+   struct Differencing_Disk_Keys *next;
 } DDK, *pDDK;
 
-typedef struct _FC_SPAN_HEADER
-{
+typedef struct _FC_SPAN_HEADER {
   FCHDR clear;
-
   /* span size, minus the footer. */
   uint64_t  spansize;
-
-  /* size of the BAT (DWORD + ULL)*/  
+  /* size of the BAT (DWORD + ULL)*/
   uint64_t  batsize;
-
   /* parent's path */
   unsigned char parent[244];
-
 } FC_SPAN_HEADER, *pFC_SPAN_HEADER;
 
 /* Hosted VMDK structures */
@@ -612,8 +555,7 @@ typedef struct _FC_SPAN_HEADER
 typedef uint64_t SectorType;
 typedef uint8_t  Bool;
 
-typedef struct SparseExtentHeader
-{
+typedef struct SparseExtentHeader {
    uint32_t       magicNumber;
    uint32_t       version;
    uint32_t       flags;
@@ -632,21 +574,18 @@ typedef struct SparseExtentHeader
    char         doubleEndLineChar2;
    uint16_t     compressAlgorithm;
    uint8_t      pad[433];
-} SparseExtentHeader, *pSEH; 
+} SparseExtentHeader, *pSEH;
 
 /* QCOW Structures */
-typedef struct QCowHeader
-{
+typedef struct QCowHeader {
     /* Magic value. */
     uint32_t    u32Magic;
     /* Version of the image. */
     uint32_t    u32Version;
     /* Version dependent data. */
-    union
-    {
+    union {
         /* Version 1. */
-        struct
-        {
+        struct {
             /* Backing file offset. */
             uint64_t    u64BackingFileOffset;
             /* Size of the backing file. */
@@ -667,8 +606,7 @@ typedef struct QCowHeader
             uint64_t    u64L1TableOffset;
         } v1;
         /* Version 2. */
-        struct
-        {
+        struct {
             /* Backing file offset. */
             uint64_t    u64BackingFileOffset;
             /* Size of the backing file. */
@@ -695,8 +633,7 @@ typedef struct QCowHeader
     } Version;
 } QCowHeader, *pQCowHeader;
 
-typedef struct QedHeader
-{
+typedef struct QedHeader {
     /* Magic value. */
     uint32_t    u32Magic;
     /* Cluster size in uint8_ts. */
@@ -737,8 +674,8 @@ typedef struct QedHeader
  * unmapped.
  */
 #define VHDX_BAT_ENTRY_PAYLOAD_BLOCK_UNMAPPED          (3)
-/* 
-   Block data is in the file pointed to by the FileOffsetMB field. 
+/*
+   Block data is in the file pointed to by the FileOffsetMB field.
    For reads from the blocks in this state, parsers should return
    the block contents defined in the file at the location specified
    by the FileOffsetMB field. For differencing VHDX files, the sector

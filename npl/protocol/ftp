@@ -23,8 +23,6 @@ struct ftp_message : public message {
 
 struct ftp : public protocol<uint8_t, uint8_t> {
 
-    public:
-
     using TStateFn = std::function<void (void)>;
 
     enum : uint8_t {
@@ -423,25 +421,29 @@ struct ftp : public protocol<uint8_t, uint8_t> {
     }
 
     virtual void AttachDataChannelObserver(void) {
-        auto observer = std::make_shared<Listener>(
+        auto observer = std::make_shared<listener>();
+        observer->setCallback<TListenerOnConnect>({
             [this]() {
                 OnDataChannelConnect();
-            },
+            }});
+        observer->setCallback<TListenerOnRead>({
             [this](const uint8_t *b, size_t n) {
                 if (!m_data_channel->IsStopped())
                     OnDataChannelIoCompletion(b, n, ftp::download);
-            },
+            }});
+        observer->setCallback<TListenerOnWrite>({
             [this](const uint8_t *b, size_t n) {
                 if (!m_data_channel->IsStopped())
                     OnDataChannelIoCompletion(b, n, ftp::upload);
-            },
+            }});
+        observer->setCallback<TListenerOnDisconnect>({
             [this](){
                 OnDataChannelDisconnect();
-            },
-            [this](){
+            }});
+        observer->setCallback<TListenerOnError>({
+            [this](int e){
                 OnDataChannelDisconnect();
-            }
-        );
+            }});
         m_data_channel->AddEventListener(observer);
     }
 
