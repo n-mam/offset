@@ -339,8 +339,6 @@ struct dispatcher : public subject<uint8_t, uint8_t> {
 using SPDispatcher = std::shared_ptr<dispatcher>;
 using UPDispatcher = std::unique_ptr<dispatcher>;
 
-inline SPDispatcher D = nullptr;
-
 } // namespace npl
 
 #endif //DISPATCHER_HPP;

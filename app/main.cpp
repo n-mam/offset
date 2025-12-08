@@ -51,15 +51,17 @@ int main(int argc, char *argv[])
     QQmlApplicationEngine engine;
     const QUrl url(u"qrc:/main.qml"_qs);
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreated, &app,
-      [url](QObject *obj, const QUrl &objUrl) {
+        [url](QObject *obj, const QUrl &objUrl) {
         if (!obj && url == objUrl)
             QCoreApplication::exit(-1);
-      }, Qt::QueuedConnection);
+        }, Qt::QueuedConnection);
 
     engine.rootContext()->setContextProperty("appConfig", new AppConfig());
 
     qmlRegisterType<VideoRenderer>("CustomElements", 1, 0, "VideoRenderer");
     qmlRegisterType<CompareFileModel>("CustomElements", 1, 0, "CompareFileModel");
+
+    npl::initialize_dispatcher();
 
     engine.rootContext()->setContextProperty("logger", new Logger());
     engine.rootContext()->setContextProperty("localFsModel", getInstance<LocalFsModel>());

@@ -1,12 +1,19 @@
 #ifndef SINGLETON_H
 #define SINGLETON_H
 
+#include <memory>
 #include <utility>
 
 template <typename T, typename... Args>
 auto getInstance(Args&&... args) {
     static T s_instance(std::forward<Args>(args)...);
     return &s_instance;
+}
+
+template <typename T, typename... Args>
+auto getSharedInstance(Args&&... args) {
+    static auto ss_instance = std::make_shared<T>(std::forward<Args>(args)...);
+    return ss_instance;
 }
 
 #endif

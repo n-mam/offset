@@ -27,7 +27,6 @@ Logger::Logger() {
         }, Qt::QueuedConnection);
       }
     });
-  npl::make_dispatcher();
 }
 
 Logger::~Logger(){}

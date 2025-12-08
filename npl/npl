@@ -5,17 +5,16 @@
 #include <device/socket>
 #include <protocol/ftp>
 #include <protocol/websocket>
+#include <singleton>
 
 namespace npl {
 
-inline auto make_dispatcher(void) {
+inline auto initialize_dispatcher(void) {
     #ifdef _WIN32
     WSADATA wsaData;
     int winsockinit = WSAStartup(MAKEWORD(2, 2), &wsaData);
     #endif
-    D = std::make_shared<dispatcher>();
-    D->initialize_control();
-    return D;
+    getSharedInstance<dispatcher>()->initialize_control();
 }
 
 inline auto make_ftp(const std::string& host, int port, tls tls = tls::no) {
@@ -25,7 +24,7 @@ inline auto make_ftp(const std::string& host, int port, tls tls = tls::no) {
     if (success) {
         cc->SetTLS(tls);
         ftp = std::make_shared<npl::ftp>("prot-ftp");
-        D->AddEventListener(cc)->AddEventListener(ftp);
+        getSharedInstance<dispatcher>()->AddEventListener(cc)->AddEventListener(ftp);
     } else {
         cc.reset();
     }
@@ -41,7 +40,7 @@ inline auto make_ws_server(const std::string& host,
         cc->SetTLS(tls);
         ls = std::make_shared<websocket_server>("ws-ls");
         ls->SetClientMessageCallback(cbk);
-        D->AddEventListener(cc)->AddEventListener(ls);
+        getSharedInstance<dispatcher>()->AddEventListener(cc)->AddEventListener(ls);
     } else {
         cc.reset();
     }
@@ -54,7 +53,7 @@ inline auto make_http_client(const std::string& host, int port) {
     auto success = sock->SetHostAndPort(host, port);
     if (success) {
         http = std::make_shared<http_client>("http-protocol");
-        D->AddEventListener(sock)->AddEventListener(http);
+        getSharedInstance<dispatcher>()->AddEventListener(sock)->AddEventListener(http);
     } else {
         sock.reset();
     }
@@ -65,7 +64,7 @@ template <typename T>
 inline auto make_file(const T& file, bool create = false) {
     auto device = std::make_shared<file_device>(file, create);
     if (device->IsConnected()) {
-        D->AddEventListener(device);
+        getSharedInstance<dispatcher>()->AddEventListener(device);
     } else {
         device.reset();
     }

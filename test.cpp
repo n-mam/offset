@@ -20,7 +20,7 @@ int main(int argc, char *argv[]) {
         [](int level, int key, auto log) {
             std::cout << log << std::endl;
         });
-    npl::make_dispatcher();
+    npl::initialize_dispatcher();
     auto ns = arguments[0];
     #ifdef _WIN32
     if (ns == "fxc") {
