@@ -205,7 +205,7 @@ auto create_child_vhd(const std::wstring& source,
     auto bat = std::make_unique<uint32_t []>(diff->iBATSize / sizeof(uint32_t));
     memset(bat.get(), 0xFF, diff->iBATSize);
     auto bs = diff->GetBlockSize();
-    auto dbiomap = fxc::ResilientChangeTrackingToDataBlockIO(source, rctid, bs);
+    auto dbiomap = fxc::resilientChangeTrackingToDataBlockIO(source, rctid, bs);
     uint64_t blockCount = 0;
     for (auto& kv : dbiomap) {
         uint64_t fileoff = diff->FirstDataBlockOffset() + (blockCount * (512 + bs));
@@ -479,7 +479,7 @@ bool create_child_vhdx(const std::wstring& source, const std::wstring& parent, n
     auto bat = std::make_unique<uint64_t []>(diff->iBATSize / sizeof(uint64_t));
     memset(bat.get(), 0, diff->iBATSize);
     auto bs = diff->GetBlockSize();
-    auto dbiomap = fxc::ResilientChangeTrackingToDataBlockIO(source, rctid, bs);
+    auto dbiomap = fxc::resilientChangeTrackingToDataBlockIO(source, rctid, bs);
     uint64_t blockCount = 0;
     for (auto& kv : dbiomap) {
         uint64_t pb_entry_cnt = kv.first;
@@ -552,7 +552,7 @@ auto make_virtual_disk(const std::wstring& path) {
     return disk;
 }
 
-void CreateBaseVirtualDisk(
+void createBaseVirtualDisk(
     const std::wstring& format,
     const std::wstring& source,
     npl::SPSubject<uint8_t, uint8_t> target,
@@ -568,7 +568,7 @@ void CreateBaseVirtualDisk(
         }
 }
 
-void CreateIncrementalVirtualDisk(
+void createIncrementalVirtualDisk(
     const std::wstring& format,
     const std::wstring& source,
     const std::wstring& parent,
@@ -589,7 +589,7 @@ void CreateIncrementalVirtualDisk(
         }
 }
 
-void DumpVirtualDisk(const std::wstring& path) {
+void dumpVirtualDisk(const std::wstring& path) {
     auto disk = fxc::make_virtual_disk(path);
     if (disk) {
         disk->DumpStructure();

@@ -186,7 +186,7 @@ bool DiskListModel::convertSelectedItemsToVirtualDisks(QString destination) {
     STATUS(0) << "Transfer in progress : " << this->getTransfer();
     m_futures.push_back(std::async(std::launch::async,
         [this, configuration](){
-            fxc::ConvertBlockDeviceToVirtualImages(configuration,
+            fxc::convertBlockDeviceToVirtualImages(configuration,
                 [this](auto device, auto percent) {
                     QMetaObject::invokeMethod(this, [this, device, percent](){
                         emit this->progress(QString::fromStdWString(device), percent);

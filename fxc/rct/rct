@@ -11,136 +11,94 @@ using RCTCBT = std::tuple <
   std::unique_ptr<QUERY_CHANGES_VIRTUAL_DISK_RANGE []>, ULONG
 >;
 
-RCTCBT GetRCTRanges(const std::wstring& file, const std::wstring& rctid)
-{
-  HANDLE hvhd = osl::OpenVirtualDisk(file);
-
-  if (hvhd == INVALID_HANDLE_VALUE) return {};
-
-  // query rctid 
-  DWORD fRet;
-  WCHAR vdinfo[2048];
-
-  memset(vdinfo, 0, sizeof(vdinfo));
-  ((GET_VIRTUAL_DISK_INFO *)vdinfo)->Version = GET_VIRTUAL_DISK_INFO_CHANGE_TRACKING_STATE;
-  ULONG vdinfoSize = sizeof(vdinfo);
-
-  osl::DllHelper virtDiskAPI("virtdisk.dll");
-
-  auto pfnGetVirtualDiskInformation = (decltype(GetVirtualDiskInformation) *) virtDiskAPI["GetVirtualDiskInformation"];
-
-  if (pfnGetVirtualDiskInformation == NULL)
-  {
-    LOG << "Failed to get poinetr to GetVirtualDiskInformation " << GetLastError();
-    return {};
-  }
-
-  fRet = pfnGetVirtualDiskInformation(
+RCTCBT GetRCTRanges(const std::wstring& file, const std::wstring& rctid) {
+    HANDLE hvhd = osl::OpenVirtualDisk(file);
+    if (hvhd == INVALID_HANDLE_VALUE) return {};
+    // query rctid
+    DWORD fRet;
+    WCHAR vdinfo[2048];
+    memset(vdinfo, 0, sizeof(vdinfo));
+    ((GET_VIRTUAL_DISK_INFO *)vdinfo)->Version = GET_VIRTUAL_DISK_INFO_CHANGE_TRACKING_STATE;
+    ULONG vdinfoSize = sizeof(vdinfo);
+    osl::DllHelper virtDiskAPI("virtdisk.dll");
+    auto pfnGetVirtualDiskInformation = (decltype(GetVirtualDiskInformation) *) virtDiskAPI["GetVirtualDiskInformation"];
+    if (pfnGetVirtualDiskInformation == NULL) {
+        LOG << "Failed to get poinetr to GetVirtualDiskInformation " << GetLastError();
+        return {};
+    }
+    fRet = pfnGetVirtualDiskInformation(
             hvhd,
             &vdinfoSize,
             (PGET_VIRTUAL_DISK_INFO)vdinfo,
             NULL);
-
-  if (fRet != ERROR_SUCCESS)
-  {
-    LOG << "GetVirtualDiskInformation GET_VIRTUAL_DISK_INFO_CHANGE_TRACKING_STATE failed " << fRet;
-    return {};
-  }
-
-  LOG << "RCT ID : " << std::wstring(((GET_VIRTUAL_DISK_INFO *)vdinfo)->ChangeTrackingState.MostRecentId);
-
-  // query disk length
-  memset(vdinfo, 0, sizeof(vdinfo));
-  ((GET_VIRTUAL_DISK_INFO *)vdinfo)->Version = GET_VIRTUAL_DISK_INFO_SIZE;
-  vdinfoSize = sizeof(vdinfo);
-
-  fRet = pfnGetVirtualDiskInformation(
-            hvhd,
-            &vdinfoSize,
-            (PGET_VIRTUAL_DISK_INFO)vdinfo,
-            NULL);
-
-  if (fRet != ERROR_SUCCESS)
-  {
-    LOG << "GetVirtualDiskInformation GET_VIRTUAL_DISK_INFO_SIZE failed " << fRet;
-    return {};
-  }
-
-  LOG << "Disk length : " << ((GET_VIRTUAL_DISK_INFO *)vdinfo)->Size.VirtualSize;
-
-  ULONG count = 4096;
-  ULONG64 ProcessedLength = 0;
-
-  auto ranges = std::make_unique<QUERY_CHANGES_VIRTUAL_DISK_RANGE []>(4096);
-
-  auto pfnQueryChangesVirtualDisk = (decltype(QueryChangesVirtualDisk) *) virtDiskAPI["QueryChangesVirtualDisk"];
-
-  if (pfnQueryChangesVirtualDisk == NULL)
-  {
-    LOG << "Failed to get poinetr to QueryChangesVirtualDisk " << GetLastError();
-    return {};
-  }
-
-  fRet = pfnQueryChangesVirtualDisk(
-            hvhd,
-            rctid.c_str(), //((GET_VIRTUAL_DISK_INFO *)vdinfo)->ChangeTrackingState.MostRecentId,
-            0,
-            ((GET_VIRTUAL_DISK_INFO *)vdinfo)->Size.VirtualSize,
-            QUERY_CHANGES_VIRTUAL_DISK_FLAG_NONE,
-            ranges.get(),
-            &count,
-            &ProcessedLength);
-
-  if (fRet != ERROR_SUCCESS)
-  {
-    LOG << "QueryChangesVirtualDisk failed " << fRet;
-    return {};
-  }
-
-  LOG << "Range count : " << count;
-  LOG << "Processed length : " << ProcessedLength;
-
-  CloseHandle(hvhd);
-
-  return {std::move(ranges), count};
+    if (fRet != ERROR_SUCCESS) {
+        LOG << "GetVirtualDiskInformation GET_VIRTUAL_DISK_INFO_CHANGE_TRACKING_STATE failed " << fRet;
+        return {};
+    }
+    LOG << "RCT ID : " << std::wstring(((GET_VIRTUAL_DISK_INFO *)vdinfo)->ChangeTrackingState.MostRecentId);
+    // query disk length
+    memset(vdinfo, 0, sizeof(vdinfo));
+    ((GET_VIRTUAL_DISK_INFO *)vdinfo)->Version = GET_VIRTUAL_DISK_INFO_SIZE;
+    vdinfoSize = sizeof(vdinfo);
+    fRet = pfnGetVirtualDiskInformation(
+                hvhd,
+                &vdinfoSize,
+                (PGET_VIRTUAL_DISK_INFO)vdinfo,
+                NULL);
+    if (fRet != ERROR_SUCCESS) {
+        LOG << "GetVirtualDiskInformation GET_VIRTUAL_DISK_INFO_SIZE failed " << fRet;
+        return {};
+    }
+    LOG << "Disk length : " << ((GET_VIRTUAL_DISK_INFO *)vdinfo)->Size.VirtualSize;
+    ULONG count = 4096;
+    ULONG64 ProcessedLength = 0;
+    auto ranges = std::make_unique<QUERY_CHANGES_VIRTUAL_DISK_RANGE []>(4096);
+    auto pfnQueryChangesVirtualDisk = (decltype(QueryChangesVirtualDisk) *) virtDiskAPI["QueryChangesVirtualDisk"];
+    if (pfnQueryChangesVirtualDisk == NULL) {
+        LOG << "Failed to get poinetr to QueryChangesVirtualDisk " << GetLastError();
+        return {};
+    }
+    fRet = pfnQueryChangesVirtualDisk(
+                hvhd,
+                rctid.c_str(), //((GET_VIRTUAL_DISK_INFO *)vdinfo)->ChangeTrackingState.MostRecentId,
+                0,
+                ((GET_VIRTUAL_DISK_INFO *)vdinfo)->Size.VirtualSize,
+                QUERY_CHANGES_VIRTUAL_DISK_FLAG_NONE,
+                ranges.get(),
+                &count,
+                &ProcessedLength);
+    if (fRet != ERROR_SUCCESS) {
+        LOG << "QueryChangesVirtualDisk failed " << fRet;
+        return {};
+    }
+    LOG << "Range count : " << count;
+    LOG << "Processed length : " << ProcessedLength;
+    CloseHandle(hvhd);
+    return {std::move(ranges), count};
 }
 
-auto ResilientChangeTrackingToDataBlockIO(const std::wstring& source, const std::wstring& rctid, uint32_t bs)
-{
-  std::map<uint64_t, std::vector<fxc::DataBlockIO>> dbiomap;
-
-  auto [ranges, count] = GetRCTRanges(source, rctid);
-
-  for (ULONG i = 0; i < count; i++)
-  {
-    auto off = ranges[i].ByteOffset;
-    auto len = ranges[i].ByteLength;
-
-    auto fragments = fxc::BaseDisk::LogicalToDataBlock(off, len, bs);
-
-    for (auto& fragmet : fragments)
-    {
-      uint64_t batindex = fragmet.offset / bs;
-      auto& dbio = dbiomap[batindex];
-      dbio.push_back({nullptr, fragmet.offset, fragmet.length});
+auto resilientChangeTrackingToDataBlockIO(const std::wstring& source, const std::wstring& rctid, uint32_t bs) {
+    std::map<uint64_t, std::vector<fxc::DataBlockIO>> dbiomap;
+    auto [ranges, count] = GetRCTRanges(source, rctid);
+    for (ULONG i = 0; i < count; i++) {
+        auto off = ranges[i].ByteOffset;
+        auto len = ranges[i].ByteLength;
+        auto fragments = fxc::BaseDisk::LogicalToDataBlock(off, len, bs);
+        for (auto& fragmet : fragments) {
+            uint64_t batindex = fragmet.offset / bs;
+            auto& dbio = dbiomap[batindex];
+            dbio.push_back({nullptr, fragmet.offset, fragmet.length});
+        }
     }
-  }
-
-  LOG << "Data block io map size : " << dbiomap.size();
-
-  for (auto& kv : dbiomap)
-  { 
-    uint64_t nTotalLength = 0;
-
-    for (auto& dbio : kv.second)
-    {
-      nTotalLength += dbio.length;
+    LOG << "Data block io map size : " << dbiomap.size();
+    for (auto& kv : dbiomap) {
+        uint64_t nTotalLength = 0;
+        for (auto& dbio : kv.second) {
+            nTotalLength += dbio.length;
+        }
+        assert(nTotalLength <= bs);
     }
-
-    assert(nTotalLength <= bs);
-  }
-
-  return dbiomap;
+    return dbiomap;
 }
 
 } //namespace rtc

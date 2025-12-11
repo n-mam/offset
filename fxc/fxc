@@ -22,8 +22,7 @@ struct TBackupConfig {
     bool m_live;
 };
 
-auto GetExtentionForFormat(const std::wstring& format)
-{
+auto getExtentionForFormat(const std::wstring& format) {
     if (format == L"d-vhd")
         return L"d.vhd";
     else if (format == L"f-vhd")
@@ -36,152 +35,106 @@ auto GetExtentionForFormat(const std::wstring& format)
         return L"raw.img";
 }
 
-auto GetTargetForDestination(const std::wstring& destination, const std::wstring& name, const std::wstring& format)
-{
+auto getTargetForDestination(const std::wstring& destination, const std::wstring& name, const std::wstring& format) {
     npl::SPSubject<uint8_t, uint8_t> target;
-
     std::filesystem::path destinationPath(destination);
-
     if (std::filesystem::is_directory(destinationPath)) {
         target = npl::make_file(destination + L"\\" + name + L"." +
-            osl::get_timestamp() + L"." + GetExtentionForFormat(format), true);
+            osl::get_timestamp() + L"." + getExtentionForFormat(format), true);
     } else {
         auto [protocol, username, password, host, port, directory] =
             osl::parseUrl(osl::ws2s(destination));
-
         if (!host.size() || !protocol.size() || !port.size()) return target;
-
         auto protect = (protocol == "ftps") ? npl::tls::yes : npl::tls::no;
-
         auto ftp = npl::make_ftp(host, std::stoi(port), protect);
-
         if (!ftp) return target;
-
         ftp->SetCredentials(username, password);
-
         ftp->StartClient();
-
-        auto file = "/" + directory + "/" + osl::ws2s(name + L"." + GetExtentionForFormat(format));
-
+        auto file = "/" + directory + "/" + osl::ws2s(name + L"." + getExtentionForFormat(format));
         ftp->Transfer(npl::ftp::upload, file,
             [&](const char *b, size_t n) {
                 return true;
             }, nullptr, protect);
-
         ftp->Quit();
-
         target = ftp;
     }
-
     return target;
 }
 
-auto RecoverVirtualImageToPhysicalVolume(const std::wstring& source, const std::wstring& target)
-{
+auto recoverVirtualImageToPhysicalVolume(const std::wstring& source, const std::wstring& target) {
     auto disk = fxc::make_virtual_disk(source);
-
     if (!disk) {
         LOG << "Failed to create virtaul disk object";
         return false;
     }
-
     HANDLE hTarget = osl::GetVolumeHandle(target.c_str());
-
     if (hTarget == INVALID_HANDLE_VALUE) {
         LOG << "Failed to open target " << target.c_str() << ", error " << GetLastError();
         return false;
     }
-
     std::unique_ptr<uint8_t[]> buf;
-
     bool fRet = osl::LockAndDismountVolume(hTarget);
-
     if (fRet == FALSE) {
         LOG << "LockAndDismountVolume failed";
         osl::UnlockVolume(hTarget);
         return false;
     }
-
     uint64_t nDone = 0;
     DWORD dwBytesWritten;
     auto bs = disk->GetBlockSize();
     buf = std::make_unique<uint8_t []>(bs);
-
     uint64_t nTotal = disk->GetPartitionLength(0);
     uint64_t offset = disk->GetPartitionStartOffset(0);
-
     do {
         auto pending = nTotal - nDone;
-
         size_t nToRead = pending > bs ? bs : pending;
-
         auto n = disk->ReadSync(buf.get(), nToRead, offset + nDone);
-
         fRet = false;
-
         if (n != nToRead) {
             LOG << "ReadSync on source returned " << n;
             break;
         }
-
         fRet = WriteFile(hTarget, buf.get(), n, &dwBytesWritten, NULL);
-
         if (!fRet) {
             LOG << "WriteFile on target failed : " << GetLastError();
             break;
         }
-
         nDone += n;
-
         LOG << "n : " << n << " nDone : " << nDone;
-
     } while (nDone != nTotal);
-
     LOG << "nTotal : " << nTotal;
-
     return fRet;
 }
 
-auto RecoverVolumeToVolume(const std::wstring& source, const std::wstring& target)
-{
+auto recoverVolumeToVolume(const std::wstring& source, const std::wstring& target) {
     BOOL fRet = FALSE;
     DWORD dwBytesWritten = 0;
     DWORD lpNumberOfBytesRead = 0;
     std::unique_ptr<uint8_t[]> _buf;
     HANDLE hSource = INVALID_HANDLE_VALUE;
     HANDLE hTarget = INVALID_HANDLE_VALUE;
-
     hSource = osl::GetVolumeHandle(source.c_str());
-
     if (hSource == INVALID_HANDLE_VALUE) {
         LOG << "Failed to open source volume, error : " << GetLastError();
         goto _end;
     }
-
     if (!osl::AllowExtendedDasdIO(hSource)) {
         LOG << "AllowExtendedDasdIO failed, error : " << GetLastError();
         goto _end;
     }
-
     hTarget = osl::GetVolumeHandle(target.c_str());
-
     if (hTarget == INVALID_HANDLE_VALUE) {
         LOG << "Failed to open target " << target.c_str() << ", error " << GetLastError();
         goto _end;
     }
-
     fRet = osl::LockAndDismountVolume(hTarget);
-
     if (fRet == FALSE) {
         LOG << "LockAndDismountTargetBlockDevice failed";
         goto _end;
     }
-
     _buf = std::make_unique<uint8_t []>(_1M);
-
     do {
         fRet = ReadFile(hSource, _buf.get(), _1M, &lpNumberOfBytesRead, NULL);
-
         if (fRet) {
             fRet = WriteFile(hTarget, _buf.get(), lpNumberOfBytesRead, &dwBytesWritten, NULL);
             if (fRet == FALSE) {
@@ -190,50 +143,40 @@ auto RecoverVolumeToVolume(const std::wstring& source, const std::wstring& targe
         } else {
             LOG << "ReadFile on source failed, error : " << GetLastError();
         }
-
         if (lpNumberOfBytesRead < _1M)
             break;
-
     } while (fRet);
 
     _end:
-
     if (hSource != INVALID_HANDLE_VALUE) {
         CloseHandle(hSource);
     }
-
     if (hTarget != INVALID_HANDLE_VALUE) {
         osl::UnlockVolume(hTarget);
     }
-
     return fRet;
 }
 
-auto ConvertBlockDeviceToVirtualImages(const std::vector<TBackupConfig>& configuration, TProgressCallback cbk)
-{
+auto convertBlockDeviceToVirtualImages(const std::vector<TBackupConfig>& configuration, TProgressCallback cbk) {
     std::vector<std::wstring> supported;
     std::vector<std::future<void>> futures1, futures2;
-
     for (const auto& config : configuration) {
-
         auto [volume, level, format, destination, exclude, live] = config;
-
         if (fxc::IsVolumeSupported(volume.c_str()) && !live) {
             supported.push_back(volume);
             updateVolumeExludePathsForSnapshot(volume, exclude);
         } else {
-            auto target = GetTargetForDestination(destination, volume.substr(4, 44), format);
+            auto target = getTargetForDestination(destination, volume.substr(4, 44), format);
             volume.pop_back();
             if (target)
                 futures1.push_back(std::async(std::launch::async, [=](){
-                    fxc::CreateBaseVirtualDisk(format, volume, target,
+                    fxc::createBaseVirtualDisk(format, volume, target,
                         [=](auto snapshot, auto percent){
                             return cbk(volume, percent);
                         });
                 }));
         }
     }
-
     if (supported.size()) {
         CreateSnapshot(
             supported,
@@ -241,23 +184,19 @@ auto ConvertBlockDeviceToVirtualImages(const std::vector<TBackupConfig>& configu
                 for (int i = 0; i < ss.size(); i++) {
                     auto [inputVolume, snapshotDevice, originalVolume] = ss[i];
                     LOG << L" " << inputVolume << L" " << snapshotDevice << L" " << originalVolume;
-
                     std::wstring folder = L"";
                     std::wstring format = L"";
-
                     for (const auto& c : configuration) {
                         if (c.m_volume == inputVolume) {
                             folder = c.m_destination;
                             format = c.m_format;
                         }
                     }
-
-                    auto target = GetTargetForDestination(folder, originalVolume.substr(4, 44), format);
-
+                    auto target = getTargetForDestination(folder, originalVolume.substr(4, 44), format);
                     if (target)
                         futures2.push_back(std::async(std::launch::async,
                             [=](){
-                                fxc::CreateBaseVirtualDisk(format, snapshotDevice, target,
+                                fxc::createBaseVirtualDisk(format, snapshotDevice, target,
                                     [=](auto snapshot, auto percent) {
                                         return cbk(inputVolume, percent);
                                     });
@@ -266,23 +205,17 @@ auto ConvertBlockDeviceToVirtualImages(const std::vector<TBackupConfig>& configu
                 for (auto& f : futures2) f.get();
             });
     }
-
     for (auto& f : futures1) f.get();
-
     return true;
 }
 
-auto MountVirtualDiskAsVolume(const std::wstring& image)
-{
+auto mountVirtualDiskAsVolume(const std::wstring& image) {
     return false;
 }
 
-auto TestSnapshot(std::vector<std::wstring> volumes)
-{
+auto testSnapshot(std::vector<std::wstring> volumes) {
     fxc::EnumerateSnapshots();
-
     std::vector<std::wstring> supported, unsupported;
-
     for (const auto& volume : volumes) {
         if (fxc::IsVolumeSupported(volume)) {
             supported.push_back(volume);
@@ -290,7 +223,6 @@ auto TestSnapshot(std::vector<std::wstring> volumes)
             LOG << " excluding unsupported volume : " << volume;
         }
     }
-
     fxc::CreateSnapshot(
         supported,
         [] (fxc::TSnapshotSet ss) {
@@ -301,69 +233,50 @@ auto TestSnapshot(std::vector<std::wstring> volumes)
         });
 }
 
-auto usage(void)
-{
+auto usage(void) {
     LOG << " fxc -d[ump] <file>";
     LOG << " fxc -f[ull] <vhd[x]> <source> <file>";
     LOG << " fxc -i[ncr] <vhd[x]> <source> <parent-path> <target-file> <rctid>";
 }
 
-auto entry(std::vector<std::string> s_arguments)
-{
-  if (s_arguments.size() == 1)
-  {
-    usage();
+auto entry(std::vector<std::string> s_arguments) {
+    if (s_arguments.size() == 1) {
+        usage();
+        return 0;
+    }
+    std::vector<std::wstring> arguments;
+    for (const auto& a : s_arguments) {
+        arguments.push_back(osl::s2ws(a));
+    }
+    auto cmd = arguments[1];
+    arguments.erase(arguments.begin());
+    arguments.erase(arguments.begin());
+    if (cmd == L"-s") {
+        fxc::testSnapshot(arguments);
+    } else if (cmd == L"-d") {
+        fxc::dumpVirtualDisk(arguments[0]);
+    } else if (cmd == L"-f") {
+        fxc::createBaseVirtualDisk(
+            arguments[0],
+            arguments[1],
+            npl::make_file(arguments[2], true),
+            nullptr);
+    } else if (cmd == L"-i") {
+        fxc::createIncrementalVirtualDisk(
+            arguments[0],
+            arguments[1],
+            arguments[2],
+            npl::make_file(arguments[3], true),
+            arguments[4]);
+    } else if (cmd == L"-r") {
+        fxc::resilientChangeTrackingToDataBlockIO(
+            arguments[0], // source live vhd
+            arguments[1], // rctid
+            _2M);
+    } else {
+        usage();
+    }
     return 0;
-  }
-
-  std::vector<std::wstring> arguments;
-
-  for (const auto& a : s_arguments)
-    arguments.push_back(osl::s2ws(a));
-
-  auto cmd = arguments[1];
-
-  arguments.erase(arguments.begin());
-  arguments.erase(arguments.begin());
-
-  if (cmd == L"-s")
-  {
-    fxc::TestSnapshot(arguments);
-  }
-  else if (cmd == L"-d")
-  {
-    fxc::DumpVirtualDisk(arguments[0]);
-  }
-  else if (cmd == L"-f")
-  {
-    fxc::CreateBaseVirtualDisk(
-        arguments[0],
-        arguments[1],
-        npl::make_file(arguments[2], true),
-        nullptr);
-  }
-  else if (cmd == L"-i")
-  {
-    fxc::CreateIncrementalVirtualDisk(
-        arguments[0],
-        arguments[1],
-        arguments[2],
-        npl::make_file(arguments[3], true),
-        arguments[4]);
-  }
-  else if (cmd == L"-r")
-  {
-    fxc::ResilientChangeTrackingToDataBlockIO(
-        arguments[0], // source live vhd
-        arguments[1], // rctid
-        _2M);
-  }
-  else
-  {
-    usage();
-  }
-
-  return 0;
 }
 
 } //namespace fxc
