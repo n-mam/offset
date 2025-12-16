@@ -22,6 +22,16 @@ struct TBackupConfig {
     bool m_live;
 };
 
+struct TMountConfig {
+    bool m_mode;
+    uint8_t m_write;
+    bool m_encrypt;
+    wchar_t m_drive;
+    int m_partition;
+    uint16_t m_size;
+    std::wstring m_file;
+};
+
 auto getExtentionForFormat(const std::wstring& format) {
     if (format == L"d-vhd")
         return L"d.vhd";
@@ -157,11 +167,11 @@ auto recoverVolumeToVolume(const std::wstring& source, const std::wstring& targe
     return fRet;
 }
 
-auto convertBlockDeviceToVirtualImages(const std::vector<TBackupConfig>& configuration, TProgressCallback cbk) {
+auto convertBlockDeviceToVirtualImages(const std::vector<TBackupConfig>& bc, TProgressCallback cbk) {
     std::vector<std::wstring> supported;
     std::vector<std::future<void>> futures1, futures2;
-    for (const auto& config : configuration) {
-        auto [volume, level, format, destination, exclude, live] = config;
+    for (const auto& c : bc) {
+        auto [volume, level, format, destination, exclude, live] = c;
         if (fxc::IsVolumeSupported(volume.c_str()) && !live) {
             supported.push_back(volume);
             updateVolumeExludePathsForSnapshot(volume, exclude);
@@ -186,7 +196,7 @@ auto convertBlockDeviceToVirtualImages(const std::vector<TBackupConfig>& configu
                     LOG << L" " << inputVolume << L" " << snapshotDevice << L" " << originalVolume;
                     std::wstring folder = L"";
                     std::wstring format = L"";
-                    for (const auto& c : configuration) {
+                    for (const auto& c : bc) {
                         if (c.m_volume == inputVolume) {
                             folder = c.m_destination;
                             format = c.m_format;
@@ -209,7 +219,7 @@ auto convertBlockDeviceToVirtualImages(const std::vector<TBackupConfig>& configu
     return true;
 }
 
-auto mountVirtualDiskAsVolume(const std::wstring& image) {
+auto mountVirtualImageAsBlockDevice(const TMountConfig& mc) {
     return false;
 }
 

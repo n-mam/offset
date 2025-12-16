@@ -151,6 +151,15 @@ void DiskListModel::setStop(bool stop) {
     this->stop = stop;
 }
 
+bool DiskListModel::mountVirtualDisk() {
+
+    fxc::TMountConfig mc;
+
+    fxc::mountVirtualImageAsBlockDevice(mc);
+
+    return true;
+}
+
 bool DiskListModel::convertSelectedItemsToVirtualDisks(QString destination) {
     std::vector<fxc::TBackupConfig> configuration;
     if (destination.isEmpty()) {

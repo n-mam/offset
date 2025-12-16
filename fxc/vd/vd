@@ -68,7 +68,7 @@ auto create_base_vhd(const std::wstring& volume, npl::SPSubject<uint8_t, uint8_t
     LOG << "source volume length " << length;
     auto disk = std::make_shared<VirtualHardDisk>(length, _2M, VirtualHardDisk::EVHDType::Dynamic);
     auto bs = disk->GetBlockSize();
-    auto _buf = std::make_unique<uint8_t []>(bs);
+    auto buf = std::make_unique<uint8_t []>(bs);
     // footer
     auto rc = target->WriteSync((uint8_t *) &(disk->iFooter), sizeof(VHD_DISK_FOOTER), 0);
     // streaming: suffice to check first write
@@ -139,11 +139,11 @@ auto create_base_vhd(const std::wstring& volume, npl::SPSubject<uint8_t, uint8_t
                 len = length % bs;
             }
             // read the source device
-            auto fRet = source->ReadSync(_buf.get(), len, off);
+            auto fRet = source->ReadSync(buf.get(), len, off);
             ok = (fRet == len);
             // disk level write of volume level data block
             if (ok) {
-                fRet = disk->WriteSync(_buf.get(), len, off + disk->GetPartitionStartOffset(0));
+                fRet = disk->WriteSync(buf.get(), len, off + disk->GetPartitionStartOffset(0));
             }
             ok = (fRet == len);
             assert(bat[index] == disk->iBAT[index]);
@@ -226,19 +226,19 @@ auto create_child_vhd(const std::wstring& source,
     }
     auto phyDisk = npl::make_file(phyDiskPath);
     // incremental data blocks
-    auto _buf = std::make_unique<uint8_t []>(512 + bs);
+    auto buf = std::make_unique<uint8_t []>(512 + bs);
     blockCount = 0;
     for (auto& kv : dbiomap) {
         LOG << "BAT index : " << kv.first;
-        memset(_buf.get(), 0, 512 + bs);
+        memset(buf.get(), 0, 512 + bs);
         for (auto& dbio : kv.second) {
             LOG << "off : " << dbio.offset << " len : " << dbio.length;
             auto blockoff = dbio.offset % bs;
-            VirtualHardDisk::SetSectorBitmap(_buf.get(), blockoff, dbio.length, bs);
-            auto fRet = phyDisk->ReadSync(_buf.get() + 512 + blockoff, dbio.length, dbio.offset);
+            VirtualHardDisk::SetSectorBitmap(buf.get(), blockoff, dbio.length, bs);
+            auto fRet = phyDisk->ReadSync(buf.get() + 512 + blockoff, dbio.length, dbio.offset);
         }
         target->WriteSync(
-            (uint8_t *) _buf.get(),
+            (uint8_t *) buf.get(),
             512 + bs,
             diff->FirstDataBlockOffset() + (blockCount * (512 + bs)));
         blockCount++;
@@ -308,36 +308,36 @@ void create_base_vhdx(const std::wstring& volume, npl::SPSubject<uint8_t, uint8_
     LOG << "source volume length " << length;
     auto disk = std::make_shared<VirtualHardDisk2>(length, _4M);
     auto bs = disk->GetBlockSize();
-    auto _buf = std::make_unique<uint8_t []>(bs);
-    memset(_buf.get(), 0, _1M);
+    auto buf = std::make_unique<uint8_t []>(bs);
+    memset(buf.get(), 0, _1M);
     // file identifier
-    memmove(_buf.get(), (void *) &disk->iFileIdentifier, sizeof(VHDX_FILE_IDENTIFIER));
+    memmove(buf.get(), (void *) &disk->iFileIdentifier, sizeof(VHDX_FILE_IDENTIFIER));
     // vhdx Header 1
-    memmove(_buf.get() + _64K, (void *) &disk->iHeader, sizeof(VHDX_HEADER));
+    memmove(buf.get() + _64K, (void *) &disk->iHeader, sizeof(VHDX_HEADER));
     // vhdx Header 2
     disk->iHeader.SequenceNumber++;
     disk->iHeader.Checksum = 0;
     disk->iHeader.Checksum = crc32c_value((uint8_t *) &disk->iHeader, _4K);
-    memmove(_buf.get() + _64K + _64K, (void *) &disk->iHeader, sizeof(VHDX_HEADER));
+    memmove(buf.get() + _64K + _64K, (void *) &disk->iHeader, sizeof(VHDX_HEADER));
     // Region Table 1
-    memmove(_buf.get() + _64K + _64K + _64K, (void *) &disk->iRegionTable, sizeof(VHDX_REGION_TABLE));
+    memmove(buf.get() + _64K + _64K + _64K, (void *) &disk->iRegionTable, sizeof(VHDX_REGION_TABLE));
     // Region Table 2
-    memmove(_buf.get() + _64K + _64K + _64K + _64K, (void *) &disk->iRegionTable, sizeof(VHDX_REGION_TABLE));
+    memmove(buf.get() + _64K + _64K + _64K + _64K, (void *) &disk->iRegionTable, sizeof(VHDX_REGION_TABLE));
     // 1M vhdx header
-    auto rc = target->WriteSync(_buf.get(), _1M, 0);
+    auto rc = target->WriteSync(buf.get(), _1M, 0);
     if (rc != _1M) {
         ERR << "failed to write to target";
         return;
     }
     // log region
-    memset(_buf.get(), 0, _1M);
-    target->WriteSync(_buf.get(), _1M, _1M);
-    memset(_buf.get(), 0, _1M);
+    memset(buf.get(), 0, _1M);
+    target->WriteSync(buf.get(), _1M, _1M);
+    memset(buf.get(), 0, _1M);
     // metadata region: prolouge
-    memmove(_buf.get(), (void *) &disk->iMetadata.iTable, sizeof(VHDX_METADATA_TABLE));
+    memmove(buf.get(), (void *) &disk->iMetadata.iTable, sizeof(VHDX_METADATA_TABLE));
     // metadata region: objects
-    memmove(_buf.get() + _64K, &disk->iMetadata.iObjects, sizeof(VHDX_METADATA_OBJECTS));
-    target->WriteSync(_buf.get(), _1M, _2M);
+    memmove(buf.get() + _64K, &disk->iMetadata.iObjects, sizeof(VHDX_METADATA_OBJECTS));
+    target->WriteSync(buf.get(), _1M, _2M);
     // pre-compute the BAT
     auto bat = std::make_unique<uint64_t []>(disk->iBATSize / sizeof(uint64_t));
     memset(bat.get(), 0x00, disk->iBATSize);
@@ -415,10 +415,10 @@ void create_base_vhdx(const std::wstring& volume, npl::SPSubject<uint8_t, uint8_
                 len = length % bs;
             }
             // read the source device
-            auto fRet = source->ReadSync(_buf.get(), len, off);
+            auto fRet = source->ReadSync(buf.get(), len, off);
             assert(fRet == len);
             // disk level write of volume level data block
-            fRet = disk->WriteSync(_buf.get(), len, off + disk->GetPartitionStartOffset(0));
+            fRet = disk->WriteSync(buf.get(), len, off + disk->GetPartitionStartOffset(0));
             assert(fRet == len);
             assert(bat[index] == disk->iBAT[index]);
             nTotalPayloadBlocks--;
@@ -449,32 +449,32 @@ bool create_child_vhdx(const std::wstring& source, const std::wstring& parent, n
     auto base = std::make_shared<VirtualHardDisk2>(parent);
     auto diff = std::make_shared<VirtualHardDisk2>(base.get());
     base.reset();
-    auto _buf = std::make_unique<uint8_t []>(_1M);
-    memset(_buf.get(), 0, _1M);
+    auto buf = std::make_unique<uint8_t []>(_1M);
+    memset(buf.get(), 0, _1M);
     // file identifier
-    memmove(_buf.get(), (void *) &diff->iFileIdentifier, sizeof(VHDX_FILE_IDENTIFIER));
+    memmove(buf.get(), (void *) &diff->iFileIdentifier, sizeof(VHDX_FILE_IDENTIFIER));
     // vhdx Header 1
-    memmove(_buf.get() + _64K, (void *) &diff->iHeader, sizeof(VHDX_HEADER));
+    memmove(buf.get() + _64K, (void *) &diff->iHeader, sizeof(VHDX_HEADER));
     // vhdx Header 2
     diff->iHeader.SequenceNumber++;
     diff->iHeader.Checksum = 0;
     diff->iHeader.Checksum = crc32c_value((uint8_t *) &diff->iHeader, _4K);
-    memmove(_buf.get() + _64K + _64K, (void *) &diff->iHeader, sizeof(VHDX_HEADER));
+    memmove(buf.get() + _64K + _64K, (void *) &diff->iHeader, sizeof(VHDX_HEADER));
     // Region Table 1
-    memmove(_buf.get() + _64K + _64K + _64K, (void *) &diff->iRegionTable, sizeof(VHDX_REGION_TABLE));
+    memmove(buf.get() + _64K + _64K + _64K, (void *) &diff->iRegionTable, sizeof(VHDX_REGION_TABLE));
     // Region Table 2
-    memmove(_buf.get() + _64K + _64K + _64K + _64K, (void *) &diff->iRegionTable, sizeof(VHDX_REGION_TABLE));
+    memmove(buf.get() + _64K + _64K + _64K + _64K, (void *) &diff->iRegionTable, sizeof(VHDX_REGION_TABLE));
     // 1M vhdx header
-    target->WriteSync(_buf.get(), _1M, 0);
+    target->WriteSync(buf.get(), _1M, 0);
     // log region
-    memset(_buf.get(), 0, _1M);
-    target->WriteSync(_buf.get(), _1M, _1M);
-    memset(_buf.get(), 0, _1M);
+    memset(buf.get(), 0, _1M);
+    target->WriteSync(buf.get(), _1M, _1M);
+    memset(buf.get(), 0, _1M);
     // metadata region: prolouge
-    memmove(_buf.get(), (void *) &diff->iMetadata.iTable, sizeof(VHDX_METADATA_TABLE));
+    memmove(buf.get(), (void *) &diff->iMetadata.iTable, sizeof(VHDX_METADATA_TABLE));
     // metadata region: objects
-    memmove(_buf.get() + _64K, &diff->iMetadata.iObjects, sizeof(VHDX_METADATA_OBJECTS));
-    target->WriteSync(_buf.get(), _1M, _2M);
+    memmove(buf.get() + _64K, &diff->iMetadata.iObjects, sizeof(VHDX_METADATA_OBJECTS));
+    target->WriteSync(buf.get(), _1M, _2M);
     // pre-compute the BAT
     auto bat = std::make_unique<uint64_t []>(diff->iBATSize / sizeof(uint64_t));
     memset(bat.get(), 0, diff->iBATSize);
@@ -503,13 +503,13 @@ bool create_child_vhdx(const std::wstring& source, const std::wstring& parent, n
     }
     auto phyDisk = npl::make_file(phyDiskPath);
     // incremental data blocks
-    _buf = std::make_unique<uint8_t []>(bs);
+    buf = std::make_unique<uint8_t []>(bs);
     blockCount = 0;
     for (auto& kv : dbiomap) {
         LOG << "BAT index : " << kv.first;
-        auto fRet = phyDisk->ReadSync(_buf.get(), bs, bs * kv.first);
+        auto fRet = phyDisk->ReadSync(buf.get(), bs, bs * kv.first);
         assert(fRet == bs);
-        fRet = target->WriteSync(_buf.get(), bs, (diff->FirstDataBlockOffsetMB() * _1M) + (blockCount * bs));
+        fRet = target->WriteSync(buf.get(), bs, (diff->FirstDataBlockOffsetMB() * _1M) + (blockCount * bs));
         assert(fRet == bs);
         blockCount++;
     }
