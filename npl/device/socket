@@ -14,16 +14,16 @@
 namespace npl {
 
 enum tls {
-  yes,
-  no,
-  implicit
+    yes,
+    no,
+    implicit
 };
 
 inline std::map<SSL *, std::vector<SSL_SESSION *>> ssl_session_map;
 
 using TOnHandshake = std::function<void (void)>;
 
-class socket_device : public file_device {
+class socket_device : public file_device<std::wstring> {
 
     using SPSocketDevice = std::shared_ptr<socket_device>;
     using WPSocketDevice = std::weak_ptr<socket_device>;

@@ -114,7 +114,7 @@ struct dispatcher : public subject<uint8_t, uint8_t> {
     }
 
     virtual void add_subject(SPSubject subject) override {
-        auto device = std::dynamic_pointer_cast<file_device>(subject);
+        auto device = std::dynamic_pointer_cast<socket_device>(subject);
         assert(device);
         #ifdef linux
         assert(device->GetDeviceType() == EDeviceType::Socket);

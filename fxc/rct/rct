@@ -83,7 +83,7 @@ auto resilientChangeTrackingToDataBlockIO(const std::wstring& source, const std:
     for (ULONG i = 0; i < count; i++) {
         auto off = ranges[i].ByteOffset;
         auto len = ranges[i].ByteLength;
-        auto fragments = fxc::BaseDisk::LogicalToDataBlock(off, len, bs);
+        auto fragments = fxc::disk::LogicalToDataBlock(off, len, bs);
         for (auto& fragmet : fragments) {
             uint64_t batindex = fragmet.offset / bs;
             auto& dbio = dbiomap[batindex];

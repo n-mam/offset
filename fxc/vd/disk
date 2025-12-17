@@ -28,70 +28,66 @@ enum EPartitionType {
     EGPT
 };
 
-using TProgressCallback = std::function<bool (std::wstring, int)>;
+struct disk : public npl::subject<uint8_t, uint8_t> {
 
-class BaseDisk : public npl::subject<uint8_t, uint8_t> {
-
-    public:
+    using spdisk = std::shared_ptr<disk>;
 
     MBR iMBR = { 0 };
+    spdisk iChild = nullptr;
+    spdisk iParent = nullptr;
+    std::filesystem::path iPath;
+    EPartitionType iPartitionType;
     GptHdrRev1 alignas(512) iGptHdr = { 0 };
     GPE alignas(512) iPartitions[4] = { 0 };
-    EPartitionType iPartitionType;
-    std::filesystem::path iPath;
+
     npl::SPSubject<uint8_t, uint8_t> iFile = nullptr;
+    std::unique_ptr<uint8_t []> iRawSectors = nullptr;
     std::unique_ptr<uint8_t []> iPayloadBlock = nullptr;
 
-    public:
-
-    using SPBaseDisk = std::shared_ptr<BaseDisk>;
-
-    BaseDisk() {}
-
+    disk() {}
     // new virtual disk abstraction
-    BaseDisk(uint64_t size, uint32_t blocksize, EPartitionType partitionType = EPartitionType::EMBR) {
+    disk(uint64_t size, uint32_t blocksize, EPartitionType partitionType) {
         if (size >= _2T) {
             iPartitionType = EPartitionType::EGPT;
         } else {
             iPartitionType = partitionType;
         }
-
         if (iPartitionType == EPartitionType::EMBR) {
-            InitializeMBR(size, blocksize / 512);
+            initializeMBR(size, blocksize / 512);
         } else if (iPartitionType == EPartitionType::EGPT) {
-            InitializeGPT(size, blocksize / 512);
+            initializeGPT(size, blocksize / 512);
         }
     }
-
     // existing virtual disk abstraction
-    BaseDisk(const std::wstring& path, uint32_t len) {
+    disk(const std::wstring& path, uint32_t len) {
         iPath = path;
-        iFile = npl::make_file(iPath);
+        iFile = npl::make_file<std::wstring>(iPath);
         iRawSectors = std::make_unique<uint8_t []>(len);
         iFile->ReadSync(iRawSectors.get(), len, 0);
     }
 
-    virtual ~BaseDisk() {
+    virtual ~disk() {
         if (iFile) {
             get_last_target(iFile)->RemoveEventListener(iFile);
         }
     }
 
-    virtual bool IsFixed() = 0;
-    virtual bool IsDynamic() = 0;
-    virtual bool IsDifferencing() = 0;
-    virtual uint32_t GetBlockSize() = 0;
-    virtual std::vector<std::wstring> GetParentLocators(void) = 0;
+    virtual bool isFixed() = 0;
+    virtual bool isDynamic() = 0;
+    virtual bool isDifferencing() = 0;
+    virtual uint32_t getBlockSize() = 0;
+    virtual uint64_t getLogicalDiskLength() = 0;
+    virtual std::vector<std::wstring> getParentLocators(void) = 0;
 
-    virtual SPBaseDisk GetBaseParent(void) {
-        auto base = std::dynamic_pointer_cast<BaseDisk>(shared_from_this());
+    virtual spdisk getBaseParent(void) {
+        auto base = std::dynamic_pointer_cast<disk>(shared_from_this());
         while (base->iParent) {
             base = base->iParent;
         }
         return base;
     }
 
-    virtual uint64_t GetPartitionLength(int n) {
+    virtual uint64_t getPartitionLength(int n) {
         uint64_t length = 0;
         if (iPartitionType == EPartitionType::EGPT) {
             length = (iPartitions[n].end_lba - iPartitions[n].start_lba) * 512ULL;
@@ -102,9 +98,7 @@ class BaseDisk : public npl::subject<uint8_t, uint8_t> {
         return length;
     }
 
-    virtual uint64_t GetLogicalDiskLength() = 0;
-
-    virtual uint64_t GetPartitionStartOffset(int n) {
+    virtual uint64_t getPartitionStartOffset(int n) {
         uint64_t offset = 0;
         if (iPartitionType == EPartitionType::EGPT) {
             offset = (iPartitions[n].start_lba) * 512ULL;
@@ -114,15 +108,14 @@ class BaseDisk : public npl::subject<uint8_t, uint8_t> {
         return offset;
     }
 
-    /**
-     *   0       1          2            3              4
-     * [MBR] [GPT-Hdr] [Partitions] [GPT-Hdr(B)] [Partitions(B)]
-     */
-    auto CommitPartitionTable() {
+    auto commitPartitionTable() {
         uint8_t buf[512*5];
         //we are streaming
         memmove(buf, &iMBR, sizeof(MBR));
         if (iPartitionType == EPartitionType::EGPT) {
+           /*   0       1          2            3              4
+            * [MBR] [GPT-Hdr] [Partitions] [GPT-Hdr(B)] [Partitions(B)]
+            */
             memmove(buf + (512 * 1), &iGptHdr, sizeof(GptHdrRev1));
             memmove(buf + (512 * 2), iPartitions, 4 * sizeof(GPE));
             memmove(buf + (512 * 3), &iGptHdr, sizeof(GptHdrRev1));
@@ -142,11 +135,11 @@ class BaseDisk : public npl::subject<uint8_t, uint8_t> {
     virtual int32_t ReadSync(const uint8_t *b, size_t l, uint64_t o) override {
         uint64_t delta = 0;
         size_t nBytesRead = 0;
-        auto fragments = LogicalToDataBlock(o, l, GetBlockSize());
+        auto fragments = LogicalToDataBlock(o, l, getBlockSize());
         memset((void *)b, 0 ,l );
         for (auto& f: fragments) {
             f.buffer = b + delta;
-            auto level = GetBaseParent();
+            auto level = getBaseParent();
             while (level) {
                 auto fRet = level->DataBlockRead(f);
                 assert(fRet == f.length);
@@ -161,7 +154,7 @@ class BaseDisk : public npl::subject<uint8_t, uint8_t> {
     virtual int32_t WriteSync(const uint8_t *b, size_t l, uint64_t o) override {
         uint64_t delta = 0;
         size_t nBytesWritten = 0;
-        auto fragments = LogicalToDataBlock(o, l, GetBlockSize());
+        auto fragments = LogicalToDataBlock(o, l, getBlockSize());
         for (auto& f : fragments) {
             f.buffer = b + delta;
             auto fRet = this->DataBlockWrite(f);
@@ -188,14 +181,15 @@ class BaseDisk : public npl::subject<uint8_t, uint8_t> {
         return fragments;
     }
 
-    virtual void Initialize(void) {
-        if(iFile) {
+    virtual void initialize(void) {
+        if (iFile) {
+            /* set iFile as the target of this */
             iFile->AddEventListener(shared_from_this());
-            ReadSync((uint8_t *) &iMBR, sizeof(MBR), 0);
+            ReadSync((uint8_t *)&iMBR, sizeof(MBR), 0);
         }
     }
 
-    virtual void DumpStructure(void) {
+    virtual void dumpStructure(void) {
         LOG << "Master Boot Record : ";
         LOG << "DiskID                       : ";
         DumpBytes(iMBR.DiskID, 4, true);
@@ -209,20 +203,16 @@ class BaseDisk : public npl::subject<uint8_t, uint8_t> {
 
     protected:
 
-    SPBaseDisk iParent = nullptr;
-    SPBaseDisk iChild = nullptr;
-    std::unique_ptr<uint8_t []> iRawSectors = nullptr;
-
     virtual size_t DataBlockRead(DataBlockIO& bio) = 0;
     virtual size_t DataBlockWrite(DataBlockIO& bio) = 0;
 
-    void InitializeMBR(uint64_t size, uint32_t startSector) {
+    void initializeMBR(uint64_t size, uint32_t startSector) {
         /* signature */
         iMBR.signature = 0xAA55;
         /* diskid = current epoch */
         uint32_t epoch = static_cast<uint32_t>(std::time(nullptr));
         memmove(&(iMBR.DiskID), &epoch, 4);
-            /* NTFS */
+        /* NTFS */
         iMBR.partitions[0].type = 0x07;
         /* blocksize alignment */
         iMBR.partitions[0].start_sector = startSector;
@@ -230,7 +220,7 @@ class BaseDisk : public npl::subject<uint8_t, uint8_t> {
         iMBR.partitions[0].total_sectors = static_cast<uint32_t>(size / 512);
     }
 
-    void InitializeGPT(uint64_t size, uint32_t startSector) {
+    void initializeGPT(uint64_t size, uint32_t startSector) {
         // MBR
         iMBR.signature = 0xAA55;
         /* diskid = current epoch */
@@ -258,7 +248,6 @@ class BaseDisk : public npl::subject<uint8_t, uint8_t> {
         GUID guid;
         CoCreateGuid(&guid);
         memmove(&iGptHdr.DiskUuid, &guid, sizeof(GUID));
-
         iGptHdr.u64LbaFirstPartitionEntry = (uint64_t) 2;
         iGptHdr.cPartitionEntries = (uint64_t) 4;
         iGptHdr.cbPartitionEntry = (uint64_t) sizeof(GPE);
@@ -284,21 +273,18 @@ class BaseDisk : public npl::subject<uint8_t, uint8_t> {
         GUID guid1;
         CoCreateGuid(&guid1);
         memmove(&iPartitions[0].guid, &guid1, sizeof(GUID));
-
         iPartitions[0].start_lba = (uint64_t) startSector;
         iPartitions[0].end_lba = ((uint64_t) startSector + (size / 512));
-
         unsigned long  crc = crc32(0L, Z_NULL, 0);
         crc = crc32(crc, (const unsigned char*)iPartitions, sizeof(GPE) * 4);
         iGptHdr.u32CrcPartitionEntries = crc;
-
         crc = crc32(0L, Z_NULL, 0);
         crc = crc32(crc, (const unsigned char*)&iGptHdr, sizeof(GptHdrRev1));
         iGptHdr.u32Crc = crc;
     }
 };
 
-using SPBaseDisk = std::shared_ptr<BaseDisk>;
+using spdisk = std::shared_ptr<disk>;
 
 } //namespace fxc
 

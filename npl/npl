@@ -61,8 +61,8 @@ inline auto make_http_client(const std::string& host, int port) {
 }
 
 template <typename T>
-inline auto make_file(const T& file, bool create = false) {
-    auto device = std::make_shared<file_device>(file, create);
+inline auto make_file(const T& path, bool create = false) {
+    auto device = std::make_shared<file_device<T>>(path, create);
     if (device->IsConnected()) {
         getSharedInstance<dispatcher>()->AddEventListener(device);
     } else {
@@ -109,7 +109,7 @@ inline void test_ftp_client(const std::string& host, const std::string& port,
         nullptr,
         npl::tls::yes);
     ftp->SetCurrentDirectory("/");
-    auto file = std::make_shared<file_device>("./xx.txt", true);
+    auto file = npl::make_file<std::wstring>(L"./xx.txt", true);
     ftp->Transfer(ftp::download, "x.txt",
         [file, offset = 0ULL](const char *b, size_t n) mutable {
             if (b) {
@@ -140,9 +140,9 @@ inline void test_ftp_client(const std::string& host, const std::string& port,
     getchar();
 }
 
-inline void test_file_copy(const std::string& source, const std::string& dest) {
-    auto rd = npl::make_file(source);
-    auto wd = npl::make_file(dest, true);
+inline void test_file_copy(const std::wstring& source, const std::wstring& dest) {
+    auto rd = npl::make_file<std::wstring>(source);
+    auto wd = npl::make_file<std::wstring>(dest, true);
     constexpr int bufSize = (1 * 1024 * 1024);
     uint8_t *buf = (uint8_t *) calloc(bufSize, 1);
     auto obv = std::make_shared<npl::listener>();

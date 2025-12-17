@@ -131,25 +131,17 @@ inline auto GetPhysicalDiskPath(HANDLE hvhd) {
 
     if (pfn == NULL) {
       LOG << "Failed to get poinetr to GetVirtualDiskPhysicalPath " << GetLastError();
-      return std::string();
+      return std::wstring();
     }
 
     auto fRet = pfn(hvhd, &bufSize, buf);
 
     if (fRet != ERROR_SUCCESS) {
       LOG << "GetVirtualDiskPhysicalPath failed, error : " << fRet;
-      return std::string();
+      return std::wstring();
     }
 
-    char phyDiskPath[128] = { '\0' };
-    wchar_t *wc = buf;
-
-    while (*wc) {
-      phyDiskPath[strlen(phyDiskPath)] = *((char *)wc);
-      wc++;
-    }
-
-    return std::string(phyDiskPath);
+    return std::wstring(buf);
 }
 
 inline PVOLUME_BITMAP_BUFFER GetVolumeInUseBitmap(HANDLE hvolume) {
@@ -484,8 +476,7 @@ inline auto GetVolumeList(void)
   }
 }
 
-inline auto UnlockVolume(HANDLE hTarget)
-{
+inline auto unlockVolume(HANDLE hTarget) {
   BOOL fRet = DeviceIoControl(
           hTarget,
           FSCTL_UNLOCK_VOLUME,
@@ -495,14 +486,10 @@ inline auto UnlockVolume(HANDLE hTarget)
           0,
           NULL,
           NULL);
-
-  if (fRet == FALSE)
-  {
+  if (fRet == FALSE) {
     LOG << "FSCTL_UNLOCK_VOLUME failed, error " << GetLastError();
   }
-
   CloseHandle(hTarget);
-
   return fRet;
 }
 

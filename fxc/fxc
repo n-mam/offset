@@ -28,7 +28,7 @@ struct TMountConfig {
     bool m_encrypt;
     wchar_t m_drive;
     int m_partition;
-    uint16_t m_size;
+    uint64_t m_size;
     std::wstring m_file;
 };
 
@@ -49,7 +49,7 @@ auto getTargetForDestination(const std::wstring& destination, const std::wstring
     npl::SPSubject<uint8_t, uint8_t> target;
     std::filesystem::path destinationPath(destination);
     if (std::filesystem::is_directory(destinationPath)) {
-        target = npl::make_file(destination + L"\\" + name + L"." +
+        target = npl::make_file<std::wstring>(destination + L"\\" + name + L"." +
             osl::get_timestamp() + L"." + getExtentionForFormat(format), true);
     } else {
         auto [protocol, username, password, host, port, directory] =
@@ -86,15 +86,15 @@ auto recoverVirtualImageToPhysicalVolume(const std::wstring& source, const std::
     bool fRet = osl::LockAndDismountVolume(hTarget);
     if (fRet == FALSE) {
         LOG << "LockAndDismountVolume failed";
-        osl::UnlockVolume(hTarget);
+        osl::unlockVolume(hTarget);
         return false;
     }
     uint64_t nDone = 0;
     DWORD dwBytesWritten;
-    auto bs = disk->GetBlockSize();
+    auto bs = disk->getBlockSize();
     buf = std::make_unique<uint8_t []>(bs);
-    uint64_t nTotal = disk->GetPartitionLength(0);
-    uint64_t offset = disk->GetPartitionStartOffset(0);
+    uint64_t nTotal = disk->getPartitionLength(0);
+    uint64_t offset = disk->getPartitionStartOffset(0);
     do {
         auto pending = nTotal - nDone;
         size_t nToRead = pending > bs ? bs : pending;
@@ -162,7 +162,7 @@ auto recoverVolumeToVolume(const std::wstring& source, const std::wstring& targe
         CloseHandle(hSource);
     }
     if (hTarget != INVALID_HANDLE_VALUE) {
-        osl::UnlockVolume(hTarget);
+        osl::unlockVolume(hTarget);
     }
     return fRet;
 }
@@ -269,14 +269,14 @@ auto entry(std::vector<std::string> s_arguments) {
         fxc::createBaseVirtualDisk(
             arguments[0],
             arguments[1],
-            npl::make_file(arguments[2], true),
+            npl::make_file<std::wstring>(arguments[2], true),
             nullptr);
     } else if (cmd == L"-i") {
         fxc::createIncrementalVirtualDisk(
             arguments[0],
             arguments[1],
             arguments[2],
-            npl::make_file(arguments[3], true),
+            npl::make_file<std::wstring>(arguments[3], true),
             arguments[4]);
     } else if (cmd == L"-r") {
         fxc::resilientChangeTrackingToDataBlockIO(

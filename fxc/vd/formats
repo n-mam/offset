@@ -522,58 +522,58 @@ typedef struct VHD_FOOTER_HEADER {
  * T2 image format
  */
 typedef struct FC_HDR_CLEAR {
-  /*  "flxcrypt"  */
-  unsigned char   magic[8];
-  unsigned char   salt[128];
-  unsigned char   flags[4];
-  uint32_t        blocksize;
-  /*
-   * size at this point is 8 + 128 + 4 + 4 = 140
-   */
+    /*  "flxcrypt"  */
+    unsigned char   magic[8];
+    unsigned char   salt[128];
+    unsigned char   flags[4];
+    uint32_t        blocksize;
+    /*
+     * size at this point is 8 + 128 + 4 + 4 = 140
+     */
 } FCHDR, *pFCHDR;
 
 typedef struct Differencing_Disk_Keys {
-   FCHDR            clear;
-   wchar_t        * szImage;
-   unsigned char  * keys;              /* up-to 3, 256 bit keys */
-   const char     * cascade;        /* cipher cascade        */
-   struct Differencing_Disk_Keys *next;
+    FCHDR            clear;
+    wchar_t        * szImage;
+    unsigned char  * keys;              /* up-to 3, 256 bit keys */
+    const char     * cascade;        /* cipher cascade        */
+    struct Differencing_Disk_Keys *next;
 } DDK, *pDDK;
 
 typedef struct _FC_SPAN_HEADER {
-  FCHDR clear;
-  /* span size, minus the footer. */
-  uint64_t  spansize;
-  /* size of the BAT (DWORD + ULL)*/
-  uint64_t  batsize;
-  /* parent's path */
-  unsigned char parent[244];
+    FCHDR clear;
+    /* span size, minus the footer. */
+    uint64_t  spansize;
+    /* size of the BAT (DWORD + ULL)*/
+    uint64_t  batsize;
+    /* parent's path */
+    unsigned char parent[244];
 } FC_SPAN_HEADER, *pFC_SPAN_HEADER;
 
 /* Hosted VMDK structures */
 
-typedef uint64_t SectorType;
 typedef uint8_t  Bool;
+typedef uint64_t SectorType;
 
 typedef struct SparseExtentHeader {
-   uint32_t       magicNumber;
-   uint32_t       version;
-   uint32_t       flags;
-   SectorType   capacity;
-   SectorType   grainSize;
-   SectorType   descriptorOffset;
-   SectorType   descriptorSize;
-   uint32_t       numGTEsPerGT;
-   SectorType   rgdOffset;
-   SectorType   gdOffset;
-   SectorType   overHead;
-   Bool         uncleanShutdown;
-   char         singleEndLineChar;
-   char         nonEndLineChar;
-   char         doubleEndLineChar1;
-   char         doubleEndLineChar2;
-   uint16_t     compressAlgorithm;
-   uint8_t      pad[433];
+    uint32_t       magicNumber;
+    uint32_t       version;
+    uint32_t       flags;
+    SectorType   capacity;
+    SectorType   grainSize;
+    SectorType   descriptorOffset;
+    SectorType   descriptorSize;
+    uint32_t       numGTEsPerGT;
+    SectorType   rgdOffset;
+    SectorType   gdOffset;
+    SectorType   overHead;
+    Bool         uncleanShutdown;
+    char         singleEndLineChar;
+    char         nonEndLineChar;
+    char         doubleEndLineChar1;
+    char         doubleEndLineChar2;
+    uint16_t     compressAlgorithm;
+    uint8_t      pad[433];
 } SparseExtentHeader, *pSEH;
 
 /* QCOW Structures */
@@ -719,5 +719,7 @@ const __GUID _GUID_PAGE_83_DATA = { 0xBECA12AB, 0xB2E6, 0x4523, { 0x93, 0xEF, 0x
 
 #define PLATFORM_CODE_WIN_ABSOLUTE  "W2ku"
 #define PLATFORM_CODE_WIN_RELATIVE  "W2ru"
+
+using TProgressCallback = std::function<bool (std::wstring, int)>;
 
 #endif

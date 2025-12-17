@@ -8,7 +8,7 @@
 namespace fxc {
 
 //create a raw image from source at ofset o and write to target
-auto image_copy_from(npl::SPFileDevice source, npl::SPSubject<uint8_t, uint8_t> target, TProgressCallback cbk = nullptr) {
+auto image_copy_from(npl::SPFileDevice<std::wstring> source, npl::SPSubject<uint8_t, uint8_t> target, TProgressCallback cbk = nullptr) {
 
     if (!osl::AllowExtendedDasdIO(source->_fd_sync)) {
       LOG << "AllowExtendedDasdIO failed, error : " << GetLastError();
@@ -60,14 +60,14 @@ auto image_copy_from(npl::SPFileDevice source, npl::SPSubject<uint8_t, uint8_t> 
 }
 
 //create base parent vhd from a volume/snapshot block device
-auto create_base_vhd(const std::wstring& volume, npl::SPSubject<uint8_t, uint8_t> target, fxc::TProgressCallback cbk) {
-    auto source = npl::make_file(volume, false);
+auto create_base_vhd(const std::wstring& volume, npl::SPSubject<uint8_t, uint8_t> target, TProgressCallback cbk) {
+    auto source = npl::make_file<std::wstring>(volume, false);
     assert(source);
     auto nvdb = osl::GetNTFSVolumeData(source->_fd_sync);
     uint64_t length = osl::GetBlockDeviceLength(source->_fd_sync);
     LOG << "source volume length " << length;
-    auto disk = std::make_shared<VirtualHardDisk>(length, _2M, VirtualHardDisk::EVHDType::Dynamic);
-    auto bs = disk->GetBlockSize();
+    auto disk = std::make_shared<vhd>(length, _2M, vhd::EVHDType::Dynamic);
+    auto bs = disk->getBlockSize();
     auto buf = std::make_unique<uint8_t []>(bs);
     // footer
     auto rc = target->WriteSync((uint8_t *) &(disk->iFooter), sizeof(VHD_DISK_FOOTER), 0);
@@ -107,7 +107,7 @@ auto create_base_vhd(const std::wstring& volume, npl::SPSubject<uint8_t, uint8_t
     LOG << "source volume pending length " << pendinglen;
     if (pendinglen) {
         uint64_t pendingoff = bs + totalClusterLength;
-        auto fragments = BaseDisk::LogicalToDataBlock(pendingoff, pendinglen, bs);
+        auto fragments = disk::LogicalToDataBlock(pendingoff, pendinglen, bs);
         for (auto& f : fragments) {
             batIndex = f.offset / bs;
             auto batentry = osl::endian_reverse(bat[batIndex]);
@@ -126,11 +126,11 @@ auto create_base_vhd(const std::wstring& volume, npl::SPSubject<uint8_t, uint8_t
     target->WriteSync((uint8_t *) bat.get(), disk->iBATSize, sizeof(VHD_FOOTER_HEADER));
     // set target for io operations on disk
     target->AddEventListener(disk);
-    disk->CommitPartitionTable();
+    disk->commitPartitionTable();
     nTotalPayloadBlocks--;
     bool stop = false, ok = true;
     // payload blocks
-    for (uint64_t index = 1; !stop && ok && index < disk->GetTotalBATEntries(); index++) {
+    for (uint64_t index = 1; !stop && ok && index < disk->getTotalBATEntries(); index++) {
         auto entry = osl::endian_reverse(bat[index]);
         if (entry != ~((uint32_t)0)) {
             uint64_t len = bs;
@@ -143,7 +143,7 @@ auto create_base_vhd(const std::wstring& volume, npl::SPSubject<uint8_t, uint8_t
             ok = (fRet == len);
             // disk level write of volume level data block
             if (ok) {
-                fRet = disk->WriteSync(buf.get(), len, off + disk->GetPartitionStartOffset(0));
+                fRet = disk->WriteSync(buf.get(), len, off + disk->getPartitionStartOffset(0));
             }
             ok = (fRet == len);
             assert(bat[index] == disk->iBAT[index]);
@@ -181,11 +181,11 @@ auto create_child_vhd(const std::wstring& source,
         npl::SPSubject<uint8_t, uint8_t> target,
         const std::wstring rctid) {
 
-    auto base = std::make_shared<VirtualHardDisk>(parent);
-    auto diff = std::make_shared<VirtualHardDisk>(
-                    base->GetLogicalDiskLength(),
-                    base->GetBlockSize(),
-                    VirtualHardDisk::EVHDType::Differencing);
+    auto base = std::make_shared<vhd>(parent);
+    auto diff = std::make_shared<vhd>(
+                    base->getLogicalDiskLength(),
+                    base->getBlockSize(),
+                    vhd::EVHDType::Differencing);
     auto fsBasePath = base->iPath;
     base.reset();
     // footer
@@ -204,7 +204,7 @@ auto create_child_vhd(const std::wstring& source,
     // pre-compute the BAT
     auto bat = std::make_unique<uint32_t []>(diff->iBATSize / sizeof(uint32_t));
     memset(bat.get(), 0xFF, diff->iBATSize);
-    auto bs = diff->GetBlockSize();
+    auto bs = diff->getBlockSize();
     auto dbiomap = fxc::resilientChangeTrackingToDataBlockIO(source, rctid, bs);
     uint64_t blockCount = 0;
     for (auto& kv : dbiomap) {
@@ -224,7 +224,7 @@ auto create_child_vhd(const std::wstring& source,
         LOG << "create_child_vhd failed to get physical disk object";
         return false;
     }
-    auto phyDisk = npl::make_file(phyDiskPath);
+    auto phyDisk = npl::make_file<std::wstring>(phyDiskPath);
     // incremental data blocks
     auto buf = std::make_unique<uint8_t []>(512 + bs);
     blockCount = 0;
@@ -234,7 +234,7 @@ auto create_child_vhd(const std::wstring& source,
         for (auto& dbio : kv.second) {
             LOG << "off : " << dbio.offset << " len : " << dbio.length;
             auto blockoff = dbio.offset % bs;
-            VirtualHardDisk::SetSectorBitmap(buf.get(), blockoff, dbio.length, bs);
+            vhd::SetSectorBitmap(buf.get(), blockoff, dbio.length, bs);
             auto fRet = phyDisk->ReadSync(buf.get() + 512 + blockoff, dbio.length, dbio.offset);
         }
         target->WriteSync(
@@ -261,17 +261,17 @@ auto create_child_vhd(const std::wstring& source,
     return true;
 }
 
-auto create_fixed_vhd(const std::wstring& device, npl::SPSubject<uint8_t, uint8_t> target, fxc::TProgressCallback cbk) {
-    auto source = npl::make_file(device, false);
+auto create_fixed_vhd(const std::wstring& device, npl::SPSubject<uint8_t, uint8_t> target, TProgressCallback cbk) {
+    auto source = npl::make_file<std::wstring>(device, false);
     assert(source);
     uint64_t length = osl::GetBlockDeviceLength(source->_fd_sync);
     LOG << "source device length " << length;
-    auto disk = std::make_shared<VirtualHardDisk>(length, _2M, VirtualHardDisk::EVHDType::Fixed);
+    auto disk = std::make_shared<vhd>(length, _2M, vhd::EVHDType::Fixed);
     // set target for io operations on disk
     target->AddEventListener(disk);
-    auto rc = disk->CommitPartitionTable();
+    auto rc = disk->commitPartitionTable();
     if (!rc) {
-        ERR << "CommitPartitionTable failed";
+        ERR << "commitPartitionTable failed";
         return;
     }
     image_copy_from(source, disk, cbk);
@@ -285,8 +285,8 @@ auto create_fixed_vhd(const std::wstring& device, npl::SPSubject<uint8_t, uint8_
     target.reset();
 }
 
-auto create_raw_image(const std::wstring& device, npl::SPSubject<uint8_t, uint8_t> target, fxc::TProgressCallback cbk) {
-    auto source = npl::make_file(device, false);
+auto create_raw_image(const std::wstring& device, npl::SPSubject<uint8_t, uint8_t> target, TProgressCallback cbk) {
+    auto source = npl::make_file<std::wstring>(device, false);
     assert(source);
     uint64_t length = osl::GetBlockDeviceLength(source->_fd_sync);
     LOG << "source device length " << length;
@@ -300,14 +300,14 @@ auto create_raw_image(const std::wstring& device, npl::SPSubject<uint8_t, uint8_
 }
 
 //create base parent vhdx from a volume/snapshot block device
-void create_base_vhdx(const std::wstring& volume, npl::SPSubject<uint8_t, uint8_t> target, fxc::TProgressCallback cbk) {
-    auto source = npl::make_file(volume, false);
+void create_base_vhdx(const std::wstring& volume, npl::SPSubject<uint8_t, uint8_t> target, TProgressCallback cbk) {
+    auto source = npl::make_file<std::wstring>(volume, false);
     assert(source);
     auto nvdb = osl::GetNTFSVolumeData(source->_fd_sync);
     uint64_t length = osl::GetBlockDeviceLength(source->_fd_sync);
     LOG << "source volume length " << length;
-    auto disk = std::make_shared<VirtualHardDisk2>(length, _4M);
-    auto bs = disk->GetBlockSize();
+    auto disk = std::make_shared<vhdx>(length, _4M);
+    auto bs = disk->getBlockSize();
     auto buf = std::make_unique<uint8_t []>(bs);
     memset(buf.get(), 0, _1M);
     // file identifier
@@ -373,7 +373,7 @@ void create_base_vhdx(const std::wstring& volume, npl::SPSubject<uint8_t, uint8_
     LOG << "source volume pending length " << pendinglen;
     if (pendinglen) {
         uint64_t pendingoff = bs + totalClusterLength;
-        auto fragments = BaseDisk::LogicalToDataBlock(pendingoff, pendinglen, bs);
+        auto fragments = disk::LogicalToDataBlock(pendingoff, pendinglen, bs);
         for (auto& f : fragments) {
             uint64_t pb_entry_cnt = f.offset / bs;
             uint64_t sb_entry_cnt = pb_entry_cnt / disk->iChunkRatio;
@@ -398,11 +398,11 @@ void create_base_vhdx(const std::wstring& volume, npl::SPSubject<uint8_t, uint8_
     target->WriteSync((uint8_t *) bat.get(), disk->iBATSize, _3M);
     // set target for io operations on disk
     target->AddEventListener(disk);
-    disk->CommitPartitionTable();
+    disk->commitPartitionTable();
     nTotalPayloadBlocks--;
     bool stop = false;
     // payload blocks
-    for (uint64_t index = 1; index < disk->GetTotalBATEntries() && !stop; index++) {
+    for (uint64_t index = 1; index < disk->getTotalBATEntries() && !stop; index++) {
         if ((index + 1) % (disk->iChunkRatio + 1) == 0) {
             continue;
         }
@@ -418,7 +418,7 @@ void create_base_vhdx(const std::wstring& volume, npl::SPSubject<uint8_t, uint8_
             auto fRet = source->ReadSync(buf.get(), len, off);
             assert(fRet == len);
             // disk level write of volume level data block
-            fRet = disk->WriteSync(buf.get(), len, off + disk->GetPartitionStartOffset(0));
+            fRet = disk->WriteSync(buf.get(), len, off + disk->getPartitionStartOffset(0));
             assert(fRet == len);
             assert(bat[index] == disk->iBAT[index]);
             nTotalPayloadBlocks--;
@@ -446,8 +446,8 @@ void create_base_vhdx(const std::wstring& volume, npl::SPSubject<uint8_t, uint8_
 
 //create differencing child vhd using either RCT CBT ranges (disk level) or volume level CBT
 bool create_child_vhdx(const std::wstring& source, const std::wstring& parent, npl::SPSubject<uint8_t, uint8_t> target, const std::wstring rctid) {
-    auto base = std::make_shared<VirtualHardDisk2>(parent);
-    auto diff = std::make_shared<VirtualHardDisk2>(base.get());
+    auto base = std::make_shared<vhdx>(parent);
+    auto diff = std::make_shared<vhdx>(base.get());
     base.reset();
     auto buf = std::make_unique<uint8_t []>(_1M);
     memset(buf.get(), 0, _1M);
@@ -478,7 +478,7 @@ bool create_child_vhdx(const std::wstring& source, const std::wstring& parent, n
     // pre-compute the BAT
     auto bat = std::make_unique<uint64_t []>(diff->iBATSize / sizeof(uint64_t));
     memset(bat.get(), 0, diff->iBATSize);
-    auto bs = diff->GetBlockSize();
+    auto bs = diff->getBlockSize();
     auto dbiomap = fxc::resilientChangeTrackingToDataBlockIO(source, rctid, bs);
     uint64_t blockCount = 0;
     for (auto& kv : dbiomap) {
@@ -486,11 +486,11 @@ bool create_child_vhdx(const std::wstring& source, const std::wstring& parent, n
         uint64_t sb_entry_cnt = pb_entry_cnt / diff->iChunkRatio;
         uint64_t batindex = pb_entry_cnt + sb_entry_cnt;
         VHDX_BAT_ENTRY entry = {VHDX_BAT_ENTRY_PAYLOAD_BLOCK_FULLY_PRESENT, 0, diff->FirstDataBlockOffsetMB() +  ((bs * blockCount) / _1M)};
-        bat[batindex] = *((uint64_t *) &entry);
+        bat[batindex] = *((uint64_t *)&entry);
         LOG << "Bat construction : setting bat entry : " << kv.first;
         blockCount++;
     }
-    target->WriteSync((uint8_t *) bat.get(), diff->iBATSize, _3M);
+    target->WriteSync((uint8_t *)bat.get(), diff->iBATSize, _3M);
     auto hvhd = osl::AttachVHD(source);
     if (hvhd == INVALID_HANDLE_VALUE) {
         LOG << "create_child_vhdx failed to attach vhd";
@@ -501,7 +501,7 @@ bool create_child_vhdx(const std::wstring& source, const std::wstring& parent, n
         LOG << "create_child_vhdx failed to get physical disk object";
         return false;
     }
-    auto phyDisk = npl::make_file(phyDiskPath);
+    auto phyDisk = npl::make_file<std::wstring>(phyDiskPath);
     // incremental data blocks
     buf = std::make_unique<uint8_t []>(bs);
     blockCount = 0;
@@ -528,9 +528,9 @@ bool create_child_vhdx(const std::wstring& source, const std::wstring& parent, n
 
 // api
 auto make_virtual_disk(const std::wstring& path) {
-    SPBaseDisk disk = nullptr;
+    spdisk disk = nullptr;
     uint8_t buf[512] = { 0 };
-    auto file = npl::make_file(path, false);
+    auto file = npl::make_file<std::wstring>(path, false);
     if (!file) {
         LOG << L"Failed to open file " << path;
         return disk;
@@ -541,14 +541,14 @@ auto make_virtual_disk(const std::wstring& path) {
     LOG << L"";
     if (memcmp(buf, "conectix", strlen("conectix")) == 0) {
         LOG << L"Dynamic VHD detected";
-        disk = std::make_shared<VirtualHardDisk>(path);
+        disk = std::make_shared<vhd>(path);
     } else if (memcmp(buf, "vhdxfile", strlen("vhdxfile")) == 0) {
         LOG << L"Dynamic VHDx detected";
-        disk = std::make_shared<VirtualHardDisk2>(path);
+        disk = std::make_shared<vhdx>(path);
     } else {
         LOG << L"Unknown image file format";
     }
-    disk->Initialize();
+    disk->initialize();
     return disk;
 }
 
@@ -556,7 +556,7 @@ void createBaseVirtualDisk(
     const std::wstring& format,
     const std::wstring& source,
     npl::SPSubject<uint8_t, uint8_t> target,
-    fxc::TProgressCallback cbk) {
+    TProgressCallback cbk) {
         if (format == L"d-vhd") {
             fxc::create_base_vhd(source, target, cbk);
         } else if (format == L"d-vhdx") {
@@ -592,7 +592,7 @@ void createIncrementalVirtualDisk(
 void dumpVirtualDisk(const std::wstring& path) {
     auto disk = fxc::make_virtual_disk(path);
     if (disk) {
-        disk->DumpStructure();
+        disk->dumpStructure();
     }
 }
 

@@ -1,7 +1,5 @@
-#ifndef DEVICE_FILE_HPP
-#define DEVICE_FILE_HPP
-
-#include <assert.h>
+#ifndef FILE_HPP
+#define FILE_HPP
 
 #include <observer/subject>
 
@@ -26,8 +24,6 @@ using SOCKET = int;
 #endif
 
 namespace npl {
-
-constexpr uint32_t DEVICE_BUFFER_SIZE = 65536;
 
 enum EDeviceType : uint8_t {
     None = 0,
@@ -73,103 +69,90 @@ constexpr inline auto EIOToString(EIOType t) {
     }
 }
 
-class file_device : public subject<uint8_t, uint8_t>
-{
-    public:
+constexpr uint32_t DEVICE_BUFFER_SIZE = 65536;
 
+template<typename T>
+struct file_device : public subject<uint8_t, uint8_t> {
+
+    T _path;
     FD _fd_sync;
     FD _fd_async;
 
-    protected:
-
-    EDeviceType _device_type = EDeviceType::None;
-
-    public:
-
     file_device(){};
-
     file_device(const std::string& name) : subject(name) {};
 
-    file_device(const std::string& file, bool create) : subject("file") {
+    file_device(const T& path, bool create) : subject("file") {
         MarkConnected(true);
         #ifdef _WIN32
-        _fd_async = CreateFileA(
-            file.c_str(),
+        if constexpr (std::is_same<T, std::wstring>::value)
+        _fd_async = CreateFileW(
+            path.c_str(),
             GENERIC_READ|GENERIC_WRITE,
             FILE_SHARE_READ|FILE_SHARE_WRITE,
             NULL,
             (create ? CREATE_ALWAYS : OPEN_EXISTING),
             FILE_FLAG_OVERLAPPED|FILE_FLAG_SEQUENTIAL_SCAN,
             NULL);
+        else if constexpr (std::is_same<T, std::string>::value)
+        _fd_async = CreateFileA(
+            path.c_str(),
+            GENERIC_READ|GENERIC_WRITE,
+            FILE_SHARE_READ|FILE_SHARE_WRITE,
+            NULL,
+            (create ? CREATE_ALWAYS : OPEN_EXISTING),
+            FILE_FLAG_OVERLAPPED|FILE_FLAG_SEQUENTIAL_SCAN,
+            NULL);
+
         if (_fd_async == INVALID_HANDLE_VALUE) {
             MarkConnected(false);
-            ERR << file << ", _fd_async CreateFile failed : " << GetLastError();
+            ERR << path << L", _fd_async CreateFile failed : " << GetLastError();
         }
-        _fd_sync = CreateFileA(
-            file.c_str(),
+        if constexpr (std::is_same<T, std::wstring>::value)
+        _fd_async = CreateFileW(
+            path.c_str(),
             GENERIC_READ|GENERIC_WRITE,
             FILE_SHARE_READ|FILE_SHARE_WRITE,
             NULL,
             OPEN_EXISTING,
             FILE_ATTRIBUTE_NORMAL,
             NULL);
+        else if constexpr (std::is_same<T, std::string>::value)
+        _fd_async = CreateFileA(
+            path.c_str(),
+            GENERIC_READ|GENERIC_WRITE,
+            FILE_SHARE_READ|FILE_SHARE_WRITE,
+            NULL,
+            OPEN_EXISTING,
+            FILE_ATTRIBUTE_NORMAL,
+            NULL);
+
         if (_fd_sync == INVALID_HANDLE_VALUE) {
             MarkConnected(false);
-            ERR << file << ", _fd_sync CreateFile failed : " << GetLastError();
+            ERR << path << L", _fd_sync CreateFile failed : " << GetLastError();
         }
         #else
         int flags = 0|O_RDWR ;
         if (create) {
             flags |= O_CREAT;
         }
-        _fd_async = open(file.c_str(), flags, 0640);
+        _fd_async = open(path.c_str(), flags, 0640);
         if (_fd_async < 0) {
             MarkConnected(false);
-            ERR << file << ", error : " << strerror(errno);
+            ERR << path << L", error : " << strerror(errno);
         }
         #endif
+        _path = path;
         _device_type = EDeviceType::File;
     }
-
-    #ifdef _WIN32
-    file_device(const std::wstring& file, bool create) {
-        MarkConnected(true);
-        _fd_async = CreateFileW(
-            file.c_str(),
-            GENERIC_READ|GENERIC_WRITE,
-            FILE_SHARE_READ|FILE_SHARE_WRITE,
-            NULL,
-            (create ? CREATE_ALWAYS : OPEN_EXISTING),
-            FILE_FLAG_OVERLAPPED|FILE_FLAG_SEQUENTIAL_SCAN,
-            NULL);
-        if (_fd_async == INVALID_HANDLE_VALUE) {
-            MarkConnected(false);
-            ERR << L"Device() " << file << L", _fd_async error : " << GetLastError();
-        }
-        _fd_sync = CreateFileW(
-            file.c_str(),
-            GENERIC_READ|GENERIC_WRITE,
-            FILE_SHARE_READ|FILE_SHARE_WRITE,
-            NULL,
-            OPEN_EXISTING,
-            FILE_ATTRIBUTE_NORMAL,
-            NULL);
-        if (_fd_sync == INVALID_HANDLE_VALUE) {
-            MarkConnected(false);
-            ERR << L"Device() " << file << L", _fd_sync CreateFile failed : " << GetLastError();
-        }
-        _device_type = EDeviceType::File;
-    }
-    #endif
 
     virtual ~file_device() {
         if (_device_type == EDeviceType::File) {
             #ifdef _WIN32
-            CloseHandle(_fd_async);
             CloseHandle(_fd_sync);
+            CloseHandle(_fd_async);
             #else
-            close(_fd_async);
             close(_fd_sync);
+            close(_fd_async);
             #endif
         }
     }
@@ -207,7 +190,7 @@ class file_device : public subject<uint8_t, uint8_t>
             << " error : " << strerror(errno);
         if ((ssize_t)ctx->n == -1) {
             if (!b) {
-            free ((void *)ctx->b);
+                free ((void *)ctx->b);
             }
             free (ctx), ctx = nullptr;
         }
@@ -285,10 +268,16 @@ class file_device : public subject<uint8_t, uint8_t>
         return nBytesWritten;
     }
     #endif
+
+    protected:
+
+    EDeviceType _device_type = EDeviceType::None;
 };
 
-using SPFileDevice = std::shared_ptr<file_device>;
-using WPFileDevice = std::weak_ptr<file_device>;
+template<typename T>
+using SPFileDevice = std::shared_ptr<file_device<T>>;
+template<typename T>
+using WPFileDevice = std::weak_ptr<file_device<T>>;
 
 }
 

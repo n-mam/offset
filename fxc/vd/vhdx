@@ -4,14 +4,14 @@
 #include <string>
 #include <math.h>
 
-#include <fxc/vd/BaseDisk>
+#include <fxc/vd/disk>
 #include <fxc/vd/formats>
 
 #include <crc32c/crc32c.h>
 
 namespace fxc {
 
-struct VirtualHardDisk2 : public BaseDisk {
+struct vhdx : public disk {
 
     uint64_t iBATSize = 0;
     uint64_t iBlockCount = 0;
@@ -23,32 +23,32 @@ struct VirtualHardDisk2 : public BaseDisk {
     std::unique_ptr<uint64_t []> iBAT = nullptr;
     VHDX_FILE_IDENTIFIER iFileIdentifier = { 0 };
 
-    virtual ~VirtualHardDisk2() {}
+    virtual ~vhdx() {}
 
     // New base VHDx contstructor
-    VirtualHardDisk2(uint64_t size, uint32_t blocksize)
-      : BaseDisk(size, blocksize, EPartitionType::EMBR) {
+    vhdx(uint64_t size, uint32_t blocksize)
+      : disk(size, blocksize, EPartitionType::EMBR) {
         InitializeFileIdentifier();
         InitializeHeader();
         InitializeMetadataRegion(blocksize + size, blocksize, nullptr);
         InitializeBATRegion();
         InitializeRegionTable();
-        iPayloadBlock = std::make_unique<uint8_t []>(GetBlockSize());
+        iPayloadBlock = std::make_unique<uint8_t []>(getBlockSize());
     }
 
     // new child VHDx contstructor
-    VirtualHardDisk2(VirtualHardDisk2 *parent) {
-        auto blocksize = parent->GetBlockSize();
+    vhdx(vhdx *parent) {
+        auto blocksize = parent->getBlockSize();
         InitializeFileIdentifier();
         InitializeHeader();
-        InitializeMetadataRegion(parent->GetLogicalDiskLength(), blocksize, parent);
+        InitializeMetadataRegion(parent->getLogicalDiskLength(), blocksize, parent);
         InitializeBATRegion();
         InitializeRegionTable();
         iPayloadBlock = std::make_unique<uint8_t []>(blocksize);
     }
 
     // Existing VHDx constructor
-    VirtualHardDisk2(const std::wstring& path) : BaseDisk(path, _1M) {
+    vhdx(const std::wstring& path) : disk(path, _1M) {
 
         memmove(&iFileIdentifier, iRawSectors.get(), sizeof(VHDX_FILE_IDENTIFIER));
         memmove(&iHeader, iRawSectors.get() + _64K, sizeof(VHDX_HEADER));
@@ -96,8 +96,8 @@ struct VirtualHardDisk2 : public BaseDisk {
             }
         }
 
-        if (IsDifferencing()) {
-            auto parentLocators = GetParentLocators();
+        if (isDifferencing()) {
+            auto parentLocators = getParentLocators();
             for (const auto& pl : parentLocators) {
                 LOG << pl;
             }
@@ -108,27 +108,27 @@ struct VirtualHardDisk2 : public BaseDisk {
         iFile->ReadSync((uint8_t *)iBAT.get(), iBATSize, bat_reg_off);
     }
 
-    virtual uint32_t GetBlockSize() override {
+    virtual uint32_t getBlockSize() override {
         return iMetadata.iObjects.iFileParameters.BlockSize;
     }
 
-    virtual uint64_t GetTotalBATEntries(void) {
+    virtual uint64_t getTotalBATEntries(void) {
         return iTotalBatEntries;
     }
 
-    virtual bool IsFixed() override {
+    virtual bool isFixed() override {
         return false;
     }
 
-    virtual bool IsDynamic() override {
+    virtual bool isDynamic() override {
         return false;
     }
 
-    virtual bool IsDifferencing() override {
+    virtual bool isDifferencing() override {
         return iMetadata.iObjects.iFileParameters.HasParent;
     }
 
-    virtual std::vector<std::wstring> GetParentLocators(void) override {
+    virtual std::vector<std::wstring> getParentLocators(void) override {
         std::vector<std::wstring> out;
         auto metadata_table_hdr = (pVHDX_METADATA_TABLE_HEADER) iMetadataRaw.get();
         auto mdt_entry = (VHDX_METADATA_TABLE_ENTRY *) ((uint8_t *)metadata_table_hdr + sizeof(VHDX_METADATA_TABLE_HEADER));
@@ -152,11 +152,11 @@ struct VirtualHardDisk2 : public BaseDisk {
         return (_1M + _1M + _1M + iBATSize) / _1M;
     }
 
-    virtual uint64_t GetLogicalDiskLength() override {
+    virtual uint64_t getLogicalDiskLength() override {
         return iMetadata.iObjects.iVirtualDiskSize.VirtualDiskSize;
     }
 
-    virtual void DumpStructure(void) override {
+    virtual void dumpStructure(void) override {
 
         LOG << "Chunk Ratio : " << iChunkRatio << " iTotalBatEntries : " << iTotalBatEntries;
         pVHDX_FILE_IDENTIFIER vhdx_ftype = (pVHDX_FILE_IDENTIFIER) iRawSectors.get();
@@ -366,7 +366,7 @@ struct VirtualHardDisk2 : public BaseDisk {
             }
             mdt_entry++;
         }
-        BaseDisk::DumpStructure();
+        disk::dumpStructure();
         LOG << "";
     }
 
@@ -377,11 +377,11 @@ struct VirtualHardDisk2 : public BaseDisk {
     uint64_t iSectorBitmapBlocksCount = 0;
 
     virtual size_t DataBlockRead(DataBlockIO& f) override {
-        uint64_t pb_entry_cnt = f.offset / GetBlockSize();
+        uint64_t pb_entry_cnt = f.offset / getBlockSize();
         uint64_t sb_entry_cnt = pb_entry_cnt / iChunkRatio;
         uint64_t batindex = pb_entry_cnt + sb_entry_cnt;
         uint64_t batentry = iBAT[batindex];
-        auto blockoff = f.offset % GetBlockSize();
+        auto blockoff = f.offset % getBlockSize();
         int state = VHDX_BAT_ENTRY_GET_STATE(batentry);
         if (state == VHDX_BAT_ENTRY_PAYLOAD_BLOCK_FULLY_PRESENT ||
             state == VHDX_BAT_ENTRY_PAYLOAD_BLOCK_PARTIALLY_PRESENT) {
@@ -392,23 +392,23 @@ struct VirtualHardDisk2 : public BaseDisk {
     }
 
     virtual size_t DataBlockWrite(DataBlockIO& f) override {
-        uint64_t pb_entry_cnt = f.offset / GetBlockSize();
+        uint64_t pb_entry_cnt = f.offset / getBlockSize();
         uint64_t sb_entry_cnt = pb_entry_cnt / iChunkRatio;
         uint64_t batindex = pb_entry_cnt + sb_entry_cnt;
         uint64_t batentry = iBAT[batindex];
-        auto blockoff = f.offset % GetBlockSize();
+        auto blockoff = f.offset % getBlockSize();
         int state = VHDX_BAT_ENTRY_GET_STATE(batentry);
-        memset(iPayloadBlock.get(), 0, GetBlockSize());
+        memset(iPayloadBlock.get(), 0, getBlockSize());
         if (state == VHDX_BAT_ENTRY_PAYLOAD_BLOCK_NOT_PRESENT) {
             // position fragment buffer inside the new payload block
             memmove(iPayloadBlock.get() + blockoff, f.buffer, f.length);
             // new block's bat entry state
-            ((VHDX_BAT_ENTRY *) &batentry)->FileOffsetMB = FirstDataBlockOffsetMB() + ((iBlockCount * GetBlockSize()) / _1M);
+            ((VHDX_BAT_ENTRY *) &batentry)->FileOffsetMB = FirstDataBlockOffsetMB() + ((iBlockCount * getBlockSize()) / _1M);
             ((VHDX_BAT_ENTRY *) &batentry)->State = VHDX_BAT_ENTRY_PAYLOAD_BLOCK_FULLY_PRESENT;
             iBAT[batindex] = *((uint64_t *) &batentry);
             // write the new payload block
-            auto fRet = subject::WriteSync(iPayloadBlock.get(), GetBlockSize(), (((VHDX_BAT_ENTRY *) &batentry)->FileOffsetMB) * _1M);
-            assert(fRet == GetBlockSize());
+            auto fRet = subject::WriteSync(iPayloadBlock.get(), getBlockSize(), (((VHDX_BAT_ENTRY *) &batentry)->FileOffsetMB) * _1M);
+            assert(fRet == getBlockSize());
             iBlockCount++;
         } else if (state == VHDX_BAT_ENTRY_PAYLOAD_BLOCK_FULLY_PRESENT) {
             assert(false); //we should not hit this for streaming
@@ -456,7 +456,7 @@ struct VirtualHardDisk2 : public BaseDisk {
         iRegionTable.Header.Checksum = crc32c_value(_buf, _64K);
     }
 
-    virtual void InitializeMetadataRegion(uint64_t size, uint32_t blocksize, VirtualHardDisk2 *parent) {
+    virtual void InitializeMetadataRegion(uint64_t size, uint32_t blocksize, vhdx *parent) {
 
         memmove((void *) &iMetadata.iTable.Header.Signature, "metadata", strlen("metadata"));
         iMetadata.iTable.Header.EntryCount = parent ? 6 : 5;
@@ -545,13 +545,13 @@ struct VirtualHardDisk2 : public BaseDisk {
     }
 
     virtual void InitializeBATRegion() {
-        iChunkRatio = (uint32_t) ((pow(2, 23) * 512) / GetBlockSize());
-        iDataBlocksCount = GetLogicalDiskLength() / GetBlockSize();
-        if (GetLogicalDiskLength() % GetBlockSize()) {
+        iChunkRatio = (uint32_t) ((pow(2, 23) * 512) / getBlockSize());
+        iDataBlocksCount = getLogicalDiskLength() / getBlockSize();
+        if (getLogicalDiskLength() % getBlockSize()) {
             iDataBlocksCount += 1;
         }
         iSectorBitmapBlocksCount = iDataBlocksCount / iChunkRatio;
-        if (IsDifferencing()) {
+        if (isDifferencing()) {
             if (iDataBlocksCount % iChunkRatio) {
                 iSectorBitmapBlocksCount += 1;
             }
@@ -567,7 +567,7 @@ struct VirtualHardDisk2 : public BaseDisk {
     }
 };
 
-using SPVirtualHardDisk2 = std::shared_ptr<VirtualHardDisk2>;
+using SPVirtualHardDisk2 = std::shared_ptr<vhdx>;
 
 } //namespace
 

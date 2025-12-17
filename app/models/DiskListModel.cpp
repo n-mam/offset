@@ -154,6 +154,10 @@ void DiskListModel::setStop(bool stop) {
 bool DiskListModel::mountVirtualDisk() {
 
     fxc::TMountConfig mc;
+    mc.m_mode = 0;
+    mc.m_drive = L'T';
+    mc.m_partition = 0;
+    mc.m_file = L"C:\\x.vhd";
 
     fxc::mountVirtualImageAsBlockDevice(mc);
 
