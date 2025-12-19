@@ -49,14 +49,11 @@ struct vhdx : public disk {
 
     // Existing VHDx constructor
     vhdx(const std::wstring& path) : disk(path, _1M) {
-
+        uint64_t bat_reg_off, meta_reg_off;
+        uint32_t meta_reg_len, bat_reg_len;
         memmove(&iFileIdentifier, iRawSectors.get(), sizeof(VHDX_FILE_IDENTIFIER));
         memmove(&iHeader, iRawSectors.get() + _64K, sizeof(VHDX_HEADER));
         memmove(&iRegionTable, iRawSectors.get() + _64K + _64K + _64K, sizeof(VHDX_REGION_TABLE));
-
-        uint64_t bat_reg_off, meta_reg_off;
-        uint32_t meta_reg_len, bat_reg_len;
-
         for (uint32_t i = 0; i < iRegionTable.Header.EntryCount; i++) {
             auto rt_entry = &iRegionTable.Entries[i];
             if (rt_entry->Guid.Data1 == 0x8B7CA206 &&
@@ -73,7 +70,6 @@ struct vhdx : public disk {
                 bat_reg_len = rt_entry->Length;
             }
         }
-
         // read the metadata region
         iMetadataRaw = std::make_unique<uint8_t []>(meta_reg_len);
         iFile->ReadSync(iMetadataRaw.get(), meta_reg_len, meta_reg_off);
@@ -95,14 +91,6 @@ struct vhdx : public disk {
                 //"Parent Locator";
             }
         }
-
-        if (isDifferencing()) {
-            auto parentLocators = getParentLocators();
-            for (const auto& pl : parentLocators) {
-                LOG << pl;
-            }
-        }
-
         InitializeBATRegion();
         assert(iBATSize == bat_reg_len);
         iFile->ReadSync((uint8_t *)iBAT.get(), iBATSize, bat_reg_off);

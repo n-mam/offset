@@ -24,12 +24,12 @@ struct vhd : public disk {
 
     // new fixed, dynamic and differencing VHD contstructor
     vhd(uint64_t size,
-        uint32_t blocksize,
+        uint32_t bs,
         EVHDType type,
         vhd *parent = nullptr)
-            : disk(size, blocksize, EPartitionType::EMBR) {
-        initializeFooter(blocksize + size, type);
-        initializeSparseHeader(blocksize, parent);
+            : disk(size, bs, EPartitionType::EMBR) {
+        initializeFooter(bs + size, type);
+        initializeSparseHeader(bs, parent);
         if (type != EVHDType::Fixed) {
             initializeBAT();
         }
@@ -37,13 +37,12 @@ struct vhd : public disk {
     }
 
     // Existing VHD constructor
-    vhd(const std::wstring& path)
-        : disk(path, 512 * 3) {
+    vhd(const std::wstring& path) : disk(path, 512 * 3) {
         memmove(&iFooter, iRawSectors.get(), 512);
         memmove(&iHeader, iRawSectors.get() + 512, 1024);
         initializeBAT();
         iFile->ReadSync(
-            (uint8_t *) iBAT.get(),
+            (uint8_t *)iBAT.get(),
             iBATSize,
             osl::endian_reverse(iHeader.TableOffset));
     }
@@ -88,15 +87,15 @@ struct vhd : public disk {
         return out;
     }
 
-    virtual uint64_t FirstDataBlockOffset() {
+    virtual uint64_t firstDataBlockOffset() {
         return sizeof(VHD_FOOTER_HEADER) + (isDifferencing() ? (2 * PLDataSpaceSize) : 0) + iBATSize;
     }
     /*
         |
-        ------------------------------------
-    |   |     |_____reqLen____|          |
-    |   |     |               |          |
-        ------------------------------------
+         ------------------------------------
+    |   |     |_____reqLen____|              |
+    |   |     |               |              |
+         ------------------------------------
         |     ^
             blkOffset
 
@@ -107,7 +106,7 @@ struct vhd : public disk {
         |             |     ^         |           ^   |
                         first sec bit            last sec bit
     */
-    static bool SetSectorBitmap(unsigned char *bitmap, uint64_t blockoff, uint64_t blocklen, uint64_t bs) {
+    static bool setSectorBitmap(unsigned char *bitmap, uint64_t blockoff, uint64_t blocklen, uint64_t bs) {
         uint64_t bmb_index;
         uint64_t bit_off_in_bmp;
         uint64_t len_in_sectors = blocklen / 512;
@@ -130,7 +129,6 @@ struct vhd : public disk {
         */
         int j = (bit_off_in_bmp % 8);
         uint64_t i = 0;
-
         for ( ; i < len_in_sectors; ) {
             /*
             * j = 0 ---> j < 8
@@ -164,36 +162,37 @@ struct vhd : public disk {
     }
 
     virtual void dumpStructure(void) override {
-
+        LOG << "";
         LOG << "VHD Footer : ";
-        LOG << "Cookie                       : " << std::string((char *)iFooter.Cookie, 8);
-        LOG << "DataOffset                   : " << osl::endian_reverse(iFooter.DataOffset);
-        LOG << "Original Size                : " << osl::endian_reverse(*((uint64_t *)&iFooter.OriginalSize));
-        LOG << "Current Size                 : " << osl::endian_reverse(*((uint64_t *)&iFooter.CurrentSize));
-        LOG << "Creator Application          : " << std::string((char *)iFooter.CreatorApplication, 4);
+        LOG << " Cookie                       : " << std::string((char *)iFooter.Cookie, 8);
+        LOG << " DataOffset                   : " << osl::endian_reverse(iFooter.DataOffset);
+        LOG << " Original Size                : " << osl::endian_reverse(*((uint64_t *)&iFooter.OriginalSize));
+        LOG << " Current Size                 : " << osl::endian_reverse(*((uint64_t *)&iFooter.CurrentSize));
+        LOG << " Creator Application          : " << std::string((char *)iFooter.CreatorApplication, 4);
         LOG << "VHD Sparse Header : ";
-        LOG << "Cookie                       : " << std::string((char *)iHeader.Cookie, 8);
-        LOG << "DataOffset                   : " << osl::endian_reverse(iHeader.DataOffset);
-        LOG << "Table Offset                 : " << osl::endian_reverse(iHeader.TableOffset);
-        LOG << "Block Size                   : " << osl::endian_reverse(iHeader.BlockSize);
-        LOG << "Parent UniqueId              : ";
-        DumpBytes(iHeader.ParentUniqueId, 16, true);
-        LOG << "Parent TimeStamp             : ";
-        DumpBytes(iHeader.ParentTimeStamp, 4, true);
-        LOG << L" Parent Name                  : " << (wchar_t *)(iHeader.ParentName + 1); // skip bom
-        auto parentLocators = getParentLocators();
-        for(const auto& pl : parentLocators) {
-            LOG << L" Parent Locator Table Entry   : " << pl;
+        LOG << " Cookie                       : " << std::string((char *)iHeader.Cookie, 8);
+        LOG << " DataOffset                   : " << osl::endian_reverse(iHeader.DataOffset);
+        LOG << " Table Offset                 : " << osl::endian_reverse(iHeader.TableOffset);
+        LOG << " Block Size                   : " << osl::endian_reverse(iHeader.BlockSize);
+        if (getParentLocators().size()) {
+            LOG << " Parent UniqueId              : ";
+            DumpBytes(iHeader.ParentUniqueId, 16, true);
+            LOG << " Parent TimeStamp             : ";
+            DumpBytes(iHeader.ParentTimeStamp, 4, true);
+            LOG << L" Parent Name                  : " << (wchar_t *)(iHeader.ParentName + 1); // skip bom
+            for (const auto& pl : getParentLocators()) {
+                LOG << L" Parent Locator Table Entry   : " << pl;
+            }
         }
         auto mte = getTotalBATEntries();
-        LOG << "Max Table Entries            : " << mte;
+        LOG << " Max Table Entries            : " << mte;
         uint32_t count = 0;
         for (uint32_t i = 0; i < mte; i++) {
             if (iBAT[i] != 0xFFFFFFFF) {
                 count++;
             }
         }
-        LOG << "Valid BAT count              : " << count;
+        LOG << " Valid BAT count              : " << count;
         disk::dumpStructure();
         LOG << "";
     }
@@ -206,7 +205,7 @@ struct vhd : public disk {
             uint32_t batentry = osl::endian_reverse(*(iBAT.get() + batindex));
             uint64_t blockoff = f.offset % getBlockSize();
             if (batentry == ~((uint32_t)0)) { // unused block
-                memset((void *)f.buffer, 0, f.length);
+                //memset((void *)f.buffer, 0, f.length);
             } else { // existing data block
                 auto fRet = subject::ReadSync(f.buffer, f.length, (batentry * 512ULL) + 512ULL + blockoff);
                 assert(fRet == f.length);
@@ -228,7 +227,7 @@ struct vhd : public disk {
             if (batentry == ~((uint32_t)0)) { // new data block
                 if (isDifferencing()) {
                     memset(iPayloadBlock.get(), 0, 512);
-                    SetSectorBitmap(iPayloadBlock.get(), blockoff, f.length, getBlockSize());
+                    setSectorBitmap(iPayloadBlock.get(), blockoff, f.length, getBlockSize());
                 } else {
                     memset(iPayloadBlock.get(), 0xff, 512);
                 }
@@ -237,7 +236,7 @@ struct vhd : public disk {
                 // position fragment buffer inside the new payload block
                 memmove(iPayloadBlock.get() + 512 + blockoff, f.buffer, f.length);
                 // new block entry
-                uint64_t fileoffset = FirstDataBlockOffset() + (iBlockCount * (512 + getBlockSize()));
+                uint64_t fileoffset = firstDataBlockOffset() + (iBlockCount * (512 + getBlockSize()));
                 iBAT[batindex] = osl::endian_reverse((uint32_t)(fileoffset / 512));
                 // write the new payload block
                 auto fRet = subject::WriteSync(iPayloadBlock.get(), 512 + getBlockSize(), fileoffset);
@@ -249,7 +248,7 @@ struct vhd : public disk {
                     memset(iPayloadBlock.get(), 0, 512 + getBlockSize());
                     // read the complete data block (sb + data) off the disk.
                     subject::ReadSync(iPayloadBlock.get(), 512 + getBlockSize(), batentry * 512);
-                    SetSectorBitmap(iPayloadBlock.get(), blockoff, f.length, getBlockSize());
+                    setSectorBitmap(iPayloadBlock.get(), blockoff, f.length, getBlockSize());
                     // position fragment buffer inside the payload block we just read
                     memmove(iPayloadBlock.get() + 512 + blockoff, f.buffer, f.length);
                     auto fRet = subject::WriteSync(iPayloadBlock.get(), 512 + getBlockSize(), batentry * 512ULL);

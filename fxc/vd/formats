@@ -38,15 +38,17 @@ auto GuidToWString(__GUID guid) {
 }
 
 void DumpBytes(const uint8_t *buf, int len, bool hex) {
-  for (int i = 0; i < len; i++) {
-    if (hex == true) {
-      LOG << std::hex << std::uppercase << (int)buf[i] << " ";
-    } else {
-      if (isascii(buf[i])) {
-        LOG << buf[i] ;
-      }
+    std::stringstream ss;
+    for (int i = 0; i < len; i++) {
+        if (hex == true) {
+            ss << std::hex << std::uppercase << (int)buf[i] << " ";
+        } else {
+            if (isascii(buf[i])) {
+                LOG << buf[i] ;
+            }
+        }
     }
-  }
+    LOG << "  " << ss.str();
 }
 
 typedef struct PARTITION

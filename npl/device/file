@@ -82,53 +82,53 @@ struct file_device : public subject<uint8_t, uint8_t> {
     file_device(const std::string& name) : subject(name) {};
 
     file_device(const T& path, bool create) : subject("file") {
-        MarkConnected(true);
+        MarkConnected(false);
         #ifdef _WIN32
         if constexpr (std::is_same<T, std::wstring>::value)
-        _fd_async = CreateFileW(
-            path.c_str(),
-            GENERIC_READ|GENERIC_WRITE,
-            FILE_SHARE_READ|FILE_SHARE_WRITE,
-            NULL,
-            (create ? CREATE_ALWAYS : OPEN_EXISTING),
-            FILE_FLAG_OVERLAPPED|FILE_FLAG_SEQUENTIAL_SCAN,
-            NULL);
+            _fd_async = CreateFileW(
+                path.c_str(),
+                GENERIC_READ|GENERIC_WRITE,
+                FILE_SHARE_READ|FILE_SHARE_WRITE,
+                NULL,
+                (create ? CREATE_ALWAYS : OPEN_EXISTING),
+                FILE_FLAG_OVERLAPPED|FILE_FLAG_SEQUENTIAL_SCAN,
+                NULL);
         else if constexpr (std::is_same<T, std::string>::value)
-        _fd_async = CreateFileA(
-            path.c_str(),
-            GENERIC_READ|GENERIC_WRITE,
-            FILE_SHARE_READ|FILE_SHARE_WRITE,
-            NULL,
-            (create ? CREATE_ALWAYS : OPEN_EXISTING),
-            FILE_FLAG_OVERLAPPED|FILE_FLAG_SEQUENTIAL_SCAN,
-            NULL);
-
+            _fd_async = CreateFileA(
+                path.c_str(),
+                GENERIC_READ|GENERIC_WRITE,
+                FILE_SHARE_READ|FILE_SHARE_WRITE,
+                NULL,
+                (create ? CREATE_ALWAYS : OPEN_EXISTING),
+                FILE_FLAG_OVERLAPPED|FILE_FLAG_SEQUENTIAL_SCAN,
+                NULL);
         if (_fd_async == INVALID_HANDLE_VALUE) {
-            MarkConnected(false);
             ERR << path << L", _fd_async CreateFile failed : " << GetLastError();
+            return;
         }
-        if constexpr (std::is_same<T, std::wstring>::value)
-        _fd_async = CreateFileW(
-            path.c_str(),
-            GENERIC_READ|GENERIC_WRITE,
-            FILE_SHARE_READ|FILE_SHARE_WRITE,
-            NULL,
-            OPEN_EXISTING,
-            FILE_ATTRIBUTE_NORMAL,
-            NULL);
-        else if constexpr (std::is_same<T, std::string>::value)
-        _fd_async = CreateFileA(
-            path.c_str(),
-            GENERIC_READ|GENERIC_WRITE,
-            FILE_SHARE_READ|FILE_SHARE_WRITE,
-            NULL,
-            OPEN_EXISTING,
-            FILE_ATTRIBUTE_NORMAL,
-            NULL);
 
+        if constexpr (std::is_same<T, std::wstring>::value) {
+            _fd_sync = CreateFileW(
+                path.c_str(),
+                GENERIC_READ|GENERIC_WRITE,
+                FILE_SHARE_READ|FILE_SHARE_WRITE,
+                NULL,
+                OPEN_EXISTING,
+                FILE_ATTRIBUTE_NORMAL,
+                NULL);
+        } else if constexpr (std::is_same<T, std::string>::value) {
+            _fd_sync = CreateFileA(
+                path.c_str(),
+                GENERIC_READ|GENERIC_WRITE,
+                FILE_SHARE_READ|FILE_SHARE_WRITE,
+                NULL,
+                OPEN_EXISTING,
+                FILE_ATTRIBUTE_NORMAL,
+                NULL);
+        }
         if (_fd_sync == INVALID_HANDLE_VALUE) {
-            MarkConnected(false);
             ERR << path << L", _fd_sync CreateFile failed : " << GetLastError();
+            return;
         }
         #else
         int flags = 0|O_RDWR ;
@@ -137,11 +137,12 @@ struct file_device : public subject<uint8_t, uint8_t> {
         }
         _fd_async = open(path.c_str(), flags, 0640);
         if (_fd_async < 0) {
-            MarkConnected(false);
             ERR << path << L", error : " << strerror(errno);
+            return;
         }
         #endif
         _path = path;
+        MarkConnected(true);
         _device_type = EDeviceType::File;
     }
 

@@ -40,7 +40,7 @@ struct disk : public npl::subject<uint8_t, uint8_t> {
     GptHdrRev1 alignas(512) iGptHdr = { 0 };
     GPE alignas(512) iPartitions[4] = { 0 };
 
-    npl::SPSubject<uint8_t, uint8_t> iFile = nullptr;
+    npl::spsubject<uint8_t, uint8_t> iFile = nullptr;
     std::unique_ptr<uint8_t []> iRawSectors = nullptr;
     std::unique_ptr<uint8_t []> iPayloadBlock = nullptr;
 
@@ -113,9 +113,9 @@ struct disk : public npl::subject<uint8_t, uint8_t> {
         //we are streaming
         memmove(buf, &iMBR, sizeof(MBR));
         if (iPartitionType == EPartitionType::EGPT) {
-           /*   0       1          2            3              4
-            * [MBR] [GPT-Hdr] [Partitions] [GPT-Hdr(B)] [Partitions(B)]
-            */
+            /*   0       1          2            3              4
+             * [MBR] [GPT-Hdr] [Partitions] [GPT-Hdr(B)] [Partitions(B)]
+             */
             memmove(buf + (512 * 1), &iGptHdr, sizeof(GptHdrRev1));
             memmove(buf + (512 * 2), iPartitions, 4 * sizeof(GPE));
             memmove(buf + (512 * 3), &iGptHdr, sizeof(GptHdrRev1));
@@ -181,24 +181,37 @@ struct disk : public npl::subject<uint8_t, uint8_t> {
         return fragments;
     }
 
-    virtual void initialize(void) {
-        if (iFile) {
-            /* set iFile as the target of this */
-            iFile->AddEventListener(shared_from_this());
-            ReadSync((uint8_t *)&iMBR, sizeof(MBR), 0);
+    template<typename T>
+    void buildDifferencingChain(void) {
+        auto parentLocators = getParentLocators();
+        for (const auto& pl : parentLocators) {
+            if (std::filesystem::exists(pl)) {
+                iParent = std::make_shared<T>(pl);
+                iParent->buildDifferencingChain<T>();
+                iParent->iChild = std::dynamic_pointer_cast<disk>(shared_from_this());
+                break;
+            }
         }
+        iFile->AddEventListener(shared_from_this());
     }
 
     virtual void dumpStructure(void) {
-        LOG << "Master Boot Record : ";
-        LOG << "DiskID                       : ";
-        DumpBytes(iMBR.DiskID, 4, true);
+        LOG << "MBR partition table: ";
+        LOG << " ------------------";
         for (int i = 0; i < 4; i++) {
-            LOG << "start_sector                 : " << iMBR.partitions[i].start_sector << " sector ";
-            LOG << "total_sectors                : " << iMBR.partitions[i].total_sectors << " sector ";
-            LOG << "------------------";
+            LOG << " type                         : " << (uint32_t)iMBR.partitions[i].type;
+            LOG << " start_sector                 : " << iMBR.partitions[i].start_sector << " sector ";
+            LOG << " total_sectors                : " << iMBR.partitions[i].total_sectors << " sector ";
+            LOG << " ------------------";
         }
-        LOG << "signature                    : " << iMBR.signature;
+        if (iMBR.partitions[0].type == 0xEE) {
+            LOG << "GUID partition table detected";
+        } else {
+            LOG << "MBR partition table detected";
+            LOG << " DiskID                       : ";
+            DumpBytes(iMBR.DiskID, 4, true);
+            LOG << " signature                    : " << iMBR.signature;
+        }
     }
 
     protected:

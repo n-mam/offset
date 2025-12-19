@@ -113,8 +113,8 @@ struct dispatcher : public subject<uint8_t, uint8_t> {
         _ctrl_client->StartSocketClient();
     }
 
-    virtual void add_subject(SPSubject subject) override {
-        auto device = std::dynamic_pointer_cast<socket_device>(subject);
+    virtual void add_subject(spsubject subject) override {
+        auto device = std::dynamic_pointer_cast<file_device<std::wstring>>(subject);
         assert(device);
         #ifdef linux
         assert(device->GetDeviceType() == EDeviceType::Socket);
@@ -137,7 +137,7 @@ struct dispatcher : public subject<uint8_t, uint8_t> {
         #endif
     }
 
-    virtual const SPSubject& AddEventListener(const SPSubject& observer) override {
+    virtual const spsubject& AddEventListener(const spsubject& observer) override {
         subject::AddEventListener(observer);
         #ifdef _WIN32
         add_subject(observer);
@@ -242,7 +242,7 @@ struct dispatcher : public subject<uint8_t, uint8_t> {
     }
 
     #ifndef WIN32
-    std::vector<context *> get_event_context(SPSubject o, Event& e) {
+    std::vector<context *> get_event_context(spsubject o, Event& e) {
         std::vector<context *> contexts;
         auto dev = std::dynamic_pointer_cast<socket_device> (o);
         auto isConnected = dev->IsConnected();
@@ -321,7 +321,7 @@ struct dispatcher : public subject<uint8_t, uint8_t> {
 
     #endif
 
-    virtual void queue_pending_context(SPSubject s, void *c) {
+    virtual void queue_pending_context(spsubject s, void *c) {
         ((context *)c)->k = s.get();
         _ctrl_client->Write((const uint8_t *)c, sizeof(context));
         free(c);

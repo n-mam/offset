@@ -19,8 +19,8 @@ namespace npl {
 template <typename T1, typename T2>
 struct subject : public std::enable_shared_from_this<subject<T1, T2>> {
 
-    using WPSubject = std::weak_ptr<subject<T1, T2>>;
-    using SPSubject = std::shared_ptr<subject<T1, T2>>;
+    using wpsubject = std::weak_ptr<subject<T1, T2>>;
+    using spsubject = std::shared_ptr<subject<T1, T2>>;
 
     subject(){}
 
@@ -38,7 +38,7 @@ struct subject : public std::enable_shared_from_this<subject<T1, T2>> {
         return m_name;
     }
 
-    static SPSubject get_last_target(SPSubject s) {
+    static spsubject get_last_target(spsubject s) {
         while (s) {
             auto t = s->m_target.lock();
             if (!t) break;
@@ -122,14 +122,14 @@ struct subject : public std::enable_shared_from_this<subject<T1, T2>> {
         NotifyEvent(e);
     }
 
-    virtual const SPSubject& AddEventListener(const SPSubject& observer) {
+    virtual const spsubject& AddEventListener(const spsubject& observer) {
         std::lock_guard<std::mutex> lg(m_lock);
         m_observers.insert(observer);
         observer->SetTarget(this->weak_from_this());
         return observer;
     }
 
-    virtual void RemoveEventListener(const SPSubject& observer) {
+    virtual void RemoveEventListener(const spsubject& observer) {
         std::lock_guard<std::mutex> lg(m_lock);
         RemoveEventListenerInternal(observer);
     }
@@ -167,7 +167,7 @@ struct subject : public std::enable_shared_from_this<subject<T1, T2>> {
         return m_removeSelfAsListener;
     }
 
-    virtual void add_subject(SPSubject subject) {}
+    virtual void add_subject(spsubject subject) {}
 
     virtual void set_property(const std::string& key, const std::string& value) {
         std::lock_guard<std::mutex> lg(m_lock);
@@ -198,12 +198,12 @@ struct subject : public std::enable_shared_from_this<subject<T1, T2>> {
 
     protected:
 
-    virtual void SetTarget(const WPSubject& target) {
+    virtual void SetTarget(const wpsubject& target) {
         std::lock_guard<std::mutex> lg(m_lock);
         m_target = target;
     }
 
-    virtual void ResetSubject(SPSubject& subject) {
+    virtual void ResetSubject(spsubject& subject) {
         subject->MarkRemoveAllListeners();
         subject->MarkRemoveSelfAsListener();
         subject.reset();
@@ -228,7 +228,7 @@ struct subject : public std::enable_shared_from_this<subject<T1, T2>> {
         m_removeAllListeners = false;
     }
 
-    auto RemoveEventListenerInternal(const SPSubject& observer) {
+    auto RemoveEventListenerInternal(const spsubject& observer) {
         auto it = m_observers.find(observer);
         assert(it != m_observers.end());
         return m_observers.erase(it);
@@ -284,22 +284,22 @@ struct subject : public std::enable_shared_from_this<subject<T1, T2>> {
     }
 
     std::mutex m_lock;
-    WPSubject m_target;
+    wpsubject m_target;
     std::string m_name = "xxx";
 
     bool m_stopped = false;
     bool m_connected = false;
-    std::set<SPSubject> m_observers;
+    std::set<spsubject> m_observers;
     bool m_removeAllListeners = false;
     bool m_removeSelfAsListener = false;
     std::unordered_map<std::string, std::string> m_properties;
 };
 
 template <typename T1, typename T2>
-using SPSubject = std::shared_ptr<subject<T1, T2>>;
+using spsubject = std::shared_ptr<subject<T1, T2>>;
 
 template<typename T1, typename T2>
-using WPSubject = std::weak_ptr<subject<T1, T2>>;
+using wpsubject = std::weak_ptr<subject<T1, T2>>;
 
 } // namespace npl
 

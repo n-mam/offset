@@ -46,7 +46,7 @@ auto getExtentionForFormat(const std::wstring& format) {
 }
 
 auto getTargetForDestination(const std::wstring& destination, const std::wstring& name, const std::wstring& format) {
-    npl::SPSubject<uint8_t, uint8_t> target;
+    npl::spsubject<uint8_t, uint8_t> target;
     std::filesystem::path destinationPath(destination);
     if (std::filesystem::is_directory(destinationPath)) {
         target = npl::make_file<std::wstring>(destination + L"\\" + name + L"." +
@@ -72,7 +72,7 @@ auto getTargetForDestination(const std::wstring& destination, const std::wstring
 }
 
 auto recoverVirtualImageToPhysicalVolume(const std::wstring& source, const std::wstring& target) {
-    auto disk = fxc::make_virtual_disk(source);
+    auto disk = fxc::get_virtual_disk(source);
     if (!disk) {
         LOG << "Failed to create virtaul disk object";
         return false;
@@ -180,7 +180,7 @@ auto convertBlockDeviceToVirtualImages(const std::vector<TBackupConfig>& bc, TPr
             volume.pop_back();
             if (target)
                 futures1.push_back(std::async(std::launch::async, [=](){
-                    fxc::createBaseVirtualDisk(format, volume, target,
+                    fxc::createBaseVirtualDiskFromSource(format, volume, target,
                         [=](auto snapshot, auto percent){
                             return cbk(volume, percent);
                         });
@@ -206,7 +206,7 @@ auto convertBlockDeviceToVirtualImages(const std::vector<TBackupConfig>& bc, TPr
                     if (target)
                         futures2.push_back(std::async(std::launch::async,
                             [=](){
-                                fxc::createBaseVirtualDisk(format, snapshotDevice, target,
+                                fxc::createBaseVirtualDiskFromSource(format, snapshotDevice, target,
                                     [=](auto snapshot, auto percent) {
                                         return cbk(inputVolume, percent);
                                     });
@@ -266,13 +266,13 @@ auto entry(std::vector<std::string> s_arguments) {
     } else if (cmd == L"-d") {
         fxc::dumpVirtualDisk(arguments[0]);
     } else if (cmd == L"-f") {
-        fxc::createBaseVirtualDisk(
+        fxc::createBaseVirtualDiskFromSource(
             arguments[0],
             arguments[1],
             npl::make_file<std::wstring>(arguments[2], true),
             nullptr);
     } else if (cmd == L"-i") {
-        fxc::createIncrementalVirtualDisk(
+        fxc::createIncrementalVirtualDiskFromSource(
             arguments[0],
             arguments[1],
             arguments[2],

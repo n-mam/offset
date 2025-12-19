@@ -28,7 +28,6 @@ struct log {
             a_sink(m_level, m_key, a_ss.str());
             //OutputDebugStringA(a_ss.str().c_str());
         }
-
         if (w_sink && w_ss.str().size()) {
             w_sink(m_level, m_key, w_ss.str());
             //OutputDebugStringW(w_ss.str().c_str());
@@ -53,7 +52,6 @@ struct log {
         if constexpr(std::is_same<T, std::string>::value) {
             a_sink = cbk;
         }
-
         if constexpr(std::is_same<T, std::wstring>::value) {
             w_sink = cbk;
         }
@@ -81,7 +79,7 @@ log&& operator <<(log&& lhs, const T& rhs) {
             lhs.a_ss << rhs;
         } else if constexpr(std::is_convertible_v<T, const std::wstring&>) {
             lhs.w_ss << rhs;
-        } else if (lhs.a_ss.str().size()) {
+        } else if (lhs.a_sink || lhs.a_ss.str().size()) {
             lhs.a_ss << rhs;
         } else {
             lhs.w_ss << rhs;

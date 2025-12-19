@@ -189,7 +189,7 @@ struct ftp : public protocol<uint8_t, uint8_t> {
     Direction m_currentDirection;
     std::condition_variable m_cv;
     bool m_uploadChannelReady = false;
-    SPSubject m_data_channel = nullptr;
+    spsubject m_data_channel = nullptr;
     std::function<void ()> m_idle_callback;
 
     #define NEXT 0x10

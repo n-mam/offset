@@ -20,6 +20,10 @@ int main(int argc, char *argv[]) {
         [](int level, int key, auto log) {
             std::cout << log << std::endl;
         });
+    osl::log::setLogSink<std::wstring>(
+        [](int level, int key, auto log) {
+            std::wcout << log << std::endl;
+        });
     npl::initialize_dispatcher();
     auto ns = arguments[0];
     #ifdef _WIN32
