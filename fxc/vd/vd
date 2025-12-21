@@ -9,9 +9,8 @@ namespace fxc {
 
 //create a raw image from source at ofset o and write to target
 auto image_copy_from(npl::SPFileDevice<std::wstring> source, npl::spsubject<uint8_t, uint8_t> target, TProgressCallback cbk = nullptr) {
-
     if (!osl::AllowExtendedDasdIO(source->_fd_sync)) {
-      LOG << "AllowExtendedDasdIO failed, error : " << GetLastError();
+        LOG << "AllowExtendedDasdIO failed, error : " << GetLastError();
     }
     auto length = osl::GetBlockDeviceLength(source->_fd_sync);
     LOG << "Total length " << length;
@@ -162,8 +161,8 @@ auto create_base_vhd(const std::wstring& volume, npl::spsubject<uint8_t, uint8_t
     // assert the fact that constructed bat matches the one
     // which is dynamically maintained due to disk level writes
     if (memcmp(disk->iBAT.get(), bat.get(), disk->iBATSize)) {
-        //DumpData("cbat.bin", (uint8_t *) bat.get(), disk->iBATSize);
-        //DumpData("rbat.bin", (uint8_t *) disk->iBAT.get(), disk->iBATSize);
+        //DumpData("cbat.bin", (uint8_t *)bat.get(), disk->iBATSize);
+        //DumpData("rbat.bin", (uint8_t *)disk->iBAT.get(), disk->iBATSize);
         LOG << "constructed bat does not match runtime bat";
     }
     // footer
@@ -214,7 +213,7 @@ auto create_child_vhd(const std::wstring& source,
         blockCount++;
     }
     // BAT
-    target->WriteSync((uint8_t *) bat.get(), diff->iBATSize, sizeof(VHD_FOOTER_HEADER) + (2 * PLDataSpaceSize));
+    target->WriteSync((uint8_t *)bat.get(), diff->iBATSize, sizeof(VHD_FOOTER_HEADER) + (2 * PLDataSpaceSize));
     auto hvhd = osl::AttachVHD(source);
     if (hvhd == INVALID_HANDLE_VALUE) {
         LOG << "create_child_vhd failed to attach vhd";
@@ -396,7 +395,7 @@ void create_base_vhdx(const std::wstring& volume, npl::spsubject<uint8_t, uint8_
             << " block entries, last BAT index " << batIndex;
     uint64_t nTotalPayloadBlocks = validBATEntryCount;
     // bat
-    target->WriteSync((uint8_t *) bat.get(), disk->iBATSize, _3M);
+    target->WriteSync((uint8_t *)bat.get(), disk->iBATSize, _3M);
     // set target for io operations on disk
     target->AddEventListener(disk);
     disk->commitPartitionTable();
@@ -436,8 +435,8 @@ void create_base_vhdx(const std::wstring& volume, npl::spsubject<uint8_t, uint8_
     // assert the fact that constructed bat matches the one
     // which is dynamically maintained due to disk level writes
     if (memcmp(disk->iBAT.get(), bat.get(), disk->iBATSize)) {
-        //DumpData("cbat.bin", (uint8_t *) bat.get(), disk->iBATSize);
-        //DumpData("rbat.bin", (uint8_t *) disk->iBAT.get(), disk->iBATSize);
+        //DumpData("cbat.bin", (uint8_t *)bat.get(), disk->iBATSize);
+        //DumpData("rbat.bin", (uint8_t *)disk->iBAT.get(), disk->iBATSize);
         LOG << "constructed bat does not match runtime bat";
     }
     target->WriteSync();

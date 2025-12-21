@@ -103,7 +103,7 @@ struct file_device : public subject<uint8_t, uint8_t> {
                 FILE_FLAG_OVERLAPPED|FILE_FLAG_SEQUENTIAL_SCAN,
                 NULL);
         if (_fd_async == INVALID_HANDLE_VALUE) {
-            ERR << path << L", _fd_async CreateFile failed : " << GetLastError();
+            ERR << path << L", _fd_async CreateFile failed: " << GetLastError();
             return;
         }
 
@@ -127,7 +127,7 @@ struct file_device : public subject<uint8_t, uint8_t> {
                 NULL);
         }
         if (_fd_sync == INVALID_HANDLE_VALUE) {
-            ERR << path << L", _fd_sync CreateFile failed : " << GetLastError();
+            ERR << path << L", _fd_sync CreateFile failed: " << GetLastError();
             return;
         }
         #else
@@ -137,7 +137,7 @@ struct file_device : public subject<uint8_t, uint8_t> {
         }
         _fd_async = open(path.c_str(), flags, 0640);
         if (_fd_async < 0) {
-            ERR << path << L", error : " << strerror(errno);
+            ERR << path << L", error: " << strerror(errno);
             return;
         }
         #endif
@@ -182,7 +182,7 @@ struct file_device : public subject<uint8_t, uint8_t> {
         (ctx->ol).OffsetHigh = (o & 0xFFFFFFFF00000000) >> 32;
         BOOL fRet = ReadFile(_fd_async, (LPVOID) ctx->b, static_cast<DWORD>(l), NULL, &ctx->ol);
         if (!fRet && GetLastError() != ERROR_IO_PENDING) {
-            ERR << get_name() << " ReadFile failed : " << GetLastError();
+            ERR << get_name() << " ReadFile failed: " << GetLastError();
         }
         return nullptr;
         #else
@@ -222,13 +222,13 @@ struct file_device : public subject<uint8_t, uint8_t> {
             if ((GetLastError() == ERROR_IO_PENDING)) {
                 fRet = true;
             } else {
-                ERR << get_name() << " file_device::Write() WriteFile() failed : " << GetLastError();
+                ERR << get_name() << " file_device::Write() WriteFile() failed: " << GetLastError();
             }
         }
         #else
         auto rc = write(_fd_async, b, l);
         if (rc == -1) {
-            ERR << get_name() << " file_device::Write() write() failed : " << strerror(errno);
+            ERR << get_name() << " file_device::Write() write() failed: " << strerror(errno);
             fRet = false;
         }
         #endif
@@ -244,7 +244,7 @@ struct file_device : public subject<uint8_t, uint8_t> {
         if (fRet) {
             fRet = ReadFile(_fd_sync, (LPVOID) b, static_cast<DWORD>(l), &nBytesRead, NULL);
             if (fRet == FALSE) {
-                ERR << get_name() << " ReadSync ReadFile failed : " << GetLastError();
+                ERR << get_name() << " ReadSync ReadFile failed: " << GetLastError();
             }
         }
         return nBytesRead;
@@ -263,7 +263,7 @@ struct file_device : public subject<uint8_t, uint8_t> {
             fRet = WriteFile(_fd_sync, (LPVOID)b, static_cast<DWORD>(l), &nBytesWritten, NULL);
             if (fRet == FALSE)
             {
-                ERR << get_name() << " WriteSync WriteFile failed : " << GetLastError();
+                ERR << get_name() << " WriteSync WriteFile failed: " << GetLastError();
             }
         }
         return nBytesWritten;

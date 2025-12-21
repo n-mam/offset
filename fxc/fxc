@@ -71,22 +71,22 @@ auto getTargetForDestination(const std::wstring& destination, const std::wstring
     return target;
 }
 
-auto recoverVirtualImageToPhysicalVolume(const std::wstring& source, const std::wstring& target) {
-    auto disk = fxc::get_virtual_disk(source);
+auto recover_virtual_image_to_volume(const std::wstring& image, const std::wstring& volume) {
+    auto disk = fxc::get_virtual_disk(image);
     if (!disk) {
         LOG << "Failed to create virtaul disk object";
         return false;
     }
-    HANDLE hTarget = osl::GetVolumeHandle(target.c_str());
-    if (hTarget == INVALID_HANDLE_VALUE) {
-        LOG << "Failed to open target " << target.c_str() << ", error " << GetLastError();
+    auto target = osl::GetVolumeHandle(volume.c_str());
+    if (target == INVALID_HANDLE_VALUE) {
+        LOG << "Failed to open target " << volume.c_str() << ", error " << GetLastError();
         return false;
     }
     std::unique_ptr<uint8_t[]> buf;
-    bool fRet = osl::LockAndDismountVolume(hTarget);
+    bool fRet = osl::LockAndDismountVolume(target);
     if (fRet == FALSE) {
         LOG << "LockAndDismountVolume failed";
-        osl::unlockVolume(hTarget);
+        osl::unlockVolume(target);
         return false;
     }
     uint64_t nDone = 0;
@@ -104,7 +104,7 @@ auto recoverVirtualImageToPhysicalVolume(const std::wstring& source, const std::
             LOG << "ReadSync on source returned " << n;
             break;
         }
-        fRet = WriteFile(hTarget, buf.get(), n, &dwBytesWritten, NULL);
+        fRet = WriteFile(target, buf.get(), n, &dwBytesWritten, NULL);
         if (!fRet) {
             LOG << "WriteFile on target failed : " << GetLastError();
             break;
@@ -113,56 +113,57 @@ auto recoverVirtualImageToPhysicalVolume(const std::wstring& source, const std::
         LOG << "n : " << n << " nDone : " << nDone;
     } while (nDone != nTotal);
     LOG << "nTotal : " << nTotal;
+    osl::unlockVolume(target);
     return fRet;
 }
 
-auto recoverVolumeToVolume(const std::wstring& source, const std::wstring& target) {
+auto recover_volume_to_volume(const std::wstring& sourcevol, const std::wstring& targetvol) {
     BOOL fRet = FALSE;
     DWORD dwBytesWritten = 0;
     DWORD lpNumberOfBytesRead = 0;
     std::unique_ptr<uint8_t[]> _buf;
-    HANDLE hSource = INVALID_HANDLE_VALUE;
-    HANDLE hTarget = INVALID_HANDLE_VALUE;
-    hSource = osl::GetVolumeHandle(source.c_str());
-    if (hSource == INVALID_HANDLE_VALUE) {
-        LOG << "Failed to open source volume, error : " << GetLastError();
-        goto _end;
+    auto source = osl::GetVolumeHandle(sourcevol.c_str());
+    if (source == INVALID_HANDLE_VALUE) {
+        LOG << "Failed to open " << sourcevol << ", error : " << GetLastError();
+        return fRet;
     }
-    if (!osl::AllowExtendedDasdIO(hSource)) {
+    if (!osl::AllowExtendedDasdIO(source)) {
         LOG << "AllowExtendedDasdIO failed, error : " << GetLastError();
+        CloseHandle(source);
+        return fRet;
+    }
+    auto target = osl::GetVolumeHandle(targetvol.c_str());
+    if (target == INVALID_HANDLE_VALUE) {
+        LOG << "Failed to open target " << targetvol.c_str() << ", error " << GetLastError();
         goto _end;
     }
-    hTarget = osl::GetVolumeHandle(target.c_str());
-    if (hTarget == INVALID_HANDLE_VALUE) {
-        LOG << "Failed to open target " << target.c_str() << ", error " << GetLastError();
-        goto _end;
-    }
-    fRet = osl::LockAndDismountVolume(hTarget);
+    fRet = osl::LockAndDismountVolume(target);
     if (fRet == FALSE) {
         LOG << "LockAndDismountTargetBlockDevice failed";
         goto _end;
     }
     _buf = std::make_unique<uint8_t []>(_1M);
     do {
-        fRet = ReadFile(hSource, _buf.get(), _1M, &lpNumberOfBytesRead, NULL);
+        fRet = ReadFile(source, _buf.get(), _1M, &lpNumberOfBytesRead, NULL);
         if (fRet) {
-            fRet = WriteFile(hTarget, _buf.get(), lpNumberOfBytesRead, &dwBytesWritten, NULL);
+            fRet = WriteFile(target, _buf.get(), lpNumberOfBytesRead, &dwBytesWritten, NULL);
             if (fRet == FALSE) {
                 LOG << "WriteFile on target failed, error : " << GetLastError();
             }
         } else {
             LOG << "ReadFile on source failed, error : " << GetLastError();
         }
-        if (lpNumberOfBytesRead < _1M)
+        if (lpNumberOfBytesRead < _1M) {
             break;
+        }
     } while (fRet);
 
     _end:
-    if (hSource != INVALID_HANDLE_VALUE) {
-        CloseHandle(hSource);
+    if (source != INVALID_HANDLE_VALUE) {
+        CloseHandle(source);
     }
-    if (hTarget != INVALID_HANDLE_VALUE) {
-        osl::unlockVolume(hTarget);
+    if (target != INVALID_HANDLE_VALUE) {
+        osl::unlockVolume(target);
     }
     return fRet;
 }
@@ -244,9 +245,11 @@ auto testSnapshot(std::vector<std::wstring> volumes) {
 }
 
 auto usage(void) {
+    LOG << " ";
     LOG << " fxc -d[ump] <file>";
     LOG << " fxc -f[ull] <vhd[x]> <source> <file>";
     LOG << " fxc -i[ncr] <vhd[x]> <source> <parent-path> <target-file> <rctid>";
+    LOG << " fxc -r c:\\child.vhd \\\\?\\H:";
 }
 
 auto entry(std::vector<std::string> s_arguments) {
@@ -278,11 +281,15 @@ auto entry(std::vector<std::string> s_arguments) {
             arguments[2],
             npl::make_file<std::wstring>(arguments[3], true),
             arguments[4]);
-    } else if (cmd == L"-r") {
+    } else if (cmd == L"-rtc") {
         fxc::resilientChangeTrackingToDataBlockIO(
             arguments[0], // source live vhd
             arguments[1], // rctid
             _2M);
+    } else if (cmd == L"-r") {
+        fxc::recover_virtual_image_to_volume(
+            arguments[0], // path to a child(image)
+            arguments[1]); // volume device: \\?\H:
     } else {
         usage();
     }
@@ -292,3 +299,7 @@ auto entry(std::vector<std::string> s_arguments) {
 } //namespace fxc
 
 #endif //FXC_HPP
+
+// 2GB base parent
+// create vdisk file="D:\base.vhd" maximum=2000 type=expandable
+// create vdisk file="D:\child.vhd" parent="D:\base.vhd"
