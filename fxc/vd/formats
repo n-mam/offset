@@ -5,6 +5,17 @@
 #include <iostream>
 #include <cinttypes>
 
+enum partition {
+    gpt,
+    mbr
+};
+
+enum class format :uint32_t {
+    fixed = 2,
+    dynamic,
+    differencing
+};
+
 #pragma pack(1)
 
 typedef struct __GUID {
@@ -51,18 +62,17 @@ void DumpBytes(const uint8_t *buf, int len, bool hex) {
     LOG << "  " << ss.str();
 }
 
-typedef struct PARTITION
-{
-  uint8_t  boot;               /* 0x80 - active */
-  uint8_t  starting_head;      /* starting head */
-  uint8_t  starting_sector;    /* starting sector */
-  uint8_t  starting_cylinder;  /* starting cylinder */
-  uint8_t  type;               /* What partition type */
-  uint8_t  end_head;           /* end head */
-  uint8_t  end_sector;         /* end sector */
-  uint8_t  end_cyl;            /* end cylinder */
-  uint32_t start_sector;       /* starting sector counting from 0 */
-  uint32_t total_sectors;      /* number of sectors in partition */
+typedef struct PARTITION {
+    uint8_t  boot;               /* 0x80 - active */
+    uint8_t  starting_head;      /* starting head */
+    uint8_t  starting_sector;    /* starting sector */
+    uint8_t  starting_cylinder;  /* starting cylinder */
+    uint8_t  type;               /* What partition type */
+    uint8_t  end_head;           /* end head */
+    uint8_t  end_sector;         /* end sector */
+    uint8_t  end_cyl;            /* end cylinder */
+    uint32_t start_sector;       /* starting sector counting from 0 */
+    uint32_t total_sectors;      /* number of sectors in partition */
 } Partition, *pPartition;
 
 typedef struct MBR {

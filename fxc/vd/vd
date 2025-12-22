@@ -66,7 +66,7 @@ auto create_base_vhd(const std::wstring& volume, npl::spsubject<uint8_t, uint8_t
     auto nvdb = osl::GetNTFSVolumeData(source->_fd_sync);
     uint64_t length = osl::GetBlockDeviceLength(source->_fd_sync);
     LOG << "source volume length " << length;
-    auto disk = std::make_shared<vhd>(length, _2M, vhd::EVHDType::Dynamic);
+    auto disk = std::make_shared<vhd>(length, _2M, format::dynamic);
     auto bs = disk->getBlockSize();
     auto buf = std::make_unique<uint8_t []>(bs);
     // footer
@@ -185,7 +185,7 @@ auto create_child_vhd(const std::wstring& source,
     auto diff = std::make_shared<vhd>(
                     base->getLogicalDiskLength(),
                     base->getBlockSize(),
-                    vhd::EVHDType::Differencing);
+                    format::differencing);
     auto fsBasePath = base->iPath;
     base.reset();
     // footer
@@ -266,7 +266,7 @@ auto create_fixed_vhd(const std::wstring& device, npl::spsubject<uint8_t, uint8_
     assert(source);
     uint64_t length = osl::GetBlockDeviceLength(source->_fd_sync);
     LOG << "source device length " << length;
-    auto disk = std::make_shared<vhd>(length, _2M, vhd::EVHDType::Fixed);
+    auto disk = std::make_shared<vhd>(length, _2M, format::fixed);
     // set target for io operations on disk
     target->AddEventListener(disk);
     auto rc = disk->commitPartitionTable();

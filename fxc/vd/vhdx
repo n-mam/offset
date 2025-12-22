@@ -26,7 +26,7 @@ struct vhdx : public disk {
 
     // New base VHDx contstructor
     vhdx(uint64_t size, uint32_t blocksize)
-      : disk(size, blocksize, EPartitionType::EMBR) {
+      : disk(size, blocksize, partition::mbr) {
         InitializeFileIdentifier();
         InitializeHeader();
         InitializeMetadataRegion(blocksize + size, blocksize, nullptr);

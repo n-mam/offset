@@ -15,21 +15,15 @@ struct vhd : public disk {
     VHD_SPARSE_HEADER iHeader = { 0 };
     std::unique_ptr<uint32_t []> iBAT = nullptr;
 
-    enum EVHDType : uint32_t {
-        Fixed = 2,
-        Dynamic,
-        Differencing
-    };
-
     // new fixed, dynamic and differencing VHD contstructor
     vhd(uint64_t size,
         uint32_t bs,
-        EVHDType type,
+        format type,
         vhd *parent = nullptr)
-            : disk(size, bs, EPartitionType::EMBR) {
+            : disk(size, bs, partition::mbr) {
         initializeFooter(bs + size, type);
         initializeSparseHeader(bs, parent);
-        if (type != EVHDType::Fixed) {
+        if (type != format::fixed) {
             initializeBAT();
         }
         iPayloadBlock = std::make_unique<uint8_t []>(512 + getBlockSize());
@@ -330,11 +324,11 @@ struct vhd : public disk {
         return f.length;
     }
 
-    void initializeFooter(uint64_t size, EVHDType type) {
+    void initializeFooter(uint64_t size, format type) {
         memmove(&iFooter, "conectix", strlen("conectix"));
         iFooter.Features[3] = 0x02;
         iFooter.FileFormatVersion[1] = 0x01;
-        if (type == EVHDType::Fixed) {
+        if (type == format::fixed) {
             iFooter.DataOffset = ~((uint64_t)0);
         } else {
             iFooter.DataOffset = osl::endian_reverse((uint64_t)sizeof(VHD_DISK_FOOTER));
@@ -347,7 +341,7 @@ struct vhd : public disk {
         iFooter.CreatorHostOS[3] = 0x6B;
         *((uint64_t *) &iFooter.CurrentSize) = osl::endian_reverse(size);
         *((uint64_t *) &iFooter.OriginalSize) = osl::endian_reverse(size);
-        *((uint32_t *) &iFooter.DiskType) = osl::endian_reverse(type);
+        *((uint32_t *) &iFooter.DiskType) = osl::endian_reverse((uint32_t)type);
         iFooter.Checksum = 0;
         iFooter.SavedState = 0;
         memset(&iFooter.Reserved, 0, 427);
