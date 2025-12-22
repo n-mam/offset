@@ -87,7 +87,7 @@ auto resilientChangeTrackingToDataBlockIO(const std::wstring& source, const std:
         for (auto& fragmet : fragments) {
             uint64_t batindex = fragmet.offset / bs;
             auto& dbio = dbiomap[batindex];
-            dbio.push_back({nullptr, fragmet.offset, fragmet.length});
+            dbio.push_back({fragmet.length, fragmet.offset, nullptr});
         }
     }
     LOG << "Data block io map size : " << dbiomap.size();

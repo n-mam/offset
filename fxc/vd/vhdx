@@ -1,8 +1,7 @@
-#ifndef VHDXx_HPP
-#define VHDXx_HPP
+#ifndef VHDX_HPP
+#define VHDX_HPP
 
 #include <string>
-#include <math.h>
 
 #include <fxc/vd/disk>
 #include <fxc/vd/formats>

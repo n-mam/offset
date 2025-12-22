@@ -190,11 +190,35 @@ Rectangle {
                         }
                     }
                 }
-                // GroupBox {
-                //     id: imageGroup
-                //     title: "Image"
-                //     width: parent.width
-                // }
+                GroupBox {
+                    id: imageGroup
+                    title: "Image"
+                    width: parent.width
+                    Row {
+                        spacing: 5
+                        width: parent.width
+                        Label {
+                            text: "Source:"
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+                        TextField {
+                            //width: 40
+                            text: ""
+                            placeholderText: "volume or image"
+                            inputMethodHints: Qt.ImhDigitsOnly
+                        }
+                        Label {
+                            text: "Target:"
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+                        TextField {
+                            //width: 40
+                            text: ""
+                            placeholderText: "volume or image"
+                            inputMethodHints: Qt.ImhDigitsOnly
+                        }
+                    }
+                }
             }
         }
     }

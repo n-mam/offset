@@ -1,5 +1,5 @@
-#ifndef BASEDISK_HPP
-#define BASEDISK_HPP
+#ifndef DISK_HPP
+#define DISK_HPP
 
 #include <ctime>
 #include <tuple>
@@ -12,15 +12,16 @@
 #include <filesystem>
 
 #include <fxc/vd/formats>
+#include <observer/subject>
 
 #include <zlib.h>
 
 namespace fxc {
 
 struct DataBlockIO {
-    const uint8_t *buffer = nullptr;
-    uint64_t offset = 0;
     size_t length = 0;
+    uint64_t offset = 0;
+    const uint8_t *buffer = nullptr;
 };
 
 enum EPartitionType {
@@ -174,7 +175,7 @@ struct disk : public npl::subject<uint8_t, uint8_t> {
         while (done != len) {
             chunk_off = (off + done) % bs;
             chunk_len = (chunk_off + pending > bs) ? (bs - chunk_off) : pending;
-            fragments.push_back({nullptr, off + done, chunk_len});
+            fragments.push_back({chunk_len, off + done, nullptr});
             done += chunk_len;
             pending = len - done;
         }

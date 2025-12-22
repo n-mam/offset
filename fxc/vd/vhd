@@ -4,7 +4,6 @@
 #include <string>
 
 #include <fxc/vd/disk>
-#include <fxc/vd/formats>
 
 namespace fxc {
 
@@ -49,18 +48,6 @@ struct vhd : public disk {
 
     virtual ~vhd() {}
 
-    virtual uint32_t getBlockSize() override {
-        return osl::endian_reverse(iHeader.BlockSize);
-    }
-
-    virtual uint64_t getTotalBATEntries(void) {
-        return osl::endian_reverse(iHeader.MaxTableEntries);
-    }
-
-    virtual uint64_t getLogicalDiskLength() override {
-        return osl::endian_reverse(*((uint64_t *)&iFooter.CurrentSize));
-    }
-
     virtual bool isFixed() override {
         return (osl::endian_reverse(*((uint32_t *)&iFooter.DiskType)) == 2);
     }
@@ -71,6 +58,18 @@ struct vhd : public disk {
 
     virtual bool isDifferencing() override {
         return (osl::endian_reverse(*((uint32_t *)&iFooter.DiskType)) == 4);
+    }
+
+    virtual uint32_t getBlockSize() override {
+        return osl::endian_reverse(iHeader.BlockSize);
+    }
+
+    virtual uint64_t getTotalBATEntries(void) {
+        return osl::endian_reverse(iHeader.MaxTableEntries);
+    }
+
+    virtual uint64_t getLogicalDiskLength() override {
+        return osl::endian_reverse(*((uint64_t *)&iFooter.CurrentSize));
     }
 
     virtual std::vector<std::wstring> getParentLocators(void) override {
@@ -90,22 +89,19 @@ struct vhd : public disk {
     virtual uint64_t firstDataBlockOffset() {
         return sizeof(VHD_FOOTER_HEADER) + (isDifferencing() ? (2 * PLDataSpaceSize) : 0) + iBATSize;
     }
-    /*
-        |
-         ------------------------------------
-    |   |     |_____reqLen____|              |
-    |   |     |               |              |
-         ------------------------------------
-        |     ^
-            blkOffset
+    //     |
+    //      ------------------------------------
+    // |   |     |_____reqLen____|              |
+    // |   |     |               |              |
+    //      ------------------------------------
+    //     |     ^
+    //         blkOffset
+    // bit_off_in_bmp represents the bit offset inside the sector bitmap
 
-    bit_off_in_bmp represents the bit offset inside the sector bitmap
-
-    ------bit_off_in_bmp------|
-    . . . . . . . . . . . . . . . . . . . . . . . . . . . .
-        |             |     ^         |           ^   |
-                        first sec bit            last sec bit
-    */
+    // ------bit_off_in_bmp------|
+    // . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    //     |             |       ^       |           ^   |
+    //                     first sec bit            last sec bit
     static bool setSectorBitmap(unsigned char *bitmap, uint64_t blockoff, uint64_t blocklen, uint64_t bs) {
         uint64_t bmb_index;
         uint64_t bit_off_in_bmp;
