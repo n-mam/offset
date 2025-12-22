@@ -271,7 +271,7 @@ void DiskListModel::refreshModel() {
 
         QVector<QString> qnames;
         for (auto& name : names) {
-        qnames.prepend(QString::fromStdWString(name));
+            qnames.prepend(QString::fromStdWString(name));
         }
 
         auto item = std::make_shared<BlockDevice>(qnames, depth++, children.size(), size, free);

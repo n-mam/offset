@@ -554,7 +554,7 @@ struct vhdx : public disk {
     }
 };
 
-using SPVirtualHardDisk2 = std::shared_ptr<vhdx>;
+using spvhdx = std::shared_ptr<vhdx>;
 
 } //namespace
 

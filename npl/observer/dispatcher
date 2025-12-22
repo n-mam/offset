@@ -309,7 +309,7 @@ struct dispatcher : public subject<uint8_t, uint8_t> {
     }
 
     #ifdef linux
-    virtual void EpollControl(SPFileDevice device, int op, uint32_t flags) {
+    virtual void EpollControl(spfile device, int op, uint32_t flags) {
         struct epoll_event e;
         e.events = flags;
         e.data.ptr = device.get();

@@ -267,7 +267,7 @@ auto entry(std::vector<std::string> s_arguments) {
     if (cmd == L"-s") {
         fxc::testSnapshot(arguments);
     } else if (cmd == L"-d") {
-        fxc::dumpVirtualDisk(arguments[0]);
+        fxc::dump_virtual_disk(arguments[0]);
     } else if (cmd == L"-f") {
         fxc::createBaseVirtualDiskFromSource(
             arguments[0],

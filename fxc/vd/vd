@@ -8,22 +8,22 @@
 namespace fxc {
 
 //create a raw image from source at ofset o and write to target
-auto image_copy_from(npl::SPFileDevice<std::wstring> source, npl::spsubject<uint8_t, uint8_t> target, TProgressCallback cbk = nullptr) {
+auto image_copy_from(npl::spfile<std::wstring> source, npl::spsubject<uint8_t, uint8_t> target, TProgressCallback cbk = nullptr) {
     if (!osl::AllowExtendedDasdIO(source->_fd_sync)) {
         LOG << "AllowExtendedDasdIO failed, error : " << GetLastError();
     }
     auto length = osl::GetBlockDeviceLength(source->_fd_sync);
     LOG << "Total length " << length;
+    bool ok = true;
+    bool stop = false;
+    uint64_t bs = _2M;
     DWORD dwBytesRead = 0;
     DWORD dwBytesWritten = 0;
     uint64_t totalBytesRead = 0;
     uint64_t totalBytesWritten = 0;
-    bool ok = true;
-    bool stop = false;
     LARGE_INTEGER r_offset, w_offset;
     r_offset.QuadPart = 0;
     w_offset.QuadPart = 0;
-    uint64_t bs = _2M;
     uint64_t pendingBytes = length, toRead = 0;
     auto buffer = std::make_unique<uint8_t []>(bs);
     while (!stop && ok && pendingBytes) {
@@ -50,7 +50,7 @@ auto image_copy_from(npl::SPFileDevice<std::wstring> source, npl::spsubject<uint
         }
     }
     if (stop || !ok) {
-        LOG << "image_copy_from stop, ok : " << stop << ", " << ok;
+        LOG << "stop, ok : " << stop << ", " << ok;
         return false;
     }
     target->WriteSync();
@@ -177,15 +177,15 @@ auto create_base_vhd(const std::wstring& volume, npl::spsubject<uint8_t, uint8_t
 
 //create differencing child vhd using either RCT CBT ranges (disk level) or volume level CBT
 auto create_child_vhd(const std::wstring& source,
-        const std::wstring& parent,
-        npl::spsubject<uint8_t, uint8_t> target,
-        const std::wstring rctid) {
+    const std::wstring& parent,
+    npl::spsubject<uint8_t, uint8_t> target,
+    const std::wstring rctid) {
 
     auto base = std::make_shared<vhd>(parent);
     auto diff = std::make_shared<vhd>(
-                    base->getLogicalDiskLength(),
-                    base->getBlockSize(),
-                    format::differencing);
+        base->getLogicalDiskLength(),
+        base->getBlockSize(),
+        format::differencing);
     auto fsBasePath = base->iPath;
     base.reset();
     // footer
@@ -266,6 +266,7 @@ auto create_fixed_vhd(const std::wstring& device, npl::spsubject<uint8_t, uint8_
     assert(source);
     uint64_t length = osl::GetBlockDeviceLength(source->_fd_sync);
     LOG << "source device length " << length;
+    // create a new fixed vhd object and hook up the target with it
     auto disk = std::make_shared<vhd>(length, _2M, format::fixed);
     // set target for io operations on disk
     target->AddEventListener(disk);
@@ -277,7 +278,7 @@ auto create_fixed_vhd(const std::wstring& device, npl::spsubject<uint8_t, uint8_
     image_copy_from(source, disk, cbk);
     // append footer
     target->WriteSync(
-        (uint8_t *) &(disk->iFooter),
+        (uint8_t *)&(disk->iFooter),
         sizeof(VHD_DISK_FOOTER),
         _2M + length);
     target->WriteSync();
@@ -292,7 +293,7 @@ auto create_raw_image(const std::wstring& device, npl::spsubject<uint8_t, uint8_
     LOG << "source device length " << length;
     auto rc = image_copy_from(source, target, cbk);
     if (!rc) {
-        ERR << "image_copy_from failed";
+        ERR << "image_copy failed";
         return;
     }
     target->WriteSync();
@@ -591,7 +592,7 @@ void createIncrementalVirtualDiskFromSource(
         }
 }
 
-void dumpVirtualDisk(const std::wstring& path) {
+void dump_virtual_disk(const std::wstring& path) {
     auto disk = fxc::get_virtual_disk(path);
     if (disk) {
         disk->dumpStructure();

@@ -19,14 +19,13 @@ struct vhd : public disk {
     vhd(uint64_t size,
         uint32_t bs,
         format type,
-        vhd *parent = nullptr)
-            : disk(size, bs, partition::mbr) {
-        initializeFooter(bs + size, type);
-        initializeSparseHeader(bs, parent);
-        if (type != format::fixed) {
-            initializeBAT();
-        }
-        iPayloadBlock = std::make_unique<uint8_t []>(512 + getBlockSize());
+        vhd *parent = nullptr) : disk(size, bs, partition::mbr) {
+            initializeFooter(bs + size, type);
+            initializeSparseHeader(bs, parent);
+            if (type != format::fixed) {
+                initializeBAT();
+            }
+            iPayloadBlock = std::make_unique<uint8_t []>(512 + getBlockSize());
     }
 
     // Existing VHD constructor

@@ -11,6 +11,7 @@ Rectangle {
     color: Material.background
     width: parent.width
     height: parent.height
+    clip: true
 
     SplitView {
         anchors.top: parent.top
@@ -20,7 +21,8 @@ Rectangle {
         orientation: Qt.Horizontal
 
         Item {
-            SplitView.preferredWidth: parent.width * 0.42
+            clip: true
+            SplitView.preferredWidth: parent.width * 0.67
             List {
                 id: devlist
                 width: parent.width
@@ -38,6 +40,7 @@ Rectangle {
                 height: parent.height * 0.15
                 color: Material.background
                 Column {
+                    clip: true
                     anchors.fill: parent
                     spacing: appSpacing * 2
                     FileFolderSelector {
@@ -78,145 +81,132 @@ Rectangle {
             }
         }
         Item {
-            id: recoverView
-            Column {
-                spacing: 5
-                anchors.fill: parent
-                anchors.margins: appSpacing
-                GroupBox {
-                    id: mountGroup
-                    title: "Mount"
-                    width: parent.width
-                    Column {
-                        spacing: appSpacing * 2
-                        FileFolderSelector {
-                            id: imagePath
-                            height: 32
-                            isFolderSelector: false
-                            image: "qrc:/folder.png"
-                            placeholder: "Image file"
-                            width: parent.width * 0.75
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            onFileSelected: (file) => {
-
+            GroupBox {
+                id: mountGroup
+                title: "Mount"
+                clip: true
+                anchors.top: parent.top
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.margins: 5
+                ColumnLayout {
+                    spacing: appSpacing
+                    GroupBox {
+                        title: "Mode"
+                        RowLayout {
+                            RadioButton {
+                                text: "Read-Only"
+                                checked: true
+                                Layout.maximumHeight: 35
                             }
-                        }
-                        Row {
-                            id: mountRow
-                            spacing: appSpacing
-                            GroupBox {
-                                title: "Mode"
-                                Row {
-                                    spacing: 5
-                                    RadioButton {
-                                        text: "Read-Only"
-                                        checked: true
-                                        height: 32
-                                        width: 118
-                                    }
-                                    RadioButton {
-                                        text: "Read-Write"
-                                        height: 32
-                                        width: 125
-                                    }
-                                }
-                            }
-                            Row {
-                                spacing: 5
-                                anchors.bottom: parent.bottom
-                                Label {
-                                    text: "Drive:"
-                                    anchors.verticalCenter: parent.verticalCenter
-                                }
-                                ComboBox {
-                                    width: 75
-                                    model: ["Z:", "Y:", "X:"]
-                                }
-                                Label {
-                                    text: "Partition:"
-                                    anchors.verticalCenter: parent.verticalCenter
-                                }
-                                TextField {
-                                    width: 40
-                                    text: "0"
-                                    inputMethodHints: Qt.ImhDigitsOnly
-                                }
-                            }
-                        }
-                        Row {
-                            spacing: appSpacing
-                            GroupBox {
-                                title: "Write"
-                                Row {
-                                    spacing: appSpacing
-                                    RadioButton {
-                                        text: "Type1"
-                                        height: 32
-                                    }
-                                    RadioButton {
-                                        text: "Type2"
-                                        checked: true
-                                        height: 32
-                                    }
-                                    RadioButton {
-                                        text: "Direct"
-                                        height: 32
-                                    }
-                                }
-                            }
-                            Row {
-                                spacing: appSpacing
-                                anchors.bottom: parent.bottom
-                                Label {
-                                    text: "Size:"
-                                    anchors.verticalCenter: parent.verticalCenter
-                                }
-                                TextField {
-                                    width: 50
-                                }
-                                CheckBox {
-                                    text: "Encrypt"
-                                }
-                            }
-                        }
-                        Button {
-                            width: 90
-                            text: "Mount"
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            onClicked: function() {
-                                recoverManager.imageFile = imagePath.text
-                                recoverManager.mount()
+                            RadioButton {
+                                text: "Read-Write"
+                                Layout.maximumHeight: 35
                             }
                         }
                     }
+                    GroupBox {
+                        title: "Write"
+                        RowLayout {
+                            spacing: appSpacing
+                            RadioButton {
+                                text: "Type1"
+                                Layout.maximumHeight: 35
+                            }
+                            RadioButton {
+                                text: "Type2"
+                                checked: true
+                                Layout.maximumHeight: 35
+                            }
+                            RadioButton {
+                                text: "Direct"
+                                Layout.maximumHeight: 35
+                            }
+                        }
+                    }
+                    RowLayout {
+                        spacing: appSpacing
+                        Label {
+                            text: "Drive:"
+                        }
+                        ComboBox {
+                            model: ["Z:", "Y:", "X:"]
+                            Layout.maximumWidth: 70
+                            Layout.maximumHeight: 35
+                        }
+                        Label {
+                            text: "Partition:"
+                        }
+                        TextField {
+                            text: "0"
+                            Layout.maximumWidth: 50
+                            Layout.maximumHeight: 35
+                            inputMethodHints: Qt.ImhDigitsOnly
+                        }
+                    }
+                    RowLayout {
+                        spacing: appSpacing
+                        Label {
+                            text: "Size:"
+                        }
+                        TextField {
+                            Layout.maximumWidth: 50
+                            Layout.maximumHeight: 35
+                        }
+                        CheckBox {
+                            text: "Encrypt"
+                        }
+                    }
+                    Button {
+                        text: "Mount"
+                        Layout.alignment: Qt.AlignCenter
+                        onClicked: function() {
+                            recoverManager.imageFile = imagePath.text
+                            recoverManager.mount()
+                        }
+                    }
                 }
-                GroupBox {
-                    id: imageGroup
-                    title: "Image"
-                    width: parent.width
-                    Row {
-                        spacing: 5
-                        width: parent.width
+            }
+            GroupBox {
+                id: imageGroup
+                title: "Image"
+                clip: true
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.top: mountGroup.bottom
+                anchors.margins: 5
+                ColumnLayout {
+                    spacing: appSpacing
+                    RowLayout {
+                        spacing: 3
                         Label {
                             text: "Source:"
-                            anchors.verticalCenter: parent.verticalCenter
                         }
                         TextField {
-                            //width: 40
+                            Layout.minimumWidth: 150
+                            Layout.maximumHeight: 32
                             text: ""
-                            placeholderText: "volume or image"
+                            placeholderText: "image"
                             inputMethodHints: Qt.ImhDigitsOnly
                         }
+                    }
+                    RowLayout {
                         Label {
                             text: "Target:"
-                            anchors.verticalCenter: parent.verticalCenter
                         }
                         TextField {
-                            //width: 40
+                            Layout.minimumWidth: 150
+                            Layout.maximumHeight: 32
                             text: ""
-                            placeholderText: "volume or image"
+                            placeholderText: "volume"
                             inputMethodHints: Qt.ImhDigitsOnly
                         }
+                    }
+                    Button {
+                        text: "Recover"
+                        Layout.maximumWidth: 110
+                        Layout.maximumHeight: 58
+                        Layout.alignment: Qt.AlignCenter
                     }
                 }
             }

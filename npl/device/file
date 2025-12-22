@@ -276,7 +276,7 @@ struct file_device : public subject<uint8_t, uint8_t> {
 };
 
 template<typename T>
-using SPFileDevice = std::shared_ptr<file_device<T>>;
+using spfile = std::shared_ptr<file_device<T>>;
 template<typename T>
 using WPFileDevice = std::weak_ptr<file_device<T>>;
 
