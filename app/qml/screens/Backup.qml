@@ -22,7 +22,7 @@ Rectangle {
 
         Item {
             clip: true
-            SplitView.preferredWidth: parent.width * 0.67
+            SplitView.preferredWidth: parent.width * 0.60
             List {
                 id: devlist
                 width: parent.width
@@ -183,11 +183,11 @@ Rectangle {
                             text: "Source:"
                         }
                         TextField {
-                            Layout.minimumWidth: 150
+                            id: source
                             Layout.maximumHeight: 32
-                            text: ""
                             placeholderText: "image"
                             inputMethodHints: Qt.ImhDigitsOnly
+                            Layout.minimumWidth: imageGroup.width * 0.65
                         }
                     }
                     RowLayout {
@@ -195,11 +195,11 @@ Rectangle {
                             text: "Target:"
                         }
                         TextField {
-                            Layout.minimumWidth: 150
+                            id: target
                             Layout.maximumHeight: 32
-                            text: ""
-                            placeholderText: "volume"
+                            placeholderText: "block device"
                             inputMethodHints: Qt.ImhDigitsOnly
+                            Layout.minimumWidth: imageGroup.width * 0.65
                         }
                     }
                     Button {
@@ -207,6 +207,9 @@ Rectangle {
                         Layout.maximumWidth: 110
                         Layout.maximumHeight: 58
                         Layout.alignment: Qt.AlignCenter
+                        onClicked: function() {
+                            diskListModel.recoverVirtualDisk(source.text, target.text);
+                        }
                     }
                 }
             }

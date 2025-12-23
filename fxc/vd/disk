@@ -31,7 +31,6 @@ struct disk : public npl::subject<uint8_t, uint8_t> {
     MBR iMBR = { 0 };
     spdisk iChild = nullptr;
     spdisk iParent = nullptr;
-    partition iPartitionType;
     std::filesystem::path iPath;
     GptHdrRev1 alignas(512) iGptHdr = { 0 };
     GPE alignas(512) iPartitions[4] = { 0 };
@@ -41,20 +40,17 @@ struct disk : public npl::subject<uint8_t, uint8_t> {
     std::unique_ptr<uint8_t []> iPayloadBlock = nullptr;
 
     disk() {}
-    // new virtual disk abstraction
+    // new disk base
     disk(uint64_t size, uint32_t blocksize, partition partitionType) {
         if (size >= _2T) {
-            iPartitionType = partition::gpt;
-        } else {
-            iPartitionType = partitionType;
-        }
-        if (iPartitionType == partition::mbr) {
+            initializeGPT(size, blocksize / 512);
+        } else if (partitionType == partition::mbr) {
             initializeMBR(size, blocksize / 512);
-        } else if (iPartitionType == partition::gpt) {
+        } else if (partitionType == partition::gpt) {
             initializeGPT(size, blocksize / 512);
         }
     }
-    // existing virtual disk abstraction
+    // existing disk base
     disk(const std::wstring& path, uint32_t len) {
         iPath = path;
         iFile = npl::make_file<std::wstring>(iPath);
@@ -85,10 +81,9 @@ struct disk : public npl::subject<uint8_t, uint8_t> {
 
     virtual uint64_t getPartitionLength(int n) {
         uint64_t length = 0;
-        if (iPartitionType == partition::gpt) {
+        if (getPartitionType() == partition::gpt) {
             length = (iPartitions[n].end_lba - iPartitions[n].start_lba) * 512ULL;
-        }
-        else if (iPartitionType == partition::mbr) {
+        } else if (getPartitionType() == partition::mbr) {
             length = iMBR.partitions[n].total_sectors * 512ULL;
         }
         return length;
@@ -96,19 +91,24 @@ struct disk : public npl::subject<uint8_t, uint8_t> {
 
     virtual uint64_t getPartitionStartOffset(int n) {
         uint64_t offset = 0;
-        if (iPartitionType == partition::gpt) {
+        if (getPartitionType() == partition::gpt) {
             offset = (iPartitions[n].start_lba) * 512ULL;
-        } else if (iPartitionType == partition::mbr) {
+        } else if (getPartitionType() == partition::mbr) {
             offset = iMBR.partitions[n].start_sector * 512ULL;
         }
         return offset;
+    }
+
+    auto getPartitionType() {
+        return (iMBR.partitions[0].type == 0xEE) ?
+            partition::gpt : partition::mbr;
     }
 
     auto commitPartitionTable() {
         uint8_t buf[512*5];
         //we are streaming
         memmove(buf, &iMBR, sizeof(MBR));
-        if (iPartitionType == partition::gpt) {
+        if (getPartitionType() == partition::gpt) {
             /*   0       1          2            3              4
              * [MBR] [GPT-Hdr] [Partitions] [GPT-Hdr(B)] [Partitions(B)]
              */
@@ -200,7 +200,7 @@ struct disk : public npl::subject<uint8_t, uint8_t> {
             LOG << " total_sectors                : " << iMBR.partitions[i].total_sectors << " sector ";
             LOG << " ------------------";
         }
-        if (iMBR.partitions[0].type == 0xEE) {
+        if (getPartitionType() == partition::gpt) {
             LOG << "GUID partition table detected";
         } else {
             LOG << "MBR partition table detected";

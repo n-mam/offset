@@ -171,6 +171,26 @@ auto EnumerateSnapshots() {
     return ss;
 }
 
+auto testSnapshot(std::vector<std::wstring> volumes) {
+    fxc::EnumerateSnapshots();
+    std::vector<std::wstring> supported, unsupported;
+    for (const auto& volume : volumes) {
+        if (fxc::IsVolumeSupported(volume)) {
+            supported.push_back(volume);
+        } else {
+            LOG << " excluding unsupported volume : " << volume;
+        }
+    }
+    fxc::CreateSnapshot(
+        supported,
+        [] (fxc::TSnapshotSet ss) {
+            for (auto& s : ss) {
+                auto [volume, snapshotDevice, volumeDevice] = s;
+                LOG << " " << volume << " " << snapshotDevice << " " << volumeDevice;
+            }
+        });
+}
+
 // {E9B8079B-248F-454F-ADE0-38A51E568335}
 static const GUID FxcWriterId =
 { 0xe9b8079b, 0x248f, 0x454f, { 0xad, 0xe0, 0x38, 0xa5, 0x1e, 0x56, 0x83, 0x35 } };

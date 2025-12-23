@@ -151,16 +151,21 @@ void DiskListModel::setStop(bool stop) {
     this->stop = stop;
 }
 
-bool DiskListModel::mountVirtualDisk() {
+void DiskListModel::recoverVirtualDisk(QString image, QString volume) {
+    m_futures.push_back(std::async(std::launch::async,
+        [=](){
+            fxc::recover_virtual_disk(
+                    image.toStdWString(), volume.toStdWString());
+        }));
+}
 
+bool DiskListModel::mountVirtualDisk() {
     fxc::TMountConfig mc;
     mc.m_mode = 0;
     mc.m_drive = L'T';
     mc.m_partition = 0;
     mc.m_file = L"C:\\x.vhd";
-
-    fxc::mountVirtualImageAsBlockDevice(mc);
-
+    fxc::mount_virtual_image(mc);
     return true;
 }
 

@@ -71,40 +71,42 @@ auto getTargetForDestination(const std::wstring& destination, const std::wstring
     return target;
 }
 
-auto recover_virtual_image_to_volume(const std::wstring& image, const std::wstring& volume) {
+auto recover_virtual_disk(const std::wstring& image, const std::wstring& blkdev) {
     auto disk = fxc::get_virtual_disk(image);
     if (!disk) {
         LOG << "Failed to create virtaul disk object";
         return false;
     }
-    auto target = osl::GetVolumeHandle(volume.c_str());
+    auto target = osl::GetBlockDeviceHandle(blkdev);
     if (target == INVALID_HANDLE_VALUE) {
-        LOG << "Failed to open target " << volume.c_str() << ", error " << GetLastError();
+        LOG << "Failed to open block device " << blkdev.c_str() << ", error " << GetLastError();
         return false;
     }
-    std::unique_ptr<uint8_t[]> buf;
-    bool fRet = osl::LockAndDismountVolume(target);
-    if (fRet == FALSE) {
-        LOG << "LockAndDismountVolume failed";
-        osl::unlockVolume(target);
-        return false;
+    bool isdisk = blkdev.find(L"\\\\.\\PhysicalDrive") == 0;
+    if (!isdisk) {
+        auto fRet = osl::LockAndDismountVolume(target);
+        if (fRet == FALSE) {
+            LOG << "LockAndDismountVolume failed";
+            osl::unlockVolume(target);
+            return false;
+        }
     }
     uint64_t nDone = 0;
     DWORD dwBytesWritten;
     auto bs = disk->getBlockSize();
-    buf = std::make_unique<uint8_t []>(bs);
-    uint64_t nTotal = disk->getPartitionLength(0);
-    uint64_t offset = disk->getPartitionStartOffset(0);
+    auto buf = std::make_unique<uint8_t []>(bs);
+    uint64_t nTotal = isdisk ? disk->getLogicalDiskLength() :
+        disk->getPartitionLength(0);
+    uint64_t offset = isdisk ? 0 : disk->getPartitionStartOffset(0);
     do {
         auto pending = nTotal - nDone;
         size_t nToRead = pending > bs ? bs : pending;
         auto n = disk->ReadSync(buf.get(), nToRead, offset + nDone);
-        fRet = false;
         if (n != nToRead) {
             LOG << "ReadSync on source returned " << n;
             break;
         }
-        fRet = WriteFile(target, buf.get(), n, &dwBytesWritten, NULL);
+        auto fRet = WriteFile(target, buf.get(), n, &dwBytesWritten, NULL);
         if (!fRet) {
             LOG << "WriteFile on target failed : " << GetLastError();
             break;
@@ -113,8 +115,10 @@ auto recover_virtual_image_to_volume(const std::wstring& image, const std::wstri
         LOG << "n : " << n << " nDone : " << nDone;
     } while (nDone != nTotal);
     LOG << "nTotal : " << nTotal;
-    osl::unlockVolume(target);
-    return fRet;
+    if (!isdisk) {
+        osl::unlockVolume(target);
+    }
+    return (nDone == nTotal);
 }
 
 auto recover_volume_to_volume(const std::wstring& sourcevol, const std::wstring& targetvol) {
@@ -220,28 +224,8 @@ auto convertBlockDeviceToVirtualImages(const std::vector<TBackupConfig>& bc, TPr
     return true;
 }
 
-auto mountVirtualImageAsBlockDevice(const TMountConfig& mc) {
+auto mount_virtual_image(const TMountConfig& mc) {
     return false;
-}
-
-auto testSnapshot(std::vector<std::wstring> volumes) {
-    fxc::EnumerateSnapshots();
-    std::vector<std::wstring> supported, unsupported;
-    for (const auto& volume : volumes) {
-        if (fxc::IsVolumeSupported(volume)) {
-            supported.push_back(volume);
-        } else {
-            LOG << " excluding unsupported volume : " << volume;
-        }
-    }
-    fxc::CreateSnapshot(
-        supported,
-        [] (fxc::TSnapshotSet ss) {
-            for (auto& s : ss) {
-                auto [volume, snapshotDevice, volumeDevice] = s;
-                LOG << " " << volume << " " << snapshotDevice << " " << volumeDevice;
-            }
-        });
 }
 
 auto usage(void) {
@@ -287,7 +271,7 @@ auto entry(std::vector<std::string> s_arguments) {
             arguments[1], // rctid
             _2M);
     } else if (cmd == L"-r") {
-        fxc::recover_virtual_image_to_volume(
+        fxc::recover_virtual_disk(
             arguments[0], // path to a child(image)
             arguments[1]); // volume device: \\?\H:
     } else {

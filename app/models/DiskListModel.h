@@ -49,6 +49,7 @@ class DiskListModel : public BaseModel {
     bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole) override;
 
     Q_INVOKABLE bool mountVirtualDisk();
+    Q_INVOKABLE void recoverVirtualDisk(QString image, QString volume);
     Q_INVOKABLE bool convertSelectedItemsToVirtualDisks(QString folder);
 
     Q_PROPERTY(bool stop READ getStop WRITE setStop);
