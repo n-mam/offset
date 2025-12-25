@@ -66,7 +66,7 @@ auto create_base_vhd(const std::wstring& volume, npl::spsubject<uint8_t, uint8_t
     auto nvdb = osl::GetNTFSVolumeData(source->_fd_sync);
     uint64_t length = osl::GetBlockDeviceLength(source->_fd_sync);
     LOG << "source volume length " << length;
-    auto disk = std::make_shared<vhd>(length, _2M, format::dynamic);
+    auto disk = std::make_shared<vhd>(length, _2M, format::dynamic, nullptr);
     auto bs = disk->getBlockSize();
     auto buf = std::make_unique<uint8_t []>(bs);
     // footer
@@ -176,22 +176,18 @@ auto create_base_vhd(const std::wstring& volume, npl::spsubject<uint8_t, uint8_t
 }
 
 //create differencing child vhd using either RCT CBT ranges (disk level) or volume level CBT
-auto create_child_vhd(const std::wstring& source,
-    const std::wstring& parent,
-    npl::spsubject<uint8_t, uint8_t> target,
-    const std::wstring rctid) {
+auto create_child_vhd(const std::wstring& source, const std::wstring& parent,
+        npl::spsubject<uint8_t, uint8_t> target, const std::wstring rctid) {
 
     auto base = std::make_shared<vhd>(parent);
-    auto diff = std::make_shared<vhd>(
-        base->getLogicalDiskLength(),
-        base->getBlockSize(),
-        format::differencing);
+    auto diff = std::make_shared<vhd>(base->getLogicalDiskLength(),
+        base->getBlockSize(), format::differencing, base.get());
     auto fsBasePath = base->iPath;
     base.reset();
     // footer
-    target->WriteSync((uint8_t *) &(diff->iFooter), sizeof(VHD_DISK_FOOTER), 0);
+    target->WriteSync((uint8_t *)&(diff->iFooter), sizeof(VHD_DISK_FOOTER), 0);
     // sparse header
-    target->WriteSync((uint8_t *) &(diff->iHeader), sizeof(VHD_SPARSE_HEADER), sizeof(VHD_DISK_FOOTER));
+    target->WriteSync((uint8_t *)&(diff->iHeader), sizeof(VHD_SPARSE_HEADER), sizeof(VHD_DISK_FOOTER));
     // parent locator 1
     uint8_t pl[PLDataSpaceSize] = { 0 };
     memmove(pl, fsBasePath.wstring().c_str(), fsBasePath.wstring().size() * sizeof(wchar_t));
@@ -214,7 +210,7 @@ auto create_child_vhd(const std::wstring& source,
     }
     // BAT
     target->WriteSync((uint8_t *)bat.get(), diff->iBATSize, sizeof(VHD_FOOTER_HEADER) + (2 * PLDataSpaceSize));
-    auto hvhd = osl::AttachVHD(source);
+    auto hvhd = osl::attach_vhd(source);
     if (hvhd == INVALID_HANDLE_VALUE) {
         LOG << "create_child_vhd failed to attach vhd";
         return false;
@@ -243,13 +239,7 @@ auto create_child_vhd(const std::wstring& source,
             diff->firstDataBlockOffset() + (blockCount * (512 + bs)));
         blockCount++;
     }
-    osl::DllHelper virtDiskAPI("virtdisk.dll");
-    auto pfnDetachVirtualDisk = (decltype(DetachVirtualDisk) *) virtDiskAPI["DetachVirtualDisk"];
-    if (pfnDetachVirtualDisk == NULL) {
-        LOG << "Failed to get pointer to DetachVirtualDisk " << GetLastError();
-        return false;
-    }
-    pfnDetachVirtualDisk(hvhd, DETACH_VIRTUAL_DISK_FLAG_NONE, 0);
+    osl::detach_vhd(hvhd);
     // footer
     target->WriteSync(
         (uint8_t *) &(diff->iFooter),
@@ -267,7 +257,7 @@ auto create_fixed_vhd(const std::wstring& device, npl::spsubject<uint8_t, uint8_
     uint64_t length = osl::GetBlockDeviceLength(source->_fd_sync);
     LOG << "source device length " << length;
     // create a new fixed vhd object and hook up the target with it
-    auto disk = std::make_shared<vhd>(length, _2M, format::fixed);
+    auto disk = std::make_shared<vhd>(length, _2M, format::fixed, nullptr);
     // set target for io operations on disk
     target->AddEventListener(disk);
     auto rc = disk->commitPartitionTable();
@@ -307,7 +297,7 @@ void create_base_vhdx(const std::wstring& volume, npl::spsubject<uint8_t, uint8_
     auto nvdb = osl::GetNTFSVolumeData(source->_fd_sync);
     uint64_t length = osl::GetBlockDeviceLength(source->_fd_sync);
     LOG << "source volume length " << length;
-    auto disk = std::make_shared<vhdx>(length, _4M);
+    auto disk = std::make_shared<vhdx>(length, _4M, format::dynamic, nullptr);
     auto bs = disk->getBlockSize();
     auto buf = std::make_unique<uint8_t []>(bs);
     memset(buf.get(), 0, _1M);
@@ -343,7 +333,7 @@ void create_base_vhdx(const std::wstring& volume, npl::spsubject<uint8_t, uint8_
     auto bat = std::make_unique<uint64_t []>(disk->iBATSize / sizeof(uint64_t));
     memset(bat.get(), 0x00, disk->iBATSize);
     // GPT block's BAT entry
-    VHDX_BAT_ENTRY entry = { VHDX_BAT_ENTRY_PAYLOAD_BLOCK_FULLY_PRESENT, 0, disk->FirstDataBlockOffsetMB() };
+    VHDX_BAT_ENTRY entry = { VHDX_BAT_ENTRY_PAYLOAD_BLOCK_FULLY_PRESENT, 0, disk->firstDataBlockOffsetMB() };
     bat[0] = *((uint64_t *) &entry);
     uint64_t batIndex = 1;
     uint64_t validBATEntryCount = 1;
@@ -355,7 +345,7 @@ void create_base_vhdx(const std::wstring& volume, npl::spsubject<uint8_t, uint8_
         }
         if (((i * nvdb.BytesPerCluster) % bs == 0) || (i == nvdb.TotalClusters.QuadPart)) {
             if (blockInUse) {
-                uint64_t blockFileOffsetMB = disk->FirstDataBlockOffsetMB() + ((validBATEntryCount * bs) / _1M);
+                uint64_t blockFileOffsetMB = disk->firstDataBlockOffsetMB() + ((validBATEntryCount * bs) / _1M);
                 VHDX_BAT_ENTRY entry = { VHDX_BAT_ENTRY_PAYLOAD_BLOCK_FULLY_PRESENT, 0, blockFileOffsetMB };
                 bat[batIndex] = *((uint64_t *) &entry);
                 blockInUse = false;
@@ -385,7 +375,7 @@ void create_base_vhdx(const std::wstring& volume, npl::spsubject<uint8_t, uint8_
             uint64_t batentry = bat[batindex];
             if (VHDX_BAT_ENTRY_GET_STATE(batentry) == VHDX_BAT_ENTRY_PAYLOAD_BLOCK_NOT_PRESENT) {
                 //LOG << "BAT setting entry for pending len at " << batindex;
-                uint64_t blockFileOffsetMB = disk->FirstDataBlockOffsetMB() + ((validBATEntryCount * bs) / _1M);
+                uint64_t blockFileOffsetMB = disk->firstDataBlockOffsetMB() + ((validBATEntryCount * bs) / _1M);
                 VHDX_BAT_ENTRY entry = { VHDX_BAT_ENTRY_PAYLOAD_BLOCK_FULLY_PRESENT, 0, blockFileOffsetMB };
                 bat[batindex] = *((uint64_t *) &entry);
                 validBATEntryCount++;
@@ -448,18 +438,19 @@ void create_base_vhdx(const std::wstring& volume, npl::spsubject<uint8_t, uint8_
 //create differencing child vhd using either RCT CBT ranges (disk level) or volume level CBT
 bool create_child_vhdx(const std::wstring& source, const std::wstring& parent, npl::spsubject<uint8_t, uint8_t> target, const std::wstring rctid) {
     auto base = std::make_shared<vhdx>(parent);
-    auto diff = std::make_shared<vhdx>(base.get());
+    auto diff = std::make_shared<vhdx>(base->getLogicalDiskLength(),
+        base->getBlockSize(), format::differencing, base.get());
     base.reset();
     auto buf = std::make_unique<uint8_t []>(_1M);
     memset(buf.get(), 0, _1M);
     // file identifier
-    memmove(buf.get(), (void *) &diff->iFileIdentifier, sizeof(VHDX_FILE_IDENTIFIER));
+    memmove(buf.get(), (void *)&diff->iFileIdentifier, sizeof(VHDX_FILE_IDENTIFIER));
     // vhdx Header 1
-    memmove(buf.get() + _64K, (void *) &diff->iHeader, sizeof(VHDX_HEADER));
+    memmove(buf.get() + _64K, (void *)&diff->iHeader, sizeof(VHDX_HEADER));
     // vhdx Header 2
     diff->iHeader.SequenceNumber++;
     diff->iHeader.Checksum = 0;
-    diff->iHeader.Checksum = crc32c_value((uint8_t *) &diff->iHeader, _4K);
+    diff->iHeader.Checksum = crc32c_value((uint8_t *)&diff->iHeader, _4K);
     memmove(buf.get() + _64K + _64K, (void *) &diff->iHeader, sizeof(VHDX_HEADER));
     // Region Table 1
     memmove(buf.get() + _64K + _64K + _64K, (void *) &diff->iRegionTable, sizeof(VHDX_REGION_TABLE));
@@ -472,7 +463,7 @@ bool create_child_vhdx(const std::wstring& source, const std::wstring& parent, n
     target->WriteSync(buf.get(), _1M, _1M);
     memset(buf.get(), 0, _1M);
     // metadata region: prolouge
-    memmove(buf.get(), (void *) &diff->iMetadata.iTable, sizeof(VHDX_METADATA_TABLE));
+    memmove(buf.get(), (void *)&diff->iMetadata.iTable, sizeof(VHDX_METADATA_TABLE));
     // metadata region: objects
     memmove(buf.get() + _64K, &diff->iMetadata.iObjects, sizeof(VHDX_METADATA_OBJECTS));
     target->WriteSync(buf.get(), _1M, _2M);
@@ -486,13 +477,13 @@ bool create_child_vhdx(const std::wstring& source, const std::wstring& parent, n
         uint64_t pb_entry_cnt = kv.first;
         uint64_t sb_entry_cnt = pb_entry_cnt / diff->iChunkRatio;
         uint64_t batindex = pb_entry_cnt + sb_entry_cnt;
-        VHDX_BAT_ENTRY entry = {VHDX_BAT_ENTRY_PAYLOAD_BLOCK_FULLY_PRESENT, 0, diff->FirstDataBlockOffsetMB() +  ((bs * blockCount) / _1M)};
+        VHDX_BAT_ENTRY entry = {VHDX_BAT_ENTRY_PAYLOAD_BLOCK_FULLY_PRESENT, 0, diff->firstDataBlockOffsetMB() +  ((bs * blockCount) / _1M)};
         bat[batindex] = *((uint64_t *)&entry);
         LOG << "Bat construction : setting bat entry : " << kv.first;
         blockCount++;
     }
     target->WriteSync((uint8_t *)bat.get(), diff->iBATSize, _3M);
-    auto hvhd = osl::AttachVHD(source);
+    auto hvhd = osl::attach_vhd(source);
     if (hvhd == INVALID_HANDLE_VALUE) {
         LOG << "create_child_vhdx failed to attach vhd";
         return false;
@@ -510,17 +501,11 @@ bool create_child_vhdx(const std::wstring& source, const std::wstring& parent, n
         LOG << "BAT index : " << kv.first;
         auto fRet = phyDisk->ReadSync(buf.get(), bs, bs * kv.first);
         assert(fRet == bs);
-        fRet = target->WriteSync(buf.get(), bs, (diff->FirstDataBlockOffsetMB() * _1M) + (blockCount * bs));
+        fRet = target->WriteSync(buf.get(), bs, (diff->firstDataBlockOffsetMB() * _1M) + (blockCount * bs));
         assert(fRet == bs);
         blockCount++;
     }
-    osl::DllHelper virtDiskAPI("virtdisk.dll");
-    auto pfnDetachVirtualDisk = (decltype(DetachVirtualDisk) *) virtDiskAPI["DetachVirtualDisk"];
-    if (pfnDetachVirtualDisk == NULL) {
-        LOG << "Failed to get poinetr to DetachVirtualDisk " << GetLastError();
-        return false;
-    }
-    pfnDetachVirtualDisk(hvhd, DETACH_VIRTUAL_DISK_FLAG_NONE, 0);
+    osl::detach_vhd(hvhd);
     target->WriteSync();
     getSharedInstance<npl::dispatcher>()->RemoveEventListener(target);
     target.reset();

@@ -72,28 +72,40 @@ inline auto OpenVirtualDisk(const std::wstring& file) {
     return hvhd;
 }
 
-inline auto AttachVHD(const std::wstring& source) {
+inline auto attach_vhd(const std::wstring& source) {
     HANDLE hvhd = OpenVirtualDisk(source);
     ATTACH_VIRTUAL_DISK_PARAMETERS params = { 0 };
     params.Version = ATTACH_VIRTUAL_DISK_VERSION_1;
     DllHelper virtDiskAPI("virtdisk.dll");
-    auto pfn = (decltype(AttachVirtualDisk) *) virtDiskAPI["AttachVirtualDisk"];
-    if (pfn == NULL) {
+    auto pfnAttachVirtualDisk = (decltype(AttachVirtualDisk) *) virtDiskAPI["AttachVirtualDisk"];
+    if (pfnAttachVirtualDisk == NULL) {
         LOG << "Failed to get poinetr to AttachVirtualDisk " << GetLastError();
         return INVALID_HANDLE_VALUE;
     }
-    auto fRet = pfn(
-        hvhd,
-        NULL,
-        ATTACH_VIRTUAL_DISK_FLAG_READ_ONLY|ATTACH_VIRTUAL_DISK_FLAG_NO_DRIVE_LETTER,
-        0,
-        &params,
-        NULL);
+    auto fRet = pfnAttachVirtualDisk(
+                    hvhd,
+                    NULL,
+                    ATTACH_VIRTUAL_DISK_FLAG_READ_ONLY|ATTACH_VIRTUAL_DISK_FLAG_NO_DRIVE_LETTER,
+                    0,
+                    &params,
+                    NULL);
     if (fRet != ERROR_SUCCESS) {
         LOG << "AttachVirtualDisk failed, error : " << fRet;
         return INVALID_HANDLE_VALUE;
     }
     return hvhd;
+}
+
+inline auto detach_vhd(HANDLE hvhd) {
+    osl::DllHelper virtDiskAPI("virtdisk.dll");
+    auto pfnDetachVirtualDisk = (decltype(DetachVirtualDisk) *) virtDiskAPI["DetachVirtualDisk"];
+    if (pfnDetachVirtualDisk == NULL) {
+        LOG << "Failed to get pointer to DetachVirtualDisk " << GetLastError();
+        return false;
+    }
+    auto rc = pfnDetachVirtualDisk(hvhd, DETACH_VIRTUAL_DISK_FLAG_NONE, 0);
+    CloseHandle(hvhd);
+    return (rc == ERROR_SUCCESS);
 }
 
 inline auto GetPhysicalDiskPath(HANDLE hvhd) {

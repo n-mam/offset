@@ -22,28 +22,15 @@ struct vhdx : public disk {
     std::unique_ptr<uint64_t []> iBAT = nullptr;
     VHDX_FILE_IDENTIFIER iFileIdentifier = { 0 };
 
-    virtual ~vhdx() {}
-
-    // New base VHDx contstructor
-    vhdx(uint64_t size, uint32_t blocksize)
-      : disk(size, blocksize, partition::mbr) {
-        InitializeFileIdentifier();
-        InitializeHeader();
-        InitializeMetadataRegion(blocksize + size, blocksize, nullptr);
-        InitializeBATRegion();
-        InitializeRegionTable();
-        iPayloadBlock = std::make_unique<uint8_t []>(getBlockSize());
-    }
-
-    // new child VHDx contstructor
-    vhdx(vhdx *parent) {
-        auto blocksize = parent->getBlockSize();
-        InitializeFileIdentifier();
-        InitializeHeader();
-        InitializeMetadataRegion(parent->getLogicalDiskLength(), blocksize, parent);
-        InitializeBATRegion();
-        InitializeRegionTable();
-        iPayloadBlock = std::make_unique<uint8_t []>(blocksize);
+    // new base, child VHDx contstructor
+    vhdx(uint64_t size, uint32_t bs, format type, vhdx *parent)
+        : disk(size, bs, partition::mbr) {
+            InitializeFileIdentifier();
+            InitializeHeader();
+            InitializeMetadataRegion((parent ? size : bs + size), bs, parent);
+            InitializeBATRegion();
+            InitializeRegionTable();
+            iPayloadBlock = std::make_unique<uint8_t []>(bs);
     }
 
     // Existing VHDx constructor
@@ -95,13 +82,7 @@ struct vhdx : public disk {
         iFile->ReadSync((uint8_t *)iBAT.get(), iBATSize, bat_reg_off);
     }
 
-    virtual uint32_t getBlockSize() override {
-        return iMetadata.iObjects.iFileParameters.BlockSize;
-    }
-
-    virtual uint64_t getTotalBATEntries(void) {
-        return iTotalBatEntries;
-    }
+    virtual ~vhdx() {}
 
     virtual bool isFixed() override {
         return false;
@@ -113,6 +94,18 @@ struct vhdx : public disk {
 
     virtual bool isDifferencing() override {
         return iMetadata.iObjects.iFileParameters.HasParent;
+    }
+
+    virtual uint32_t getBlockSize() override {
+        return iMetadata.iObjects.iFileParameters.BlockSize;
+    }
+
+    virtual uint64_t getTotalBATEntries(void) {
+        return iTotalBatEntries;
+    }
+
+    virtual uint64_t getLogicalDiskLength() override {
+        return iMetadata.iObjects.iVirtualDiskSize.VirtualDiskSize;
     }
 
     virtual std::vector<std::wstring> getParentLocators(void) override {
@@ -135,12 +128,8 @@ struct vhdx : public disk {
         return out;
     }
 
-    virtual uint64_t FirstDataBlockOffsetMB() {
+    virtual uint64_t firstDataBlockOffsetMB() {
         return (_1M + _1M + _1M + iBATSize) / _1M;
-    }
-
-    virtual uint64_t getLogicalDiskLength() override {
-        return iMetadata.iObjects.iVirtualDiskSize.VirtualDiskSize;
     }
 
     virtual void dumpStructure(void) override {
@@ -357,7 +346,7 @@ struct vhdx : public disk {
         LOG << "";
     }
 
-  protected:
+    protected:
 
     uint64_t iDataBlocksCount = 0;
     uint64_t iTotalBatEntries = 0;
@@ -370,10 +359,11 @@ struct vhdx : public disk {
         uint64_t batentry = iBAT[batindex];
         auto blockoff = f.offset % getBlockSize();
         int state = VHDX_BAT_ENTRY_GET_STATE(batentry);
-        if (state == VHDX_BAT_ENTRY_PAYLOAD_BLOCK_FULLY_PRESENT ||
-            state == VHDX_BAT_ENTRY_PAYLOAD_BLOCK_PARTIALLY_PRESENT) {
+        if (state == VHDX_BAT_ENTRY_PAYLOAD_BLOCK_FULLY_PRESENT) {
             auto fRet = subject::ReadSync(f.buffer, f.length, ((((VHDX_BAT_ENTRY *) &batentry)->FileOffsetMB) * _1M) + blockoff);
             assert(fRet == f.length);
+        } else if (state == VHDX_BAT_ENTRY_PAYLOAD_BLOCK_PARTIALLY_PRESENT) {
+
         }
         return f.length;
     }
@@ -390,8 +380,8 @@ struct vhdx : public disk {
             // position fragment buffer inside the new payload block
             memmove(iPayloadBlock.get() + blockoff, f.buffer, f.length);
             // new block's bat entry state
-            ((VHDX_BAT_ENTRY *) &batentry)->FileOffsetMB = FirstDataBlockOffsetMB() + ((iBlockCount * getBlockSize()) / _1M);
-            ((VHDX_BAT_ENTRY *) &batentry)->State = VHDX_BAT_ENTRY_PAYLOAD_BLOCK_FULLY_PRESENT;
+            ((VHDX_BAT_ENTRY *)&batentry)->FileOffsetMB = firstDataBlockOffsetMB() + ((iBlockCount * getBlockSize()) / _1M);
+            ((VHDX_BAT_ENTRY *)&batentry)->State = VHDX_BAT_ENTRY_PAYLOAD_BLOCK_FULLY_PRESENT;
             iBAT[batindex] = *((uint64_t *) &batentry);
             // write the new payload block
             auto fRet = subject::WriteSync(iPayloadBlock.get(), getBlockSize(), (((VHDX_BAT_ENTRY *) &batentry)->FileOffsetMB) * _1M);

@@ -16,10 +16,8 @@ struct vhd : public disk {
     std::unique_ptr<uint32_t []> iBAT = nullptr;
 
     // new fixed, dynamic and differencing VHD contstructor
-    vhd(uint64_t size,
-        uint32_t bs,
-        format type,
-        vhd *parent = nullptr) : disk(size, bs, partition::mbr) {
+    vhd(uint64_t size, uint32_t bs, format type, vhd *parent)
+        : disk(size, bs, partition::mbr) {
             initializeFooter(bs + size, type);
             initializeSparseHeader(bs, parent);
             if (type != format::fixed) {
