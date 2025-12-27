@@ -186,62 +186,6 @@ struct vhd : public disk {
 
     protected:
 
-    virtual void readImageUsingSectorBitmap(DataBlockIO& f, uint8_t *sb, uint64_t block_start_off, uint64_t blockoff) {
-        // offset should be inside the block
-        assert(blockoff <= getBlockSize());
-        // requested window must fall inside the block
-        assert((blockoff + f.length) <= getBlockSize());
-        // requested length must be less than the block size
-        assert(f.length <= getBlockSize());
-        // |     s     |     s     |     s  ,  |
-        uint64_t bit_off_in_bmp = blockoff / 512;
-        uint64_t bitmap_byte_index = bit_off_in_bmp / 8;
-        uint64_t reqSectors = f.length / 512;
-        int bit_in_byte = (bit_off_in_bmp % 8);
-        /*
-        * j = 0 ---> j < 8
-        *  _ _ _ _ _ _ _ _
-        *  7 6 5 4 3 2 1 0
-        *
-        *  1 0 0 0 0 0 0 0
-        *  - - - - - - - - 0x80
-        */
-        uint64_t i = 0;
-        uint64_t run_len = 0;
-        auto bitmap_byte = sb[bitmap_byte_index];
-        for ( ;i < reqSectors; i++) {
-            if (bitmap_byte & (1u << (7 - bit_in_byte))) {
-                run_len += 512;
-            } else if (run_len) {
-                // length: runLen
-                // offset: (blockoff + (i * 512)) - runLen
-                assert(run_len <= f.length);
-                assert((blockoff + (i * 512)) <= getBlockSize());
-                auto fRet = subject::ReadSync(
-                    (f.buffer + (i * 512)) - run_len,
-                    run_len,
-                    (block_start_off + blockoff + (i * 512)) - run_len);
-                assert(fRet == run_len);
-                run_len = 0;
-            }
-            bit_in_byte++;
-            bit_in_byte %= 8;
-            if (bit_in_byte == 0) {
-                bitmap_byte = sb[++bitmap_byte_index];
-            }
-        }
-        if (run_len) {
-            auto fRet = subject::ReadSync(
-                (f.buffer + (i * 512)) - run_len,
-                run_len,
-                (block_start_off + blockoff + (i * 512)) - run_len);
-            assert(fRet == run_len);
-        }
-        // assert the fact that we parsed all
-        // the sectors in the requested length
-        assert(i == reqSectors);
-    }
-
     virtual size_t DataBlockRead(DataBlockIO& f) override {
         if (isDynamic() || isDifferencing()) {
             uint64_t batindex = f.offset / getBlockSize();
@@ -260,7 +204,7 @@ struct vhd : public disk {
                     uint8_t sb[512] = {0};
                     auto fRet = subject::ReadSync(sb, 512, batentry * 512ULL);
                     assert(fRet == 512);
-                    readImageUsingSectorBitmap(f, sb, block_start_off, blockoff);
+                    readImageUsingSectorBitmap(f, sb, block_start_off, blockoff, true);
                 }
             }
         } else if (isFixed()) {

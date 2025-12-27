@@ -177,6 +177,64 @@ struct disk : public npl::subject<uint8_t, uint8_t> {
         return fragments;
     }
 
+    virtual void readImageUsingSectorBitmap(DataBlockIO& f, uint8_t *sb, uint64_t block_start_off, uint64_t blockoff, bool is_vhd) {
+        // offset should be inside the block
+        assert(blockoff <= getBlockSize());
+        // requested window must fall inside the block
+        assert((blockoff + f.length) <= getBlockSize());
+        // requested length must be less than the block size
+        assert(f.length <= getBlockSize());
+        // |     s     |     s     |     s  ,  |
+        uint64_t bit_off_in_bmp = blockoff / 512;
+        uint64_t bitmap_byte_index = bit_off_in_bmp / 8;
+        uint64_t reqSectors = f.length / 512;
+        int bit_in_byte = (bit_off_in_bmp % 8);
+        // vhd:  -  -  -  -  -  -  -  -   -  -  -
+        //       0  1  2  3  4  5  6  7 | 8  9  10 . . . . .
+        // vhdx: -  -  -  -  -  -  -  - | -   -   -
+        //       7  6  5  4  3  2  1  0 | 15  14 13 . . . . .
+        uint64_t i = 0;
+        uint64_t run_len = 0;
+        auto bitmap_byte = sb[bitmap_byte_index];
+        for ( ;i < reqSectors; i++) {
+            bool allocated;
+            if (is_vhd) {
+                allocated = bitmap_byte & (1u << (7 - bit_in_byte)); // MSB-first
+            } else { // vhdx
+                allocated = bitmap_byte & (1u << bit_in_byte);       // LSB-first
+            }
+            if (allocated) {
+                run_len += 512;
+            } else if (run_len) {
+                // length: runLen
+                // offset: (blockoff + (i * 512)) - runLen
+                assert(run_len <= f.length);
+                assert((blockoff + (i * 512)) <= getBlockSize());
+                auto fRet = subject::ReadSync(
+                        (f.buffer + (i * 512)) - run_len,
+                        run_len,
+                        (block_start_off + blockoff + (i * 512)) - run_len);
+                assert(fRet == run_len);
+                run_len = 0;
+            }
+            bit_in_byte++;
+            bit_in_byte %= 8;
+            if (bit_in_byte == 0) {
+                bitmap_byte = sb[++bitmap_byte_index];
+            }
+        }
+        if (run_len) {
+            auto fRet = subject::ReadSync(
+                    (f.buffer + (i * 512)) - run_len,
+                    run_len,
+                    (block_start_off + blockoff + (i * 512)) - run_len);
+            assert(fRet == run_len);
+        }
+        // assert the fact that we parsed all
+        // the sectors in the requested length
+        assert(i == reqSectors);
+    }
+
     template<typename T>
     void buildDifferencingChain(void) {
         auto parentLocators = getParentLocators();

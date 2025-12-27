@@ -352,7 +352,7 @@ void create_base_vhdx(const std::wstring& volume, npl::spsubject<uint8_t, uint8_
                 validBATEntryCount++;
             }
             batIndex++;
-            if ((batIndex + 1) % (disk->iChunkRatio + 1) == 0) {
+            if ((batIndex + 1) % (disk->chunk_ratio + 1) == 0) {
                 batIndex++;
             }
         }
@@ -367,9 +367,9 @@ void create_base_vhdx(const std::wstring& volume, npl::spsubject<uint8_t, uint8_
         auto fragments = disk::LogicalToDataBlock(pendingoff, pendinglen, bs);
         for (auto& f : fragments) {
             uint64_t pb_entry_cnt = f.offset / bs;
-            uint64_t sb_entry_cnt = pb_entry_cnt / disk->iChunkRatio;
+            uint64_t sb_entry_cnt = pb_entry_cnt / disk->chunk_ratio;
             uint64_t batindex = pb_entry_cnt + sb_entry_cnt;
-            if ((batindex + 1) % (disk->iChunkRatio + 1) == 0) {
+            if ((batindex + 1) % (disk->chunk_ratio + 1) == 0) {
                 batindex++;
             }
             uint64_t batentry = bat[batindex];
@@ -394,13 +394,13 @@ void create_base_vhdx(const std::wstring& volume, npl::spsubject<uint8_t, uint8_
     bool stop = false;
     // payload blocks
     for (uint64_t index = 1; index < disk->getTotalBATEntries() && !stop; index++) {
-        if ((index + 1) % (disk->iChunkRatio + 1) == 0) {
+        if ((index + 1) % (disk->chunk_ratio + 1) == 0) {
             continue;
         }
         int state = VHDX_BAT_ENTRY_GET_STATE(bat[index]);
         if (state == VHDX_BAT_ENTRY_PAYLOAD_BLOCK_FULLY_PRESENT) {
             uint64_t len = bs;
-            uint64_t sb_entry_cnt = (index + 1) / (disk->iChunkRatio + 1);
+            uint64_t sb_entry_cnt = (index + 1) / (disk->chunk_ratio + 1);
             uint64_t off = bs * (index - sb_entry_cnt - 1);
             if ((off + bs) > length) {
                 len = length % bs;
@@ -475,7 +475,7 @@ bool create_child_vhdx(const std::wstring& source, const std::wstring& parent, n
     uint64_t blockCount = 0;
     for (auto& kv : dbiomap) {
         uint64_t pb_entry_cnt = kv.first;
-        uint64_t sb_entry_cnt = pb_entry_cnt / diff->iChunkRatio;
+        uint64_t sb_entry_cnt = pb_entry_cnt / diff->chunk_ratio;
         uint64_t batindex = pb_entry_cnt + sb_entry_cnt;
         VHDX_BAT_ENTRY entry = {VHDX_BAT_ENTRY_PAYLOAD_BLOCK_FULLY_PRESENT, 0, diff->firstDataBlockOffsetMB() +  ((bs * blockCount) / _1M)};
         bat[batindex] = *((uint64_t *)&entry);

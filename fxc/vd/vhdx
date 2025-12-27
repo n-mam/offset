@@ -14,7 +14,7 @@ struct vhdx : public disk {
 
     uint64_t iBATSize = 0;
     uint64_t iBlockCount = 0;
-    uint32_t iChunkRatio = 0;
+    uint32_t chunk_ratio = 0;
     VHDX_HEADER iHeader = { 0 };
     VHDX_METADATA iMetadata = { 0 };
     VHDX_REGION_TABLE iRegionTable= { 0 };
@@ -134,19 +134,17 @@ struct vhdx : public disk {
 
     virtual void dumpStructure(void) override {
 
-        LOG << "Chunk Ratio : " << iChunkRatio << " iTotalBatEntries : " << iTotalBatEntries;
-        pVHDX_FILE_IDENTIFIER vhdx_ftype = (pVHDX_FILE_IDENTIFIER) iRawSectors.get();
+        LOG << "Chunk Ratio : " << chunk_ratio;
+        LOG << "iTotalBatEntries : " << iTotalBatEntries;
+        auto vhdx_ftype = (VHDX_FILE_IDENTIFIER *)iRawSectors.get();
         for (int i = 0; i < sizeof(vhdx_ftype->Signature); i++) {
             printf(" %c ", *(((unsigned char *) &(vhdx_ftype->Signature)) + i));
         }
-
-        printf("\n");
-
+        LOG << "";
         for (int i = 0; i < 256 && vhdx_ftype->Creator[i]; i++) {
             wprintf(L" %c ", vhdx_ftype->Creator[i]);
         }
-
-        printf("\n");
+        LOG << "";
 
         /////////////////// VHDx header //////////////////////////
         // Move past 64KB in _buf for the first VHDX header copy
@@ -352,25 +350,52 @@ struct vhdx : public disk {
     uint64_t iTotalBatEntries = 0;
     uint64_t iSectorBitmapBlocksCount = 0;
 
+    // The entries for the payload block and sector bitmap block are interleaved
+    // in a way that the sector bitmap block entry associated with a chunk follows
+    // the entries for the payload blocks in that chunk. For example, if the chunk ratio is 4
+    // +-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+    // | PB0 | PB1 | PB2 | PB3 | SB0 | PB4 | PB5 | PB6 | PB7 | SB1 |
+    // +-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+    // -------------------------------------->^
     virtual size_t DataBlockRead(DataBlockIO& f) override {
         uint64_t pb_entry_cnt = f.offset / getBlockSize();
-        uint64_t sb_entry_cnt = pb_entry_cnt / iChunkRatio;
-        uint64_t batindex = pb_entry_cnt + sb_entry_cnt;
-        uint64_t batentry = iBAT[batindex];
+        uint64_t sb_entry_cnt = pb_entry_cnt / chunk_ratio;
+        uint64_t pb_bat_index = pb_entry_cnt + sb_entry_cnt;
+        uint64_t pb_bat_entry = iBAT[pb_bat_index];
         auto blockoff = f.offset % getBlockSize();
-        int state = VHDX_BAT_ENTRY_GET_STATE(batentry);
+        auto block_start_off = VHDX_BAT_ENTRY_GET_FILE_OFFSET(pb_bat_entry);
+        auto state = VHDX_BAT_ENTRY_GET_STATE(pb_bat_entry);
         if (state == VHDX_BAT_ENTRY_PAYLOAD_BLOCK_FULLY_PRESENT) {
-            auto fRet = subject::ReadSync(f.buffer, f.length, ((((VHDX_BAT_ENTRY *) &batentry)->FileOffsetMB) * _1M) + blockoff);
+            auto fRet = subject::ReadSync(f.buffer, f.length, block_start_off + blockoff);
             assert(fRet == f.length);
         } else if (state == VHDX_BAT_ENTRY_PAYLOAD_BLOCK_PARTIALLY_PRESENT) {
-
+           /*             |               |-----cr----|             |
+            * |P|P|P|P|P|P|S|P|P|P|P|P|P|S|P|P|P|P|P|P|S|P|P|P|P|P|P|S|...
+            *             |               |      ^    |             |
+            * ----------------------------->pb_bat_index
+            *///                    6                4              5                4
+            auto sb_bat_index = pb_bat_index + (chunk_ratio - (pb_entry_cnt % chunk_ratio));
+            auto sb_bat_entry = iBAT[sb_bat_index];
+            auto sb_offset = VHDX_BAT_ENTRY_GET_FILE_OFFSET(sb_bat_entry);
+            // sb_offset is pointing to the start of 1MB sector bitmap block and that
+            // describes the sector usage for the entire chunk(multiple payload bocks).
+            // reposition sb_offset and make it point to the bitmap window which is
+            // representative of the sector usage of the DataBlockIO under consideration
+            auto skip_pb_count = pb_entry_cnt % chunk_ratio;
+            sb_offset += ((skip_pb_count * getBlockSize()) / 512) / 8;
+            auto sb_len = (f.length / 512) / 8;
+            sb_len += sb_len == 0 ? 1 : sb_len;
+            auto sb = std::make_unique<uint8_t []>(sb_len);
+            auto fRet = subject::ReadSync(sb.get(), sb_len, sb_offset);
+            assert(fRet == sb_len);
+            readImageUsingSectorBitmap(f, sb.get(), block_start_off, blockoff, false);
         }
         return f.length;
     }
 
     virtual size_t DataBlockWrite(DataBlockIO& f) override {
         uint64_t pb_entry_cnt = f.offset / getBlockSize();
-        uint64_t sb_entry_cnt = pb_entry_cnt / iChunkRatio;
+        uint64_t sb_entry_cnt = pb_entry_cnt / chunk_ratio;
         uint64_t batindex = pb_entry_cnt + sb_entry_cnt;
         uint64_t batentry = iBAT[batindex];
         auto blockoff = f.offset % getBlockSize();
@@ -522,14 +547,14 @@ struct vhdx : public disk {
     }
 
     virtual void InitializeBATRegion() {
-        iChunkRatio = (uint32_t) ((pow(2, 23) * 512) / getBlockSize());
+        chunk_ratio = (uint32_t) ((pow(2, 23) * 512) / getBlockSize());
         iDataBlocksCount = getLogicalDiskLength() / getBlockSize();
         if (getLogicalDiskLength() % getBlockSize()) {
             iDataBlocksCount += 1;
         }
-        iSectorBitmapBlocksCount = iDataBlocksCount / iChunkRatio;
+        iSectorBitmapBlocksCount = iDataBlocksCount / chunk_ratio;
         if (isDifferencing()) {
-            if (iDataBlocksCount % iChunkRatio) {
+            if (iDataBlocksCount % chunk_ratio) {
                 iSectorBitmapBlocksCount += 1;
             }
         }
