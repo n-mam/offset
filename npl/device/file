@@ -275,11 +275,13 @@ struct file_device : public subject<uint8_t, uint8_t> {
     EDeviceType _device_type = EDeviceType::None;
 };
 
-template<typename T>
-using spfile = std::shared_ptr<file_device<T>>;
-template<typename T>
-using wpfile = std::weak_ptr<file_device<T>>;
-
+#ifdef _WIN32
+using FileDeviceType = file_device<std::wstring>;
+#else
+using FileDeviceType = file_device<std::string>;
+#endif
+using spfile = std::shared_ptr<FileDeviceType>;
+using wpfile = std::weak_ptr<FileDeviceType>;
 }
 
 #endif

@@ -47,6 +47,8 @@ struct subject : public std::enable_shared_from_this<subject<T1, T2>> {
         return sub;
     }
 
+    virtual void add_device_to_event_port(spsubject subject) {}
+    
     virtual void * read_async(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) {
         std::lock_guard<std::mutex> lg(m_lock);
         auto target = m_target.lock();

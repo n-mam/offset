@@ -46,6 +46,12 @@
     goto _end; \
   }
 
+#ifdef _WIN32
+#define TSTR(x) std::wstring(L##x)
+#else
+#define TSTR(x) std::string(x)
+#endif
+
 namespace osl {
 
 #ifdef _WIN32

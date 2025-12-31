@@ -24,7 +24,7 @@ enum tls {
 using TOnHandshake = std::function<void (void)>;
 inline std::map<SSL *, std::vector<SSL_SESSION *>> ssl_session_map;
 
-struct socket_device : public file_device<std::wstring> {
+struct socket_device : public FileDeviceType {
 
     using wpsocket = std::weak_ptr<socket_device>;
     using spsocket = std::shared_ptr<socket_device>;
@@ -121,7 +121,7 @@ struct socket_device : public file_device<std::wstring> {
         inet_pton(AF_INET, m_host.c_str(), &sa.sin_addr);
         sa.sin_port = htons(m_port);
         int rc = connect((SOCKET)_fd_async, (const sockaddr *) &sa, sizeof(sa));
-        get_last_target(shared_from_this())->add_subject(shared_from_this());
+        get_last_target(shared_from_this())->add_device_to_event_port(shared_from_this());
         #endif
     }
 
@@ -148,7 +148,7 @@ struct socket_device : public file_device<std::wstring> {
         assert(fRet == 0);
         #ifndef _WIN32
         set_socket_blocking_enabled(_fd_async, false);
-        get_last_target(shared_from_this())->add_subject(shared_from_this());
+        get_last_target(shared_from_this())->add_device_to_event_port(shared_from_this());
         #endif
         m_type = socket_type::listening;
         #ifdef _WIN32

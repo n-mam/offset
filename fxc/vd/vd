@@ -8,7 +8,7 @@
 namespace fxc {
 
 //create a raw image from source at ofset o and write to target
-auto image_copy_from(npl::spfile<std::wstring> source, npl::spsubject<uint8_t, uint8_t> target, TProgressCallback cbk = nullptr) {
+auto image_copy_from(npl::spfile source, npl::spsubject<uint8_t, uint8_t> target, TProgressCallback cbk = nullptr) {
     if (!osl::AllowExtendedDasdIO(source->_fd_sync)) {
         LOG << "AllowExtendedDasdIO failed, error : " << GetLastError();
     }
