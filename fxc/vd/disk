@@ -13,6 +13,7 @@
 
 #include <fxc/vd/formats>
 #include <observer/subject>
+#include <observer/dispatcher>
 
 #include <zlib.h>
 
@@ -55,12 +56,12 @@ struct disk : public npl::subject<uint8_t, uint8_t> {
         iPath = path;
         iFile = npl::make_file<std::wstring>(iPath);
         iRawSectors = std::make_unique<uint8_t []>(len);
-        iFile->ReadSync(iRawSectors.get(), len, 0);
+        iFile->read_sync(iRawSectors.get(), len, 0);
     }
 
     virtual ~disk() {
         if (iFile) {
-            get_last_target(iFile)->RemoveEventListener(iFile);
+            getSharedInstance<npl::dispatcher>()->remove_event_listener(iFile);
         }
     }
 
@@ -125,10 +126,10 @@ struct disk : public npl::subject<uint8_t, uint8_t> {
             crc = crc32(crc, (const unsigned char*)&iGptHdr, sizeof(GptHdrRev1));
             ((GptHdrRev1 *)(buf + (512 * 3)))->u32Crc = crc;
         }
-        return WriteSync(buf, sizeof(buf), 0);
+        return write_sync(buf, sizeof(buf), 0);
     }
 
-    virtual int32_t ReadSync(const uint8_t *b, size_t l, uint64_t o) override {
+    virtual int32_t read_sync(const uint8_t *b, size_t l, uint64_t o) override {
         uint64_t delta = 0;
         size_t nBytesRead = 0;
         auto fragments = LogicalToDataBlock(o, l, getBlockSize());
@@ -147,7 +148,7 @@ struct disk : public npl::subject<uint8_t, uint8_t> {
         return static_cast<int32_t>(nBytesRead);
     }
 
-    virtual int32_t WriteSync(const uint8_t *b, size_t l, uint64_t o) override {
+    virtual int32_t write_sync(const uint8_t *b, size_t l, uint64_t o) override {
         uint64_t delta = 0;
         size_t nBytesWritten = 0;
         auto fragments = LogicalToDataBlock(o, l, getBlockSize());
@@ -210,7 +211,7 @@ struct disk : public npl::subject<uint8_t, uint8_t> {
                 // offset: (blockoff + (i * 512)) - runLen
                 assert(run_len <= f.length);
                 assert((blockoff + (i * 512)) <= getBlockSize());
-                auto fRet = subject::ReadSync(
+                auto fRet = subject::read_sync(
                         (f.buffer + (i * 512)) - run_len,
                         run_len,
                         (block_start_off + blockoff + (i * 512)) - run_len);
@@ -224,7 +225,7 @@ struct disk : public npl::subject<uint8_t, uint8_t> {
             }
         }
         if (run_len) {
-            auto fRet = subject::ReadSync(
+            auto fRet = subject::read_sync(
                     (f.buffer + (i * 512)) - run_len,
                     run_len,
                     (block_start_off + blockoff + (i * 512)) - run_len);
@@ -246,7 +247,7 @@ struct disk : public npl::subject<uint8_t, uint8_t> {
                 break;
             }
         }
-        iFile->AddEventListener(shared_from_this());
+        iFile->add_event_listener(shared_from_this());
     }
 
     virtual void dumpStructure(void) {

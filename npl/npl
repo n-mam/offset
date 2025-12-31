@@ -20,11 +20,11 @@ inline auto initialize_dispatcher(void) {
 inline auto make_ftp(const std::string& host, int port, tls tls = tls::no) {
     SPProtocolFTP ftp;
     auto cc = std::make_shared<socket_device>("sock-cc");
-    auto success = cc->SetHostAndPort(host, port);
+    auto success = cc->set_host_and_port(host, port);
     if (success) {
-        cc->SetTLS(tls);
+        cc->set_tls(tls);
         ftp = std::make_shared<npl::ftp>("prot-ftp");
-        getSharedInstance<dispatcher>()->AddEventListener(cc)->AddEventListener(ftp);
+        getSharedInstance<dispatcher>()->add_event_listener(cc)->add_event_listener(ftp);
     } else {
         cc.reset();
     }
@@ -35,12 +35,12 @@ inline auto make_ws_server(const std::string& host,
             int port, tls tls = tls::no, TOnClientMessageCbk cbk = nullptr) {
     SPProtocolWSServer ls;
     auto cc = std::make_shared<socket_device>("ws-cc");
-    auto success = cc->SetHostAndPort(host, port);
+    auto success = cc->set_host_and_port(host, port);
     if (success) {
-        cc->SetTLS(tls);
+        cc->set_tls(tls);
         ls = std::make_shared<websocket_server>("ws-ls");
-        ls->SetClientMessageCallback(cbk);
-        getSharedInstance<dispatcher>()->AddEventListener(cc)->AddEventListener(ls);
+        ls->set_client_message_callback(cbk);
+        getSharedInstance<dispatcher>()->add_event_listener(cc)->add_event_listener(ls);
     } else {
         cc.reset();
     }
@@ -50,10 +50,10 @@ inline auto make_ws_server(const std::string& host,
 inline auto make_http_client(const std::string& host, int port) {
     SPProtocolHttpClient http;
     auto sock = std::make_shared<socket_device>("http-socket");
-    auto success = sock->SetHostAndPort(host, port);
+    auto success = sock->set_host_and_port(host, port);
     if (success) {
         http = std::make_shared<http_client>("http-protocol");
-        getSharedInstance<dispatcher>()->AddEventListener(sock)->AddEventListener(http);
+        getSharedInstance<dispatcher>()->add_event_listener(sock)->add_event_listener(http);
     } else {
         sock.reset();
     }
@@ -63,8 +63,8 @@ inline auto make_http_client(const std::string& host, int port) {
 template <typename T>
 inline auto make_file(const T& path, bool create = false) {
     auto device = std::make_shared<file_device<T>>(path, create);
-    if (device->IsConnected()) {
-        getSharedInstance<dispatcher>()->AddEventListener(device);
+    if (device->is_connected()) {
+        getSharedInstance<dispatcher>()->add_event_listener(device);
     } else {
         device.reset();
     }
@@ -74,7 +74,7 @@ inline auto make_file(const T& path, bool create = false) {
 inline void test_http_client(const std::string& host, int port) {
     for (int i = 0; i < 1; i++) {
         auto http = npl::make_http_client(host, port);
-        http->StartClient(
+        http->start_protocol_client(
             [](auto p, bool connected) {
                 LOG << "client connected : " << connected;
             });
@@ -83,21 +83,21 @@ inline void test_http_client(const std::string& host, int port) {
 
 inline void test_ws_server(const std::string& host, int port) {
     auto ws = npl::make_ws_server(host, port, npl::tls::yes,
-        [] (npl::SPProtocol c, const std::string& m) {
+        [] (npl::spprotocol c, const std::string& m) {
             LOG << "client : " << m;
-            c->SendProtocolMessage(
+            c->send_protocol_message(
                 (uint8_t *)"server echo : hello",
                 strlen("server echo : hello"));
         });
-    ws->StartServer();
+    ws->start_protocol_server();
     getchar();
 }
 
 inline void test_ftp_client(const std::string& host, const std::string& port,
             const std::string& user, const std::string& pass) {
     auto ftp = npl::make_ftp(host, std::stoi(port), npl::tls::yes);
-    ftp->SetCredentials(user, pass);
-    ftp->StartClient();
+    ftp->set_credentials(user, pass);
+    ftp->start_protocol_client();
     ftp->Transfer(ftp::list, "/",
         [list = std::string()] (const char *b, size_t n) mutable {
             if (b)
@@ -113,7 +113,7 @@ inline void test_ftp_client(const std::string& host, const std::string& port,
     ftp->Transfer(ftp::download, "x.txt",
         [file, offset = 0ULL](const char *b, size_t n) mutable {
             if (b) {
-                file->Write((uint8_t *)b, n, offset);
+                file->write_async((uint8_t *)b, n, offset);
                 offset += n;
             } else {
                 LOG << "Download complete";
@@ -129,9 +129,9 @@ inline void test_ftp_client(const std::string& host, const std::string& port,
         },
         nullptr,
         npl::tls::no);
-    ftp->WriteSync((uint8_t *)"hello ", strlen("hello "));
-    ftp->WriteSync((uint8_t *)"world ", strlen("world "));
-    ftp->WriteSync(nullptr);
+    ftp->write_sync((uint8_t *)"hello ", strlen("hello "));
+    ftp->write_sync((uint8_t *)"world ", strlen("world "));
+    ftp->write_sync(nullptr);
     ftp->GetCurrentDirectory([](const std::string& resp) {
         //"resp" holds the response of PWD command
     });
@@ -150,7 +150,7 @@ inline void test_file_copy(const std::wstring& source, const std::wstring& dest)
         [wd, off = 0ULL](const uint8_t *b, size_t n) mutable {
             DBG << "onRead " << n << ", off " << off;
             if (n) {
-                wd->Write(b, n, off);
+                wd->write_async(b, n, off);
             }
             off += n;
         }});
@@ -158,12 +158,12 @@ inline void test_file_copy(const std::wstring& source, const std::wstring& dest)
         [rd, off = 0ULL, bufSize](const uint8_t *b, size_t n) mutable {
             DBG << "onWrite " << n << ", off " << off;
             if (n) {
-                rd->Read(b, bufSize, off += n);
+                rd->read_async(b, bufSize, off += n);
             }
         }});
-    rd->AddEventListener(obv);
-    wd->AddEventListener(obv);
-    rd->Read(buf, bufSize, 0);
+    rd->add_event_listener(obv);
+    wd->add_event_listener(obv);
+    rd->read_async(buf, bufSize, 0);
     getchar();
 }
 

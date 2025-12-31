@@ -58,7 +58,7 @@ struct vhdx : public disk {
         }
         // read the metadata region
         iMetadataRaw = std::make_unique<uint8_t []>(meta_reg_len);
-        iFile->ReadSync(iMetadataRaw.get(), meta_reg_len, meta_reg_off);
+        iFile->read_sync(iMetadataRaw.get(), meta_reg_len, meta_reg_off);
         memmove(&iMetadata.iTable, iMetadataRaw.get(), sizeof(VHDX_METADATA_TABLE));
         for (uint32_t i = 0; i < iMetadata.iTable.Header.EntryCount; i++) {
             auto mdt_entry = &iMetadata.iTable.Entries[i];
@@ -79,7 +79,7 @@ struct vhdx : public disk {
         }
         InitializeBATRegion();
         assert(iBATSize == bat_reg_len);
-        iFile->ReadSync((uint8_t *)iBAT.get(), iBATSize, bat_reg_off);
+        iFile->read_sync((uint8_t *)iBAT.get(), iBATSize, bat_reg_off);
     }
 
     virtual ~vhdx() {}
@@ -366,14 +366,14 @@ struct vhdx : public disk {
         auto block_start_off = VHDX_BAT_ENTRY_GET_FILE_OFFSET(pb_bat_entry);
         auto state = VHDX_BAT_ENTRY_GET_STATE(pb_bat_entry);
         if (state == VHDX_BAT_ENTRY_PAYLOAD_BLOCK_FULLY_PRESENT) {
-            auto fRet = subject::ReadSync(f.buffer, f.length, block_start_off + blockoff);
+            auto fRet = subject::read_sync(f.buffer, f.length, block_start_off + blockoff);
             assert(fRet == f.length);
         } else if (state == VHDX_BAT_ENTRY_PAYLOAD_BLOCK_PARTIALLY_PRESENT) {
            /*             |               |-----cr----|             |
             * |P|P|P|P|P|P|S|P|P|P|P|P|P|S|P|P|P|P|P|P|S|P|P|P|P|P|P|S|...
             *             |               |      ^    |             |
             * ----------------------------->pb_bat_index
-            *///                    6                4              5                4
+            */
             auto sb_bat_index = pb_bat_index + (chunk_ratio - (pb_entry_cnt % chunk_ratio));
             auto sb_bat_entry = iBAT[sb_bat_index];
             auto sb_offset = VHDX_BAT_ENTRY_GET_FILE_OFFSET(sb_bat_entry);
@@ -386,7 +386,7 @@ struct vhdx : public disk {
             auto sb_len = (f.length / 512) / 8;
             sb_len += sb_len == 0 ? 1 : sb_len;
             auto sb = std::make_unique<uint8_t []>(sb_len);
-            auto fRet = subject::ReadSync(sb.get(), sb_len, sb_offset);
+            auto fRet = subject::read_sync(sb.get(), sb_len, sb_offset);
             assert(fRet == sb_len);
             readImageUsingSectorBitmap(f, sb.get(), block_start_off, blockoff, false);
         }
@@ -409,7 +409,7 @@ struct vhdx : public disk {
             ((VHDX_BAT_ENTRY *)&batentry)->State = VHDX_BAT_ENTRY_PAYLOAD_BLOCK_FULLY_PRESENT;
             iBAT[batindex] = *((uint64_t *) &batentry);
             // write the new payload block
-            auto fRet = subject::WriteSync(iPayloadBlock.get(), getBlockSize(), (((VHDX_BAT_ENTRY *) &batentry)->FileOffsetMB) * _1M);
+            auto fRet = subject::write_sync(iPayloadBlock.get(), getBlockSize(), (((VHDX_BAT_ENTRY *) &batentry)->FileOffsetMB) * _1M);
             assert(fRet == getBlockSize());
             iBlockCount++;
         } else if (state == VHDX_BAT_ENTRY_PAYLOAD_BLOCK_FULLY_PRESENT) {

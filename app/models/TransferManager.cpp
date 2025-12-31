@@ -166,7 +166,7 @@ void TransferManager::DownloadTransfer(const Transfer& t, int sid) {
             }
 
             if (b) {
-                file->Write((uint8_t *)b, n, offset);
+                file->write_async((uint8_t *)b, n, offset);
                 offset += n;
             } else {
                 if (m_queue[i].m_state != Transfer::state::successful) {
@@ -236,9 +236,9 @@ void TransferManager::UploadTransfer(const Transfer& t, int sid) {
             int32_t n = 0;
 
             if (b) {
-                n = file->ReadSync(buf, _1M, offset);
+                n = file->read_sync(buf, _1M, offset);
                 if (n) {
-                    ftp->Write(buf, n);
+                    ftp->write_async(buf, n);
                     offset += n;
                 } else {
                     free(buf);
@@ -310,8 +310,8 @@ bool TransferManager::InitializeFTPSessions(void) {
             STATUS(1) << "Failed to connect to " << m_ftpModel->m_host;
             return false;
         }
-        ftp->SetCredentials(m_ftpModel->m_user, m_ftpModel->m_password);
-        ftp->StartClient([this](auto p, bool isConnected){
+        ftp->set_credentials(m_ftpModel->m_user, m_ftpModel->m_password);
+        ftp->start_protocol_client([this](auto p, bool isConnected){
             if (!isConnected) {}
         });
         m_sessions.push_back(ftp);
@@ -321,13 +321,13 @@ bool TransferManager::InitializeFTPSessions(void) {
 
 void TransferManager::CheckAndReconnectSessions(void) {
     for (size_t i = 0; i < MAX_SESSIONS; i++) {
-        if (!m_sessions[i]->IsConnected()) {
+        if (!m_sessions[i]->is_connected()) {
             m_sessions[i] = npl::make_ftp(
                 m_ftpModel->m_host,
                 m_ftpModel->m_port,
                 m_ftpModel->m_protection);
-            m_sessions[i]->SetCredentials(m_ftpModel->m_user, m_ftpModel->m_password);
-            m_sessions[i]->StartClient(
+            m_sessions[i]->set_credentials(m_ftpModel->m_user, m_ftpModel->m_password);
+            m_sessions[i]->start_protocol_client(
                 [this](auto p, bool isConnected){
                     if (!isConnected) { }
                 });

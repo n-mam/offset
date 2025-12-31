@@ -1,7 +1,9 @@
-#ifndef SOCKET_DEVICE_HPP
-#define SOCKET_DEVICE_HPP
+#ifndef SOCKET_HPP
+#define SOCKET_HPP
 
+#include <singleton>
 #include <device/file>
+#include <osl/osl>
 
 #include <openssl/ssl.h>
 #include <openssl/err.h>
@@ -19,27 +21,24 @@ enum tls {
     implicit
 };
 
+using TOnHandshake = std::function<void (void)>;
 inline std::map<SSL *, std::vector<SSL_SESSION *>> ssl_session_map;
 
-using TOnHandshake = std::function<void (void)>;
+struct socket_device : public file_device<std::wstring> {
 
-class socket_device : public file_device<std::wstring> {
+    using wpsocket = std::weak_ptr<socket_device>;
+    using spsocket = std::shared_ptr<socket_device>;
 
-    using SPSocketDevice = std::shared_ptr<socket_device>;
-    using WPSocketDevice = std::weak_ptr<socket_device>;
-
-    enum ESocketType {
+    enum socket_type {
         invalid,
         client,
         accepted,
         listening,
     };
 
-    public:
-
     socket_device(const std::string& name) : file_device(name) {
-        _fd_async = (FD) socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
         _device_type = EDeviceType::Socket;
+        _fd_async = (FD) socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     }
 
     socket_device(FD socket) {
@@ -48,7 +47,7 @@ class socket_device : public file_device<std::wstring> {
     }
 
     ~socket_device() {
-        StopSocket();
+        stop_socket();
         shutdown((SOCKET)_fd_async, 0); //sd_recv
         closesocket((SOCKET)_fd_async);
         DBG << "~socket_device() <-- " << get_name() << " shutdown(sd_recv)";
@@ -60,17 +59,17 @@ class socket_device : public file_device<std::wstring> {
         }
     }
 
-    virtual void StopSocket(bool stopWrite = false) {
-        if (!IsStopped()) {
+    virtual void stop_socket(bool stopWrite = false) {
+        if (!is_stopped()) {
             if (m_ssl) {
                 int flag = SSL_get_shutdown(m_ssl);
                 if (!(flag & SSL_SENT_SHUTDOWN)) {
                     int rc = SSL_shutdown(m_ssl);
                     DBG << get_name() << " ssl_shutdown() rc : " << rc;
-                    UpdateWriteBIO();
+                    update_write_bio();
                 }
             }
-            file_device::MarkStopped(true);
+            file_device::mark_stopped(true);
             shutdown((SOCKET)_fd_async, 1); //sd_send
             if (stopWrite) {
                 shutdown((SOCKET)_fd_async, 0); //sd_recv
@@ -79,9 +78,9 @@ class socket_device : public file_device<std::wstring> {
         }
     }
 
-    virtual void StartSocketClient(void) {
-        DBG << "StartSocketClient " << m_host << ":" << m_port;
-        m_type = ESocketType::client;
+    virtual void start_socket_client(void) {
+        DBG << "start_socket_client " << m_host << ":" << m_port;
+        m_type = socket_type::client;
         #ifdef _WIN32
         struct sockaddr_in addr;
         ZeroMemory(&addr, sizeof(addr));
@@ -97,7 +96,7 @@ class socket_device : public file_device<std::wstring> {
         sa.sin_family = AF_INET;
         inet_pton(AF_INET, m_host.c_str(), &sa.sin_addr);
         sa.sin_port = htons(m_port);
-        auto ConnectEx = GetExtentionPfn(WSAID_CONNECTEX, _fd_async);
+        auto ConnectEx = osl::get_extention_pfn(WSAID_CONNECTEX, _fd_async);
         bool fRet = ((LPFN_CONNECTEX)ConnectEx)(
             (SOCKET)_fd_async,
             (SOCKADDR*) &sa,
@@ -115,7 +114,7 @@ class socket_device : public file_device<std::wstring> {
             DBG << "ConnectEx failed : " << WSAGetLastError();
         }
         #else
-        SetSocketBlockingEnabled(_fd_async, false);
+        set_socket_blocking_enabled(_fd_async, false);
         sockaddr_in sa;
         memset(&sa, 0, sizeof(sa));
         sa.sin_family = AF_INET;
@@ -126,7 +125,7 @@ class socket_device : public file_device<std::wstring> {
         #endif
     }
 
-    virtual void StartSocketServer(void) {
+    virtual void start_socket_server(void) {
         sockaddr_in sa;
         memset(&sa, 0, sizeof(sa));
         sa.sin_family = AF_INET;
@@ -147,19 +146,19 @@ class socket_device : public file_device<std::wstring> {
             DBG << "listen failed. error: " << strerror(errno);
         }
         assert(fRet == 0);
-        #ifndef WIN32
-        SetSocketBlockingEnabled(_fd_async, false);
+        #ifndef _WIN32
+        set_socket_blocking_enabled(_fd_async, false);
         get_last_target(shared_from_this())->add_subject(shared_from_this());
         #endif
-        m_type = ESocketType::listening;
+        m_type = socket_type::listening;
         #ifdef _WIN32
-        AcceptNewConnection();
+        accept_new_connection();
         #endif
     }
 
     #ifdef _WIN32
-    virtual void AcceptNewConnection(void) {
-        auto AcceptEx = GetExtentionPfn(WSAID_ACCEPTEX, _fd_async);
+    virtual void accept_new_connection(void) {
+        auto AcceptEx = osl::get_extention_pfn(WSAID_ACCEPTEX, _fd_async);
         uint8_t *b = (uint8_t *) calloc(1, 2 * (sizeof(SOCKADDR_STORAGE) + 16) + sizeof(context));
         ((context *)b)->type = EIOType::ACCEPT;
         m_accepted_socket = (FD) socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -176,9 +175,8 @@ class socket_device : public file_device<std::wstring> {
     }
     #endif
 
-    virtual bool SetSocketBlockingEnabled(FD sock, bool blocking) {
-        bool fret = false;
-        #ifndef WIN32
+    virtual bool set_socket_blocking_enabled(FD sock, bool blocking) {
+        #ifndef _WIN32
             int flags = fcntl(sock, F_GETFL, 0);
             if (flags == -1) return false;
             flags = blocking ? (flags & ~O_NONBLOCK) : (flags | O_NONBLOCK);
@@ -189,23 +187,23 @@ class socket_device : public file_device<std::wstring> {
         #endif
     }
 
-    virtual uint32_t GetSocketType(void) {
+    virtual uint32_t get_socket_type(void) {
         return m_type;
     }
 
-    virtual bool IsClientSocket(void) {
-        return (m_type == ESocketType::client);
+    virtual bool is_client_socket(void) {
+        return (m_type == socket_type::client);
     }
 
-    virtual bool IsListeningSocket(void) {
-        return (m_type == ESocketType::listening);
+    virtual bool is_listening_socket(void) {
+        return (m_type == socket_type::listening);
     }
 
-    virtual bool IsAcceptedSocket(void) {
-        return (m_type == ESocketType::accepted);
+    virtual bool is_accepted_socket(void) {
+        return (m_type == socket_type::accepted);
     }
 
-    virtual bool SetHostAndPort(const std::string& host, int port) {
+    virtual bool set_host_and_port(const std::string& host, int port) {
         int fRet = 0;
         if (!std::isalpha(host[0])) {
             m_host = host;
@@ -256,24 +254,24 @@ class socket_device : public file_device<std::wstring> {
         return fRet == 0;
     }
 
-    virtual void CheckPeerSSLShutdown() {
+    virtual void check_peer_ssl_shutdown() {
         int flag = SSL_get_shutdown(m_ssl);
         if (flag & SSL_RECEIVED_SHUTDOWN) {
             DBG << get_name() << " SSL_RECEIVED_SHUTDOWN, flags : " << flag;
             if (!(flag & SSL_SENT_SHUTDOWN)) {
-                StopSocket();
+                stop_socket();
             }
         }
     }
 
-    virtual bool UpdateWriteBIO(void) {
+    virtual bool update_write_bio(void) {
         bool fRet = true;
         int pending = BIO_pending(m_write_bio);
         uint8_t buf[DEVICE_BUFFER_SIZE];
         while (pending) {
             auto rc = BIO_read(m_write_bio, buf, DEVICE_BUFFER_SIZE);
             if (rc > 0) {
-            fRet = file_device::Write(buf, rc);
+                fRet = file_device::write_async(buf, rc);
             }
             pending = BIO_pending(m_write_bio);
             if (rc <= 0) break;
@@ -281,7 +279,7 @@ class socket_device : public file_device<std::wstring> {
         return fRet;
     }
 
-    virtual void InitializeSSL(SSL *cc_ssl, TOnHandshake cbk = nullptr) {
+    virtual void initialize_ssl(SSL *cc_ssl, TOnHandshake cbk = nullptr) {
         m_onHandShake = cbk;
         m_ssl_ctx = SSL_CTX_new(TLS_client_method());
         SSL_CTX_set_verify(m_ssl_ctx, SSL_VERIFY_NONE, NULL);
@@ -298,9 +296,9 @@ class socket_device : public file_device<std::wstring> {
          */
         SSL_CTX_sess_set_new_cb(m_ssl_ctx,
             [](SSL *ssl, SSL_SESSION *session) {
-            ssl_session_map[ssl].push_back(session);
-            DBG << "new session callback " << SSL_get_version(ssl);
-            return 0;
+                ssl_session_map[ssl].push_back(session);
+                DBG << "new session callback " << SSL_get_version(ssl);
+                return 0;
             });
         m_ssl = SSL_new(m_ssl_ctx);
         if (ssl_session_map[cc_ssl ? cc_ssl : m_ssl].size()) {
@@ -309,37 +307,37 @@ class socket_device : public file_device<std::wstring> {
         m_read_bio = BIO_new(BIO_s_mem());
         m_write_bio = BIO_new(BIO_s_mem());
         SSL_set_bio(m_ssl, m_read_bio, m_write_bio);
-        if (IsClientSocket()) {
+        if (is_client_socket()) {
             SSL_set_connect_state(m_ssl);
             SSL_do_handshake(m_ssl);
-            UpdateWriteBIO();
+            update_write_bio();
         } else {
             SSL_set_accept_state(m_ssl);
         }
     }
 
     virtual void onAccept(void) override {
-        assert(IsListeningSocket());
-        #ifndef WIN32
+        assert(is_listening_socket());
+        #ifndef _WIN32
         struct sockaddr_storage ca;
         socklen_t alen = sizeof(struct sockaddr_storage);
-        m_accepted_socket = (FD) accept((SOCKET)_fd_async, (struct sockaddr *) &ca, &alen);
+        m_accepted_socket = (FD)accept((SOCKET)_fd_async, (struct sockaddr *) &ca, &alen);
         if (m_accepted_socket == -1) {
             DBG << "accept failed. error : " << strerror(errno) << " " << m_type;
             return;
         }
-        SetSocketBlockingEnabled(m_accepted_socket, false);
+        set_socket_blocking_enabled(m_accepted_socket, false);
         #endif
         m_connected_client.reset();
         m_connected_client = std::make_shared<socket_device>(m_accepted_socket);
-        m_connected_client->m_type = ESocketType::accepted;
-        m_connected_client->MarkConnected(true);
-        get_last_target(shared_from_this())->AddEventListener(m_connected_client);
+        m_connected_client->m_type = socket_type::accepted;
+        m_connected_client->mark_connected(true);
+        get_last_target(shared_from_this())->add_event_listener(m_connected_client);
         file_device::onAccept();
         #ifdef _WIN32
-        m_connected_client->Read();
+        m_connected_client->read_async();
         setsockopt((SOCKET)m_accepted_socket, SOL_SOCKET, SO_UPDATE_ACCEPT_CONTEXT, (char*)&(_fd_async), sizeof(_fd_async));
-        AcceptNewConnection();
+        accept_new_connection();
         #endif
     }
 
@@ -348,11 +346,11 @@ class socket_device : public file_device<std::wstring> {
     }
 
     virtual void onConnect() override {
-        assert(IsClientSocket());
+        assert(is_client_socket());
         DBG << get_name() << " onConnect()";
         file_device::onConnect();
         #ifdef _WIN32
-        file_device::Read();
+        file_device::read_async();
         setsockopt((SOCKET)_fd_async, SOL_SOCKET, SO_UPDATE_CONNECT_CONTEXT, NULL, 0 );
         #endif
     }
@@ -361,14 +359,14 @@ class socket_device : public file_device<std::wstring> {
         if (m_ssl) {
             // DBG << get_name() <<
             // " shutdown mode : " << SSL_get_shutdown(m_ssl);
-            CheckPeerSSLShutdown();
+            check_peer_ssl_shutdown();
         }
         file_device::onDisconnect();
     }
 
     virtual void onRead(const uint8_t *b, size_t n) override {
         #ifdef _WIN32
-        file_device::Read();
+        file_device::read_async();
         #endif
         size_t _n = n;
         std::string msg;
@@ -402,7 +400,7 @@ class socket_device : public file_device<std::wstring> {
                     }
                 }
             }
-            UpdateWriteBIO();
+            update_write_bio();
             if (msg.size()) {
                 _b = (uint8_t *)msg.data(), _n = msg.size();
             } else {
@@ -420,27 +418,27 @@ class socket_device : public file_device<std::wstring> {
         file_device::onWrite(b, n);
     }
 
-    virtual void * Read(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override {
-        return file_device::Read(b, l, o);
+    virtual void * read_async(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override {
+        return file_device::read_async(b, l, o);
     }
 
-    virtual bool Write(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override {
+    virtual bool write_async(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override {
         if (m_ssl) {
             auto rc = SSL_write(m_ssl, b, static_cast<int>(l));
             if (rc) {
-                return UpdateWriteBIO();
+                return update_write_bio();
             }
         } else {
-            return file_device::Write(b, l);
+            return file_device::write_async(b, l);
         }
         return false;
     }
 
-    virtual tls GetTLS(void) {
+    virtual tls get_tls(void) {
         return m_tls;
     }
 
-    virtual void SetTLS(tls tls) {
+    virtual void set_tls(tls tls) {
         m_tls = tls;
     }
 
@@ -452,11 +450,11 @@ class socket_device : public file_device<std::wstring> {
         return m_port;
     }
 
-    auto GetConnectedClient(void) {
+    auto get_connected_client(void) {
         return m_connected_client;
     }
 
-    auto GetSslObject(void) {
+    auto get_ssl_object(void) {
         return m_ssl;
     }
 
@@ -472,33 +470,14 @@ class socket_device : public file_device<std::wstring> {
     BIO *m_write_bio = nullptr;
     SSL_CTX *m_ssl_ctx = nullptr;
     bool m_handshake_done = false;
-    int m_type = ESocketType::invalid;
+    int m_type = socket_type::invalid;
     TOnHandshake m_onHandShake = nullptr;
-    SPSocketDevice m_connected_client = nullptr;
-
-    #ifdef _WIN32
-    void * GetExtentionPfn(GUID guid, FD fd) {
-        void *pfn;
-        DWORD n;
-        int rc = WSAIoctl(
-            (SOCKET)fd,
-            SIO_GET_EXTENSION_FUNCTION_POINTER,
-            &guid, sizeof(guid),
-            &pfn, sizeof(pfn),
-            &n, NULL, NULL);
-        assert(rc == 0);
-        return pfn;
-    }
-    #endif
+    spsocket m_connected_client = nullptr;
 };
 
-using SPSocketDevice = std::shared_ptr<socket_device>;
-using WPDeviceSocket = std::weak_ptr<socket_device>;
+using spsocket = std::shared_ptr<socket_device>;
+using wpsocket = std::weak_ptr<socket_device>;
 
 } // namespace npl
-
-#ifdef _WIN32
-void * GetExtentionPfn(GUID guid, FD fd);
-#endif
 
 #endif //SOCKET_HPP

@@ -31,7 +31,7 @@ struct vhd : public disk {
         memmove(&iFooter, iRawSectors.get(), 512);
         memmove(&iHeader, iRawSectors.get() + 512, 1024);
         initializeBAT();
-        iFile->ReadSync(
+        iFile->read_sync(
             (uint8_t *)iBAT.get(),
             iBATSize,
             osl::endian_reverse(iHeader.TableOffset));
@@ -70,7 +70,7 @@ struct vhd : public disk {
             auto len = osl::endian_reverse(*((uint32_t *)&iHeader.ParentLocatorTable[i].PlatformDataSpace));
             auto _buf = std::make_unique<uint8_t []>(len);
             if (off && len) {
-                iFile->ReadSync(_buf.get(), len, off);
+                iFile->read_sync(_buf.get(), len, off);
                 out.push_back((wchar_t *) _buf.get());
             }
         }
@@ -196,19 +196,19 @@ struct vhd : public disk {
                 // this is not an unused data block
                 if (!isDifferencing()) {
                     // if level is dynamic base, read everything
-                    auto fRet = subject::ReadSync(f.buffer, f.length, block_start_off + blockoff);
+                    auto fRet = subject::read_sync(f.buffer, f.length, block_start_off + blockoff);
                     assert(fRet == f.length);
                 } else {
                     // if differencing we need to check the sector
                     // bitmap on which sectors are owned by this level
                     uint8_t sb[512] = {0};
-                    auto fRet = subject::ReadSync(sb, 512, batentry * 512ULL);
+                    auto fRet = subject::read_sync(sb, 512, batentry * 512ULL);
                     assert(fRet == 512);
                     readImageUsingSectorBitmap(f, sb, block_start_off, blockoff, true);
                 }
             }
         } else if (isFixed()) {
-            auto fRet = subject::ReadSync(f.buffer, f.length, f.offset);
+            auto fRet = subject::read_sync(f.buffer, f.length, f.offset);
             assert(fRet == f.length);
         } else {
             assert(false);
@@ -236,7 +236,7 @@ struct vhd : public disk {
                 uint64_t fileoffset = firstDataBlockOffset() + (iBlockCount * (512 + getBlockSize()));
                 iBAT[batindex] = osl::endian_reverse((uint32_t)(fileoffset / 512));
                 // write the new payload block
-                auto fRet = subject::WriteSync(iPayloadBlock.get(), 512 + getBlockSize(), fileoffset);
+                auto fRet = subject::write_sync(iPayloadBlock.get(), 512 + getBlockSize(), fileoffset);
                 assert(fRet == 512 + getBlockSize());
                 iBlockCount++;
             } else { // existing data block
@@ -244,20 +244,20 @@ struct vhd : public disk {
                     // zero out the complete data block (sb + data)
                     memset(iPayloadBlock.get(), 0, 512 + getBlockSize());
                     // read the complete data block (sb + data) off the disk.
-                    subject::ReadSync(iPayloadBlock.get(), 512 + getBlockSize(), batentry * 512);
+                    subject::read_sync(iPayloadBlock.get(), 512 + getBlockSize(), batentry * 512);
                     setSectorBitmap(iPayloadBlock.get(), blockoff, f.length, getBlockSize());
                     // position fragment buffer inside the payload block we just read
                     memmove(iPayloadBlock.get() + 512 + blockoff, f.buffer, f.length);
-                    auto fRet = subject::WriteSync(iPayloadBlock.get(), 512 + getBlockSize(), batentry * 512ULL);
+                    auto fRet = subject::write_sync(iPayloadBlock.get(), 512 + getBlockSize(), batentry * 512ULL);
                     assert(fRet == 512 + getBlockSize());
                 } else {
                     memset(iPayloadBlock.get(), 0xff, 512); // ??
-                    auto fRet = subject::WriteSync(f.buffer, f.length, (batentry * 512ULL) + 512ULL + blockoff);
+                    auto fRet = subject::write_sync(f.buffer, f.length, (batentry * 512ULL) + 512ULL + blockoff);
                     assert(fRet == f.length);
                 }
             }
         } else if (isFixed()) {
-            auto fRet = subject::WriteSync(f.buffer, f.length, f.offset);
+            auto fRet = subject::write_sync(f.buffer, f.length, f.offset);
             assert(fRet == f.length);
         } else {
             assert(false);

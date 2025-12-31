@@ -5,7 +5,31 @@
 
 namespace npl {
 
-class ws_message : public message {
+struct ws_message : public message {
+
+    ws_message(const uint8_t *b, size_t l) : message(b, l) {
+        ParseMessage();
+    }
+
+    uint8_t GetOpCode(void) {
+        return (iMessage[0] & 0x0F);
+    }
+
+    bool IsControlFrame(void) {
+        return (GetOpCode() & 0x08);
+    }
+
+    bool IsMasked(void) {
+        return (iMessage[1] & 0x80);
+    }
+
+    virtual size_t get_payload_length(void) override {
+        return iPayload.length();
+    }
+
+    virtual const std::string& get_payload_string(void) override {
+        return iPayload;
+    }
 
     protected:
 
@@ -55,43 +79,15 @@ class ws_message : public message {
             }
         }
     }
-
-    public:
-
-    ws_message(const uint8_t *b, size_t l) : message(b, l) {
-        ParseMessage();
-    }
-
-    uint8_t GetOpCode(void) {
-        return (iMessage[0] & 0x0F);
-    }
-
-    bool IsControlFrame(void) {
-        return (GetOpCode() & 0x08);
-    }
-
-    bool IsMasked(void) {
-        return (iMessage[1] & 0x80);
-    }
-
-    virtual size_t GetPayloadLength(void) override {
-        return iPayload.length();
-    }
-
-    virtual const std::string& GetPayloadString(void) override {
-        return iPayload;
-    }
 };
 
 using SPWSMessage = std::shared_ptr<ws_message>;
 
-class websocket_server : public http_client {
-
-    public:
+struct websocket_server : public http_client {
 
     websocket_server(const std::string& name) : http_client(name) {}
 
-    virtual void SendProtocolMessage(const uint8_t *data, size_t len) override {
+    virtual void send_protocol_message(const uint8_t *data, size_t len) override {
         int frameLength = 0;
         unsigned char frame[10];
         /* 1000001 */
@@ -114,18 +110,18 @@ class websocket_server : public http_client {
         std::string message;
         message.insert(0, (char *) frame, frameLength);
         message.insert(frameLength, (char *) data, len);
-        Write((uint8_t *) message.data(), message.size(), 0);
+        write_async((uint8_t *) message.data(), message.size(), 0);
     }
 
     protected:
 
     bool iWsHandshakeDone = false;
 
-    virtual void StateMachine(SPMessage m) override {
+    virtual void StateMachine(spmessage m) override {
         if (!iWsHandshakeDone) {
             bool fRet = false;
-            auto sock = GetTargetSocketDevice();
-            if (sock->IsClientSocket())
+            auto sock = get_target_socket_device();
+            if (sock->is_client_socket())
             {
                 fRet = ValidateServerHello(m);
             } else {
@@ -143,34 +139,34 @@ class websocket_server : public http_client {
                     std::dynamic_pointer_cast<protocol>(
                     shared_from_this()
                     ),
-                    m->GetPayloadString());
+                    m->get_payload_string());
             }
         }
     }
 
-    virtual SPMessage IsMessageComplete(const std::vector<uint8_t>& b) override {
+    virtual spmessage is_message_complete(const std::vector<uint8_t>& b) override {
         if (iWsHandshakeDone) {
-            return IsMessageComplete(b.data(), b.size());
+            return is_message_complete(b.data(), b.size());
         } else {
-            return http_client::IsMessageComplete(b);
+            return http_client::is_message_complete(b);
         }
     }
 
-    virtual SPMessage IsMessageComplete(const uint8_t *b, size_t l) {
+    virtual spmessage is_message_complete(const uint8_t *b, size_t l) {
         if (l < 2) return nullptr;
         auto m = std::make_shared<ws_message>(b, l);
-        if (m->GetPayloadLength()) {
+        if (m->get_payload_length()) {
             return m;
         }
         return nullptr;
     }
 
-    virtual bool ValidateClientHello(SPMessage m)
+    virtual bool ValidateClientHello(spmessage m)
     {
         return true; //todo
     }
 
-    virtual bool ValidateServerHello(SPMessage m)
+    virtual bool ValidateServerHello(spmessage m)
     {
         return true; //todo
     }
@@ -180,7 +176,7 @@ class websocket_server : public http_client {
         return false; //todo
     }
 
-    virtual bool SendServerHello(SPMessage m) {
+    virtual bool SendServerHello(spmessage m) {
         auto cHello = std::dynamic_pointer_cast<http_message>(m);
         auto key = cHello->GetHeader("Sec-WebSocket-Key");
         assert(key.size());
@@ -200,16 +196,16 @@ class websocket_server : public http_client {
         sHello << "Connection: Upgrade\r\n";
         sHello << "Sec-WebSocket-Accept: " << base64 << "\r\n";
         sHello << "\r\n";
-        Write((uint8_t *) sHello.str().c_str(), sHello.str().size(), 0);
+        write_async((uint8_t *) sHello.str().c_str(), sHello.str().size(), 0);
         return true; //todo
     }
 
     virtual void onAccept(void) override {
-        auto sock = GetTargetSocketDevice();
+        auto sock = get_target_socket_device();
         if (sock) {
             auto aso = std::make_shared<websocket_server>("DC-AS");
-            aso->SetClientMessageCallback(iClientMessageCallback);
-            sock->GetConnectedClient()->AddEventListener(aso);
+            aso->set_client_message_callback(iClientMessageCallback);
+            sock->get_connected_client()->add_event_listener(aso);
         }
     }
 

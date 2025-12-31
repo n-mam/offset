@@ -48,6 +48,21 @@
 
 namespace osl {
 
+#ifdef _WIN32
+inline auto get_extention_pfn(GUID guid, FD fd) {
+    DWORD n;
+    void *pfn;
+    int rc = WSAIoctl(
+        (SOCKET)fd,
+        SIO_GET_EXTENSION_FUNCTION_POINTER,
+        &guid, sizeof(guid),
+        &pfn, sizeof(pfn),
+        &n, NULL, NULL);
+    assert(rc == 0);
+    return pfn;
+}
+#endif
+
 inline auto GetArgumentsVector(int argc, wchar_t *argv[])
 {
   std::vector<std::wstring> arguments;

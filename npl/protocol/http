@@ -5,7 +5,7 @@
 
 namespace npl {
 
-class http_message : public message {
+struct http_message : public message {
 
     protected:
 
@@ -106,7 +106,7 @@ class http_message : public message {
         iHeaders[key] = value;
     }
 
-    virtual size_t GetPayloadLength(void) override {
+    virtual size_t get_payload_length(void) override {
         const auto& h = GetHeader("Content-Length");
         if (h.size()) {
             return std::stoi(h);
@@ -114,18 +114,18 @@ class http_message : public message {
         return 0;
     }
 
-    virtual const std::string& GetPayloadString(void) override {
+    virtual const std::string& get_payload_string(void) override {
         return iPayload;
     }
 
-    virtual const char * GetPayloadBuffer(void) override {
-        return GetPayloadString().c_str();
+    virtual const char * get_payload_buffer(void) override {
+        return get_payload_string().c_str();
     }
 };
 
 using SPHTTPMessage = std::shared_ptr<http_message>;
 
-class http_client : public protocol<uint8_t, uint8_t> {
+struct http_client : public protocol<uint8_t, uint8_t> {
 
     public:
 
@@ -139,19 +139,19 @@ class http_client : public protocol<uint8_t, uint8_t> {
         req << "Content-length: " << body.size() << "\r\n";
         req << "\r\n";
         req << body;
-        SetResponseCallback(cbk);
-        Write((uint8_t *) req.str().c_str(), req.str().size(), 0);
+        set_response_callback(cbk);
+        write_async((uint8_t *) req.str().c_str(), req.str().size(), 0);
     }
 
     protected:
 
-    virtual void StateMachine(SPMessage m) override {
+    virtual void StateMachine(spmessage m) override {
         if (iResponseCallback) {
-            iResponseCallback(m->GetPayloadString());
+            iResponseCallback(m->get_payload_string());
         }
     }
 
-    virtual SPMessage IsMessageComplete(const std::vector<uint8_t>& b) override {
+    virtual spmessage is_message_complete(const std::vector<uint8_t>& b) override {
         auto m = std::make_shared<http_message>(b);
         if (m->HeaderCount()) {
             return m;

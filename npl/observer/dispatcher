@@ -1,16 +1,14 @@
 #ifndef DISPATCHER_HPP
 #define DISPATCHER_HPP
 
-#include <observer/subject>
-#include <observer/listener>
-#include <device/file>
 #include <device/socket>
+#include <observer/listener>
 
 #include <thread>
 #include <vector>
 #include <iostream>
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <BaseTsd.h>
 typedef SSIZE_T ssize_t;
 #endif
@@ -55,7 +53,7 @@ struct dispatcher : public subject<uint8_t, uint8_t> {
         #elif linux
         _event_port = epoll_create1(0);
         DBG << "epoll _event_port " << _event_port << ", " << strerror(errno);
-        #elif WIN32
+        #elif _WIN32
         _event_port = CreateIoCompletionPort(INVALID_HANDLE_VALUE, 0, 0, 0);
         DBG << "iocp _event_port " << _event_port << ", " << GetLastError();
         #endif
@@ -67,15 +65,15 @@ struct dispatcher : public subject<uint8_t, uint8_t> {
     ~dispatcher() {
         _exit_loop = true;
         if (_ctrl_client) {
-            if (_ctrl_client->IsConnected()) {
-                _ctrl_client->StopSocket(true);
+            if (_ctrl_client->is_connected()) {
+                _ctrl_client->stop_socket(true);
             }
         }
         _event_thread.join();
         if (_ctrl_server) {
-            _ctrl_server->StopSocket();
+            _ctrl_server->stop_socket();
         }
-        #ifndef WIN32
+        #ifndef _WIN32
         if (_event_port >= 0) {
             close(_event_port), _event_port = 0;
         }
@@ -88,7 +86,7 @@ struct dispatcher : public subject<uint8_t, uint8_t> {
 
     void initialize_control(void) {
         _ctrl_server = std::make_shared<socket_device>("DC-LS");
-        _ctrl_server->SetHostAndPort("0.0.0.0", 0);
+        _ctrl_server->set_host_and_port("0.0.0.0", 0);
         auto ls = std::make_shared<listener>();
         ls->setCallback<TListenerOnAccept>({
             [this] () {
@@ -103,17 +101,17 @@ struct dispatcher : public subject<uint8_t, uint8_t> {
                             m.clear();
                         }
                     }});
-                this->_ctrl_server->GetConnectedClient()->AddEventListener(aso);
+                this->_ctrl_server->get_connected_client()->add_event_listener(aso);
             }});
-        this->AddEventListener(_ctrl_server)->AddEventListener(ls);
-        _ctrl_server->StartSocketServer();
+        this->add_event_listener(_ctrl_server)->add_event_listener(ls);
+        _ctrl_server->start_socket_server();
         _ctrl_client = std::make_shared<socket_device>("DC-CT");
-        _ctrl_client->SetHostAndPort("127.0.0.1", _ctrl_server->get_port());
-        this->AddEventListener(_ctrl_client);
-        _ctrl_client->StartSocketClient();
+        _ctrl_client->set_host_and_port("127.0.0.1", _ctrl_server->get_port());
+        this->add_event_listener(_ctrl_client);
+        _ctrl_client->start_socket_client();
     }
 
-    virtual void add_subject(spsubject subject) override {
+    virtual void add_device_to_event_port(spsubject subject) {
         auto device = std::dynamic_pointer_cast<file_device<std::wstring>>(subject);
         assert(device);
         #ifdef linux
@@ -137,10 +135,10 @@ struct dispatcher : public subject<uint8_t, uint8_t> {
         #endif
     }
 
-    virtual const spsubject& AddEventListener(const spsubject& observer) override {
-        subject::AddEventListener(observer);
+    virtual const spsubject& add_event_listener(const spsubject& observer) override {
+        subject::add_event_listener(observer);
         #ifdef _WIN32
-        add_subject(observer);
+        add_device_to_event_port(observer);
         #endif
         return observer;
     }
@@ -207,7 +205,7 @@ struct dispatcher : public subject<uint8_t, uint8_t> {
                     break;
                 }
             }
-            ProcessListenersMarkedForRemoval();
+            process_listeners_marked_for_removal();
         }
         DBG << "event_loop thread returning, observers: " << m_observers.size();
     }
@@ -241,17 +239,19 @@ struct dispatcher : public subject<uint8_t, uint8_t> {
         free(ctx);
     }
 
-    #ifndef WIN32
+    #ifndef _WIN32
     std::vector<context *> get_event_context(spsubject o, Event& e) {
         std::vector<context *> contexts;
         auto dev = std::dynamic_pointer_cast<socket_device> (o);
-        auto isConnected = dev->IsConnected();
-        auto isClientSocket = dev->IsClientSocket();
-        auto isListentingSocket = dev->IsListeningSocket();
+        auto isConnected = dev->is_connected();
+        auto isClientSocket = dev->is_client_socket();
+        auto isListentingSocket = dev->is_listening_socket();
         if (e.is_write()) {
-            DBG << "event::is_write, socket type " << dev->GetSocketType()
-            << " isConnected : " << isConnected;
+            DBG << "event::is_write, socket type " << dev->get_socket_type()
+                << " isConnected : " << isConnected;
             if (isClientSocket && !isConnected) {
+                // writability implies that the connection process has finished.
+                // does not mean success.. it could have failed as well.
                 auto ctx = (context *) calloc(1, sizeof(context));
                 ctx->type = EIOType::CONNECT;
                 ctx->k = dev.get();
@@ -269,7 +269,7 @@ struct dispatcher : public subject<uint8_t, uint8_t> {
             assert(rc != -1);
             #endif
         } else if (e.is_read()) {
-            DBG << "event::is_read, socket type " << dev->GetSocketType()
+            DBG << "event::is_read, socket type " << dev->get_socket_type()
                 << " isConnected : " << isConnected;
             if (isListentingSocket) {
                 auto ctx = (context *) calloc(1, sizeof(context));
@@ -278,9 +278,8 @@ struct dispatcher : public subject<uint8_t, uint8_t> {
                 contexts.push_back(ctx);
             } else if (isConnected) {
                 context *ctx = nullptr;
-                do
-                {
-                    ctx = (context *) dev->Read();
+                do {
+                    ctx = (context *) dev->read_async();
                     if (ctx) {
                         contexts.push_back(ctx);
                     }
@@ -289,7 +288,7 @@ struct dispatcher : public subject<uint8_t, uint8_t> {
         }
         #ifdef linux
         else if (e.is_error() || e.is_hangup()) {
-            DBG << "event::is_hangup, socket type " << dev->GetSocketType()
+            DBG << "event::is_hangup, socket type " << dev->get_socket_type()
                 << " isConnected : " << isConnected << " error " <<  strerror(errno);
             auto ctx = (context *) calloc(1, sizeof(context));
             ctx->type = EIOType::READ;
@@ -301,7 +300,7 @@ struct dispatcher : public subject<uint8_t, uint8_t> {
         #endif
         #if __has_include(<sys/event.h>)
         else if (e.Is_eof()) {
-            DBG << "event::is_eof, socket type " << dev->GetSocketType()
+            DBG << "event::is_eof, socket type " << dev->get_socket_type()
                 << " isConnected : " << isConnected << " error " <<  strerror(errno);
         }
         #endif
@@ -323,7 +322,7 @@ struct dispatcher : public subject<uint8_t, uint8_t> {
 
     virtual void queue_pending_context(spsubject s, void *c) {
         ((context *)c)->k = s.get();
-        _ctrl_client->Write((const uint8_t *)c, sizeof(context));
+        _ctrl_client->write_async((const uint8_t *)c, sizeof(context));
         free(c);
     }
 
@@ -332,12 +331,12 @@ struct dispatcher : public subject<uint8_t, uint8_t> {
     FD _event_port;
     bool _exit_loop = false;
     std::thread _event_thread;
-    SPSocketDevice _ctrl_server;
-    SPSocketDevice _ctrl_client;
+    spsocket _ctrl_server;
+    spsocket _ctrl_client;
 };
 
-using SPDispatcher = std::shared_ptr<dispatcher>;
-using UPDispatcher = std::unique_ptr<dispatcher>;
+using spdispatcher = std::shared_ptr<dispatcher>;
+using updispatcher = std::unique_ptr<dispatcher>;
 
 } // namespace npl
 

@@ -43,7 +43,7 @@ struct Tracker {
     }
 
     auto updateTrackingContexts(cv::Mat& frame, spcc cc) {
-        for (int i = _trackingContexts.size() - 1; i >= 0; i--) {
+        for (auto i = _trackingContexts.size() - 1; i >= 0; i--) {
             auto& t = _trackingContexts[i];
             cv::Rect bb;
             t._tracked = false;

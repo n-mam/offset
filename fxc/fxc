@@ -58,8 +58,8 @@ auto getTargetForDestination(const std::wstring& destination, const std::wstring
         auto protect = (protocol == "ftps") ? npl::tls::yes : npl::tls::no;
         auto ftp = npl::make_ftp(host, std::stoi(port), protect);
         if (!ftp) return target;
-        ftp->SetCredentials(username, password);
-        ftp->StartClient();
+        ftp->set_credentials(username, password);
+        ftp->start_protocol_client();
         auto file = "/" + directory + "/" + osl::ws2s(name + L"." + getExtentionForFormat(format));
         ftp->Transfer(npl::ftp::upload, file,
             [&](const char *b, size_t n) {
@@ -101,9 +101,9 @@ auto recover_virtual_disk(const std::wstring& image, const std::wstring& blkdev)
     do {
         auto pending = nTotal - nDone;
         size_t nToRead = pending > bs ? bs : pending;
-        auto n = disk->ReadSync(buf.get(), nToRead, offset + nDone);
+        auto n = disk->read_sync(buf.get(), nToRead, offset + nDone);
         if (n != nToRead) {
-            LOG << "ReadSync on source returned " << n;
+            LOG << "read_sync on source returned " << n;
             break;
         }
         auto fRet = WriteFile(target, buf.get(), n, &dwBytesWritten, NULL);

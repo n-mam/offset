@@ -8,9 +8,7 @@
 
 namespace npl {
 
-class message {
-
-    public:
+struct message {
 
     message(const std::string& m) {
         iMessage = m;
@@ -24,15 +22,15 @@ class message {
         iMessage = std::string((char *) m.data(), m.size());
     }
 
-    virtual size_t GetPayloadLength(void) {
+    virtual size_t get_payload_length(void) {
         return iMessage.size();
     }
 
-    virtual const std::string& GetPayloadString(void) {
+    virtual const std::string& get_payload_string(void) {
         return iMessage;
     }
 
-    virtual const char * GetPayloadBuffer(void) {
+    virtual const char * get_payload_buffer(void) {
         return iMessage.c_str();
     }
 
@@ -43,19 +41,17 @@ class message {
     virtual void ParseMessage(void) { }
 };
 
-using SPMessage = std::shared_ptr<message>;
+using spmessage = std::shared_ptr<message>;
 using TOnUserLoginCbk = std::function<void (bool)>;
 using TResponseCbk = std::function<void (const std::string&)>;
 using TTransferCbk = std::function<bool (const char *, size_t)>;
 
 template <typename T1, typename T2>
-class protocol : public subject<T1, T2> {
+struct protocol : public subject<T1, T2> {
 
-    public:
-
-    using SPProtocol = std::shared_ptr<protocol<T1, T2>>;
-    using TOnConnectCbk = std::function<void (SPProtocol, bool)>;
-    using TOnClientMessageCbk = std::function<void (SPProtocol, const std::string&)>;
+    using spprotocol = std::shared_ptr<protocol<T1, T2>>;
+    using TOnConnectCbk = std::function<void (spprotocol, bool)>;
+    using TOnClientMessageCbk = std::function<void (spprotocol, const std::string&)>;
 
     enum : uint8_t {
         EStateConnecting = 0x00,
@@ -70,70 +66,63 @@ class protocol : public subject<T1, T2> {
 
     virtual ~protocol() {}
 
-    virtual void StartClient(TOnConnectCbk cbk = nullptr) {
+    virtual void start_protocol_client(TOnConnectCbk cbk = nullptr) {
         iConnectCbk = cbk;
-        auto sock = GetTargetSocketDevice();
+        auto sock = get_target_socket_device();
         if (sock)
         {
-            sock->StartSocketClient();
+            sock->start_socket_client();
         }
     }
 
-    virtual void StartServer(void) {
-        auto sock = GetTargetSocketDevice();
+    virtual void start_protocol_server(void) {
+        auto sock = get_target_socket_device();
         if (sock) {
-            sock->StartSocketServer();
+            sock->start_socket_server();
         }
     }
 
-    virtual void Stop(void) {
-        auto sock = GetTargetSocketDevice();
-        if (sock) {
-            sock->StopSocket();
-        }
-    }
-
-    virtual size_t GetMessageCount(void) {
+    virtual size_t get_message_count(void) {
         return iMessages.size();
     }
 
-    virtual void SetCredentials(const std::string& user, const std::string& pass, TOnUserLoginCbk cbk = nullptr) {
+    virtual void set_credentials(const std::string& user, const std::string& pass, TOnUserLoginCbk cbk = nullptr) {
         m_user = user;
         m_password = pass;
         m_login_callback = cbk;
     }
 
-    virtual void SetResponseCallback(TResponseCbk cbk) {
+    virtual void set_response_callback(TResponseCbk cbk) {
         iResponseCallback = cbk;
     }
 
-    virtual void SetClientMessageCallback(TOnClientMessageCbk cbk) {
+    virtual void set_client_message_callback(TOnClientMessageCbk cbk) {
         iClientMessageCallback = cbk;
     }
 
-    virtual void SendProtocolMessage(const uint8_t *message, size_t len) {
+    virtual void send_protocol_message(const uint8_t *message, size_t len) {
         return;
     }
 
-    virtual tls GetChannelTLS() {
-        auto sock = GetTargetSocketDevice();
+    virtual tls get_channel_tls() {
+        auto sock = get_target_socket_device();
         if (sock) {
-            return sock->GetTLS();
+            return sock->get_tls();
         }
         return tls::no;
     }
 
-    virtual void SetChannelTLS(tls t) {
-        auto sock = GetTargetSocketDevice();
+    virtual void set_channel_tls(tls t) {
+        auto sock = get_target_socket_device();
         if (sock) {
-            return sock->SetTLS(t);
+            return sock->set_tls(t);
         }
     }
 
-    virtual bool IsConnected(void) override {
-        auto sock = GetTargetSocketDevice();
+    virtual bool is_connected(void) override {
+        auto sock = get_target_socket_device();
         if (sock) {
-            return sock->IsConnected() && (iCurrentState != EStateDisconnected);
+            return sock->is_connected() && (iCurrentState != EStateDisconnected);
         }
         return false;
     }
@@ -159,7 +148,7 @@ class protocol : public subject<T1, T2> {
     virtual void onRead(const T1 *b, size_t n) override {
         for (size_t i = 0; i < n; i++) {
             iBuffer.push_back(b[i]);
-            auto message = IsMessageComplete(iBuffer);
+            auto message = is_message_complete(iBuffer);
             if (message) {
                 iMessages.push_back(message);
                 StateMachine(message);
@@ -173,11 +162,11 @@ class protocol : public subject<T1, T2> {
 
     protected:
 
-    virtual SPMessage IsMessageComplete(const std::vector<T1>& b) = 0;
+    virtual spmessage is_message_complete(const std::vector<T1>& b) = 0;
 
-    virtual void StateMachine(SPMessage message) { }
+    virtual void StateMachine(spmessage message) { }
 
-    virtual SPSocketDevice GetTargetSocketDevice(void) {
+    virtual spsocket get_target_socket_device(void) {
         auto target = (this->m_target).lock();
         if (target) {
             return std::static_pointer_cast<socket_device>(target);
@@ -188,7 +177,7 @@ class protocol : public subject<T1, T2> {
     std::string m_user;
     std::string m_password;
     std::vector<T1> iBuffer;
-    std::vector<SPMessage> iMessages;
+    std::vector<spmessage> iMessages;
     TOnConnectCbk iConnectCbk = nullptr;
     uint8_t iCurrentState = EStateConnecting;
     TResponseCbk iResponseCallback = nullptr;
@@ -196,9 +185,9 @@ class protocol : public subject<T1, T2> {
     TOnClientMessageCbk iClientMessageCallback = nullptr;
 };
 
-using SPProtocol = std::shared_ptr<protocol<uint8_t, uint8_t>>;
-using TOnConnectCbk = std::function<void (SPProtocol)>;
-using TOnClientMessageCbk = std::function<void (SPProtocol, const std::string&)>;
+using spprotocol = std::shared_ptr<protocol<uint8_t, uint8_t>>;
+using TOnConnectCbk = std::function<void (spprotocol)>;
+using TOnClientMessageCbk = std::function<void (spprotocol, const std::string&)>;
 
 }
 

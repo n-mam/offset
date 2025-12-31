@@ -82,7 +82,7 @@ struct file_device : public subject<uint8_t, uint8_t> {
     file_device(const std::string& name) : subject(name) {};
 
     file_device(const T& path, bool create) : subject("file") {
-        MarkConnected(false);
+        mark_connected(false);
         #ifdef _WIN32
         if constexpr (std::is_same<T, std::wstring>::value)
             _fd_async = CreateFileW(
@@ -142,7 +142,7 @@ struct file_device : public subject<uint8_t, uint8_t> {
         }
         #endif
         _path = path;
-        MarkConnected(true);
+        mark_connected(true);
         _device_type = EDeviceType::File;
     }
 
@@ -162,9 +162,9 @@ struct file_device : public subject<uint8_t, uint8_t> {
         return _device_type;
     }
 
-    virtual void * Read(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override {
-        if (!IsConnected()) {
-            ERR << get_name() << " file_device::Read() not connected";
+    virtual void * read_async(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override {
+        if (!is_connected()) {
+            ERR << get_name() << " file_device::read_async() not connected";
             return nullptr;
         }
         context *ctx = (context *) calloc(1, sizeof(context));
@@ -199,13 +199,13 @@ struct file_device : public subject<uint8_t, uint8_t> {
         #endif
     }
 
-    virtual bool Write(const uint8_t *b = nullptr , size_t l = 0, uint64_t o = 0) override {
-        if (!IsConnected()) {
-            ERR << get_name() << " file_device::Write() not connected";
+    virtual bool write_async(const uint8_t *b = nullptr , size_t l = 0, uint64_t o = 0) override {
+        if (!is_connected()) {
+            ERR << get_name() << " file_device::write_async() not connected";
             return false;
         }
         if (!b || !l) {
-            ERR << get_name() << " file_device::Write() invalid arguments";
+            ERR << get_name() << " file_device::write_async() invalid arguments";
             return false;
         }
         bool fRet = true;
@@ -222,13 +222,13 @@ struct file_device : public subject<uint8_t, uint8_t> {
             if ((GetLastError() == ERROR_IO_PENDING)) {
                 fRet = true;
             } else {
-                ERR << get_name() << " file_device::Write() WriteFile() failed: " << GetLastError();
+                ERR << get_name() << " file_device::write_async() WriteFile() failed: " << GetLastError();
             }
         }
         #else
         auto rc = write(_fd_async, b, l);
         if (rc == -1) {
-            ERR << get_name() << " file_device::Write() write() failed: " << strerror(errno);
+            ERR << get_name() << " file_device::write_async() write() failed: " << strerror(errno);
             fRet = false;
         }
         #endif
@@ -236,7 +236,7 @@ struct file_device : public subject<uint8_t, uint8_t> {
     }
 
     #ifdef _WIN32
-    virtual int32_t ReadSync(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override {
+    virtual int32_t read_sync(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override {
         DWORD nBytesRead = 0;
         LARGE_INTEGER offset;
         offset.QuadPart = o;
@@ -244,15 +244,15 @@ struct file_device : public subject<uint8_t, uint8_t> {
         if (fRet) {
             fRet = ReadFile(_fd_sync, (LPVOID) b, static_cast<DWORD>(l), &nBytesRead, NULL);
             if (fRet == FALSE) {
-                ERR << get_name() << " ReadSync ReadFile failed: " << GetLastError();
+                ERR << get_name() << " read_sync ReadFile failed: " << GetLastError();
             }
         }
         return nBytesRead;
     }
 
-    virtual int32_t WriteSync(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override {
+    virtual int32_t write_sync(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override {
         if (!b || !l) {
-            ERR << get_name() << " file_device::WriteSync() invalid arguments";
+            ERR << get_name() << " file_device::write_sync() invalid arguments";
             return false;
         }
         DWORD nBytesWritten = 0;
@@ -263,7 +263,7 @@ struct file_device : public subject<uint8_t, uint8_t> {
             fRet = WriteFile(_fd_sync, (LPVOID)b, static_cast<DWORD>(l), &nBytesWritten, NULL);
             if (fRet == FALSE)
             {
-                ERR << get_name() << " WriteSync WriteFile failed: " << GetLastError();
+                ERR << get_name() << " write_sync WriteFile failed: " << GetLastError();
             }
         }
         return nBytesWritten;
@@ -278,7 +278,7 @@ struct file_device : public subject<uint8_t, uint8_t> {
 template<typename T>
 using spfile = std::shared_ptr<file_device<T>>;
 template<typename T>
-using WPFileDevice = std::weak_ptr<file_device<T>>;
+using wpfile = std::weak_ptr<file_device<T>>;
 
 }
 

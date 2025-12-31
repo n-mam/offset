@@ -13,7 +13,7 @@ bool RemoteFsModel::Connect(QString host, QString port, QString user, QString pa
     m_protection = (protocol == "FTPS") ? npl::tls::yes : npl::tls::no;
     m_ftp = npl::make_ftp(m_host, m_port , m_protection);
     if (m_ftp) {
-        m_ftp->SetIdleCallback([this](){
+        m_ftp->set_idle_callback([this](){
             QMetaObject::invokeMethod(this, [=, this](){
                 for (auto rit = m_directories_to_remove.rbegin();
                     rit != m_directories_to_remove.rend(); rit++)
@@ -25,7 +25,7 @@ bool RemoteFsModel::Connect(QString host, QString port, QString user, QString pa
             });
         });
 
-        m_ftp->SetCredentials(m_user, m_password,
+        m_ftp->set_credentials(m_user, m_password,
         [this](bool success){
             QMetaObject::invokeMethod(this, [=, this](){
                 if (success) {
@@ -37,7 +37,7 @@ bool RemoteFsModel::Connect(QString host, QString port, QString user, QString pa
             }, Qt::QueuedConnection);
         });
 
-        m_ftp->StartClient(
+        m_ftp->start_protocol_client(
         [this](auto p, bool isConnected){
             QMetaObject::invokeMethod(this, [=, this](){
                 setConnected(isConnected);
