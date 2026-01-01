@@ -22,6 +22,7 @@ enum tls {
 };
 
 using TOnHandshake = std::function<void (void)>;
+
 inline std::map<SSL *, std::vector<SSL_SESSION *>> ssl_session_map;
 
 struct socket_device : public FileDeviceType {
@@ -29,21 +30,21 @@ struct socket_device : public FileDeviceType {
     using wpsocket = std::weak_ptr<socket_device>;
     using spsocket = std::shared_ptr<socket_device>;
 
-    enum socket_type {
-        invalid,
-        client,
-        accepted,
-        listening,
+    enum {
+        InvalidSocket,
+        ClientSocket,
+        AcceptedSocket,
+        ListeningSocket
     };
 
     socket_device(const std::string& name) : file_device(name) {
-        _device_type = EDeviceType::Socket;
-        _fd_async = (FD) socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+        _device_type = device::socket;
+        _fd_async = (FD)::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     }
 
     socket_device(FD socket) {
         _fd_async = socket;
-        _device_type = EDeviceType::Socket;
+        _device_type = device::socket;
     }
 
     ~socket_device() {
@@ -80,7 +81,7 @@ struct socket_device : public FileDeviceType {
 
     virtual void start_socket_client(void) {
         DBG << "start_socket_client " << m_host << ":" << m_port;
-        m_type = socket_type::client;
+        m_type = ClientSocket;
         #ifdef _WIN32
         struct sockaddr_in addr;
         ZeroMemory(&addr, sizeof(addr));
@@ -89,8 +90,8 @@ struct socket_device : public FileDeviceType {
         addr.sin_port = 0;
         int rc = bind((SOCKET)_fd_async, (SOCKADDR*) &addr, sizeof(addr));
         assert(rc == 0);
-        context *ctx = (context *) calloc(1, sizeof(context));
-        ctx->type = EIOType::CONNECT;
+        context *ctx = (context *)calloc(1, sizeof(context));
+        ctx->type = context::connect;
         sockaddr_in sa;
         memset(&sa, 0, sizeof(sa));
         sa.sin_family = AF_INET;
@@ -98,15 +99,13 @@ struct socket_device : public FileDeviceType {
         sa.sin_port = htons(m_port);
         auto ConnectEx = osl::get_extention_pfn(WSAID_CONNECTEX, _fd_async);
         bool fRet = ((LPFN_CONNECTEX)ConnectEx)(
-            (SOCKET)_fd_async,
-            (SOCKADDR*) &sa,
-            sizeof(sa),
-            NULL, 0, NULL,
-            (LPOVERLAPPED)ctx);
+                (SOCKET)_fd_async,
+                (SOCKADDR*) &sa,
+                sizeof(sa),
+                NULL, 0, NULL,
+                (LPOVERLAPPED)ctx);
         if (fRet) {
-            #ifdef _WIN32
             setsockopt((SOCKET)_fd_async, SOL_SOCKET, SO_UPDATE_CONNECT_CONTEXT, NULL, 0 );
-            #endif
             onConnect();
         } else if (WSAGetLastError() == ERROR_IO_PENDING) {
 
@@ -138,7 +137,7 @@ struct socket_device : public FileDeviceType {
         assert(fRet == 0);
         memset(&sa, 0, sizeof(sa));
         socklen_t len = sizeof(sa);
-        getsockname((SOCKET)_fd_async, (struct sockaddr *) &sa, &len);
+        getsockname((SOCKET)_fd_async, (struct sockaddr *)&sa, &len);
         m_port = ntohs(sa.sin_port);
         DBG << get_name() << " server bound at port " << m_port;
         fRet = listen((SOCKET)_fd_async, SOMAXCONN);
@@ -150,7 +149,7 @@ struct socket_device : public FileDeviceType {
         set_socket_blocking_enabled(_fd_async, false);
         get_last_target(shared_from_this())->add_device_to_event_port(shared_from_this());
         #endif
-        m_type = socket_type::listening;
+        m_type = ListeningSocket;
         #ifdef _WIN32
         accept_new_connection();
         #endif
@@ -159,9 +158,9 @@ struct socket_device : public FileDeviceType {
     #ifdef _WIN32
     virtual void accept_new_connection(void) {
         auto AcceptEx = osl::get_extention_pfn(WSAID_ACCEPTEX, _fd_async);
-        uint8_t *b = (uint8_t *) calloc(1, 2 * (sizeof(SOCKADDR_STORAGE) + 16) + sizeof(context));
-        ((context *)b)->type = EIOType::ACCEPT;
-        m_accepted_socket = (FD) socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+        uint8_t *b = (uint8_t *)calloc(1, 2 * (sizeof(SOCKADDR_STORAGE) + 16) + sizeof(context));
+        ((context *)b)->type = context::accept;
+        m_accepted_socket = (FD)::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
         DWORD bytesReceived;
         bool rc = ((LPFN_ACCEPTEX)AcceptEx)(
             (SOCKET)_fd_async,
@@ -192,15 +191,15 @@ struct socket_device : public FileDeviceType {
     }
 
     virtual bool is_client_socket(void) {
-        return (m_type == socket_type::client);
+        return (m_type == ClientSocket);
     }
 
     virtual bool is_listening_socket(void) {
-        return (m_type == socket_type::listening);
+        return (m_type == ListeningSocket);
     }
 
     virtual bool is_accepted_socket(void) {
-        return (m_type == socket_type::accepted);
+        return (m_type == AcceptedSocket);
     }
 
     virtual bool set_host_and_port(const std::string& host, int port) {
@@ -330,7 +329,7 @@ struct socket_device : public FileDeviceType {
         #endif
         m_connected_client.reset();
         m_connected_client = std::make_shared<socket_device>(m_accepted_socket);
-        m_connected_client->m_type = socket_type::accepted;
+        m_connected_client->m_type = AcceptedSocket;
         m_connected_client->mark_connected(true);
         get_last_target(shared_from_this())->add_event_listener(m_connected_client);
         file_device::onAccept();
@@ -468,9 +467,9 @@ struct socket_device : public FileDeviceType {
     BIO *m_read_bio = nullptr;
     std::string m_tls_version;
     BIO *m_write_bio = nullptr;
+    int m_type = InvalidSocket;
     SSL_CTX *m_ssl_ctx = nullptr;
     bool m_handshake_done = false;
-    int m_type = socket_type::invalid;
     TOnHandshake m_onHandShake = nullptr;
     spsocket m_connected_client = nullptr;
 };

@@ -25,51 +25,28 @@ using SOCKET = int;
 
 namespace npl {
 
-enum EDeviceType : uint8_t {
-    None = 0,
-    File,
-    Socket
-};
-
-enum EIOType : uint8_t {
-    CONNECT = 0,
-    ACCEPT,
-    READ,
-    WRITE,
-    IOCTL
+enum device {
+    none = 0,
+    file,
+    socket
 };
 
 struct context {
     #ifdef _WIN32
-    OVERLAPPED      ol;
+    OVERLAPPED ol;
     #endif
-    EIOType         type;
-    void          * k;
-    const uint8_t * b;
-    unsigned long   n;
-    bool            bFree;
+    enum {
+        read = 0,
+        ioctl,
+        write,
+        accept,
+        connect
+    } type;
+    void *k;
+    const uint8_t *b;
+    unsigned long n;
+    bool bFree;
 };
-
-constexpr inline auto EIOToString(EIOType t) {
-    switch(t) {
-        case EIOType::ACCEPT:
-            return "onAccept";
-            break;
-        case EIOType::CONNECT:
-            return "onConnect";
-            break;
-        case EIOType::READ:
-            return "onRead";
-            break;
-        case EIOType::WRITE:
-            return "onWrite";
-            break;
-        default:
-            return "INVALID";
-    }
-}
-
-constexpr uint32_t DEVICE_BUFFER_SIZE = 65536;
 
 template<typename T>
 struct file_device : public subject<uint8_t, uint8_t> {
@@ -143,11 +120,11 @@ struct file_device : public subject<uint8_t, uint8_t> {
         #endif
         _path = path;
         mark_connected(true);
-        _device_type = EDeviceType::File;
+        _device_type = device::file;
     }
 
     virtual ~file_device() {
-        if (_device_type == EDeviceType::File) {
+        if (_device_type == device::file) {
             #ifdef _WIN32
             CloseHandle(_fd_sync);
             CloseHandle(_fd_async);
@@ -158,17 +135,17 @@ struct file_device : public subject<uint8_t, uint8_t> {
         }
     }
 
-    virtual EDeviceType GetDeviceType(void) {
+    auto get_device_type(void) {
         return _device_type;
     }
 
     virtual void * read_async(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override {
         if (!is_connected()) {
-            ERR << get_name() << " file_device::read_async() not connected";
+            ERR << get_name() << " read_async not connected";
             return nullptr;
         }
         context *ctx = (context *) calloc(1, sizeof(context));
-        ctx->type = EIOType::READ;
+        ctx->type = context::read;
         if (b) {
             ctx->b = b;
             ctx->bFree = false;
@@ -201,17 +178,17 @@ struct file_device : public subject<uint8_t, uint8_t> {
 
     virtual bool write_async(const uint8_t *b = nullptr , size_t l = 0, uint64_t o = 0) override {
         if (!is_connected()) {
-            ERR << get_name() << " file_device::write_async() not connected";
+            ERR << get_name() << " write_async not connected";
             return false;
         }
         if (!b || !l) {
-            ERR << get_name() << " file_device::write_async() invalid arguments";
+            ERR << get_name() << " write_async invalid arguments";
             return false;
         }
         bool fRet = true;
         #ifdef _WIN32
         context *ctx = (context *) calloc(1, sizeof(context));
-        ctx->type = EIOType::WRITE;
+        ctx->type = context::write;
         ctx->b = (uint8_t *) calloc(l, 1);
         memmove((void *)ctx->b, b, l);
         ctx->bFree = true;
@@ -222,13 +199,13 @@ struct file_device : public subject<uint8_t, uint8_t> {
             if ((GetLastError() == ERROR_IO_PENDING)) {
                 fRet = true;
             } else {
-                ERR << get_name() << " file_device::write_async() WriteFile() failed: " << GetLastError();
+                ERR << get_name() << " write_async WriteFile failed: " << GetLastError();
             }
         }
         #else
         auto rc = write(_fd_async, b, l);
         if (rc == -1) {
-            ERR << get_name() << " file_device::write_async() write() failed: " << strerror(errno);
+            ERR << get_name() << " write_async write failed: " << strerror(errno);
             fRet = false;
         }
         #endif
@@ -252,7 +229,7 @@ struct file_device : public subject<uint8_t, uint8_t> {
 
     virtual int32_t write_sync(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override {
         if (!b || !l) {
-            ERR << get_name() << " file_device::write_sync() invalid arguments";
+            ERR << get_name() << " write_sync invalid arguments";
             return false;
         }
         DWORD nBytesWritten = 0;
@@ -272,7 +249,8 @@ struct file_device : public subject<uint8_t, uint8_t> {
 
     protected:
 
-    EDeviceType _device_type = EDeviceType::None;
+    device _device_type = device::none;
+    constexpr static uint32_t DEVICE_BUFFER_SIZE = 65536;
 };
 
 #ifdef _WIN32

@@ -44,6 +44,26 @@ struct Event {
     #endif
 };
 
+constexpr inline auto context_type_string(
+    decltype(context::type) t) {
+    switch (t) {
+        case context::accept:
+            return "onAccept";
+            break;
+        case context::connect:
+            return "onConnect";
+            break;
+        case context::read:
+            return "onRead";
+            break;
+        case context::write:
+            return "onWrite";
+            break;
+        default:
+            return "invalid";
+    }
+}
+
 struct dispatcher : public subject<uint8_t, uint8_t> {
 
     dispatcher(const std::string& name = "D") : subject(name) {
@@ -115,7 +135,7 @@ struct dispatcher : public subject<uint8_t, uint8_t> {
         auto device = std::dynamic_pointer_cast<FileDeviceType>(subject);
         assert(device);
         #ifdef linux
-        assert(device->GetDeviceType() == EDeviceType::Socket);
+        assert(device->get_device_type() == device::socket);
         EpollControl(device, EPOLL_CTL_ADD, EPOLLIN | EPOLLOUT | EPOLLET);
         #endif
         #if __has_include(<sys/event.h>)
@@ -127,10 +147,10 @@ struct dispatcher : public subject<uint8_t, uint8_t> {
         #endif
         #ifdef _WIN32
         auto port = CreateIoCompletionPort(
-                        device->_fd_async,
-                        _event_port,
-                        (ULONG_PTR) device.get(),
-                        0);
+                device->_fd_async,
+                _event_port,
+                (ULONG_PTR) device.get(),
+                0);
         assert(port);
         #endif
     }
@@ -159,7 +179,7 @@ struct dispatcher : public subject<uint8_t, uint8_t> {
             if (!rc) {
                 error = GetLastError();
                 DBG << "GQCS failed : " << error << " " <<
-                        ((subject<uint8_t, uint8_t> *) k)->get_name();
+                        ((subject<uint8_t, uint8_t> *)k)->get_name();
             }
             if (n == 0 && k == 0 && ol == 0) break;
             #elif linux
@@ -171,7 +191,7 @@ struct dispatcher : public subject<uint8_t, uint8_t> {
                 error = errno;
                 if (errno == EINTR) continue;
                 DBG << "epoll_wait failed : " << strerror(error) << " " << (k ?
-                ((subject<uint8_t, uint8_t> *) k)->get_name() : "");
+                    ((subject<uint8_t, uint8_t> *)k)->get_name() : "");
             }
             Event e {ee.events};
             #elif __has_include(<sys/event.h>)
@@ -181,7 +201,7 @@ struct dispatcher : public subject<uint8_t, uint8_t> {
             if (rc < 0) {
                 error = errno;
                 DBG << "kevent failed : " << strerror(error) << " " <<
-                        ((subject<uint8_t, uint8_t> *) k)->get_name();
+                        ((subject<uint8_t, uint8_t> *)k)->get_name();
                 break;
             }
             k = ke.udata;
@@ -213,20 +233,20 @@ struct dispatcher : public subject<uint8_t, uint8_t> {
     void process_event_context(void *key, context *ctx, int rc = 1, uint64_t error = 0) {
         auto k = (subject<uint8_t, uint8_t> *) key;
         DBG << k->get_name() << " process_event_context " << std::hex << (uint64_t) k << " "
-                <<  npl::EIOToString(ctx->type) << " n " << std::dec << (ssize_t) ctx->n;
+                <<  context_type_string(ctx->type) << " n " << std::dec << (ssize_t) ctx->n;
         if (rc <= 0) {
             k->onError(error);
-        } else if (ctx->type == EIOType::READ) {
+        } else if (ctx->type == context::read) {
             if (ctx->n != 0) {
                 k->onRead(ctx->b, ctx->n);
             } else {
                 k->onDisconnect();
             }
-        } else if (ctx->type == EIOType::WRITE) {
+        } else if (ctx->type == context::write) {
             k->onWrite(ctx->b, ctx->n);
-        } else if (ctx->type == EIOType::CONNECT) {
+        } else if (ctx->type == context::connect) {
             k->onConnect();
-        } else if (ctx->type == EIOType::ACCEPT) {
+        } else if (ctx->type == context::accept) {
             k->onAccept();
         } else {
             assert(false);
@@ -248,12 +268,12 @@ struct dispatcher : public subject<uint8_t, uint8_t> {
         auto isListentingSocket = dev->is_listening_socket();
         if (e.is_write()) {
             DBG << "event::is_write, socket type " << dev->get_socket_type()
-                << " isConnected : " << isConnected;
+                    << " isConnected : " << isConnected;
             if (isClientSocket && !isConnected) {
                 // writability implies that the connection process has finished.
                 // does not mean success.. it could have failed as well.
-                auto ctx = (context *) calloc(1, sizeof(context));
-                ctx->type = EIOType::CONNECT;
+                auto ctx = (context *)calloc(1, sizeof(context));
+                ctx->type = context::connect;
                 ctx->k = dev.get();
                 contexts.push_back(ctx);
             }
@@ -270,10 +290,10 @@ struct dispatcher : public subject<uint8_t, uint8_t> {
             #endif
         } else if (e.is_read()) {
             DBG << "event::is_read, socket type " << dev->get_socket_type()
-                << " isConnected : " << isConnected;
+                    << " isConnected : " << isConnected;
             if (isListentingSocket) {
                 auto ctx = (context *) calloc(1, sizeof(context));
-                ctx->type = EIOType::ACCEPT;
+                ctx->type = context::accept;
                 ctx->k = dev.get();
                 contexts.push_back(ctx);
             } else if (isConnected) {
@@ -289,9 +309,9 @@ struct dispatcher : public subject<uint8_t, uint8_t> {
         #ifdef linux
         else if (e.is_error() || e.is_hangup()) {
             DBG << "event::is_hangup, socket type " << dev->get_socket_type()
-                << " isConnected : " << isConnected << " error " <<  strerror(errno);
+                    << " isConnected : " << isConnected << " error " <<  strerror(errno);
             auto ctx = (context *) calloc(1, sizeof(context));
-            ctx->type = EIOType::READ;
+            ctx->type = context::read;
             ctx->k = dev.get();
             ctx->n = 0;
             contexts.push_back(ctx);
@@ -301,7 +321,7 @@ struct dispatcher : public subject<uint8_t, uint8_t> {
         #if __has_include(<sys/event.h>)
         else if (e.Is_eof()) {
             DBG << "event::is_eof, socket type " << dev->get_socket_type()
-                << " isConnected : " << isConnected << " error " <<  strerror(errno);
+                    << " isConnected : " << isConnected << " error " <<  strerror(errno);
         }
         #endif
         return contexts;
@@ -329,10 +349,10 @@ struct dispatcher : public subject<uint8_t, uint8_t> {
     private:
 
     FD _event_port;
-    bool _exit_loop = false;
-    std::thread _event_thread;
     spsocket _ctrl_server;
     spsocket _ctrl_client;
+    bool _exit_loop = false;
+    std::thread _event_thread;
 };
 
 using spdispatcher = std::shared_ptr<dispatcher>;
