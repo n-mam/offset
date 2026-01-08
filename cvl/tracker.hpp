@@ -28,7 +28,7 @@ struct TrackingContext {
 
 struct Tracker {
 
-    Tracker() {}
+    Tracker() = default;
 
     ~Tracker() {
         ClearAllContexts();

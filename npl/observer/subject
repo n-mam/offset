@@ -10,7 +10,7 @@
 #include <assert.h>
 #include <iostream>
 #include <algorithm>
-#include <unordered_map>
+#include <unordered_set>
 
 #include <osl/log>
 
@@ -22,7 +22,7 @@ struct subject : public std::enable_shared_from_this<subject<T1, T2>> {
     using wpsubject = std::weak_ptr<subject<T1, T2>>;
     using spsubject = std::shared_ptr<subject<T1, T2>>;
 
-    subject(){}
+    subject() = default;
 
     subject(const std::string& name) {
         m_name = name;
@@ -257,9 +257,9 @@ struct subject : public std::enable_shared_from_this<subject<T1, T2>> {
 
     bool m_stopped = false;
     bool m_connected = false;
-    std::set<spsubject> m_observers;
     bool m_removeAllListeners = false;
     bool m_removeSelfAsListener = false;
+    std::unordered_set<spsubject> m_observers;
 };
 
 template <typename T1, typename T2>

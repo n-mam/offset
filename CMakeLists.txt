@@ -4,9 +4,12 @@ project(offset)
 
 #SET(CMAKE_VERBOSE_MAKEFILE ON)
 
+enable_testing()
+
 find_package(CURL REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(OpenSSL REQUIRED)
+find_package(GTest CONFIG REQUIRED)
 find_package(Crc32c CONFIG REQUIRED)
 find_package(OpenCV CONFIG REQUIRED)
 find_package(RapidJSON CONFIG REQUIRED)
@@ -50,7 +53,15 @@ target_link_libraries(
     Crc32c::crc32c
     opencv_tracking
     OpenSSL::Crypto
+    GTest::gtest
+    GTest::gtest_main
+    GTest::gmock
+    GTest::gmock_main
 )
+
+target_compile_definitions(Test PRIVATE ENABLE_GTEST)
+
+add_test(AllTestsInMain Test)
 
 if (WIN32)
     SET (CMAKE_CXX_FLAGS_RELEASE "/Zi /Od")

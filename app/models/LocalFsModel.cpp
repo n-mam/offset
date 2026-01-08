@@ -4,10 +4,6 @@
 
 #include <filesystem>
 
-LocalFsModel::LocalFsModel(){}
-
-LocalFsModel::~LocalFsModel(){}
-
 void LocalFsModel::QueueTransfers(bool start) {
     for (auto i = 0; i < m_model.size(); i++) {
         if (m_model[i].m_selected) {

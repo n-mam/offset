@@ -27,8 +27,8 @@ class FsModel : public QAbstractListModel {
 
     public:
 
-    FsModel();
-    ~FsModel();
+    FsModel() = default;
+    ~FsModel(){};
 
     QHash<int, QByteArray> roleNames() const override;
     int rowCount(const QModelIndex& parent = QModelIndex()) const override;

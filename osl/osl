@@ -61,7 +61,7 @@ inline auto get_extention_pfn(GUID guid, FD fd) {
     int rc = WSAIoctl(
         (SOCKET)fd,
         SIO_GET_EXTENSION_FUNCTION_POINTER,
-        &guid, sizeof(guid),
+        &guid, sizeof(GUID),
         &pfn, sizeof(pfn),
         &n, NULL, NULL);
     assert(rc == 0);

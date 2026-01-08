@@ -21,6 +21,7 @@ using FD = HANDLE;
 using FD = int;
 using SOCKET = int;
 #define closesocket close
+#define INVALID_HANDLE_VALUE -1
 #endif
 
 namespace npl {
@@ -52,14 +53,13 @@ template<typename T>
 struct file_device : public subject<uint8_t, uint8_t> {
 
     T _path;
-    FD _fd_sync;
-    FD _fd_async;
+    FD _fd_sync = INVALID_HANDLE_VALUE;
+    FD _fd_async = INVALID_HANDLE_VALUE;
 
-    file_device(){};
+    file_device() = default;
     file_device(const std::string& name) : subject(name) {};
 
     file_device(const T& path, bool create) : subject("file") {
-        mark_connected(false);
         #ifdef _WIN32
         if constexpr (std::is_same<T, std::wstring>::value)
             _fd_async = CreateFileW(
@@ -119,7 +119,6 @@ struct file_device : public subject<uint8_t, uint8_t> {
         }
         #endif
         _path = path;
-        mark_connected(true);
         _device_type = device::file;
     }
 
@@ -139,9 +138,21 @@ struct file_device : public subject<uint8_t, uint8_t> {
         return _device_type;
     }
 
+    auto is_open() {
+        return (is_sync_open() && is_async_open());
+    }
+
+    auto is_sync_open() {
+        return (_fd_sync != INVALID_HANDLE_VALUE);
+    }
+
+    auto is_async_open() {
+        return (_fd_async != INVALID_HANDLE_VALUE);
+    }
+
     virtual void * read_async(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override {
-        if (!is_connected()) {
-            ERR << get_name() << " read_async not connected";
+        if (!is_async_open()) {
+            ERR << get_name() << " read_async not open";
             return nullptr;
         }
         context *ctx = (context *) calloc(1, sizeof(context));
@@ -177,8 +188,8 @@ struct file_device : public subject<uint8_t, uint8_t> {
     }
 
     virtual bool write_async(const uint8_t *b = nullptr , size_t l = 0, uint64_t o = 0) override {
-        if (!is_connected()) {
-            ERR << get_name() << " write_async not connected";
+        if (!is_async_open()) {
+            ERR << get_name() << " write_async not open";
             return false;
         }
         if (!b || !l) {
@@ -214,6 +225,10 @@ struct file_device : public subject<uint8_t, uint8_t> {
 
     #ifdef _WIN32
     virtual int32_t read_sync(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override {
+        if (!is_sync_open()) {
+            ERR << get_name() << " write_async not open";
+            return false;
+        }
         DWORD nBytesRead = 0;
         LARGE_INTEGER offset;
         offset.QuadPart = o;
@@ -228,6 +243,10 @@ struct file_device : public subject<uint8_t, uint8_t> {
     }
 
     virtual int32_t write_sync(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override {
+        if (!is_sync_open()) {
+            ERR << get_name() << " write_async not open";
+            return false;
+        }
         if (!b || !l) {
             ERR << get_name() << " write_sync invalid arguments";
             return false;

@@ -10,8 +10,6 @@ TransferManager::TransferManager() {
     connect(this, &TransferManager::transferSuccessful, this, &TransferManager::TransferFinished);
 }
 
-TransferManager::~TransferManager(){}
-
 QHash<int, QByteArray> TransferManager::roleNames() const {
     static auto roles = QAbstractListModel::roleNames();
     roles.insert(EType, "type");

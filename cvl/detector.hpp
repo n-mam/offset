@@ -53,7 +53,7 @@ struct DetectionResult {
 
 struct Detector {
 
-    Detector() {}
+    Detector() = default;
 
     Detector(const std::string& config, const std::string& weight) {
         _configFile = getModelRootDir() + config;
@@ -284,7 +284,7 @@ struct FaceRecognizer {
         }
     }
 
-    ~FaceRecognizer(){}
+    ~FaceRecognizer() = default;
 
     auto getTagFromId(int id) {
         std::string tag;

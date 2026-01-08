@@ -15,8 +15,8 @@ class RemoteFsModel : public FsModel {
 
     public:
 
-    RemoteFsModel();
-    ~RemoteFsModel();
+    RemoteFsModel() = default;
+    ~RemoteFsModel(){};
 
     Q_PROPERTY(bool connected READ getConnected WRITE setConnected NOTIFY connected);
 

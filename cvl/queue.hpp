@@ -11,7 +11,7 @@ namespace cvl {
 template <typename T, int N = 50>
 struct queue {
 
-    queue(){}
+    queue() = default;
     ~queue(){}
 
     auto enqueue(const T& frame) {

@@ -1,9 +1,5 @@
 #include <FsModel.h>
 
-FsModel::FsModel(){}
-
-FsModel::~FsModel(){}
-
 QHash<int, QByteArray> FsModel::roleNames() const {
     static auto roles = QAbstractListModel::roleNames();
     roles.insert(EFileName, "fileName");

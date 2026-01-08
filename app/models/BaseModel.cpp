@@ -3,10 +3,6 @@
 #include <osl/log>
 #include <BaseModel.h>
 
-BaseModel::BaseModel(){}
-
-BaseModel::~BaseModel(){}
-
 QHash<int, QByteArray> BaseModel::roleNames() const {
     static auto roles = QAbstractItemModel::roleNames();
     roles.insert(EDepth, "depth");

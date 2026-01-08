@@ -39,7 +39,7 @@ struct socket_device : public FileDeviceType {
 
     socket_device(const std::string& name) : file_device(name) {
         _device_type = device::socket;
-        _fd_async = (FD)::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+        _fd_async = (FD) ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     }
 
     socket_device(FD socket) {
@@ -97,8 +97,8 @@ struct socket_device : public FileDeviceType {
         sa.sin_family = AF_INET;
         inet_pton(AF_INET, m_host.c_str(), &sa.sin_addr);
         sa.sin_port = htons(m_port);
-        auto ConnectEx = osl::get_extention_pfn(WSAID_CONNECTEX, _fd_async);
-        bool fRet = ((LPFN_CONNECTEX)ConnectEx)(
+        static void *pfn_ConnectEx = osl::get_extention_pfn(WSAID_CONNECTEX, _fd_async);
+        bool fRet = ((LPFN_CONNECTEX)pfn_ConnectEx)(
                 (SOCKET)_fd_async,
                 (SOCKADDR*) &sa,
                 sizeof(sa),
@@ -157,20 +157,20 @@ struct socket_device : public FileDeviceType {
 
     #ifdef _WIN32
     virtual void accept_new_connection(void) {
-        auto AcceptEx = osl::get_extention_pfn(WSAID_ACCEPTEX, _fd_async);
+        static void *pfn_acceptEx = osl::get_extention_pfn(WSAID_ACCEPTEX, _fd_async);
         uint8_t *b = (uint8_t *)calloc(1, 2 * (sizeof(SOCKADDR_STORAGE) + 16) + sizeof(context));
         ((context *)b)->type = context::accept;
-        m_accepted_socket = (FD)::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+        m_accepted_socket = (FD) ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
         DWORD bytesReceived;
-        bool rc = ((LPFN_ACCEPTEX)AcceptEx)(
-            (SOCKET)_fd_async,
-            (SOCKET)m_accepted_socket,
-            b + sizeof(context),
-            0,
-            sizeof(SOCKADDR_STORAGE) + 16,
-            sizeof(SOCKADDR_STORAGE) + 16,
-            &bytesReceived,
-            (LPOVERLAPPED)b);
+        bool rc = ((LPFN_ACCEPTEX)pfn_acceptEx)(
+                (SOCKET)_fd_async,
+                (SOCKET)m_accepted_socket,
+                b + sizeof(context),
+                0,
+                sizeof(SOCKADDR_STORAGE) + 16,
+                sizeof(SOCKADDR_STORAGE) + 16,
+                &bytesReceived,
+                (LPOVERLAPPED)b);
     }
     #endif
 
@@ -320,7 +320,7 @@ struct socket_device : public FileDeviceType {
         #ifndef _WIN32
         struct sockaddr_storage ca;
         socklen_t alen = sizeof(struct sockaddr_storage);
-        m_accepted_socket = (FD)accept((SOCKET)_fd_async, (struct sockaddr *) &ca, &alen);
+        m_accepted_socket = (FD) ::accept((SOCKET)_fd_async, (struct sockaddr *) &ca, &alen);
         if (m_accepted_socket == -1) {
             DBG << "accept failed. error : " << strerror(errno) << " " << m_type;
             return;

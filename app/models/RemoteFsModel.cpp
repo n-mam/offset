@@ -2,9 +2,6 @@
 #include <LocalFsModel.h>
 #include <RemoteFsModel.h>
 
-RemoteFsModel::RemoteFsModel(){}
-RemoteFsModel::~RemoteFsModel(){}
-
 bool RemoteFsModel::Connect(QString host, QString port, QString user, QString password, QString protocol) {
     m_port = port.toInt();
     m_host = host.toStdString();

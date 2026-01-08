@@ -6,8 +6,8 @@
 class AppConfig :public QObject {
     Q_OBJECT
     public:
-    AppConfig();
-    ~AppConfig();
+    AppConfig() = default;
+    ~AppConfig(){};
     Q_INVOKABLE QString readCameraConfiguration(QString cfgPath);
 };
 

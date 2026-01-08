@@ -7,14 +7,13 @@
 #include <cvl/cvl>
 #include <osl/lcs>
 
-void show_usage(void);
+#include "gtest/gtest.h"
 
 int main(int argc, char *argv[]) {
+    testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
+    //todo: merge everything below in gtest
     auto arguments = osl::GetArgumentsVector(argc, argv);
-    if (!arguments.size()) {
-        show_usage();
-        return 0;
-    }
     osl::log::setLogLevel(osl::log::info);
     osl::log::setLogSink<std::string>(
         [](int level, int key, auto log) {
@@ -38,11 +37,38 @@ int main(int argc, char *argv[]) {
     } else if (ns == "osl") {
        osl::lcs_tests();
     } else {
-        show_usage();
+        std::cout << "test npl ftp <host> <port> <user> <pass>" << std::endl;
     }
     return 0;
 }
 
-void show_usage(void) {
-    std::cout << "test npl ftp <host> <port> <user> <pass>" << std::endl;
+#if defined(ENABLE_GTEST)
+
+struct DispatcherFixture : public testing::Test {
+    protected:
+    void SetUp() override {
+        #ifdef _WIN32
+        WSADATA wsaData;
+        auto rc = WSAStartup(MAKEWORD(2, 2), &wsaData);
+        ASSERT_EQ(0, rc);
+        #endif
+    }
+    void TearDown() override {
+        #ifdef _WIN32
+        auto rc = WSACleanup();
+        EXPECT_EQ(0, rc);
+        #endif
+    }
+};
+
+TEST_F(DispatcherFixture, Contruction) {
+    // dispatcher needs to be a shared pointer
+    // for the subsequent weak_from_this to work
+    auto d = std::make_shared<npl::dispatcher>();
+    d->initialize_control();
+    while (!d->is_connected()) {}
+    ASSERT_EQ(d->is_connected(), true);
+    d.reset();
 }
+
+#endif

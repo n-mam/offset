@@ -16,7 +16,7 @@ namespace npl {
 
 struct listener : public subject<uint8_t, uint8_t> {
 
-    listener(){}
+    listener() = default;
     virtual ~listener(){}
 
     virtual void onConnect(void) override {

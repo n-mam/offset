@@ -44,7 +44,7 @@ class TransferManager : public QAbstractListModel {
     };
 
     TransferManager();
-    ~TransferManager();
+    ~TransferManager(){};
 
     QHash<int, QByteArray> roleNames() const override;
     int rowCount(const QModelIndex& parent = QModelIndex()) const override;

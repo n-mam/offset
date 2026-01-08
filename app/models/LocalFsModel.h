@@ -11,8 +11,8 @@ class LocalFsModel : public FsModel {
 
     public:
 
-    LocalFsModel();
-    ~LocalFsModel();
+    LocalFsModel() = default;
+    ~LocalFsModel(){};
 
     Q_INVOKABLE virtual void RemoveFile(QString path) override;
     Q_INVOKABLE virtual void RemoveDirectory(QString path) override;

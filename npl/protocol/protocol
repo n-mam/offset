@@ -60,7 +60,7 @@ struct protocol : public subject<T1, T2> {
         EStateDisconnected = 0xFF
     };
 
-    protocol(){};
+    protocol() = default;
 
     protocol(const std::string& name) : subject<T1, T2>(name) {}
 
