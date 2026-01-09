@@ -200,12 +200,12 @@ struct websocket_server : public http_client {
         return true; //todo
     }
 
-    virtual void onAccept(void) override {
+    virtual void onAccept(void *ctx) override {
         auto sock = get_target_socket_device();
         if (sock) {
             auto aso = std::make_shared<websocket_server>("DC-AS");
             aso->set_client_message_callback(iClientMessageCallback);
-            sock->get_connected_client()->add_event_listener(aso);
+            sock->get_connected_client(((context *)ctx)->as)->add_event_listener(aso);
         }
     }
 

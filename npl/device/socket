@@ -12,6 +12,7 @@
 #include <memory>
 #include <string>
 #include <functional>
+#include <unordered_map>
 
 namespace npl {
 
@@ -160,11 +161,11 @@ struct socket_device : public FileDeviceType {
         static void *pfn_acceptEx = osl::get_extention_pfn(WSAID_ACCEPTEX, _fd_async);
         uint8_t *b = (uint8_t *)calloc(1, 2 * (sizeof(SOCKADDR_STORAGE) + 16) + sizeof(context));
         ((context *)b)->type = context::accept;
-        m_accepted_socket = (FD) ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+        ((context *)b)->as = (FD) ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
         DWORD bytesReceived;
         bool rc = ((LPFN_ACCEPTEX)pfn_acceptEx)(
                 (SOCKET)_fd_async,
-                (SOCKET)m_accepted_socket,
+                (SOCKET)((context *)b)->as,
                 b + sizeof(context),
                 0,
                 sizeof(SOCKADDR_STORAGE) + 16,
@@ -315,27 +316,28 @@ struct socket_device : public FileDeviceType {
         }
     }
 
-    virtual void onAccept(void) override {
+    virtual void onAccept(void *ctx) override {
         assert(is_listening_socket());
         #ifndef _WIN32
         struct sockaddr_storage ca;
         socklen_t alen = sizeof(struct sockaddr_storage);
-        m_accepted_socket = (FD) ::accept((SOCKET)_fd_async, (struct sockaddr *) &ca, &alen);
+        ((context *)ctx)->as = (FD) ::accept((SOCKET)_fd_async, (struct sockaddr *) &ca, &alen);
         if (m_accepted_socket == -1) {
             DBG << "accept failed. error : " << strerror(errno) << " " << m_type;
             return;
         }
-        set_socket_blocking_enabled(m_accepted_socket, false);
+        set_socket_blocking_enabled(((context *)ctx)->as, false);
         #endif
-        m_connected_client.reset();
-        m_connected_client = std::make_shared<socket_device>(m_accepted_socket);
-        m_connected_client->m_type = AcceptedSocket;
-        m_connected_client->mark_connected(true);
-        get_last_target(shared_from_this())->add_event_listener(m_connected_client);
-        file_device::onAccept();
+        auto connected_client = std::make_shared<socket_device>(((context *)ctx)->as);
+        connected_client->m_type = AcceptedSocket;
+        connected_client->mark_connected(true);
+        as_map.insert({((context *)ctx)->as, connected_client});
+        get_last_target(shared_from_this())->add_event_listener(connected_client);
+        file_device::onAccept(ctx);
         #ifdef _WIN32
-        m_connected_client->read_async();
-        setsockopt((SOCKET)m_accepted_socket, SOL_SOCKET, SO_UPDATE_ACCEPT_CONTEXT, (char*)&(_fd_async), sizeof(_fd_async));
+        connected_client->read_async();
+        setsockopt((SOCKET)(((context *)ctx)->as),
+            SOL_SOCKET, SO_UPDATE_ACCEPT_CONTEXT, (char*)&(_fd_async), sizeof(_fd_async));
         accept_new_connection();
         #endif
     }
@@ -449,8 +451,8 @@ struct socket_device : public FileDeviceType {
         return m_port;
     }
 
-    auto get_connected_client(void) {
-        return m_connected_client;
+    auto get_connected_client(FD sock) {
+        return as_map[sock];
     }
 
     auto get_ssl_object(void) {
@@ -462,7 +464,6 @@ struct socket_device : public FileDeviceType {
     int m_port = 0;
     std::string m_host;
     tls m_tls = tls::no;
-    FD m_accepted_socket;
     SSL *m_ssl = nullptr;
     BIO *m_read_bio = nullptr;
     std::string m_tls_version;
@@ -471,7 +472,7 @@ struct socket_device : public FileDeviceType {
     SSL_CTX *m_ssl_ctx = nullptr;
     bool m_handshake_done = false;
     TOnHandshake m_onHandShake = nullptr;
-    spsocket m_connected_client = nullptr;
+    std::unordered_map<FD, spsocket> as_map;
 };
 
 using spsocket = std::shared_ptr<socket_device>;

@@ -43,10 +43,11 @@ struct context {
         accept,
         connect
     } type;
+    FD as;
     void *k;
-    const uint8_t *b;
-    unsigned long n;
     bool bFree;
+    unsigned long n;
+    const uint8_t *b;
 };
 
 template<typename T>
@@ -176,7 +177,7 @@ struct file_device : public subject<uint8_t, uint8_t> {
         #else
         ctx->n = read(_fd_async, (void *) ctx->b, l);
         DBG << get_name() << " read() " << (ssize_t) ctx->n
-            << " error : " << strerror(errno);
+                << " error : " << strerror(errno);
         if ((ssize_t)ctx->n == -1) {
             if (!b) {
                 free ((void *)ctx->b);
@@ -257,8 +258,7 @@ struct file_device : public subject<uint8_t, uint8_t> {
         BOOL fRet = SetFilePointerEx(_fd_sync, offset, NULL, FILE_BEGIN);
         if (fRet) {
             fRet = WriteFile(_fd_sync, (LPVOID)b, static_cast<DWORD>(l), &nBytesWritten, NULL);
-            if (fRet == FALSE)
-            {
+            if (fRet == FALSE) {
                 ERR << get_name() << " write_sync WriteFile failed: " << GetLastError();
             }
         }

@@ -100,9 +100,9 @@ struct subject : public std::enable_shared_from_this<subject<T1, T2>> {
         NotifyError(error);
     }
 
-    virtual void onAccept(void) {
+    virtual void onAccept(void *ctx) {
         std::lock_guard<std::mutex> lg(m_lock);
-        NotifyAccept();
+        NotifyAccept(ctx);
     }
 
     virtual void onConnect(void) {
@@ -237,9 +237,9 @@ struct subject : public std::enable_shared_from_this<subject<T1, T2>> {
         process_listeners_marked_for_removal();
     }
 
-    virtual void NotifyAccept(void) {
+    virtual void NotifyAccept(void *ctx) {
         for (auto& observer : m_observers) {
-            observer->onAccept();
+            observer->onAccept(ctx);
         }
         process_listeners_marked_for_removal();
     }

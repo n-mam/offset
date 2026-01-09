@@ -109,7 +109,7 @@ struct dispatcher : public subject<uint8_t, uint8_t> {
         _ctrl_server->set_host_and_port("0.0.0.0", 0);
         auto ls = std::make_shared<listener>();
         ls->setCallback<TListenerOnAccept>({
-            [this] () {
+            [this] (void *ctx) {
                 auto aso = std::make_shared<listener>();
                 aso->setCallback<TListenerOnRead>({
                     [this, m = std::string()](const uint8_t *b, size_t n) mutable {
@@ -121,7 +121,7 @@ struct dispatcher : public subject<uint8_t, uint8_t> {
                             m.clear();
                         }
                     }});
-                this->_ctrl_server->get_connected_client()->add_event_listener(aso);
+                this->_ctrl_server->get_connected_client(((context *)ctx)->as)->add_event_listener(aso);
                 this->mark_connected(true);
             }});
         this->add_event_listener(_ctrl_server)->add_event_listener(ls);
@@ -150,7 +150,7 @@ struct dispatcher : public subject<uint8_t, uint8_t> {
         auto port = CreateIoCompletionPort(
                 device->_fd_async,
                 _event_port,
-                (ULONG_PTR) device.get(),
+                (ULONG_PTR)device.get(),
                 0);
         assert(port);
         #endif
@@ -179,8 +179,8 @@ struct dispatcher : public subject<uint8_t, uint8_t> {
             if (_exit_loop) break;
             if (!rc) {
                 error = GetLastError();
-                DBG << "GQCS failed : " << error << " " <<
-                        ((subject<uint8_t, uint8_t> *)k)->get_name();
+                DBG << "GQCS failed : " << error << " "
+                        << ((subject<uint8_t, uint8_t> *)k)->get_name();
             }
             if (n == 0 && k == 0 && ol == 0) break;
             #elif linux
@@ -191,18 +191,18 @@ struct dispatcher : public subject<uint8_t, uint8_t> {
             if (rc < 0) {
                 error = errno;
                 if (errno == EINTR) continue;
-                DBG << "epoll_wait failed : " << strerror(error) << " " << (k ?
-                    ((subject<uint8_t, uint8_t> *)k)->get_name() : "");
+                DBG << "epoll_wait failed : " << strerror(error) << " "
+                        << (k ? ((subject<uint8_t, uint8_t> *)k)->get_name() : "");
             }
             Event e {ee.events};
             #elif __has_include(<sys/event.h>)
-            struct kevent	ke;
+            struct kevent ke;
             rc = kevent(_event_port, NULL, 0, &ke,	1, nullptr);
             if (_exit_loop) break;
             if (rc < 0) {
                 error = errno;
-                DBG << "kevent failed : " << strerror(error) << " " <<
-                        ((subject<uint8_t, uint8_t> *)k)->get_name();
+                DBG << "kevent failed : " << strerror(error) << " "
+                        << ((subject<uint8_t, uint8_t> *)k)->get_name();
                 break;
             }
             k = ke.udata;
@@ -248,7 +248,7 @@ struct dispatcher : public subject<uint8_t, uint8_t> {
         } else if (ctx->type == context::connect) {
             k->onConnect();
         } else if (ctx->type == context::accept) {
-            k->onAccept();
+            k->onAccept(ctx);
         } else {
             assert(false);
         }
