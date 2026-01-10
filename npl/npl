@@ -22,7 +22,7 @@ inline auto make_ftp(const std::string& host, int port, tls tls = tls::no) {
     auto cc = std::make_shared<socket_device>("sock-cc");
     auto success = cc->set_host_and_port(host, port);
     if (success) {
-        cc->set_tls(tls);
+        cc->m_tls = tls;
         ftp = std::make_shared<npl::ftp>("prot-ftp");
         getSharedInstance<dispatcher>()->add_event_listener(cc)->add_event_listener(ftp);
     } else {
@@ -32,12 +32,12 @@ inline auto make_ftp(const std::string& host, int port, tls tls = tls::no) {
 }
 
 inline auto make_ws_server(const std::string& host,
-            int port, tls tls = tls::no, TOnClientMessageCbk cbk = nullptr) {
+        int port, tls tls = tls::no, TOnClientMessageCbk cbk = nullptr) {
     SPProtocolWSServer ls;
     auto cc = std::make_shared<socket_device>("ws-cc");
     auto success = cc->set_host_and_port(host, port);
     if (success) {
-        cc->set_tls(tls);
+        cc->m_tls = tls;
         ls = std::make_shared<websocket_server>("ws-ls");
         ls->set_client_message_callback(cbk);
         getSharedInstance<dispatcher>()->add_event_listener(cc)->add_event_listener(ls);
@@ -94,7 +94,7 @@ inline void test_ws_server(const std::string& host, int port) {
 }
 
 inline void test_ftp_client(const std::string& host, const std::string& port,
-            const std::string& user, const std::string& pass) {
+        const std::string& user, const std::string& pass) {
     auto ftp = npl::make_ftp(host, std::stoi(port), npl::tls::yes);
     ftp->set_credentials(user, pass);
     ftp->start_protocol_client();

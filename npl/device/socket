@@ -4,6 +4,7 @@
 #include <singleton>
 #include <device/file>
 #include <osl/osl>
+#include <observer/listener>
 
 #include <openssl/ssl.h>
 #include <openssl/err.h>
@@ -322,22 +323,23 @@ struct socket_device : public FileDeviceType {
         struct sockaddr_storage ca;
         socklen_t alen = sizeof(struct sockaddr_storage);
         ((context *)ctx)->as = (FD) ::accept((SOCKET)_fd_async, (struct sockaddr *) &ca, &alen);
-        if (m_accepted_socket == -1) {
+        if (((context *)ctx)->as == -1) {
             DBG << "accept failed. error : " << strerror(errno) << " " << m_type;
             return;
         }
         set_socket_blocking_enabled(((context *)ctx)->as, false);
-        #endif
-        auto connected_client = std::make_shared<socket_device>(((context *)ctx)->as);
-        connected_client->m_type = AcceptedSocket;
-        connected_client->mark_connected(true);
-        as_map.insert({((context *)ctx)->as, connected_client});
-        get_last_target(shared_from_this())->add_event_listener(connected_client);
-        file_device::onAccept(ctx);
-        #ifdef _WIN32
-        connected_client->read_async();
+        #else
         setsockopt((SOCKET)(((context *)ctx)->as),
             SOL_SOCKET, SO_UPDATE_ACCEPT_CONTEXT, (char*)&(_fd_async), sizeof(_fd_async));
+        #endif
+        auto accepted_client = std::make_shared<socket_device>(((context *)ctx)->as);
+        accepted_client->m_type = AcceptedSocket;
+        accepted_client->mark_connected(true);
+        as_map.insert({((context *)ctx)->as, accepted_client});
+        get_last_target(shared_from_this())->add_event_listener(accepted_client);
+        file_device::onAccept(ctx);
+        #ifdef _WIN32
+        accepted_client->read_async();
         accept_new_connection();
         #endif
     }
@@ -435,23 +437,7 @@ struct socket_device : public FileDeviceType {
         return false;
     }
 
-    virtual tls get_tls(void) {
-        return m_tls;
-    }
-
-    virtual void set_tls(tls tls) {
-        m_tls = tls;
-    }
-
-    auto get_host(void) {
-        return m_host;
-    }
-
-    virtual int get_port(void) {
-        return m_port;
-    }
-
-    auto get_connected_client(FD sock) {
+    auto get_accepted_client(FD sock) {
         return as_map[sock];
     }
 
@@ -459,11 +445,12 @@ struct socket_device : public FileDeviceType {
         return m_ssl;
     }
 
-    protected:
-
     int m_port = 0;
     std::string m_host;
     tls m_tls = tls::no;
+
+    protected:
+
     SSL *m_ssl = nullptr;
     BIO *m_read_bio = nullptr;
     std::string m_tls_version;
@@ -477,6 +464,24 @@ struct socket_device : public FileDeviceType {
 
 using spsocket = std::shared_ptr<socket_device>;
 using wpsocket = std::weak_ptr<socket_device>;
+
+inline auto make_server(const std::string& host, int port, TListenerOnAccept cbk_accept, spsubject d) {
+    auto server = std::make_shared<socket_device>("server");
+    server->set_host_and_port(host, port);
+    auto ls = std::make_shared<listener>();
+    ls->setCallback<TListenerOnAccept>(cbk_accept);
+    d->add_event_listener(server)->add_event_listener(ls);
+    server->start_socket_server();
+    return server;
+}
+
+inline auto make_client(const std::string& host, int port, spsubject d) {
+    auto client = std::make_shared<socket_device>("client");
+    client->set_host_and_port(host, port);
+    d->add_event_listener(client);
+    client->start_socket_client();
+    return client;
+}
 
 } // namespace npl
 

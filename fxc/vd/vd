@@ -8,7 +8,7 @@
 namespace fxc {
 
 //create a raw image from source at ofset o and write to target
-auto image_copy_from(npl::spfile source, npl::spsubject<uint8_t, uint8_t> target, TProgressCallback cbk = nullptr) {
+auto image_copy_from(npl::spfile source, npl::spsubject target, TProgressCallback cbk = nullptr) {
     if (!osl::AllowExtendedDasdIO(source->_fd_sync)) {
         LOG << "AllowExtendedDasdIO failed, error : " << GetLastError();
     }
@@ -60,7 +60,7 @@ auto image_copy_from(npl::spfile source, npl::spsubject<uint8_t, uint8_t> target
 }
 
 //create base parent vhd from a volume/snapshot block device
-auto create_base_vhd(const std::wstring& volume, npl::spsubject<uint8_t, uint8_t> target, TProgressCallback cbk) {
+auto create_base_vhd(const std::wstring& volume, npl::spsubject target, TProgressCallback cbk) {
     auto source = npl::make_file<std::wstring>(volume, false);
     assert(source);
     auto nvdb = osl::GetNTFSVolumeData(source->_fd_sync);
@@ -177,7 +177,7 @@ auto create_base_vhd(const std::wstring& volume, npl::spsubject<uint8_t, uint8_t
 
 //create differencing child vhd using either RCT CBT ranges (disk level) or volume level CBT
 auto create_child_vhd(const std::wstring& source, const std::wstring& parent,
-        npl::spsubject<uint8_t, uint8_t> target, const std::wstring rctid) {
+        npl::spsubject target, const std::wstring rctid) {
 
     auto base = std::make_shared<vhd>(parent);
     auto diff = std::make_shared<vhd>(base->getLogicalDiskLength(),
@@ -251,7 +251,7 @@ auto create_child_vhd(const std::wstring& source, const std::wstring& parent,
     return true;
 }
 
-auto create_fixed_vhd(const std::wstring& device, npl::spsubject<uint8_t, uint8_t> target, TProgressCallback cbk) {
+auto create_fixed_vhd(const std::wstring& device, npl::spsubject target, TProgressCallback cbk) {
     auto source = npl::make_file<std::wstring>(device, false);
     assert(source);
     uint64_t length = osl::GetBlockDeviceLength(source->_fd_sync);
@@ -276,7 +276,7 @@ auto create_fixed_vhd(const std::wstring& device, npl::spsubject<uint8_t, uint8_
     target.reset();
 }
 
-auto create_raw_image(const std::wstring& device, npl::spsubject<uint8_t, uint8_t> target, TProgressCallback cbk) {
+auto create_raw_image(const std::wstring& device, npl::spsubject target, TProgressCallback cbk) {
     auto source = npl::make_file<std::wstring>(device, false);
     assert(source);
     uint64_t length = osl::GetBlockDeviceLength(source->_fd_sync);
@@ -291,7 +291,7 @@ auto create_raw_image(const std::wstring& device, npl::spsubject<uint8_t, uint8_
 }
 
 //create base parent vhdx from a volume/snapshot block device
-void create_base_vhdx(const std::wstring& volume, npl::spsubject<uint8_t, uint8_t> target, TProgressCallback cbk) {
+void create_base_vhdx(const std::wstring& volume, npl::spsubject target, TProgressCallback cbk) {
     auto source = npl::make_file<std::wstring>(volume, false);
     assert(source);
     auto nvdb = osl::GetNTFSVolumeData(source->_fd_sync);
@@ -436,7 +436,7 @@ void create_base_vhdx(const std::wstring& volume, npl::spsubject<uint8_t, uint8_
 }
 
 //create differencing child vhd using either RCT CBT ranges (disk level) or volume level CBT
-bool create_child_vhdx(const std::wstring& source, const std::wstring& parent, npl::spsubject<uint8_t, uint8_t> target, const std::wstring rctid) {
+bool create_child_vhdx(const std::wstring& source, const std::wstring& parent, npl::spsubject target, const std::wstring rctid) {
     auto base = std::make_shared<vhdx>(parent);
     auto diff = std::make_shared<vhdx>(base->getLogicalDiskLength(),
         base->getBlockSize(), format::differencing, base.get());
@@ -543,7 +543,7 @@ auto get_virtual_disk(const std::wstring& path) {
 void createBaseVirtualDiskFromSource(
     const std::wstring& format,
     const std::wstring& source,
-    npl::spsubject<uint8_t, uint8_t> target,
+    npl::spsubject target,
     TProgressCallback cbk) {
         if (format == L"d-vhd") {
             fxc::create_base_vhd(source, target, cbk);
@@ -560,7 +560,7 @@ void createIncrementalVirtualDiskFromSource(
     const std::wstring& format,
     const std::wstring& source,
     const std::wstring& parent,
-    npl::spsubject<uint8_t, uint8_t> target,
+    npl::spsubject target,
     const std::wstring& rctid) {
         if (format == L"vhd") {
             fxc::create_child_vhd(

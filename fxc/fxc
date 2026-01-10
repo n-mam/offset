@@ -46,7 +46,7 @@ auto getExtentionForFormat(const std::wstring& format) {
 }
 
 auto getTargetForDestination(const std::wstring& destination, const std::wstring& name, const std::wstring& format) {
-    npl::spsubject<uint8_t, uint8_t> target;
+    npl::spsubject target;
     std::filesystem::path destinationPath(destination);
     if (std::filesystem::is_directory(destinationPath)) {
         target = npl::make_file<std::wstring>(destination + L"\\" + name + L"." +

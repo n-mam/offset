@@ -1,6 +1,7 @@
 #ifndef SINGLETON_H
 #define SINGLETON_H
 
+#include <mutex>
 #include <memory>
 #include <utility>
 
@@ -15,5 +16,31 @@ auto getSharedInstance(Args&&... args) {
     static auto ss_instance = std::make_shared<T>(std::forward<Args>(args)...);
     return ss_instance;
 }
+
+template<typename T>
+struct singleton {
+    template<typename ...Args>
+    static std::shared_ptr<T> getInstance(Args&& ...args) {
+        std::lock_guard<std::mutex> lg(_mux);
+        auto s_instance = w_instance.lock();
+        if (!s_instance) {
+            s_instance = std::make_shared<T>(std::forward<Args>(args)...);
+            w_instance = s_instance;
+        }
+        return s_instance;
+    }
+    static void destroy() {
+        std::lock_guard<std::mutex> lg(_mux);
+        w_instance.reset();
+    }
+    private:
+    static std::mutex _mux;
+    static std::weak_ptr<T> w_instance;
+};
+
+template<typename T>
+std::mutex singleton<T>::_mux;
+template<typename T>
+std::weak_ptr<T> singleton<T>::w_instance;
 
 #endif

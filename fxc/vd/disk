@@ -36,7 +36,7 @@ struct disk : public npl::subject<uint8_t, uint8_t> {
     GptHdrRev1 alignas(512) iGptHdr = { 0 };
     GPE alignas(512) iPartitions[4] = { 0 };
 
-    npl::spsubject<uint8_t, uint8_t> iFile = nullptr;
+    npl::spsubject iFile = nullptr;
     std::unique_ptr<uint8_t []> iRawSectors = nullptr;
     std::unique_ptr<uint8_t []> iPayloadBlock = nullptr;
 

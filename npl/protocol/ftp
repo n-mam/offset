@@ -406,7 +406,7 @@ struct ftp : public protocol<uint8_t, uint8_t> {
                 std::cout << "No port found in the response!" << std::endl;
             }
             auto cc = std::static_pointer_cast<socket_device>(m_target.lock());
-            m_dc_host = cc->get_host();
+            m_dc_host = cc->m_host;
         }
     }
 

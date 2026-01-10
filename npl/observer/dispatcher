@@ -68,68 +68,75 @@ struct dispatcher : public subject<uint8_t, uint8_t> {
 
     dispatcher(const std::string& name = "D") : subject(name) {
         #if __has_include(<sys/event.h>)
-        _event_port = kqueue();
-        DBG << "kqueue _event_port " << _event_port << ", " << strerror(errno);
+        _port = kqueue();
+        DBG << "kqueue _port " << _port << ", " << strerror(errno);
         #elif linux
-        _event_port = epoll_create1(0);
-        DBG << "epoll _event_port " << _event_port << ", " << strerror(errno);
+        _port = epoll_create1(0);
+        DBG << "epoll _port " << _port << ", " << strerror(errno);
         #elif _WIN32
-        _event_port = CreateIoCompletionPort(INVALID_HANDLE_VALUE, 0, 0, 0);
-        DBG << "iocp _event_port " << _event_port << ", " << GetLastError();
+        _port = CreateIoCompletionPort(INVALID_HANDLE_VALUE, 0, 0, 0);
+        DBG << "iocp _port " << _port << ", " << GetLastError();
         #endif
-        if (!_event_thread.joinable()) {
-            _event_thread = std::thread(&dispatcher::event_loop, this);
+        if (!_thread.joinable()) {
+            _thread = std::thread(&dispatcher::event_loop, this);
         }
     }
 
     ~dispatcher() {
-        _exit_loop = true;
-        if (_ctrl_client) {
-            if (_ctrl_client->is_connected()) {
-                _ctrl_client->stop_socket(true);
+        if (_client) {
+            if (_client->is_connected()) {
+                _client->stop_socket(true);
             }
         }
-        _event_thread.join();
-        if (_ctrl_server) {
-            _ctrl_server->stop_socket();
+        if (_server) {
+            _server->stop_socket();
         }
+        #ifdef _WIN32
+        PostQueuedCompletionStatus(_port, 0, 0, 0);
+        #else
+        _stop = true; //todo
+        #endif
+        _thread.join();
         #ifndef _WIN32
-        if (_event_port >= 0) {
-            close(_event_port), _event_port = 0;
+        if (_port >= 0) {
+            close(_port), _port = 0;
         }
         #else
-        if (_event_port != INVALID_HANDLE_VALUE) {
-            CloseHandle(_event_port), _event_port = INVALID_HANDLE_VALUE;
+        if (_port != INVALID_HANDLE_VALUE) {
+            CloseHandle(_port), _port = INVALID_HANDLE_VALUE;
         }
         #endif
     }
 
-    void initialize_control(void) {
-        _ctrl_server = std::make_shared<socket_device>("DC-LS");
-        _ctrl_server->set_host_and_port("0.0.0.0", 0);
-        auto ls = std::make_shared<listener>();
-        ls->setCallback<TListenerOnAccept>({
-            [this] (void *ctx) {
+    inline auto has_control_initialized() {
+        // accept completion on server should be queued before
+        // the connect completion of the client. However, we check
+        // both. this->is_connected happens in the server's onAccept
+        return (_client->is_connected() && this->is_connected());
+    }
+
+    inline auto initialize_control(void) {
+        // connected client read callback
+        TListenerOnRead cbk_server_accepted_client_read = {
+            [=, this, m = std::string()](const uint8_t *b, size_t n) mutable {
+                m.append((char *)b, n);
+                if (m.size() >= sizeof(context)) {
+                    context *c = (context *)calloc(1, sizeof(context));
+                    memmove(c, m.data(), sizeof(context));
+                    process_event_context((subject *)c->k, c);
+                    m.clear();
+                }
+            }};
+        // control server accept callback
+        TListenerOnAccept cbk_server_accept = {
+            [=, this] (void *ctx) {
                 auto aso = std::make_shared<listener>();
-                aso->setCallback<TListenerOnRead>({
-                    [this, m = std::string()](const uint8_t *b, size_t n) mutable {
-                        m.append((char *)b, n);
-                        if (m.size() == sizeof(context)) {
-                            context *ctx = (context *) calloc(1, sizeof(context));
-                            memmove(ctx, m.data(), sizeof(context));
-                            process_event_context((subject *) ctx->k, ctx);
-                            m.clear();
-                        }
-                    }});
-                this->_ctrl_server->get_connected_client(((context *)ctx)->as)->add_event_listener(aso);
+                aso->setCallback<TListenerOnRead>(cbk_server_accepted_client_read);
+                this->_server->get_accepted_client(((context *)ctx)->as)->add_event_listener(aso);
                 this->mark_connected(true);
-            }});
-        this->add_event_listener(_ctrl_server)->add_event_listener(ls);
-        _ctrl_server->start_socket_server();
-        _ctrl_client = std::make_shared<socket_device>("DC-CT");
-        _ctrl_client->set_host_and_port("127.0.0.1", _ctrl_server->get_port());
-        this->add_event_listener(_ctrl_client);
-        _ctrl_client->start_socket_client();
+            }};
+        _server = make_server("0.0.0.0", 0, cbk_server_accept, shared_from_this());
+        _client = make_client("127.0.0.1", _server->m_port, shared_from_this());
     }
 
     virtual void add_device_to_event_port(spsubject subject) override {
@@ -143,13 +150,13 @@ struct dispatcher : public subject<uint8_t, uint8_t> {
         struct kevent kevt[2];
         EV_SET(&kevt[0], device->_fd_async, EVFILT_READ, EV_ADD, 0, 0, device.get());
         EV_SET(&kevt[1], device->_fd_async, EVFILT_WRITE, EV_ADD, 0, 0, device.get());
-        auto rc = kevent(_event_port, kevt, 2, NULL, 0, NULL);
+        auto rc = kevent(_port, kevt, 2, NULL, 0, NULL);
         assert(rc != -1);
         #endif
         #ifdef _WIN32
         auto port = CreateIoCompletionPort(
                 device->_fd_async,
-                _event_port,
+                _port,
                 (ULONG_PTR)device.get(),
                 0);
         assert(port);
@@ -168,15 +175,14 @@ struct dispatcher : public subject<uint8_t, uint8_t> {
 
     void event_loop(void) {
 
-        while (!_exit_loop) {
+        while (!_stop) {
             int rc = 0;
             void *k = nullptr;
             uint64_t error = 0;
             #ifdef _WIN32
             LPOVERLAPPED ol;
             unsigned long n;
-            rc = GetQueuedCompletionStatus(_event_port, &n, (PULONG_PTR)&k, &ol, INFINITE);
-            if (_exit_loop) break;
+            rc = GetQueuedCompletionStatus(_port, &n, (PULONG_PTR)&k, &ol, INFINITE);
             if (!rc) {
                 error = GetLastError();
                 DBG << "GQCS failed : " << error << " "
@@ -185,8 +191,8 @@ struct dispatcher : public subject<uint8_t, uint8_t> {
             if (n == 0 && k == 0 && ol == 0) break;
             #elif linux
             struct epoll_event ee;
-            rc = epoll_wait(_event_port, &ee, 1, -1);
-            if (_exit_loop) break;
+            rc = epoll_wait(_port, &ee, 1, -1);
+            if (_stop) break;
             k = ee.data.ptr;
             if (rc < 0) {
                 error = errno;
@@ -197,8 +203,8 @@ struct dispatcher : public subject<uint8_t, uint8_t> {
             Event e {ee.events};
             #elif __has_include(<sys/event.h>)
             struct kevent ke;
-            rc = kevent(_event_port, NULL, 0, &ke,	1, nullptr);
-            if (_exit_loop) break;
+            rc = kevent(_port, NULL, 0, &ke,	1, nullptr);
+            if (_stop) break;
             if (rc < 0) {
                 error = errno;
                 DBG << "kevent failed : " << strerror(error) << " "
@@ -208,6 +214,8 @@ struct dispatcher : public subject<uint8_t, uint8_t> {
             k = ke.udata;
             Event e {ke.filter, ke.flags};
             #endif
+
+            if (k == nullptr) break;
 
             std::unique_lock<std::mutex> ul(m_lock);
             for (auto o : m_observers) {
@@ -228,7 +236,7 @@ struct dispatcher : public subject<uint8_t, uint8_t> {
             }
             process_listeners_marked_for_removal();
         }
-        DBG << "event_loop thread returning, observers: " << m_observers.size();
+        DBG << "dispatcher thread returning, observers: " << m_observers.size();
     }
 
     void process_event_context(void *key, context *ctx, int rc = 1, uint64_t error = 0) {
@@ -286,7 +294,7 @@ struct dispatcher : public subject<uint8_t, uint8_t> {
             struct kevent kevt[1];
             //EV_SET(&kevt[0], dev->_fd_async, EVFILT_READ, EV_ADD, 0, 0, dev.get());
             EV_SET(&kevt[0], dev->_fd_async, EVFILT_WRITE, EV_DELETE, 0, 0, dev.get());
-            auto rc = kevent(_event_port, kevt, 1, NULL, 0, NULL);
+            auto rc = kevent(_port, kevt, 1, NULL, 0, NULL);
             assert(rc != -1);
             #endif
         } else if (e.is_read()) {
@@ -333,7 +341,7 @@ struct dispatcher : public subject<uint8_t, uint8_t> {
         struct epoll_event e;
         e.events = flags;
         e.data.ptr = device.get();
-        int rc = epoll_ctl(_event_port, op, device->_fd_async, &e);
+        int rc = epoll_ctl(_port, op, device->_fd_async, &e);
         DBG << "epoll_ctl rc " << rc << " error : " << strerror(errno);
         assert(rc == 0);
     }
@@ -343,17 +351,17 @@ struct dispatcher : public subject<uint8_t, uint8_t> {
 
     virtual void queue_pending_context(spsubject s, void *c) {
         ((context *)c)->k = s.get();
-        _ctrl_client->write_async((const uint8_t *)c, sizeof(context));
-        free(c);
+        _client->write_async((const uint8_t *)c, sizeof(context));
+        //todo
     }
 
     private:
 
-    FD _event_port;
-    spsocket _ctrl_server;
-    spsocket _ctrl_client;
-    bool _exit_loop = false;
-    std::thread _event_thread;
+    FD _port;
+    bool _stop = false;
+    spsocket _server;
+    spsocket _client;
+    std::thread _thread;
 };
 
 using spdispatcher = std::shared_ptr<dispatcher>;

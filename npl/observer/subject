@@ -262,10 +262,8 @@ struct subject : public std::enable_shared_from_this<subject<T1, T2>> {
     std::unordered_set<spsubject> m_observers;
 };
 
-template <typename T1, typename T2>
-using spsubject = std::shared_ptr<subject<T1, T2>>;
-template<typename T1, typename T2>
-using wpsubject = std::weak_ptr<subject<T1, T2>>;
+using spsubject = std::shared_ptr<subject<uint8_t, uint8_t>>;
+using wpsubject = std::weak_ptr<subject<uint8_t, uint8_t>>;
 
 } // namespace npl
 

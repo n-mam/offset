@@ -46,29 +46,30 @@ int main(int argc, char *argv[]) {
 
 struct DispatcherFixture : public testing::Test {
     protected:
+    std::shared_ptr<npl::dispatcher> d;
     void SetUp() override {
         #ifdef _WIN32
         WSADATA wsaData;
         auto rc = WSAStartup(MAKEWORD(2, 2), &wsaData);
         ASSERT_EQ(0, rc);
         #endif
+        // dispatcher needs to be a shared pointer
+        // for the subsequent weak_from_this to work
+        d = singleton<npl::dispatcher>::getInstance();
+        d->initialize_control();
     }
     void TearDown() override {
+        singleton<npl::dispatcher>::destroy();
         #ifdef _WIN32
         auto rc = WSACleanup();
-        EXPECT_EQ(0, rc);
+        ASSERT_EQ(0, rc);
         #endif
     }
 };
 
-TEST_F(DispatcherFixture, Contruction) {
-    // dispatcher needs to be a shared pointer
-    // for the subsequent weak_from_this to work
-    auto d = std::make_shared<npl::dispatcher>();
-    d->initialize_control();
-    while (!d->is_connected()) {}
-    ASSERT_EQ(d->is_connected(), true);
-    d.reset();
+TEST_F(DispatcherFixture, Construction) {
+    while (!d->has_control_initialized()) {}
+    ASSERT_EQ(d->has_control_initialized(), true);
 }
 
 #endif

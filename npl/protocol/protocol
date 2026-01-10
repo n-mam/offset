@@ -69,8 +69,7 @@ struct protocol : public subject<T1, T2> {
     virtual void start_protocol_client(TOnConnectCbk cbk = nullptr) {
         iConnectCbk = cbk;
         auto sock = get_target_socket_device();
-        if (sock)
-        {
+        if (sock) {
             sock->start_socket_client();
         }
     }
@@ -107,7 +106,7 @@ struct protocol : public subject<T1, T2> {
     virtual tls get_channel_tls() {
         auto sock = get_target_socket_device();
         if (sock) {
-            return sock->get_tls();
+            return sock->m_tls;
         }
         return tls::no;
     }
@@ -115,7 +114,7 @@ struct protocol : public subject<T1, T2> {
     virtual void set_channel_tls(tls t) {
         auto sock = get_target_socket_device();
         if (sock) {
-            return sock->set_tls(t);
+            sock->m_tls = t;
         }
     }
 

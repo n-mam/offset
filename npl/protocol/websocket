@@ -205,7 +205,7 @@ struct websocket_server : public http_client {
         if (sock) {
             auto aso = std::make_shared<websocket_server>("DC-AS");
             aso->set_client_message_callback(iClientMessageCallback);
-            sock->get_connected_client(((context *)ctx)->as)->add_event_listener(aso);
+            sock->get_accepted_client(((context *)ctx)->as)->add_event_listener(aso);
         }
     }
 
