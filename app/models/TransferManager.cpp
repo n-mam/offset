@@ -309,9 +309,10 @@ bool TransferManager::InitializeFTPSessions(void) {
             return false;
         }
         ftp->set_credentials(m_ftpModel->m_user, m_ftpModel->m_password);
-        ftp->start_protocol_client([this](auto p, bool isConnected){
-            if (!isConnected) {}
-        });
+        ftp->start_protocol_client(
+            [this](auto p, bool isConnected){
+                if (!isConnected) {}
+            });
         m_sessions.push_back(ftp);
     }
     return true;

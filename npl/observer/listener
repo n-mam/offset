@@ -5,9 +5,9 @@
 
 #include <observer/subject>
 
-struct TListenerOnError { std::function<void (int)> cbk; };
-struct TListenerOnAccept { std::function<void (void *)> cbk; };
 struct TListenerOnConnect { std::function<void (void)> cbk; };
+struct TListenerOnAccept { std::function<void (void *)> cbk; };
+struct TListenerOnError { std::function<void (uint64_t)> cbk; };
 struct TListenerOnDisconnect { std::function<void (void)> cbk; };
 struct TListenerOnRead { std::function<void (const uint8_t *b, size_t n)> cbk; };
 struct TListenerOnWrite { std::function<void (const uint8_t *b, size_t n)> cbk; };
@@ -31,13 +31,13 @@ struct listener : public subject<uint8_t, uint8_t> {
         }
     }
 
-    virtual void onDisconnect(void) {
+    virtual void onDisconnect(void) override {
         if (cbkDisconnect.cbk) {
             cbkDisconnect.cbk();
         }
     }
 
-    virtual void onError(int error) {
+    virtual void onError(uint64_t error) override {
         if (cbkError.cbk) {
             cbkError.cbk(error);
         }

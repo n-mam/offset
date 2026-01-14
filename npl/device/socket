@@ -467,19 +467,25 @@ using wpsocket = std::weak_ptr<socket_device>;
 
 inline auto make_server(const std::string& host, int port, TListenerOnAccept cbk_accept, spsubject d) {
     auto server = std::make_shared<socket_device>("server");
-    server->set_host_and_port(host, port);
-    auto ls = std::make_shared<listener>();
-    ls->setCallback<TListenerOnAccept>(cbk_accept);
-    d->add_event_listener(server)->add_event_listener(ls);
-    server->start_socket_server();
+    auto rc = server->set_host_and_port(host, port);
+    if (rc) {
+        auto ls = std::make_shared<listener>();
+        ls->setCallback<TListenerOnAccept>(cbk_accept);
+        d->add_event_listener(server)->add_event_listener(ls);
+    } else {
+        server.reset();
+    }
     return server;
 }
 
 inline auto make_client(const std::string& host, int port, spsubject d) {
     auto client = std::make_shared<socket_device>("client");
-    client->set_host_and_port(host, port);
-    d->add_event_listener(client);
-    client->start_socket_client();
+    auto rc = client->set_host_and_port(host, port);
+    if (rc) {
+        d->add_event_listener(client);
+    } else {
+        client.reset();
+    }
     return client;
 }
 

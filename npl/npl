@@ -31,9 +31,9 @@ inline auto make_ftp(const std::string& host, int port, tls tls = tls::no) {
     return ftp;
 }
 
-inline auto make_ws_server(const std::string& host,
-        int port, tls tls = tls::no, TOnClientMessageCbk cbk = nullptr) {
-    SPProtocolWSServer ls;
+inline auto make_ws_server(const std::string& host, int port, tls tls = tls::no,
+        TOnClientMessageCbk cbk = nullptr) {
+    spwsserver ls;
     auto cc = std::make_shared<socket_device>("ws-cc");
     auto success = cc->set_host_and_port(host, port);
     if (success) {

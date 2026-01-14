@@ -23,28 +23,29 @@ bool RemoteFsModel::Connect(QString host, QString port, QString user, QString pa
         });
 
         m_ftp->set_credentials(m_user, m_password,
-        [this](bool success){
-            QMetaObject::invokeMethod(this, [=, this](){
-                if (success) {
-                    setCurrentDirectory("/");
-                    STATUS(1) << "User " << m_user << " logged in";
-                } else {
-                    STATUS(1) << "Login failed";
-                }
-            }, Qt::QueuedConnection);
-        });
+            [this](bool success){
+                QMetaObject::invokeMethod(this, [=, this](){
+                    if (success) {
+                        setCurrentDirectory("/");
+                        STATUS(1) << "User " << m_user << " logged in";
+                    } else {
+                        STATUS(1) << "Login failed";
+                    }
+                }, Qt::QueuedConnection);
+            });
 
         m_ftp->start_protocol_client(
-        [this](auto p, bool isConnected){
-            QMetaObject::invokeMethod(this, [=, this](){
-                setConnected(isConnected);
-                if (!isConnected) {
-                    beginResetModel();
-                    m_model.clear();
-                    endResetModel();
-                }
-            }, Qt::QueuedConnection);
-        });
+            [this](auto p, bool isConnected){
+                QMetaObject::invokeMethod(this,
+                    [=, this](){
+                        setConnected(isConnected);
+                        if (!isConnected) {
+                            beginResetModel();
+                            m_model.clear();
+                            endResetModel();
+                        }
+                    }, Qt::QueuedConnection);
+            });
         return true;
     }
     STATUS(1) << "Failed to connect to " << m_host;

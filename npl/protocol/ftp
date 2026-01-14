@@ -234,7 +234,7 @@ struct ftp : public protocol<uint8_t, uint8_t> {
         { EStateGEN  , '5', EStateREADY , nullptr                                             , NEXT|1   }
     };
 
-    virtual void StateMachine(spmessage msg) override {
+    virtual void state_machine(spmessage msg) override {
         std::lock_guard<std::mutex> lg(m_qlock);
         auto l = msg->get_payload_length();
         auto b = msg->get_payload_buffer();
@@ -384,7 +384,7 @@ struct ftp : public protocol<uint8_t, uint8_t> {
     }
 
     virtual void ProcessPasvResponse(void) {
-        auto& m = iMessages.back();
+        auto& m = _messages.back();
         auto& pasv = m->get_payload_string();
         auto spec = pasv.substr(pasv.find('('));
         uint32_t h1, h2, h3, h4, p1, p2;
@@ -441,7 +441,7 @@ struct ftp : public protocol<uint8_t, uint8_t> {
                 OnDataChannelDisconnect();
             }});
         observer->setCallback<TListenerOnError>({
-            [this](int e){
+            [this](uint64_t e){
                 OnDataChannelDisconnect();
             }});
         m_data_channel->add_event_listener(observer);

@@ -8,80 +8,78 @@ namespace npl {
 struct ws_message : public message {
 
     ws_message(const uint8_t *b, size_t l) : message(b, l) {
-        ParseMessage();
+        parse_message();
     }
 
-    uint8_t GetOpCode(void) {
-        return (iMessage[0] & 0x0F);
+    uint8_t get_op_code(void) {
+        return (_data[0] & 0x0F);
     }
 
-    bool IsControlFrame(void) {
-        return (GetOpCode() & 0x08);
+    bool is_control_frame(void) {
+        return (get_op_code() & 0x08);
     }
 
-    bool IsMasked(void) {
-        return (iMessage[1] & 0x80);
+    bool is_masked(void) {
+        return (_data[1] & 0x80);
     }
 
     virtual size_t get_payload_length(void) override {
-        return iPayload.length();
+        return _payload.length();
     }
 
     virtual const std::string& get_payload_string(void) override {
-        return iPayload;
+        return _payload;
     }
 
     protected:
 
-    std::string iPayload;
+    std::string _payload;
 
-    virtual void ParseMessage() override {
-        size_t l = iMessage.size();
-        uint8_t *b = (uint8_t *) iMessage.data();
+    virtual void parse_message() override {
+        size_t l = _data.size();
+        uint8_t *b = (uint8_t *) _data.data();
         assert(l >= 2);
         size_t payloadLength = 0;
         size_t maskingKeyIndex = 0;
         unsigned char indicator = b[1] & 0x7F;
         if (indicator <= 125) {
             /*
-            * if 0-125, that is the payload length
-            */
+             * if 0-125, that is the payload length
+             */
             payloadLength = indicator;
             maskingKeyIndex = 2; /** third byte */
         } else if (indicator == 126 && l >= (2 + 2)) {
-           /*
-            * If 126, the following 2 bytes interpreted as a
-            * 16-bit unsigned integer are the payload length
-            */
+            /*
+             * If 126, the following 2 bytes interpreted as a
+             * 16-bit unsigned integer are the payload length
+             */
             payloadLength = osl::endian_reverse((uint16_t)(*(b + 2)));
             maskingKeyIndex = 4;
         } else if (indicator == 127 && l >= (2 + 8)) {
-           /*
-            * If 127, the following 8 bytes interpreted as a
-            * 64-bit unsigned integer (the most significant bit
-            * MUST be 0) are the payload length
-            */
+            /*
+             * If 127, the following 8 bytes interpreted as a
+             * 64-bit unsigned integer (the most significant bit
+             * MUST be 0) are the payload length
+             */
             payloadLength = osl::endian_reverse((uint64_t)(*(b + 2)));
             maskingKeyIndex = 10;
         } else {
             return;
         }
         unsigned char maskingKey[4];
-        if (IsMasked() && (l >= (maskingKeyIndex + 4))) {
+        if (is_masked() && (l >= (maskingKeyIndex + 4))) {
             for (int i = 0; i < 4; i++) {
                 maskingKey[i] = b[maskingKeyIndex + i];
             }
         }
-        size_t payloadIndex = maskingKeyIndex + (IsMasked() ? 4 : 0);
+        size_t payloadIndex = maskingKeyIndex + (is_masked() ? 4 : 0);
         if ((payloadIndex + payloadLength) == l) {
             for (int i = 0; i < payloadLength; i++) {
-                iPayload += b[payloadIndex + i] ^ maskingKey[(i % 4)];
+                _payload += b[payloadIndex + i] ^ maskingKey[(i % 4)];
             }
         }
     }
 };
-
-using SPWSMessage = std::shared_ptr<ws_message>;
 
 struct websocket_server : public http_client {
 
@@ -115,37 +113,32 @@ struct websocket_server : public http_client {
 
     protected:
 
-    bool iWsHandshakeDone = false;
+    bool _ws_handshake_done = false;
 
-    virtual void StateMachine(spmessage m) override {
-        if (!iWsHandshakeDone) {
+    virtual void state_machine(spmessage m) override {
+        if (!_ws_handshake_done) {
             bool fRet = false;
             auto sock = get_target_socket_device();
-            if (sock->is_client_socket())
-            {
-                fRet = ValidateServerHello(m);
+            if (sock->is_client_socket()) {
+                fRet = validate_server_hello(m);
             } else {
-                fRet = ValidateClientHello(m);
+                fRet = validate_client_hello(m);
                 if (fRet) {
-                    fRet = SendServerHello(m);
+                    fRet = send_server_hello(m);
                 }
             }
             if (fRet) {
-                iWsHandshakeDone = true;
+                _ws_handshake_done = true;
             }
-        } else {
-            if (iClientMessageCallback) {
-                iClientMessageCallback(
-                    std::dynamic_pointer_cast<protocol>(
-                    shared_from_this()
-                    ),
-                    m->get_payload_string());
-            }
+        } else if (m_client_message_callback) {
+            m_client_message_callback(
+                std::dynamic_pointer_cast<protocol>(shared_from_this()),
+                m->get_payload_string());
         }
     }
 
     virtual spmessage is_message_complete(const std::vector<uint8_t>& b) override {
-        if (iWsHandshakeDone) {
+        if (_ws_handshake_done) {
             return is_message_complete(b.data(), b.size());
         } else {
             return http_client::is_message_complete(b);
@@ -161,24 +154,21 @@ struct websocket_server : public http_client {
         return nullptr;
     }
 
-    virtual bool ValidateClientHello(spmessage m)
-    {
+    virtual bool validate_client_hello(spmessage m) {
         return true; //todo
     }
 
-    virtual bool ValidateServerHello(spmessage m)
-    {
+    virtual bool validate_server_hello(spmessage m) {
         return true; //todo
     }
 
-    virtual bool SendClientHello(void)
-    {
+    virtual bool send_client_hello(void) {
         return false; //todo
     }
 
-    virtual bool SendServerHello(spmessage m) {
+    virtual bool send_server_hello(spmessage m) {
         auto cHello = std::dynamic_pointer_cast<http_message>(m);
-        auto key = cHello->GetHeader("Sec-WebSocket-Key");
+        auto key = cHello->get_header("Sec-WebSocket-Key");
         assert(key.size());
         key += "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
         unsigned char hash[20] = { '\0' };
@@ -204,17 +194,17 @@ struct websocket_server : public http_client {
         auto sock = get_target_socket_device();
         if (sock) {
             auto aso = std::make_shared<websocket_server>("DC-AS");
-            aso->set_client_message_callback(iClientMessageCallback);
+            aso->set_client_message_callback(m_client_message_callback);
             sock->get_accepted_client(((context *)ctx)->as)->add_event_listener(aso);
         }
     }
 
     virtual void onConnect(void) override {
-        SendClientHello();
+        send_client_hello();
     }
 };
 
-using SPProtocolWSServer = std::shared_ptr<websocket_server>;
+using spwsserver = std::shared_ptr<websocket_server>;
 
 }
 

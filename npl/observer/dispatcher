@@ -136,7 +136,9 @@ struct dispatcher : public subject<uint8_t, uint8_t> {
                 this->mark_connected(true);
             }};
         _server = make_server("0.0.0.0", 0, cbk_server_accept, shared_from_this());
+        _server->start_socket_server();
         _client = make_client("127.0.0.1", _server->m_port, shared_from_this());
+        _client->start_socket_client();
     }
 
     virtual void add_device_to_event_port(spsubject subject) override {

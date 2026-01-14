@@ -7,35 +7,69 @@ namespace npl {
 
 struct http_message : public message {
 
+    http_message(const std::vector<uint8_t>& m) : message(m) {
+        parse_message();
+    }
+
+    size_t get_header_count(void) {
+        return _headers.size();
+    }
+
+    std::string get_header(const std::string& key) {
+        return _headers[key];
+    }
+
+    void set_header(const std::string& key, const std::string& value) {
+        _headers[key] = value;
+    }
+
+    virtual size_t get_payload_length(void) override {
+        size_t len = 0;
+        const auto& h = get_header("Content-Length");
+        if (h.size()) {
+            len = std::stoi(h);
+        }
+        return len;
+    }
+
+    virtual const char * get_payload_buffer(void) override {
+        return get_payload_string().c_str();
+    }
+
+    virtual const std::string& get_payload_string(void) override {
+        return _payload;
+    }
+
     protected:
 
-    std::string iPayload;
-    std::map<std::string, std::string> iHeaders;
+    std::string _payload;
 
-    virtual void ParseMessage() override {
+    std::map<std::string, std::string> _headers;
+
+    virtual void parse_message() override {
         bool bodyReceived = false;
         bool chunksReceived = false;
         bool headersReceived = false;
         bool firstLineReceived = false;
-        if (iMessage.find("\r\n") != std::string::npos) {
+        if (_data.find("\r\n") != std::string::npos) {
             firstLineReceived = true;
-            size_t endofHeaders = iMessage.find("\r\n\r\n");
+            size_t endofHeaders = _data.find("\r\n\r\n");
             if (endofHeaders != std::string::npos) {
                 headersReceived = true;
-                if (iMessage.find("Content-Length") != std::string::npos) {
-                    size_t pos = iMessage.find("Content-Length") + strlen("Content-Length: ");
+                if (_data.find("Content-Length") != std::string::npos) {
+                    size_t pos = _data.find("Content-Length") + strlen("Content-Length: ");
                     // substring [pos, pos+count)
                     int bodyLength = std::stoi(
-                        std::string(iMessage, pos,
-                            iMessage.find("\r\n", pos) - pos));
+                        std::string(_data, pos,
+                            _data.find("\r\n", pos) - pos));
                     if (bodyLength) {
                         size_t total = endofHeaders + strlen("\r\n\r\n") + bodyLength;
-                        if (iMessage.size() == total) {
+                        if (_data.size() == total) {
                             bodyReceived = true;
-                            iPayload = iMessage.substr(endofHeaders + strlen("\r\n\r\n"), bodyLength);
+                            _payload = _data.substr(endofHeaders + strlen("\r\n\r\n"), bodyLength);
                         }
                     }
-                } else if (iMessage.find("Transfer-Encoding: chunked") != std::string::npos) {
+                } else if (_data.find("Transfer-Encoding: chunked") != std::string::npos) {
                     // \r\n\r\n -- endofHeaders
                     // 2e\r\n
                     // {
@@ -47,15 +81,15 @@ struct http_message : public message {
                     // }\r\n
                     // 0\r\n
                     size_t pos = endofHeaders + strlen("\r\n\r\n");
-                    while (iMessage.find("\r\n", pos) != std::string::npos) {
+                    while (_data.find("\r\n", pos) != std::string::npos) {
                         int chunkLength = std::stoi(
-                            std::string(iMessage, pos,
-                            iMessage.find("\r\n", pos) - pos),
+                            std::string(_data, pos,
+                            _data.find("\r\n", pos) - pos),
                             nullptr, 16);
-                        pos = iMessage.find("\r\n", pos) + strlen("\r\n");
-                        if (iMessage.size() < (pos + chunkLength + strlen("\r\n"))) break;
-                        auto chunk = iMessage.substr(pos, chunkLength);
-                        iPayload += chunk;
+                        pos = _data.find("\r\n", pos) + strlen("\r\n");
+                        if (_data.size() < (pos + chunkLength + strlen("\r\n"))) break;
+                        auto chunk = _data.substr(pos, chunkLength);
+                        _payload += chunk;
                         if (chunkLength == 0) {
                             chunksReceived = true;
                             break;
@@ -63,7 +97,7 @@ struct http_message : public message {
                         pos += chunkLength + strlen("\r\n");
                     }
                 } else {
-                    LOG << iMessage;
+                    LOG << _data;
                     bodyReceived = chunksReceived = true;
                 }
             }
@@ -73,7 +107,7 @@ struct http_message : public message {
             headersReceived &&
             (bodyReceived || chunksReceived)) {
             std::istringstream ss(
-                iMessage.substr(0, iMessage.find("\r\n\r\n")));
+                _data.substr(0, _data.find("\r\n\r\n")));
             std::string line;
             while (std::getline(ss, line, '\n')) {
                 line.pop_back();
@@ -82,56 +116,19 @@ struct http_message : public message {
                     std::string key, value;
                     key = line.substr(0, index);
                     value = line.substr(index + 2);
-                    SetHeader(key, value);
+                    set_header(key, value);
                 }
             }
         }
     }
 
-    public:
-
-    http_message(const std::vector<uint8_t>& m) : message(m) {
-        ParseMessage();
-    }
-
-    virtual std::string GetHeader(const std::string& key) {
-        return iHeaders[key];
-    }
-
-    virtual size_t HeaderCount(void) {
-        return iHeaders.size();
-    }
-
-    virtual void SetHeader(const std::string& key, const std::string& value) {
-        iHeaders[key] = value;
-    }
-
-    virtual size_t get_payload_length(void) override {
-        const auto& h = GetHeader("Content-Length");
-        if (h.size()) {
-            return std::stoi(h);
-        }
-        return 0;
-    }
-
-    virtual const std::string& get_payload_string(void) override {
-        return iPayload;
-    }
-
-    virtual const char * get_payload_buffer(void) override {
-        return get_payload_string().c_str();
-    }
 };
-
-using SPHTTPMessage = std::shared_ptr<http_message>;
 
 struct http_client : public protocol<uint8_t, uint8_t> {
 
-    public:
-
     http_client(const std::string& name) : protocol(name) {}
 
-    void Post(const std::string& url, const std::string& body, TResponseCbk cbk = nullptr) {
+    void post(const std::string& url, const std::string& body, TResponseCbk cbk = nullptr) {
         std::stringstream req;
         req << "POST " << url << " HTTP/1.1\r\n";
         req << "Host: 127.0.0.1\r\n";
@@ -145,15 +142,13 @@ struct http_client : public protocol<uint8_t, uint8_t> {
 
     protected:
 
-    virtual void StateMachine(spmessage m) override {
-        if (iResponseCallback) {
-            iResponseCallback(m->get_payload_string());
-        }
+    virtual void state_machine(spmessage m) override {
+        protocol::state_machine(m);
     }
 
     virtual spmessage is_message_complete(const std::vector<uint8_t>& b) override {
         auto m = std::make_shared<http_message>(b);
-        if (m->HeaderCount()) {
+        if (m->get_header_count()) {
             return m;
         }
         return nullptr;

@@ -11,34 +11,34 @@ namespace npl {
 struct message {
 
     message(const std::string& m) {
-        iMessage = m;
+        _data = m;
     }
 
     message(const uint8_t *b, size_t l) {
-        iMessage = std::string((char *)b, l);
+        _data = std::string((char *)b, l);
     }
 
     message(const std::vector<uint8_t>& m) {
-        iMessage = std::string((char *) m.data(), m.size());
+        _data = std::string((char *) m.data(), m.size());
     }
 
     virtual size_t get_payload_length(void) {
-        return iMessage.size();
-    }
-
-    virtual const std::string& get_payload_string(void) {
-        return iMessage;
+        return _data.size();
     }
 
     virtual const char * get_payload_buffer(void) {
-        return iMessage.c_str();
+        return _data.c_str();
+    }
+
+    virtual const std::string& get_payload_string(void) {
+        return _data;
     }
 
     protected:
 
-    std::string iMessage;
+    std::string _data;
 
-    virtual void ParseMessage(void) { }
+    virtual void parse_message(void) { }
 };
 
 using spmessage = std::shared_ptr<message>;
@@ -82,7 +82,7 @@ struct protocol : public subject<T1, T2> {
     }
 
     virtual size_t get_message_count(void) {
-        return iMessages.size();
+        return _messages.size();
     }
 
     virtual void set_credentials(const std::string& user, const std::string& pass, TOnUserLoginCbk cbk = nullptr) {
@@ -92,11 +92,11 @@ struct protocol : public subject<T1, T2> {
     }
 
     virtual void set_response_callback(TResponseCbk cbk) {
-        iResponseCallback = cbk;
+        m_response_callback = cbk;
     }
 
     virtual void set_client_message_callback(TOnClientMessageCbk cbk) {
-        iClientMessageCallback = cbk;
+        m_client_message_callback = cbk;
     }
 
     virtual void send_protocol_message(const uint8_t *message, size_t len) {
@@ -146,24 +146,28 @@ struct protocol : public subject<T1, T2> {
 
     virtual void onRead(const T1 *b, size_t n) override {
         for (size_t i = 0; i < n; i++) {
-            iBuffer.push_back(b[i]);
-            auto message = is_message_complete(iBuffer);
+            _buffer.push_back(b[i]);
+            auto message = is_message_complete(_buffer);
             if (message) {
-                iMessages.push_back(message);
-                StateMachine(message);
+                _messages.push_back(message);
+                state_machine(message);
                 subject<T1, T2>::onRead(
-                    iBuffer.data(),
-                    iBuffer.size());
-                iBuffer.clear();
+                    _buffer.data(),
+                    _buffer.size());
+                _buffer.clear();
             }
         }
     }
 
     protected:
 
-    virtual spmessage is_message_complete(const std::vector<T1>& b) = 0;
+    virtual void state_machine(spmessage message) = 0 {
+        if (m_response_callback) {
+            m_response_callback(message->get_payload_string());
+        }
+    }
 
-    virtual void StateMachine(spmessage message) { }
+    virtual spmessage is_message_complete(const std::vector<T1>& b) = 0;
 
     virtual spsocket get_target_socket_device(void) {
         auto target = (this->m_target).lock();
@@ -175,13 +179,13 @@ struct protocol : public subject<T1, T2> {
 
     std::string m_user;
     std::string m_password;
-    std::vector<T1> iBuffer;
-    std::vector<spmessage> iMessages;
+    std::vector<T1> _buffer;
+    std::vector<spmessage> _messages;
     TOnConnectCbk iConnectCbk = nullptr;
     uint8_t iCurrentState = EStateConnecting;
-    TResponseCbk iResponseCallback = nullptr;
+    TResponseCbk m_response_callback = nullptr;
     TOnUserLoginCbk m_login_callback = nullptr;
-    TOnClientMessageCbk iClientMessageCallback = nullptr;
+    TOnClientMessageCbk m_client_message_callback = nullptr;
 };
 
 using spprotocol = std::shared_ptr<protocol<uint8_t, uint8_t>>;
