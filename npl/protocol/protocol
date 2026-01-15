@@ -96,7 +96,8 @@ struct protocol : public listener {
     virtual bool is_connected(void) override {
         auto sock = get_target_socket_device();
         if (sock) {
-            return sock->is_connected() && (get_state() != state::disconnected);
+            return sock->is_connected() &&
+                (get_state() != state::disconnected);
         }
         return false;
     }
@@ -118,7 +119,7 @@ struct protocol : public listener {
 
     protected:
 
-    virtual void state_machine(spmessage message) = 0 {
+    virtual void state_machine(spmessage message) {
         onResponse(message->get_payload_string());
     }
 

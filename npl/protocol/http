@@ -156,7 +156,7 @@ struct http_client : public protocol {
     }
 };
 
-using SPProtocolHttpClient = std::shared_ptr<http_client>;
+using sphttpclient = std::shared_ptr<http_client>;
 
 }
 

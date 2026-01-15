@@ -33,22 +33,22 @@ inline auto make_ftp(const std::string& host, int port, tls tls = tls::no) {
 
 inline auto make_ws_server(const std::string& host, int port, tls tls,
         TListenerOnAcceptedClientMessage cbk) {
-    spwsserver ls;
+    spwsserver wss;
     auto cc = std::make_shared<socket_device>("ws-cc");
     auto success = cc->set_host_and_port(host, port);
     if (success) {
         cc->m_tls = tls;
-        ls = std::make_shared<websocket_server>();
-        ls->setCallback<TListenerOnAcceptedClientMessage>(cbk);
-        getSharedInstance<dispatcher>()->add_event_listener(cc)->add_event_listener(ls);
+        wss = std::make_shared<websocket_server>();
+        wss->setCallback<TListenerOnAcceptedClientMessage>(cbk);
+        getSharedInstance<dispatcher>()->add_event_listener(cc)->add_event_listener(wss);
     } else {
         cc.reset();
     }
-    return ls;
+    return wss;
 }
 
 inline auto make_http_client(const std::string& host, int port) {
-    SPProtocolHttpClient http;
+    sphttpclient http;
     auto sock = std::make_shared<socket_device>("http-socket");
     auto success = sock->set_host_and_port(host, port);
     if (success) {

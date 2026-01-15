@@ -463,15 +463,14 @@ struct socket_device : public FileDeviceType {
 };
 
 using spsocket = std::shared_ptr<socket_device>;
-using wpsocket = std::weak_ptr<socket_device>;
 
 inline auto make_server(const std::string& host, int port, TListenerOnAccept cbk_accept, spsubject d) {
     auto server = std::make_shared<socket_device>("server");
     auto rc = server->set_host_and_port(host, port);
     if (rc) {
-        auto ls = std::make_shared<listener>();
-        ls->setCallback<TListenerOnAccept>(cbk_accept);
-        d->add_event_listener(server)->add_event_listener(ls);
+        auto svr_lsnr = std::make_shared<listener>();
+        svr_lsnr->setCallback<TListenerOnAccept>(cbk_accept);
+        d->add_event_listener(server)->add_event_listener(svr_lsnr);
     } else {
         server.reset();
     }
