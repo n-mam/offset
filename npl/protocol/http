@@ -124,11 +124,12 @@ struct http_message : public message {
 
 };
 
-struct http_client : public protocol<uint8_t, uint8_t> {
+struct http_client : public protocol {
 
-    http_client(const std::string& name) : protocol(name) {}
+    http_client() = default;
+    virtual ~http_client(){};
 
-    void post(const std::string& url, const std::string& body, TResponseCbk cbk = nullptr) {
+    void post(const std::string& url, const std::string& body, TListenerOnResponse cbk = {}) {
         std::stringstream req;
         req << "POST " << url << " HTTP/1.1\r\n";
         req << "Host: 127.0.0.1\r\n";
@@ -136,7 +137,7 @@ struct http_client : public protocol<uint8_t, uint8_t> {
         req << "Content-length: " << body.size() << "\r\n";
         req << "\r\n";
         req << body;
-        set_response_callback(cbk);
+        setCallback<TListenerOnResponse>(cbk);
         write_async((uint8_t *) req.str().c_str(), req.str().size(), 0);
     }
 

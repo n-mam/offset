@@ -190,14 +190,14 @@ void TransferManager::DownloadTransfer(const Transfer& t, int sid) {
 
             return true;
         },
-        [=, this, i = t.m_index](const auto& res) {
+        {[=, this, i = t.m_index](const auto& res) {
             if (res[0] == '4' || res[0] == '5') {
                 QMetaObject::invokeMethod(this, [=, this](){
                     m_queue[i].m_state = Transfer::state::failed;
                     emit transferFailed(i, ++m_failed_transfers);
                 });
             }
-        },
+        }},
         m_ftpModel->m_protection);
 }
 
@@ -264,14 +264,14 @@ void TransferManager::UploadTransfer(const Transfer& t, int sid) {
 
             return (n > 0);
         },
-        [=, this, i = t.m_index](const auto& res) {
+        {[=, this, i = t.m_index](const auto& res) {
             if (res[0] == '4' || res[0] == '5') {
                 QMetaObject::invokeMethod(this, [=, this](){
                     m_queue[i].m_state = Transfer::state::failed;
                     emit transferFailed(i, ++m_failed_transfers);
                 });
             }
-        },
+        }},
         m_ftpModel->m_protection);
 }
 
@@ -309,10 +309,10 @@ bool TransferManager::InitializeFTPSessions(void) {
             return false;
         }
         ftp->set_credentials(m_ftpModel->m_user, m_ftpModel->m_password);
-        ftp->start_protocol_client(
-            [this](auto p, bool isConnected){
-                if (!isConnected) {}
-            });
+        ftp->start_protocol_client({
+            [this](bool connected){
+                if (!connected) {}
+            }});
         m_sessions.push_back(ftp);
     }
     return true;
@@ -326,10 +326,10 @@ void TransferManager::CheckAndReconnectSessions(void) {
                 m_ftpModel->m_port,
                 m_ftpModel->m_protection);
             m_sessions[i]->set_credentials(m_ftpModel->m_user, m_ftpModel->m_password);
-            m_sessions[i]->start_protocol_client(
-                [this](auto p, bool isConnected){
-                    if (!isConnected) { }
-                });
+            m_sessions[i]->start_protocol_client({
+                [this](bool connected){
+                    if (!connected) {}
+                }});
         }
     }
 }

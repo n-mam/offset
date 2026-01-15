@@ -42,36 +42,16 @@ struct message {
 };
 
 using spmessage = std::shared_ptr<message>;
-using TOnUserLoginCbk = std::function<void (bool)>;
-using TResponseCbk = std::function<void (const std::string&)>;
-using TTransferCbk = std::function<bool (const char *, size_t)>;
 
-template <typename T1, typename T2>
-struct protocol : public subject<T1, T2> {
+struct protocol : public listener {
 
-    using spprotocol = std::shared_ptr<protocol<T1, T2>>;
-    using TOnConnectCbk = std::function<void (spprotocol, bool)>;
-    using TOnClientMessageCbk = std::function<void (spprotocol, const std::string&)>;
-
-    enum : uint8_t {
-        EStateConnecting = 0x00,
-        EStateConnected = 0x01,
-        // protocol specific
-        EStateDisconnected = 0xFF
-    };
+    using spprotocol = std::shared_ptr<protocol>;
 
     protocol() = default;
-
-    protocol(const std::string& name) : subject<T1, T2>(name) {}
-
     virtual ~protocol() {}
 
-    virtual void start_protocol_client(TOnConnectCbk cbk = nullptr) {
-        iConnectCbk = cbk;
-        auto sock = get_target_socket_device();
-        if (sock) {
-            sock->start_socket_client();
-        }
+    virtual size_t get_message_count(void) {
+        return _messages.size();
     }
 
     virtual void start_protocol_server(void) {
@@ -81,22 +61,17 @@ struct protocol : public subject<T1, T2> {
         }
     }
 
-    virtual size_t get_message_count(void) {
-        return _messages.size();
+    virtual void start_protocol_client(TListenerOnConnect cbk = {}) {
+        setCallback<TListenerOnConnect>(cbk);
+        auto sock = get_target_socket_device();
+        if (sock) {
+            sock->start_socket_client();
+        }
     }
 
-    virtual void set_credentials(const std::string& user, const std::string& pass, TOnUserLoginCbk cbk = nullptr) {
+    virtual void set_credentials(const std::string& user, const std::string& pass) {
         m_user = user;
         m_password = pass;
-        m_login_callback = cbk;
-    }
-
-    virtual void set_response_callback(TResponseCbk cbk) {
-        m_response_callback = cbk;
-    }
-
-    virtual void set_client_message_callback(TOnClientMessageCbk cbk) {
-        m_client_message_callback = cbk;
     }
 
     virtual void send_protocol_message(const uint8_t *message, size_t len) {
@@ -121,37 +96,19 @@ struct protocol : public subject<T1, T2> {
     virtual bool is_connected(void) override {
         auto sock = get_target_socket_device();
         if (sock) {
-            return sock->is_connected() && (iCurrentState != EStateDisconnected);
+            return sock->is_connected() && (get_state() != state::disconnected);
         }
         return false;
     }
 
-    virtual void onError(uint64_t error) override {
-        LOG << "connection error " << error;
-    }
-
-    virtual void onConnect(void) override {
-        if (iConnectCbk) {
-            iConnectCbk(std::static_pointer_cast<protocol<T1, T2>>(this->shared_from_this()), true);
-        }
-        iCurrentState = EStateConnected;
-    }
-
-    virtual void onDisconnect(void) override {
-        if (iConnectCbk) {
-            iConnectCbk(std::static_pointer_cast<protocol<T1, T2>>(this->shared_from_this()), false);
-        }
-        iCurrentState = EStateDisconnected;
-    }
-
-    virtual void onRead(const T1 *b, size_t n) override {
+    virtual void onRead(const uint8_t *b, size_t n) override {
         for (size_t i = 0; i < n; i++) {
             _buffer.push_back(b[i]);
             auto message = is_message_complete(_buffer);
             if (message) {
                 _messages.push_back(message);
                 state_machine(message);
-                subject<T1, T2>::onRead(
+                listener::onRead(
                     _buffer.data(),
                     _buffer.size());
                 _buffer.clear();
@@ -162,12 +119,10 @@ struct protocol : public subject<T1, T2> {
     protected:
 
     virtual void state_machine(spmessage message) = 0 {
-        if (m_response_callback) {
-            m_response_callback(message->get_payload_string());
-        }
+        onResponse(message->get_payload_string());
     }
 
-    virtual spmessage is_message_complete(const std::vector<T1>& b) = 0;
+    virtual spmessage is_message_complete(const std::vector<uint8_t>& b) = 0;
 
     virtual spsocket get_target_socket_device(void) {
         auto target = (this->m_target).lock();
@@ -179,18 +134,11 @@ struct protocol : public subject<T1, T2> {
 
     std::string m_user;
     std::string m_password;
-    std::vector<T1> _buffer;
+    std::vector<uint8_t> _buffer;
     std::vector<spmessage> _messages;
-    TOnConnectCbk iConnectCbk = nullptr;
-    uint8_t iCurrentState = EStateConnecting;
-    TResponseCbk m_response_callback = nullptr;
-    TOnUserLoginCbk m_login_callback = nullptr;
-    TOnClientMessageCbk m_client_message_callback = nullptr;
 };
 
-using spprotocol = std::shared_ptr<protocol<uint8_t, uint8_t>>;
-using TOnConnectCbk = std::function<void (spprotocol)>;
-using TOnClientMessageCbk = std::function<void (spprotocol, const std::string&)>;
+using spprotocol = std::shared_ptr<protocol>;
 
 }
 

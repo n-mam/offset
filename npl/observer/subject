@@ -22,6 +22,10 @@ struct subject : public std::enable_shared_from_this<subject<T1, T2>> {
     using wpsubject = std::weak_ptr<subject<T1, T2>>;
     using spsubject = std::shared_ptr<subject<T1, T2>>;
 
+    enum state : uint8_t {
+        connecting, connected, disconnected
+    };
+
     subject() = default;
 
     subject(const std::string& name) {
@@ -32,6 +36,14 @@ struct subject : public std::enable_shared_from_this<subject<T1, T2>> {
         std::lock_guard<std::mutex> lg(m_lock);
         remove_all_event_listeners();
         DBG << "~subject : " << get_name();
+    }
+
+    virtual uint8_t get_state() {
+        return static_cast<uint8_t>(m_state);
+    }
+
+    virtual void set_state(uint8_t s) {
+        m_state = static_cast<state>(s);
     }
 
     virtual std::string get_name(void) {
@@ -108,12 +120,14 @@ struct subject : public std::enable_shared_from_this<subject<T1, T2>> {
     virtual void onConnect(void) {
         std::lock_guard<std::mutex> lg(m_lock);
         m_connected = true;
+        set_state(state::connected);
         NotifyConnect();
     }
 
     virtual void onDisconnect(void) {
         std::lock_guard<std::mutex> lg(m_lock);
         m_connected = false;
+        set_state(state::disconnected);
         NotifyDisconnect();
         mark_remove_all_listeners();
         mark_remove_self_as_listener();
@@ -257,6 +271,7 @@ struct subject : public std::enable_shared_from_this<subject<T1, T2>> {
 
     bool m_stopped = false;
     bool m_connected = false;
+    state m_state = state::connecting;
     bool m_removeAllListeners = false;
     bool m_removeSelfAsListener = false;
     std::unordered_set<spsubject> m_observers;

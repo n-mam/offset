@@ -23,7 +23,7 @@ inline auto make_ftp(const std::string& host, int port, tls tls = tls::no) {
     auto success = cc->set_host_and_port(host, port);
     if (success) {
         cc->m_tls = tls;
-        ftp = std::make_shared<npl::ftp>("prot-ftp");
+        ftp = std::make_shared<npl::ftp>();
         getSharedInstance<dispatcher>()->add_event_listener(cc)->add_event_listener(ftp);
     } else {
         cc.reset();
@@ -31,15 +31,15 @@ inline auto make_ftp(const std::string& host, int port, tls tls = tls::no) {
     return ftp;
 }
 
-inline auto make_ws_server(const std::string& host, int port, tls tls = tls::no,
-        TOnClientMessageCbk cbk = nullptr) {
+inline auto make_ws_server(const std::string& host, int port, tls tls,
+        TListenerOnAcceptedClientMessage cbk) {
     spwsserver ls;
     auto cc = std::make_shared<socket_device>("ws-cc");
     auto success = cc->set_host_and_port(host, port);
     if (success) {
         cc->m_tls = tls;
-        ls = std::make_shared<websocket_server>("ws-ls");
-        ls->set_client_message_callback(cbk);
+        ls = std::make_shared<websocket_server>();
+        ls->setCallback<TListenerOnAcceptedClientMessage>(cbk);
         getSharedInstance<dispatcher>()->add_event_listener(cc)->add_event_listener(ls);
     } else {
         cc.reset();
@@ -52,7 +52,7 @@ inline auto make_http_client(const std::string& host, int port) {
     auto sock = std::make_shared<socket_device>("http-socket");
     auto success = sock->set_host_and_port(host, port);
     if (success) {
-        http = std::make_shared<http_client>("http-protocol");
+        http = std::make_shared<http_client>();
         getSharedInstance<dispatcher>()->add_event_listener(sock)->add_event_listener(http);
     } else {
         sock.reset();
@@ -74,21 +74,22 @@ inline auto make_file(const T& path, bool create = false) {
 inline void test_http_client(const std::string& host, int port) {
     for (int i = 0; i < 1; i++) {
         auto http = npl::make_http_client(host, port);
-        http->start_protocol_client(
-            [](auto p, bool connected) {
+        http->start_protocol_client({
+            [](bool connected) {
                 LOG << "client connected : " << connected;
-            });
+            }});
     }
 }
 
 inline void test_ws_server(const std::string& host, int port) {
     auto ws = npl::make_ws_server(host, port, npl::tls::yes,
-        [] (npl::spprotocol c, const std::string& m) {
+        {[] (npl::spsubject s, const std::string& m) {
             LOG << "client : " << m;
+            auto c = std::dynamic_pointer_cast<protocol>(s);
             c->send_protocol_message(
                 (uint8_t *)"server echo : hello",
                 strlen("server echo : hello"));
-        });
+        }});
     ws->start_protocol_server();
     getchar();
 }
@@ -106,9 +107,7 @@ inline void test_ftp_client(const std::string& host, const std::string& port,
                 LOG << list;
             }
             return true;
-        },
-        nullptr,
-        npl::tls::yes);
+        }, {}, npl::tls::yes);
     ftp->SetCurrentDirectory("/");
     auto file = npl::make_file(TSTR("./xx.txt"), true);
     ftp->Transfer(ftp::download, "x.txt",
@@ -120,22 +119,19 @@ inline void test_ftp_client(const std::string& host, const std::string& port,
                 LOG << "Download complete";
             }
             return true;
-        },
-        nullptr,
-        npl::tls::yes);
+        }, {}, npl::tls::yes);
     file.reset();
     ftp->Transfer(ftp::upload, "y.txt",
         [&](const char *b, size_t n) mutable {
             return true;
-        },
-        nullptr,
-        npl::tls::no);
+        }, {}, npl::tls::no);
     ftp->write_sync((uint8_t *)"hello ", strlen("hello "));
     ftp->write_sync((uint8_t *)"world ", strlen("world "));
     ftp->write_sync(nullptr);
-    ftp->GetCurrentDirectory([](const std::string& resp) {
-        //"resp" holds the response of PWD command
-    });
+    ftp->GetCurrentDirectory({
+        [](const std::string& resp) {
+            //"resp" holds the response of PWD command
+        }});
     ftp->SetCurrentDirectory("/");
     ftp->Quit();
     getchar();

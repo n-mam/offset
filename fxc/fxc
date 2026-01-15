@@ -64,7 +64,7 @@ auto getTargetForDestination(const std::wstring& destination, const std::wstring
         ftp->Transfer(npl::ftp::upload, file,
             [&](const char *b, size_t n) {
                 return true;
-            }, nullptr, protect);
+            }, {}, protect);
         ftp->Quit();
         target = ftp;
     }

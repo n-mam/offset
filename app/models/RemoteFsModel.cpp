@@ -22,7 +22,8 @@ bool RemoteFsModel::Connect(QString host, QString port, QString user, QString pa
             });
         });
 
-        m_ftp->set_credentials(m_user, m_password,
+        m_ftp->set_credentials(m_user, m_password);
+        m_ftp->setCallback<TListenerOnLogin>({
             [this](bool success){
                 QMetaObject::invokeMethod(this, [=, this](){
                     if (success) {
@@ -32,20 +33,20 @@ bool RemoteFsModel::Connect(QString host, QString port, QString user, QString pa
                         STATUS(1) << "Login failed";
                     }
                 }, Qt::QueuedConnection);
-            });
+            }});
 
-        m_ftp->start_protocol_client(
-            [this](auto p, bool isConnected){
+        m_ftp->start_protocol_client({
+            [this](bool connected){
                 QMetaObject::invokeMethod(this,
                     [=, this](){
-                        setConnected(isConnected);
-                        if (!isConnected) {
+                        setConnected(connected);
+                        if (!connected) {
                             beginResetModel();
                             m_model.clear();
                             endResetModel();
                         }
                     }, Qt::QueuedConnection);
-            });
+            }});
         return true;
     }
     STATUS(1) << "Failed to connect to " << m_host;
@@ -113,9 +114,7 @@ void RemoteFsModel::WalkRemoteDirectory(const std::string& path, TFileElementLis
                 callback(fe_list);
             }
             return true;
-        },
-        nullptr,
-        m_protection);
+        }, {}, m_protection);
 }
 
 void RemoteFsModel::RemoveFile(QString path) {
@@ -139,7 +138,7 @@ void RemoteFsModel::RemoveDirectory(QString path) {
             }
             if (fe_list.empty() || onlyFiles) {
                 m_ftp->RemoveDirectory(path.toStdString(),
-                    [](const std::string& res) { STATUS(1) << res; });
+                    {[](const std::string& res) { STATUS(1) << res; }});
                 RefreshRemoteView();
             } else {
                 m_directories_to_remove.push_back(path.toStdString());
@@ -149,16 +148,16 @@ void RemoteFsModel::RemoveDirectory(QString path) {
 
 void RemoteFsModel::CreateDirectory(QString path) {
     m_ftp->CreateDirectory(path.toStdString(),
-        [](const std::string& res) { STATUS(1) << res; });
+        {[](const std::string& res) { STATUS(1) << res; }});
     RefreshRemoteView();
 }
 
 void RemoteFsModel::Rename(QString from, QString to) {
     m_ftp->Rename(from.toStdString(), to.toStdString(),
-        [](const std::string& res) {
+        {[](const std::string& res) {
             if (res[0] == '4' || res[0] == '5')
-            STATUS(1) << "Error: " << res;
-        });
+                STATUS(1) << "Error: " << res;
+        }});
     RefreshRemoteView();
 }
 
@@ -208,12 +207,12 @@ void RemoteFsModel::setCurrentDirectory(QString directory) {
             }
             return true;
         },
-        [this](const std::string& res) {
+        {[this](const std::string& res) {
             QMetaObject::invokeMethod(this, [=](){
                 if (res[0] == '4' || res[0] == '5')
                 STATUS(1) << "Error: " << res;
             }, Qt::QueuedConnection);
-        },
+        }},
         m_protection);
 }
 

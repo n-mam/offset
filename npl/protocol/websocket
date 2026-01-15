@@ -83,7 +83,8 @@ struct ws_message : public message {
 
 struct websocket_server : public http_client {
 
-    websocket_server(const std::string& name) : http_client(name) {}
+    websocket_server() = default;
+    virtual ~websocket_server(){}
 
     virtual void send_protocol_message(const uint8_t *data, size_t len) override {
         int frameLength = 0;
@@ -130,10 +131,8 @@ struct websocket_server : public http_client {
             if (fRet) {
                 _ws_handshake_done = true;
             }
-        } else if (m_client_message_callback) {
-            m_client_message_callback(
-                std::dynamic_pointer_cast<protocol>(shared_from_this()),
-                m->get_payload_string());
+        } else {
+            OnAcceptedClientMessage(shared_from_this(), m->get_payload_string());
         }
     }
 
@@ -193,8 +192,8 @@ struct websocket_server : public http_client {
     virtual void onAccept(void *ctx) override {
         auto sock = get_target_socket_device();
         if (sock) {
-            auto aso = std::make_shared<websocket_server>("DC-AS");
-            aso->set_client_message_callback(m_client_message_callback);
+            auto aso = std::make_shared<websocket_server>();
+            aso->setCallback<TListenerOnAcceptedClientMessage>(cbkAcceptedClientmessage);
             sock->get_accepted_client(((context *)ctx)->as)->add_event_listener(aso);
         }
     }
