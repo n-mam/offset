@@ -129,6 +129,17 @@ struct http_client : public protocol {
     http_client() = default;
     virtual ~http_client(){};
 
+    void get(const std::string& url,
+            TListenerOnResponse cbk = {}) {
+        std::stringstream req;
+        req << "GET " << url << " HTTP/1.1\r\n";
+        req << "Host: 127.0.0.1\r\n";
+        req << "Connection: close\r\n";
+        req << "\r\n";
+        setCallback<TListenerOnResponse>(cbk);
+        write_async((uint8_t *) req.str().c_str(), req.str().size(), 0);
+    }
+
     void post(const std::string& url, const std::string& body, TListenerOnResponse cbk = {}) {
         std::stringstream req;
         req << "POST " << url << " HTTP/1.1\r\n";

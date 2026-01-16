@@ -75,8 +75,12 @@ inline void test_http_client(const std::string& host, int port) {
     for (int i = 0; i < 1; i++) {
         auto http = npl::make_http_client(host, port);
         http->start_protocol_client({
-            [](bool connected) {
+            [&](bool connected) {
                 LOG << "client connected : " << connected;
+                http->get("https://api.restful-api.dev/objects",
+                    {[](const std::string& response){
+                        LOG << response;
+                    }});
             }});
     }
 }

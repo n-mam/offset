@@ -109,33 +109,41 @@ Item {
         id: listItemDelegate
         Rectangle {
             id: delegateRect
+            height: 24
             implicitHeight: 24
-            implicitWidth: ListView.view.width
+            implicitWidth: contentRow.implicitWidth + 6
             color: fileIsSelected ? "lightsteelblue" : "transparent"
             // radius: 3
             // border.width: 1
             // border.color: "#123"
-            Image {
-                id: listItemIcon
-                x: 3
-                width: 20; height: 20
+            Row {
+                id: contentRow
+                spacing: 5
+                anchors.leftMargin: 3
+                anchors.left: parent.left
                 anchors.verticalCenter: parent.verticalCenter
-                source: fileIsDir ? (fileName !== "." ? "qrc:/folder.png" : "") : "qrc:/file.png"
-            }
-            Text {
-                id: feText
-                text: fileName
-                height: parent.height
-                verticalAlignment: Text.AlignVCenter
-                x: listItemIcon.x + listItemIcon.width + 5
-                anchors.verticalCenter: parent.verticalCenter
-                color: fileIsSelected ? "black" : textColor
+                Image {
+                    id: listItemIcon
+                    width: 20; height: 20
+                    anchors.verticalCenter: parent.verticalCenter
+                    source: fileIsDir ? (fileName !== "." ? "qrc:/folder.png" : "") : "qrc:/file.png"
+                }
+                Text {
+                    id: feText
+                    text: fileName
+                    height: parent.height
+                    verticalAlignment: Text.AlignVCenter
+                    color: fileIsSelected ? "black" : textColor
+                }
             }
             MouseArea {
-                anchors.fill: parent
                 preventStealing: true
+                anchors.top: parent.top
+                anchors.left: parent.left
                 propagateComposedEvents: true
+                anchors.bottom: parent.bottom
                 acceptedButtons: Qt.AllButtons
+                width: delegateRect.implicitWidth
                 onDoubleClicked: {
                     if (fileIsDir) {
                         if (fileName === "..")
