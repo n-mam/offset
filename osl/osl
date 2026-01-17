@@ -69,133 +69,76 @@ inline auto get_extention_pfn(GUID guid, FD fd) {
 }
 #endif
 
-inline auto GetArgumentsVector(int argc, wchar_t *argv[])
-{
-  std::vector<std::wstring> arguments;
-
-  for(int i = 1; i < argc; i++)
-  {
-    arguments.push_back(argv[i]);
-  }
-
-  return arguments;
-}
-
-inline auto GetArgumentsVector(int argc, char *argv[])
-{
-  std::vector<std::string> arguments;
-
-  for(int i = 1; i < argc; i++)
-  {
-    arguments.push_back(argv[i]);
-  }
-
-  return arguments;
-}
-
-inline auto GetCurrentDateTime(void)
-{
-  char buf[80];
-  struct tm tstruct;
-  time_t now = time(0);
-
-  tstruct = *localtime(&now);
-  // Visit http://en.cppreference.com/w/cpp/chrono/c/strftime
-  // for more information about date/time format
-  // Get current date/time, format is YYYY-MM-DD.HH:mm:ss
-  strftime(buf, sizeof(buf), "%Y-%m-%d.%X", &tstruct);
-
-  return std::string(buf);
-}
-
-inline auto Base64Encode(unsigned char *encoded, const unsigned char *source, int n)
-{
-  return EVP_EncodeBlock(encoded, source, n);
-}
-
-inline auto MessageDigest(const unsigned char *message, size_t message_len, unsigned char *digest, unsigned int *digest_len)
-{
-  int fRet = 0;
-
-  EVP_MD_CTX *ctx = NULL;
-
-  ctx = EVP_MD_CTX_create();
-
-  if (ctx == NULL)
-    goto _end;
-
-  fRet = EVP_DigestInit_ex(ctx, EVP_sha1(), NULL);
-
-  if (1 != fRet)
-    goto _end;
-
-  fRet = EVP_DigestUpdate(ctx, message, message_len);
-
-  if (1 != fRet)
-    goto _end;
-
-  fRet = EVP_DigestFinal_ex(ctx, digest, digest_len);
-
-  if (1 != fRet)
-    goto _end;
-
-  _end:
-
-  if (ctx)
-  {
-    EVP_MD_CTX_destroy(ctx);
-  }
-
-  return fRet;
-}
-
-inline auto GetDirectoryList(std::string& dir) {
-
-  if (!dir.size()) {
-    dir = std::filesystem::current_path().string();
-  }
-
-  for (auto& e : std::filesystem::directory_iterator(dir)) {
-    //e.path().filename().string();
-
-    if (std::filesystem::is_symlink(e)) {
-
-    } else if (std::filesystem::is_directory(e)) {
-
-    } else {
-      //file
+template<typename T>
+inline auto GetArgumentsVector(int argc, T *argv[]) {
+    std::vector<std::basic_string<T>> arguments;
+    for(int i = 1; i < argc; i++) {
+        arguments.push_back(argv[i]);
     }
-  }
+    return arguments;
+}
+
+inline auto GetCurrentDateTime(void) {
+    char buf[80];
+    struct tm tstruct;
+    time_t now = time(0);
+    tstruct = *localtime(&now);
+    // Visit http://en.cppreference.com/w/cpp/chrono/c/strftime
+    // for more information about date/time format
+    // Get current date/time, format is YYYY-MM-DD.HH:mm:ss
+    strftime(buf, sizeof(buf), "%Y-%m-%d.%X", &tstruct);
+    return std::string(buf);
+}
+
+inline auto Base64Encode(unsigned char *encoded, const unsigned char *source, int n) {
+    return EVP_EncodeBlock(encoded, source, n);
+}
+
+inline auto MessageDigest(const unsigned char *message, size_t message_len, unsigned char *digest, unsigned int *digest_len) {
+    int fRet = 0;
+    EVP_MD_CTX *ctx = NULL;
+    ctx = EVP_MD_CTX_create();
+    if (ctx == NULL)
+        goto _end;
+    fRet = EVP_DigestInit_ex(ctx, EVP_sha1(), NULL);
+    if (1 != fRet)
+        goto _end;
+    fRet = EVP_DigestUpdate(ctx, message, message_len);
+    if (1 != fRet)
+        goto _end;
+    fRet = EVP_DigestFinal_ex(ctx, digest, digest_len);
+    if (1 != fRet)
+        goto _end;
+    _end:
+    if (ctx) {
+        EVP_MD_CTX_destroy(ctx);
+    }
+    return fRet;
 }
 
 inline auto get_timestamp() {
-  std::time_t t = std::time(0);
-  std::tm *now = std::localtime(&t);
-  std::wstringstream ss;
-  ss << (now->tm_year + 1900) << '-'
-    << (now->tm_mon + 1) << '-'
-    <<  now->tm_mday << '.'
-    << now->tm_hour << '-'
-    << now->tm_min << '-'
-    << now->tm_sec;
-  return ss.str();
+    std::time_t t = std::time(0);
+    std::tm *now = std::localtime(&t);
+    std::wstringstream ss;
+    ss << (now->tm_year + 1900) << '-'
+        << (now->tm_mon + 1) << '-'
+        <<  now->tm_mday << '.'
+        << now->tm_hour << '-'
+        << now->tm_min << '-'
+        << now->tm_sec;
+    return ss.str();
 }
 
 template<typename T>
 inline auto endian_reverse(T x) {
-
-  auto l = sizeof(T);
-
-  uint8_t *p = (uint8_t *) &x;
-
-  for (int i = 0; i < l/2; i++)
-  {
-    *(p + i) = *(p + i) ^ *(p + l - 1 - i);
-    *(p + l - 1 - i) = *(p + i) ^ *(p + l - 1 - i);
-    *(p + i) = *(p + i) ^ *(p + l - 1 - i);
-  }
-
-  return x;
+    auto l = sizeof(T);
+    uint8_t *p = (uint8_t *) &x;
+    for (int i = 0; i < l/2; i++) {
+        *(p + i) = *(p + i) ^ *(p + l - 1 - i);
+        *(p + l - 1 - i) = *(p + i) ^ *(p + l - 1 - i);
+        *(p + i) = *(p + i) ^ *(p + l - 1 - i);
+    }
+    return x;
 }
 
 inline auto DumpBufferToFile(const std::string& path, const uint8_t *b, uint64_t l) {
@@ -218,18 +161,15 @@ inline void LTOB(uint64_t value, unsigned char *memory, int size) {
     }
 }
 
-inline void LTOB16(uint64_t value, unsigned char *memory)
-{
+inline void LTOB16(uint64_t value, unsigned char *memory) {
     LTOB(value, memory, 2);
 }
 
-inline void LTOB32(uint64_t value, unsigned char *memory)
-{
+inline void LTOB32(uint64_t value, unsigned char *memory) {
     LTOB(value, memory, 4);
 }
 
-inline void LTOB64(uint64_t value, unsigned char *memory)
-{
+inline void LTOB64(uint64_t value, unsigned char *memory) {
     LTOB(value, memory, 8);
 }
 

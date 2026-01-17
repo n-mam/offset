@@ -13,7 +13,7 @@ int main(int argc, char *argv[]) {
     testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
     //todo: merge everything below in gtest
-    auto arguments = osl::GetArgumentsVector(argc, argv);
+    auto arguments = osl::GetArgumentsVector<char>(argc, argv);
     osl::log::setLogLevel(osl::log::info);
     osl::log::setLogSink<std::string>(
         [](int level, int key, auto log) {
@@ -35,7 +35,7 @@ int main(int argc, char *argv[]) {
     } else if (ns == "cvl") {
         cvl::entry(arguments);
     } else if (ns == "osl") {
-       osl::lcs_tests();
+        osl::lcs_tests();
     } else {
         std::cout << "test npl ftp <host> <port> <user> <pass>" << std::endl;
     }
