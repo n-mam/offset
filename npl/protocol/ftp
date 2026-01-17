@@ -61,7 +61,7 @@ struct ftp : public protocol {
             if (b && l) {
                 fRet = m_data_channel->write_async(b, l);
             } else {
-                std::static_pointer_cast<socket_device>(m_data_channel)->stop_socket();
+                m_data_channel->stop_socket();
             }
         }
         return fRet ? (int32_t)l : 0;
@@ -188,7 +188,7 @@ struct ftp : public protocol {
     Direction m_currentDirection;
     std::condition_variable m_cv;
     bool m_uploadChannelReady = false;
-    spsubject m_data_channel = nullptr;
+    spsocket m_data_channel = nullptr;
     std::function<void ()> m_idle_callback;
 
     #define NEXT 0x10
@@ -371,7 +371,7 @@ struct ftp : public protocol {
             }
         } else {
             if (m_data_channel) {
-                std::static_pointer_cast<socket_device>(m_data_channel)->stop_socket();
+                m_data_channel->stop_socket();
                 m_data_channel.reset();
             }
             if (m_currentDirection == ftp::upload){
@@ -410,11 +410,10 @@ struct ftp : public protocol {
     virtual void OpenDataChannel() {
         m_data_channel = std::make_shared<socket_device>("sock-dc");
         get_last_target(shared_from_this())->add_event_listener(m_data_channel);
-        auto dc = std::static_pointer_cast<socket_device>(m_data_channel);
-        dc->set_host_and_port(m_dc_host, m_dc_port);
+        m_data_channel->set_host_and_port(m_dc_host, m_dc_port);
         AttachDataChannelObserver();
         m_triggerFlags = 0;
-        dc->start_socket_client();
+        m_data_channel->start_socket_client();
     }
 
     virtual void AttachDataChannelObserver(void) {
@@ -451,7 +450,7 @@ struct ftp : public protocol {
             if (transferCallback) {
                 auto continueTransfer = transferCallback((const char *)b, n);
                 if (!continueTransfer) {
-                    std::static_pointer_cast<socket_device>(m_data_channel)->stop_socket
+                    m_data_channel->stop_socket
                         (direction == ftp::download ? true : false);
                 }
                 if (direction == ftp::upload) {
@@ -482,15 +481,15 @@ struct ftp : public protocol {
             osl::is_bit_set(m_triggerFlags, 3)) {
             if (m_dc_tls == tls::yes) {
                 auto cc = std::static_pointer_cast<socket_device>(m_target.lock());
-                std::static_pointer_cast<socket_device>
-                    (m_data_channel)->initialize_ssl(cc->get_ssl_object(),
-                        [this](){
-                            if (m_currentDirection == ftp::upload)
-                                m_queue.front().c_tcbk((char *)0xABCDEF, 0);
-                        });
+                m_data_channel->initialize_ssl(cc->get_ssl_object(),
+                    [this](){
+                        if (m_currentDirection == ftp::upload)
+                            m_queue.front().c_tcbk((char *)0xABCDEF, 0);
+                    });
             } else {
-                if (m_currentDirection == ftp::upload)
+                if (m_currentDirection == ftp::upload) {
                     m_queue.front().c_tcbk((char *)0xABCDEF, 0);
+                }
             }
             osl::set_bit(m_triggerFlags, 1);
         }
@@ -580,7 +579,7 @@ struct ftp : public protocol {
     }
 };
 
-using SPProtocolFTP = std::shared_ptr<ftp>;
+using spftp = std::shared_ptr<ftp>;
 
 }
 

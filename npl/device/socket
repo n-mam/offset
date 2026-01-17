@@ -41,10 +41,10 @@ struct socket_device : public FileDeviceType {
 
     socket_device(const std::string& name) : file_device(name) {
         _device_type = device::socket;
-        _fd_async = (FD) ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+        _fd_async = (fd) ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     }
 
-    socket_device(FD socket) {
+    socket_device(fd socket) {
         _fd_async = socket;
         _device_type = device::socket;
     }
@@ -162,7 +162,7 @@ struct socket_device : public FileDeviceType {
         static void *pfn_acceptEx = osl::get_extention_pfn(WSAID_ACCEPTEX, _fd_async);
         uint8_t *b = (uint8_t *)calloc(1, 2 * (sizeof(SOCKADDR_STORAGE) + 16) + sizeof(context));
         ((context *)b)->type = context::accept;
-        ((context *)b)->as = (FD) ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+        ((context *)b)->as = (fd) ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
         DWORD bytesReceived;
         bool rc = ((LPFN_ACCEPTEX)pfn_acceptEx)(
                 (SOCKET)_fd_async,
@@ -176,7 +176,7 @@ struct socket_device : public FileDeviceType {
     }
     #endif
 
-    virtual bool set_socket_blocking_enabled(FD sock, bool blocking) {
+    virtual bool set_socket_blocking_enabled(fd sock, bool blocking) {
         #ifndef _WIN32
             int flags = fcntl(sock, F_GETFL, 0);
             if (flags == -1) return false;
@@ -322,7 +322,7 @@ struct socket_device : public FileDeviceType {
         #ifndef _WIN32
         struct sockaddr_storage ca;
         socklen_t alen = sizeof(struct sockaddr_storage);
-        ((context *)ctx)->as = (FD) ::accept((SOCKET)_fd_async, (struct sockaddr *) &ca, &alen);
+        ((context *)ctx)->as = (fd) ::accept((SOCKET)_fd_async, (struct sockaddr *) &ca, &alen);
         if (((context *)ctx)->as == -1) {
             DBG << "accept failed. error : " << strerror(errno) << " " << m_type;
             return;
@@ -437,7 +437,7 @@ struct socket_device : public FileDeviceType {
         return false;
     }
 
-    auto get_accepted_client(FD sock) {
+    auto get_accepted_client(fd sock) {
         return as_map[sock];
     }
 
@@ -459,33 +459,27 @@ struct socket_device : public FileDeviceType {
     SSL_CTX *m_ssl_ctx = nullptr;
     bool m_handshake_done = false;
     TOnHandshake m_onHandShake = nullptr;
-    std::unordered_map<FD, spsocket> as_map;
+    std::unordered_map<fd, spsocket> as_map;
 };
 
 using spsocket = std::shared_ptr<socket_device>;
 
-inline auto make_server(const std::string& host, int port, TListenerOnAccept cbk_accept, spsubject d) {
-    auto server = std::make_shared<socket_device>("server");
-    auto rc = server->set_host_and_port(host, port);
-    if (rc) {
-        auto svr_lsnr = std::make_shared<listener>();
-        svr_lsnr->setCallback<TListenerOnAccept>(cbk_accept);
-        d->add_event_listener(server)->add_event_listener(svr_lsnr);
-    } else {
-        server.reset();
-    }
-    return server;
-}
-
 inline auto make_client(const std::string& host, int port, spsubject d) {
     auto client = std::make_shared<socket_device>("client");
     auto rc = client->set_host_and_port(host, port);
-    if (rc) {
-        d->add_event_listener(client);
-    } else {
-        client.reset();
-    }
+    if (!rc) decltype(client){};
+    d->add_event_listener(client);
     return client;
+}
+
+inline auto make_server(const std::string& host, int port, TListenerOnAccept cbk_accept, spsubject d) {
+    auto server = std::make_shared<socket_device>("server");
+    auto rc = server->set_host_and_port(host, port);
+    if (!rc) return decltype(server){};
+    auto svr_lsnr = std::make_shared<listener>();
+    svr_lsnr->setCallback<TListenerOnAccept>(cbk_accept);
+    d->add_event_listener(server)->add_event_listener(svr_lsnr);
+    return server;
 }
 
 } // namespace npl

@@ -7,7 +7,7 @@
 #include <winsock2.h>
 #include <MSWSock.h>
 #include <Ws2tcpip.h>
-using FD = HANDLE;
+using fd = HANDLE;
 #else
 #include <netdb.h>
 #include <fcntl.h>
@@ -18,7 +18,7 @@ using FD = HANDLE;
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
-using FD = int;
+using fd = int;
 using SOCKET = int;
 #define closesocket close
 #define INVALID_HANDLE_VALUE -1
@@ -43,7 +43,7 @@ struct context {
         accept,
         connect
     } type;
-    FD as;
+    fd as;
     void *k;
     bool bFree;
     unsigned long n;
@@ -54,8 +54,8 @@ template<typename T>
 struct file_device : public subject<uint8_t, uint8_t> {
 
     T _path;
-    FD _fd_sync = INVALID_HANDLE_VALUE;
-    FD _fd_async = INVALID_HANDLE_VALUE;
+    fd _fd_sync = INVALID_HANDLE_VALUE;
+    fd _fd_async = INVALID_HANDLE_VALUE;
 
     file_device() = default;
     file_device(const std::string& name) : subject(name) {};

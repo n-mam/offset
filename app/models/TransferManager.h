@@ -89,7 +89,7 @@ class TransferManager : public QAbstractListModel {
     std::vector<Transfer> m_queue;
     int m_successful_transfers = 0;
     std::atomic<bool> m_stop{false};
-    std::vector<npl::SPProtocolFTP> m_sessions;
+    std::vector<npl::spftp> m_sessions;
 };
 
 #endif

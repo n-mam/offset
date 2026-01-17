@@ -65,9 +65,9 @@ Item {
             onClicked: (mouse) => {
                 if (mouse.button === Qt.RightButton) {
                     if (root.model.connected){
-                        contextMenu.selectedIndex = -1;
+                        itemContextMenu.selectedIndex = -1;
                         let localPos = root.mapFromItem(listView, mouse.x, mouse.y);
-                        contextMenu.popup(localPos.x, localPos.y);
+                        listContextMenu.popup(localPos.x, localPos.y);
                     }
                 }
             }
@@ -171,9 +171,9 @@ Item {
                             root.model.UnselectAll();
                             fileIsSelected = true;
                         }
-                        contextMenu.selectedIndex = index;
+                        itemContextMenu.selectedIndex = index;
                         let localPos = root.mapFromItem(delegateRect, mouse.x, mouse.y);
-                        contextMenu.popup(localPos.x, localPos.y);
+                        itemContextMenu.popup(localPos.x, localPos.y);
                     } else {
                         let shiftPressed = mouse.modifiers & Qt.ShiftModifier;
                         let ctrlPressed = mouse.modifiers & Qt.ControlModifier;
@@ -217,15 +217,18 @@ Item {
     }
 
     Menu {
-        id: contextMenu
+        id: listContextMenu
         property int selectedIndex: -1
         MenuItem {
-            text: "Download"
-            onTriggered: root.model.QueueTransfers(true);
+            text: "Quit"
+            onTriggered: root.model.Quit()
         }
         MenuItem {
-            text: "Queue"
-            onTriggered: root.model.QueueTransfers(false);
+            text: "Refresh"
+            onTriggered: {
+                logger.updateStatus(1, "Ready")
+                root.model.currentDirectory = root.model.currentDirectory
+            }
         }
         MenuItem {
             text: "New folder"
@@ -236,10 +239,23 @@ Item {
                 newRenamePopup.open()
             }
         }
+    }
+
+    Menu {
+        id: itemContextMenu
+        property int selectedIndex: -1
+        MenuItem {
+            text: "Download"
+            onTriggered: root.model.QueueTransfers(true);
+        }
+        MenuItem {
+            text: "Queue"
+            onTriggered: root.model.QueueTransfers(false);
+        }
         MenuItem {
             text: "Rename"
             onTriggered: {
-                var fileName = root.model.get(contextMenu.selectedIndex, "fileName")
+                var fileName = root.model.get(itemContextMenu.selectedIndex, "fileName")
                 newRenamePopup.context = "Rename \"" + fileName + "\""
                 newRenamePopup.elementName = fileName
                 newRenamePopup.inputHint = "New name"
@@ -248,17 +264,10 @@ Item {
             }
         }
         MenuItem {
-            text: "Refresh"
-            onTriggered: {
-                logger.updateStatus(1, "Ready")
-                root.model.currentDirectory = root.model.currentDirectory
-            }
-        }
-        MenuItem {
             text: "Delete"
             onTriggered: {
-                var fileName = root.model.get(contextMenu.selectedIndex, "fileName")
-                var fileIsDir = root.model.get(contextMenu.selectedIndex, "fileIsDir")
+                var fileName = root.model.get(itemContextMenu.selectedIndex, "fileName")
+                var fileIsDir = root.model.get(itemContextMenu.selectedIndex, "fileIsDir")
                 newRenamePopup.context = "Delete \"" + fileName + "\""
                 newRenamePopup.elementName = fileName
                 newRenamePopup.elementIsDir = fileIsDir
@@ -267,10 +276,7 @@ Item {
                 newRenamePopup.open()
             }
         }
-        MenuItem {
-            text: "Quit"
-            onTriggered: root.model.Quit()
-        }
+
     }
 
     Login {

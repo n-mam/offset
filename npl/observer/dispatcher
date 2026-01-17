@@ -359,10 +359,10 @@ struct dispatcher : public subject<uint8_t, uint8_t> {
 
     private:
 
-    FD _port;
-    bool _stop = false;
+    fd _port;
     spsocket _server;
     spsocket _client;
+    bool _stop = false;
     std::thread _thread;
 };
 

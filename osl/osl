@@ -55,7 +55,7 @@
 namespace osl {
 
 #ifdef _WIN32
-inline auto get_extention_pfn(GUID guid, FD fd) {
+inline auto get_extention_pfn(GUID guid, fd fd) {
     DWORD n;
     void *pfn;
     int rc = WSAIoctl(

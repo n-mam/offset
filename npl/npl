@@ -18,7 +18,7 @@ inline auto initialize_dispatcher(void) {
 }
 
 inline auto make_ftp(const std::string& host, int port, tls tls = tls::no) {
-    SPProtocolFTP ftp;
+    spftp ftp;
     auto cc = std::make_shared<socket_device>("sock-cc");
     auto success = cc->set_host_and_port(host, port);
     if (success) {

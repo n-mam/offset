@@ -57,7 +57,7 @@ class RemoteFsModel : public FsModel {
     void DownloadInternal(const std::string& file, const std::string& folder, const std::string& localFolder, bool isFolder, uint64_t size = 0);
 
     bool m_connected = false;
-    npl::SPProtocolFTP m_ftp;
+    npl::spftp m_ftp;
     std::vector<std::string> m_directories_to_remove;
 };
 
