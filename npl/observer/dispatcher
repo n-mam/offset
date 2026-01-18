@@ -142,11 +142,11 @@ struct dispatcher : public subject<uint8_t, uint8_t> {
     }
 
     virtual void add_device_to_event_port(spsubject subject) override {
-        auto device = std::dynamic_pointer_cast<FileDeviceType>(subject);
+        auto device = std::dynamic_pointer_cast<file_device>(subject);
         assert(device);
         #ifdef linux
         assert(device->get_device_type() == device::socket);
-        EpollControl(device, EPOLL_CTL_ADD, EPOLLIN | EPOLLOUT | EPOLLET);
+        EpollControl(device, EPOLL_CTL_ADD, EPOLLIN|EPOLLOUT|EPOLLET);
         #endif
         #if __has_include(<sys/event.h>)
         struct kevent kevt[2];

@@ -8,6 +8,62 @@
 
 namespace osl {
 
+#if defined (_WIN32)
+inline std::wstring utf8_to_win32(const std::string& utf8) {
+    thread_local std::wstring buffer;
+    int size = MultiByteToWideChar(
+        CP_UTF8,
+        MB_ERR_INVALID_CHARS,
+        utf8.data(),
+        static_cast<int>(utf8.size()),
+        nullptr,
+        0
+    );
+    if (size <= 0) {
+        throw std::runtime_error("Invalid UTF-8 input");
+    }
+    buffer.resize(size);
+    MultiByteToWideChar(
+        CP_UTF8,
+        MB_ERR_INVALID_CHARS,
+        utf8.data(),
+        static_cast<int>(utf8.size()),
+        buffer.data(),
+        size
+    );
+    return buffer;
+}
+
+inline std::string win32_to_utf8(const std::wstring& wstr) {
+    thread_local std::string buffer;
+    int size = WideCharToMultiByte(
+        CP_UTF8,
+        0,
+        wstr.data(),
+        static_cast<int>(wstr.size()),
+        nullptr,
+        0,
+        nullptr,
+        nullptr
+    );
+    if (size <= 0) {
+        throw std::runtime_error("Failed to convert UTF-16 to UTF-8");
+    }
+    buffer.resize(size);
+    WideCharToMultiByte(
+        CP_UTF8,
+        0,
+        wstr.data(),
+        static_cast<int>(wstr.size()),
+        buffer.data(),
+        size,
+        nullptr,
+        nullptr
+    );
+    return buffer;
+}
+#endif
+
 struct DllHelper {
     DllHelper(const std::string& dll) {
       hDll = LoadLibraryA(dll.c_str());

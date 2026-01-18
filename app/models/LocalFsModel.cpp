@@ -91,19 +91,22 @@ void LocalFsModel::Rename(QString from, QString to) {
 }
 
 void LocalFsModel::setCurrentDirectory(QString directory) {
-    if (directory.isEmpty())
+    if (directory.isEmpty()) {
         directory = QString::fromStdString(
             std::filesystem::current_path().string());
+    }
     m_currentDirectory = directory.toStdString();
     beginResetModel();
     m_model.clear();
     m_fileCount = m_folderCount = 0;
     m_model.push_back({"..", "", "", "d"});
-    for (auto& entry : std::filesystem::directory_iterator(m_currentDirectory)) {
+    for (auto& entry : std::filesystem::directory_iterator(m_currentDirectory.utf8())) {
         auto isDir = std::filesystem::is_directory(entry);
         isDir ? m_folderCount++ : m_fileCount++;
+        auto u8name = entry.path().filename().u8string();
+        std::string name(reinterpret_cast<const char*>(u8name.data()), u8name.size());
         m_model.push_back({
-            entry.path().filename().string(),
+            osl::string(name),
             (entry.is_regular_file() ? std::to_string(entry.file_size()) : "0"),
             "",
             (isDir ? "d" : "-"),

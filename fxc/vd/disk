@@ -54,7 +54,7 @@ struct disk : public npl::subject<uint8_t, uint8_t> {
     // existing disk base
     disk(const std::wstring& path, uint32_t len) {
         iPath = path;
-        iFile = npl::make_file<std::wstring>(iPath);
+        iFile = npl::make_file(path);
         iRawSectors = std::make_unique<uint8_t []>(len);
         iFile->read_sync(iRawSectors.get(), len, 0);
     }

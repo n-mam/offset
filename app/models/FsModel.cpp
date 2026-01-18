@@ -105,9 +105,9 @@ QString FsModel::getTotalFilesAndFolder(void) {
     return QString::number(m_fileCount) + ":" + QString::number(m_folderCount);
 }
 
-QString FsModel::getParentDirectory(void) {
-    return QString::fromStdString(
-        std::filesystem::path(m_currentDirectory).parent_path().string());
+QString FsModel::getParentDirectory() {
+    std::filesystem::path p(m_currentDirectory.utf8());
+    return QString::fromStdString(p.parent_path().string());
 }
 
 void FsModel::RemoveSelectedItems() {

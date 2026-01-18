@@ -24,6 +24,9 @@ using SOCKET = int;
 #define INVALID_HANDLE_VALUE -1
 #endif
 
+#include <osl/fs>
+#include <osl/str>
+
 namespace npl {
 
 enum device {
@@ -50,19 +53,19 @@ struct context {
     const uint8_t *b;
 };
 
-template<typename T>
+
 struct file_device : public subject<uint8_t, uint8_t> {
 
-    T _path;
     fd _fd_sync = INVALID_HANDLE_VALUE;
     fd _fd_async = INVALID_HANDLE_VALUE;
 
     file_device() = default;
     file_device(const std::string& name) : subject(name) {};
 
+    template<typename T>
     file_device(const T& path, bool create) : subject("file") {
         #ifdef _WIN32
-        if constexpr (std::is_same<T, std::wstring>::value)
+        if constexpr (std::is_same<T, std::wstring>::value) {
             _fd_async = CreateFileW(
                 path.c_str(),
                 GENERIC_READ|GENERIC_WRITE,
@@ -71,15 +74,16 @@ struct file_device : public subject<uint8_t, uint8_t> {
                 (create ? CREATE_ALWAYS : OPEN_EXISTING),
                 FILE_FLAG_OVERLAPPED|FILE_FLAG_SEQUENTIAL_SCAN,
                 NULL);
-        else if constexpr (std::is_same<T, std::string>::value)
-            _fd_async = CreateFileA(
-                path.c_str(),
+        } else if constexpr (std::is_same<T, std::string>::value) {
+            _fd_async = CreateFileW(
+                osl::utf8_to_win32(path).c_str(),
                 GENERIC_READ|GENERIC_WRITE,
                 FILE_SHARE_READ|FILE_SHARE_WRITE,
                 NULL,
                 (create ? CREATE_ALWAYS : OPEN_EXISTING),
                 FILE_FLAG_OVERLAPPED|FILE_FLAG_SEQUENTIAL_SCAN,
                 NULL);
+        }
         if (_fd_async == INVALID_HANDLE_VALUE) {
             ERR << path << L", _fd_async CreateFile failed: " << GetLastError();
             return;
@@ -95,8 +99,8 @@ struct file_device : public subject<uint8_t, uint8_t> {
                 FILE_ATTRIBUTE_NORMAL,
                 NULL);
         } else if constexpr (std::is_same<T, std::string>::value) {
-            _fd_sync = CreateFileA(
-                path.c_str(),
+            _fd_sync = CreateFileW(
+                osl::utf8_to_win32(path).c_str(),
                 GENERIC_READ|GENERIC_WRITE,
                 FILE_SHARE_READ|FILE_SHARE_WRITE,
                 NULL,
@@ -119,7 +123,6 @@ struct file_device : public subject<uint8_t, uint8_t> {
             return;
         }
         #endif
-        _path = path;
         _device_type = device::file;
     }
 
@@ -139,15 +142,15 @@ struct file_device : public subject<uint8_t, uint8_t> {
         return _device_type;
     }
 
-    auto is_open() {
+    bool is_open() {
         return (is_sync_open() && is_async_open());
     }
 
-    auto is_sync_open() {
+    bool is_sync_open() {
         return (_fd_sync != INVALID_HANDLE_VALUE);
     }
 
-    auto is_async_open() {
+    bool is_async_open() {
         return (_fd_async != INVALID_HANDLE_VALUE);
     }
 
@@ -272,13 +275,8 @@ struct file_device : public subject<uint8_t, uint8_t> {
     constexpr static uint32_t DEVICE_BUFFER_SIZE = 65536;
 };
 
-#ifdef _WIN32
-using FileDeviceType = file_device<std::wstring>;
-#else
-using FileDeviceType = file_device<std::string>;
-#endif
-using spfile = std::shared_ptr<FileDeviceType>;
-using wpfile = std::weak_ptr<FileDeviceType>;
+template<typename T>
+using spfile = std::shared_ptr<file_device>;
 }
 
 #endif

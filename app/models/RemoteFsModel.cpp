@@ -257,7 +257,7 @@ void RemoteFsModel::ParseMLSDList(const std::string& list, std::vector<FileEleme
       isDir ? (*pdc += 1) : (*pfc += 1);
     }
     fe_list.push_back({
-        name,
+        osl::string(name),
         size,
         "",
         isDir ? "d" : "-",
@@ -296,7 +296,7 @@ void RemoteFsModel::ParseLinuxList(const std::string& list, std::vector<FileElem
             }
         }
         while(*p == ' ') { p++; }
-        fe.m_name.append(p);
+        fe.m_name += p;
         fe_list.push_back(fe);
         if (pfc && pdc) isDir ? (*pdc += 1) : (*pfc += 1);
     }
@@ -322,7 +322,7 @@ void RemoteFsModel::ParseWindowsList(const std::string& list, std::vector<FileEl
         name.append(p);
         if (pfc && pdc) isDir ? (*pdc += 1) : (*pfc += 1);
         fe_list.push_back({
-            name,
+            osl::string(name),
             size,
             "",
             isDir ? "d" : "-",

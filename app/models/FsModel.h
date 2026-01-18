@@ -6,7 +6,7 @@
 #include <TransferManager.h>
 
 struct FileElement {
-    std::string m_name;
+    osl::string m_name;
     std::string m_size;
     std::string m_timestamp;
     std::string m_attributes;
@@ -69,7 +69,7 @@ class FsModel : public QAbstractListModel {
 
     int m_fileCount = 0;
     int m_folderCount = 0;
-    std::string m_currentDirectory;
+    osl::string m_currentDirectory;
     std::vector<FileElement> m_model;
     #if defined _WIN32
     char path_sep = '\\';

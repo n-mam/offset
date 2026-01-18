@@ -49,7 +49,7 @@ auto getTargetForDestination(const std::wstring& destination, const std::wstring
     npl::spsubject target;
     std::filesystem::path destinationPath(destination);
     if (std::filesystem::is_directory(destinationPath)) {
-        target = npl::make_file<std::wstring>(destination + L"\\" + name + L"." +
+        target = npl::make_file(destination + L"\\" + name + L"." +
             osl::get_timestamp() + L"." + getExtentionForFormat(format), true);
     } else {
         auto [protocol, username, password, host, port, directory] =
@@ -256,14 +256,14 @@ auto entry(std::vector<std::string> s_arguments) {
         fxc::createBaseVirtualDiskFromSource(
             arguments[0],
             arguments[1],
-            npl::make_file<std::wstring>(arguments[2], true),
+            npl::make_file(arguments[2], true),
             nullptr);
     } else if (cmd == L"-i") {
         fxc::createIncrementalVirtualDiskFromSource(
             arguments[0],
             arguments[1],
             arguments[2],
-            npl::make_file<std::wstring>(arguments[3], true),
+            npl::make_file(arguments[3], true),
             arguments[4]);
     } else if (cmd == L"-rtc") {
         fxc::resilientChangeTrackingToDataBlockIO(

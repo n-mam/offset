@@ -8,7 +8,7 @@
 namespace fxc {
 
 //create a raw image from source at ofset o and write to target
-auto image_copy_from(npl::spfile source, npl::spsubject target, TProgressCallback cbk = nullptr) {
+auto image_copy_from(npl::spfile<std::wstring> source, npl::spsubject target, TProgressCallback cbk = nullptr) {
     if (!osl::AllowExtendedDasdIO(source->_fd_sync)) {
         LOG << "AllowExtendedDasdIO failed, error : " << GetLastError();
     }
@@ -61,7 +61,7 @@ auto image_copy_from(npl::spfile source, npl::spsubject target, TProgressCallbac
 
 //create base parent vhd from a volume/snapshot block device
 auto create_base_vhd(const std::wstring& volume, npl::spsubject target, TProgressCallback cbk) {
-    auto source = npl::make_file<std::wstring>(volume, false);
+    auto source = npl::make_file(volume, false);
     assert(source);
     auto nvdb = osl::GetNTFSVolumeData(source->_fd_sync);
     uint64_t length = osl::GetBlockDeviceLength(source->_fd_sync);
@@ -220,7 +220,7 @@ auto create_child_vhd(const std::wstring& source, const std::wstring& parent,
         LOG << "create_child_vhd failed to get physical disk object";
         return false;
     }
-    auto phyDisk = npl::make_file<std::wstring>(phyDiskPath);
+    auto phyDisk = npl::make_file(phyDiskPath);
     // incremental data blocks
     auto buf = std::make_unique<uint8_t []>(512 + bs);
     blockCount = 0;
@@ -252,7 +252,7 @@ auto create_child_vhd(const std::wstring& source, const std::wstring& parent,
 }
 
 auto create_fixed_vhd(const std::wstring& device, npl::spsubject target, TProgressCallback cbk) {
-    auto source = npl::make_file<std::wstring>(device, false);
+    auto source = npl::make_file(device, false);
     assert(source);
     uint64_t length = osl::GetBlockDeviceLength(source->_fd_sync);
     LOG << "source device length " << length;
@@ -277,7 +277,7 @@ auto create_fixed_vhd(const std::wstring& device, npl::spsubject target, TProgre
 }
 
 auto create_raw_image(const std::wstring& device, npl::spsubject target, TProgressCallback cbk) {
-    auto source = npl::make_file<std::wstring>(device, false);
+    auto source = npl::make_file(device, false);
     assert(source);
     uint64_t length = osl::GetBlockDeviceLength(source->_fd_sync);
     LOG << "source device length " << length;
@@ -292,7 +292,7 @@ auto create_raw_image(const std::wstring& device, npl::spsubject target, TProgre
 
 //create base parent vhdx from a volume/snapshot block device
 void create_base_vhdx(const std::wstring& volume, npl::spsubject target, TProgressCallback cbk) {
-    auto source = npl::make_file<std::wstring>(volume, false);
+    auto source = npl::make_file(volume, false);
     assert(source);
     auto nvdb = osl::GetNTFSVolumeData(source->_fd_sync);
     uint64_t length = osl::GetBlockDeviceLength(source->_fd_sync);
@@ -493,7 +493,7 @@ bool create_child_vhdx(const std::wstring& source, const std::wstring& parent, n
         LOG << "create_child_vhdx failed to get physical disk object";
         return false;
     }
-    auto phyDisk = npl::make_file<std::wstring>(phyDiskPath);
+    auto phyDisk = npl::make_file(phyDiskPath);
     // incremental data blocks
     buf = std::make_unique<uint8_t []>(bs);
     blockCount = 0;
@@ -516,7 +516,7 @@ bool create_child_vhdx(const std::wstring& source, const std::wstring& parent, n
 auto get_virtual_disk(const std::wstring& path) {
     spdisk disk = nullptr;
     uint8_t buf[512] = { 0 };
-    auto file = npl::make_file<std::wstring>(path, false);
+    auto file = npl::make_file(path, false);
     if (!file) {
         LOG << L"Failed to open file " << path;
         return disk;

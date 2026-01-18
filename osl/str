@@ -12,6 +12,71 @@
 
 namespace osl {
 
+struct string {
+    string() = default;
+    string(const char* utf8) : m_utf8(utf8) {}
+    explicit string(std::string utf8) : m_utf8(std::move(utf8)) {}
+
+    const std::string& utf8() const noexcept { return m_utf8; }
+    bool empty() const noexcept { return m_utf8.empty(); }
+    std::size_t size() const noexcept { return m_utf8.size(); }
+
+    friend string operator +(const string& lhs, const string& rhs) {
+        return string(lhs.m_utf8 + rhs.m_utf8);
+    }
+    friend string operator +(const string& lhs, const std::string& rhs) {
+        return string(lhs.m_utf8 + rhs);
+    }
+    friend string operator +(const std::string& lhs, const string& rhs) {
+        return string(lhs + rhs.m_utf8);
+    }
+    string& operator +=(const string& rhs) {
+        m_utf8 += rhs.m_utf8;
+        return *this;
+    }
+    string& operator +=(const std::string& rhs) {
+        m_utf8 += rhs;
+        return *this;
+    }
+    string& operator +=(const char* rhs) {
+        m_utf8 += rhs;
+        return *this;
+    }
+    friend bool operator ==(const string& lhs, const string& rhs) noexcept {
+        return lhs.m_utf8 == rhs.m_utf8;
+    }
+    friend bool operator !=(const string& lhs, const string& rhs) noexcept {
+        return lhs.m_utf8 != rhs.m_utf8;
+    }
+    friend bool operator <(const string& lhs, const string& rhs) noexcept {
+        return lhs.m_utf8 < rhs.m_utf8;
+    }
+    friend bool operator <=(const string& lhs, const string& rhs) noexcept {
+        return lhs.m_utf8 <= rhs.m_utf8;
+    }
+    friend bool operator >(const string& lhs, const string& rhs) noexcept {
+        return lhs.m_utf8 > rhs.m_utf8;
+    }
+    friend bool operator >=(const string& lhs, const string& rhs) noexcept {
+        return lhs.m_utf8 >= rhs.m_utf8;
+    }
+    friend std::ostream& operator <<(std::ostream& os, const string& s) {
+        return os << s.m_utf8;
+    }
+    operator const std::string& () const noexcept {
+        return m_utf8;
+    }
+    string& operator =(std::string rhs) {
+        m_utf8 = std::move(rhs);
+        return *this;
+    }
+    std::size_t find(const std::string& needle) const {
+        return m_utf8.find(needle);
+    }
+    private:
+    std::string m_utf8;
+};
+
 template<typename T>
 inline auto is_bit_set(T x, uint8_t n) {
     return ((x >> (n - 1)) & 1);

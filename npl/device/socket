@@ -27,7 +27,7 @@ using TOnHandshake = std::function<void (void)>;
 
 inline std::map<SSL *, std::vector<SSL_SESSION *>> ssl_session_map;
 
-struct socket_device : public FileDeviceType {
+struct socket_device : public file_device {
 
     using wpsocket = std::weak_ptr<socket_device>;
     using spsocket = std::shared_ptr<socket_device>;
