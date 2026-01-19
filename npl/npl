@@ -113,7 +113,7 @@ inline void test_ftp_client(const std::string& host, const std::string& port,
             return true;
         }, {}, npl::tls::yes);
     ftp->SetCurrentDirectory("/");
-    auto file = npl::make_file("./xx.txt", true);
+    auto file = npl::make_file(std::string("./xx.txt"), true);
     ftp->Transfer(ftp::download, "x.txt",
         [file, offset = 0ULL](const char *b, size_t n) mutable {
             if (b) {

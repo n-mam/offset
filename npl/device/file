@@ -8,6 +8,8 @@
 #include <MSWSock.h>
 #include <Ws2tcpip.h>
 using fd = HANDLE;
+#include <osl/fs>
+#include <osl/str>
 #else
 #include <netdb.h>
 #include <fcntl.h>
@@ -23,9 +25,6 @@ using SOCKET = int;
 #define closesocket close
 #define INVALID_HANDLE_VALUE -1
 #endif
-
-#include <osl/fs>
-#include <osl/str>
 
 namespace npl {
 
@@ -275,8 +274,8 @@ struct file_device : public subject<uint8_t, uint8_t> {
     constexpr static uint32_t DEVICE_BUFFER_SIZE = 65536;
 };
 
-template<typename T>
 using spfile = std::shared_ptr<file_device>;
+
 }
 
 #endif
