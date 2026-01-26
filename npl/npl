@@ -19,7 +19,7 @@ inline auto initialize_dispatcher(void) {
 
 inline auto make_ftp(const std::string& host, int port, tls tls = tls::no) {
     spftp ftp;
-    auto cc = std::make_shared<socket_device>("sock-cc");
+    auto cc = std::make_shared<socket_device>();
     auto success = cc->set_host_and_port(host, port);
     if (success) {
         cc->m_tls = tls;
@@ -34,7 +34,7 @@ inline auto make_ftp(const std::string& host, int port, tls tls = tls::no) {
 inline auto make_ws_server(const std::string& host, int port, tls tls,
         TListenerOnAcceptedClientMessage cbk) {
     spwsserver wss;
-    auto cc = std::make_shared<socket_device>("ws-cc");
+    auto cc = std::make_shared<socket_device>();
     auto success = cc->set_host_and_port(host, port);
     if (success) {
         cc->m_tls = tls;
@@ -49,7 +49,7 @@ inline auto make_ws_server(const std::string& host, int port, tls tls,
 
 inline auto make_http_client(const std::string& host, int port) {
     sphttpclient http;
-    auto sock = std::make_shared<socket_device>("http-socket");
+    auto sock = std::make_shared<socket_device>();
     auto success = sock->set_host_and_port(host, port);
     if (success) {
         http = std::make_shared<http_client>();
@@ -147,17 +147,17 @@ inline void test_file_copy(const std::string& source, const std::string& dest) {
     constexpr int bufSize = (1 * 1024 * 1024);
     uint8_t *buf = (uint8_t *) calloc(bufSize, 1);
     auto obv = std::make_shared<npl::listener>();
-    obv->setCallback<TListenerOnRead>({
+    obv->setCallback<TListenerNotifyRead>({
         [wd, off = 0ULL](const uint8_t *b, size_t n) mutable {
-            DBG << "onRead " << n << ", off " << off;
+            DBG << "notify_read " << n << ", off " << off;
             if (n) {
                 wd->write_async(b, n, off);
             }
             off += n;
         }});
-    obv->setCallback<TListenerOnWrite>({
+    obv->setCallback<TListenerNotifyWrite>({
         [rd, off = 0ULL, bufSize](const uint8_t *b, size_t n) mutable {
-            DBG << "onWrite " << n << ", off " << off;
+            DBG << "notify_write " << n << ", off " << off;
             if (n) {
                 rd->read_async(b, bufSize, off += n);
             }

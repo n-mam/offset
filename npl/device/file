@@ -53,16 +53,15 @@ struct context {
 };
 
 
-struct file_device : public subject<uint8_t, uint8_t> {
+struct file_device : public subject {
 
     fd _fd_sync = INVALID_HANDLE_VALUE;
     fd _fd_async = INVALID_HANDLE_VALUE;
 
     file_device() = default;
-    file_device(const std::string& name) : subject(name) {};
 
     template<typename T>
-    file_device(const T& path, bool create) : subject("file") {
+    file_device(const T& path, bool create) {
         #ifdef _WIN32
         if constexpr (std::is_same<T, std::wstring>::value) {
             _fd_async = CreateFileW(
@@ -155,7 +154,7 @@ struct file_device : public subject<uint8_t, uint8_t> {
 
     virtual void * read_async(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override {
         if (!is_async_open()) {
-            ERR << get_name() << " read_async not open";
+            ERR << name() << " read_async not open";
             return nullptr;
         }
         context *ctx = (context *) calloc(1, sizeof(context));
@@ -173,12 +172,12 @@ struct file_device : public subject<uint8_t, uint8_t> {
         (ctx->ol).OffsetHigh = (o & 0xFFFFFFFF00000000) >> 32;
         BOOL fRet = ReadFile(_fd_async, (LPVOID) ctx->b, static_cast<DWORD>(l), NULL, &ctx->ol);
         if (!fRet && GetLastError() != ERROR_IO_PENDING) {
-            ERR << get_name() << " ReadFile failed: " << GetLastError();
+            ERR << name() << " ReadFile failed: " << GetLastError();
         }
         return nullptr;
         #else
         ctx->n = read(_fd_async, (void *) ctx->b, l);
-        DBG << get_name() << " read() " << (ssize_t) ctx->n
+        DBG << name() << " read() " << (ssize_t) ctx->n
                 << " error : " << strerror(errno);
         if ((ssize_t)ctx->n == -1) {
             if (!b) {
@@ -192,11 +191,11 @@ struct file_device : public subject<uint8_t, uint8_t> {
 
     virtual bool write_async(const uint8_t *b = nullptr , size_t l = 0, uint64_t o = 0) override {
         if (!is_async_open()) {
-            ERR << get_name() << " write_async not open";
+            ERR << name() << " write_async not open";
             return false;
         }
         if (!b || !l) {
-            ERR << get_name() << " write_async invalid arguments";
+            ERR << name() << " write_async invalid arguments";
             return false;
         }
         bool fRet = true;
@@ -213,13 +212,13 @@ struct file_device : public subject<uint8_t, uint8_t> {
             if ((GetLastError() == ERROR_IO_PENDING)) {
                 fRet = true;
             } else {
-                ERR << get_name() << " write_async WriteFile failed: " << GetLastError();
+                ERR << name() << " write_async WriteFile failed: " << GetLastError();
             }
         }
         #else
         auto rc = write(_fd_async, b, l);
         if (rc == -1) {
-            ERR << get_name() << " write_async write failed: " << strerror(errno);
+            ERR << name() << " write_async write failed: " << strerror(errno);
             fRet = false;
         }
         #endif
@@ -229,7 +228,7 @@ struct file_device : public subject<uint8_t, uint8_t> {
     #ifdef _WIN32
     virtual int32_t read_sync(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override {
         if (!is_sync_open()) {
-            ERR << get_name() << " write_async not open";
+            ERR << name() << " write_async not open";
             return false;
         }
         DWORD nBytesRead = 0;
@@ -239,7 +238,7 @@ struct file_device : public subject<uint8_t, uint8_t> {
         if (fRet) {
             fRet = ReadFile(_fd_sync, (LPVOID) b, static_cast<DWORD>(l), &nBytesRead, NULL);
             if (fRet == FALSE) {
-                ERR << get_name() << " read_sync ReadFile failed: " << GetLastError();
+                ERR << name() << " read_sync ReadFile failed: " << GetLastError();
             }
         }
         return nBytesRead;
@@ -247,11 +246,11 @@ struct file_device : public subject<uint8_t, uint8_t> {
 
     virtual int32_t write_sync(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override {
         if (!is_sync_open()) {
-            ERR << get_name() << " write_async not open";
+            ERR << name() << " write_async not open";
             return false;
         }
         if (!b || !l) {
-            ERR << get_name() << " write_sync invalid arguments";
+            ERR << name() << " write_sync invalid arguments";
             return false;
         }
         DWORD nBytesWritten = 0;
@@ -261,7 +260,7 @@ struct file_device : public subject<uint8_t, uint8_t> {
         if (fRet) {
             fRet = WriteFile(_fd_sync, (LPVOID)b, static_cast<DWORD>(l), &nBytesWritten, NULL);
             if (fRet == FALSE) {
-                ERR << get_name() << " write_sync WriteFile failed: " << GetLastError();
+                ERR << name() << " write_sync WriteFile failed: " << GetLastError();
             }
         }
         return nBytesWritten;

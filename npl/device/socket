@@ -39,7 +39,7 @@ struct socket_device : public file_device {
         ListeningSocket
     };
 
-    socket_device(const std::string& name) : file_device(name) {
+    socket_device() {
         _device_type = device::socket;
         _fd_async = (fd) ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     }
@@ -53,7 +53,7 @@ struct socket_device : public file_device {
         stop_socket();
         shutdown((SOCKET)_fd_async, 0); //sd_recv
         closesocket((SOCKET)_fd_async);
-        DBG << "~socket_device() <-- " << get_name() << " shutdown(sd_recv)";
+        DBG << "~socket_device() <-- " << name() << " shutdown(sd_recv)";
         if (m_ssl) {
             if (ssl_session_map[m_ssl].size()) {
                 ssl_session_map[m_ssl].clear();
@@ -68,7 +68,7 @@ struct socket_device : public file_device {
                 int flag = SSL_get_shutdown(m_ssl);
                 if (!(flag & SSL_SENT_SHUTDOWN)) {
                     int rc = SSL_shutdown(m_ssl);
-                    DBG << get_name() << " ssl_shutdown() rc : " << rc;
+                    DBG << name() << " ssl_shutdown() rc : " << rc;
                     update_write_bio();
                 }
             }
@@ -77,7 +77,7 @@ struct socket_device : public file_device {
             if (stopWrite) {
                 shutdown((SOCKET)_fd_async, 0); //sd_recv
             }
-            DBG << get_name() << " shutdown(sd_send)";
+            DBG << name() << " shutdown(sd_send)";
         }
     }
 
@@ -108,7 +108,7 @@ struct socket_device : public file_device {
                 (LPOVERLAPPED)ctx);
         if (fRet) {
             setsockopt((SOCKET)_fd_async, SOL_SOCKET, SO_UPDATE_CONNECT_CONTEXT, NULL, 0 );
-            onConnect();
+            notify_connect();
         } else if (WSAGetLastError() == ERROR_IO_PENDING) {
 
         } else {
@@ -134,14 +134,14 @@ struct socket_device : public file_device {
         sa.sin_port = htons(m_port);
         int fRet = bind((SOCKET)_fd_async, (const sockaddr *)&sa, sizeof(sa));
         if (fRet == -1) {
-            DBG << get_name() << " bind failed. error: " << strerror(errno);
+            DBG << name() << " bind failed. error: " << strerror(errno);
         }
         assert(fRet == 0);
         memset(&sa, 0, sizeof(sa));
         socklen_t len = sizeof(sa);
         getsockname((SOCKET)_fd_async, (struct sockaddr *)&sa, &len);
         m_port = ntohs(sa.sin_port);
-        DBG << get_name() << " server bound at port " << m_port;
+        DBG << name() << " server bound at port " << m_port;
         fRet = listen((SOCKET)_fd_async, SOMAXCONN);
         if (fRet == -1) {
             DBG << "listen failed. error: " << strerror(errno);
@@ -258,7 +258,7 @@ struct socket_device : public file_device {
     virtual void check_peer_ssl_shutdown() {
         int flag = SSL_get_shutdown(m_ssl);
         if (flag & SSL_RECEIVED_SHUTDOWN) {
-            DBG << get_name() << " SSL_RECEIVED_SHUTDOWN, flags : " << flag;
+            DBG << name() << " SSL_RECEIVED_SHUTDOWN, flags : " << flag;
             if (!(flag & SSL_SENT_SHUTDOWN)) {
                 stop_socket();
             }
@@ -317,7 +317,7 @@ struct socket_device : public file_device {
         }
     }
 
-    virtual void onAccept(void *ctx) override {
+    virtual void notify_accept(void *ctx) override {
         assert(is_listening_socket());
         #ifndef _WIN32
         struct sockaddr_storage ca;
@@ -337,37 +337,37 @@ struct socket_device : public file_device {
         accepted_client->mark_connected(true);
         as_map.insert({((context *)ctx)->as, accepted_client});
         get_last_target(shared_from_this())->add_event_listener(accepted_client);
-        file_device::onAccept(ctx);
+        file_device::notify_accept(ctx);
         #ifdef _WIN32
         accepted_client->read_async();
         accept_new_connection();
         #endif
     }
 
-    virtual void onError(uint64_t error) override {
-        file_device::onError(error);
+    virtual void notify_error(uint64_t error) override {
+        file_device::notify_error(error);
     }
 
-    virtual void onConnect() override {
+    virtual void notify_connect() override {
         assert(is_client_socket());
-        DBG << get_name() << " onConnect()";
-        file_device::onConnect();
+        DBG << name() << " notify_connect()";
+        file_device::notify_connect();
         #ifdef _WIN32
         file_device::read_async();
         setsockopt((SOCKET)_fd_async, SOL_SOCKET, SO_UPDATE_CONNECT_CONTEXT, NULL, 0 );
         #endif
     }
 
-    virtual void onDisconnect() override {
+    virtual void notify_disconnect() override {
         if (m_ssl) {
-            // DBG << get_name() <<
+            // DBG << name() <<
             // " shutdown mode : " << SSL_get_shutdown(m_ssl);
             check_peer_ssl_shutdown();
         }
-        file_device::onDisconnect();
+        file_device::notify_disconnect();
     }
 
-    virtual void onRead(const uint8_t *b, size_t n) override {
+    virtual void notify_read(const uint8_t *b, size_t n) override {
         #ifdef _WIN32
         file_device::read_async();
         #endif
@@ -383,12 +383,12 @@ struct socket_device : public file_device {
                 if (rc == 1) {
                     m_handshake_done = true;
                     m_tls_version = SSL_get_version(m_ssl);
-                    DBG << get_name() << " " << m_tls_version << " handshake done, session reused : " << SSL_session_reused(m_ssl);
+                    DBG << name() << " " << m_tls_version << " handshake done, session reused : " << SSL_session_reused(m_ssl);
                     if (m_onHandShake) {
                         m_onHandShake();
                     }
                 } else {
-                    DBG << get_name() << " SSL_do_handshake : " << rc << " " << SSL_get_error(m_ssl, rc);
+                    DBG << name() << " SSL_do_handshake : " << rc << " " << SSL_get_error(m_ssl, rc);
                 }
             }
 
@@ -410,15 +410,15 @@ struct socket_device : public file_device {
                 return;
             }
         }
-        file_device::onRead(_b, _n);
+        file_device::notify_read(_b, _n);
     }
 
-    virtual void onWrite(const uint8_t *b, size_t n) override {
+    virtual void notify_write(const uint8_t *b, size_t n) override {
         if (m_ssl && !m_handshake_done) {
             SSL_do_handshake(m_ssl);
             return;
         }
-        file_device::onWrite(b, n);
+        file_device::notify_write(b, n);
     }
 
     virtual void * read_async(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override {
@@ -465,19 +465,19 @@ struct socket_device : public file_device {
 using spsocket = std::shared_ptr<socket_device>;
 
 inline auto make_client(const std::string& host, int port, spsubject d) {
-    auto client = std::make_shared<socket_device>("client");
+    auto client = std::make_shared<socket_device>();
     auto rc = client->set_host_and_port(host, port);
     if (!rc) decltype(client){};
     d->add_event_listener(client);
     return client;
 }
 
-inline auto make_server(const std::string& host, int port, TListenerOnAccept cbk_accept, spsubject d) {
-    auto server = std::make_shared<socket_device>("server");
+inline auto make_server(const std::string& host, int port, TListenerNotifyAccept cbk_accept, spsubject d) {
+    auto server = std::make_shared<socket_device>();
     auto rc = server->set_host_and_port(host, port);
     if (!rc) return decltype(server){};
     auto svr_lsnr = std::make_shared<listener>();
-    svr_lsnr->setCallback<TListenerOnAccept>(cbk_accept);
+    svr_lsnr->setCallback<TListenerNotifyAccept>(cbk_accept);
     d->add_event_listener(server)->add_event_listener(svr_lsnr);
     return server;
 }

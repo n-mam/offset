@@ -408,7 +408,7 @@ struct ftp : public protocol {
     }
 
     virtual void OpenDataChannel() {
-        m_data_channel = std::make_shared<socket_device>("sock-dc");
+        m_data_channel = std::make_shared<socket_device>();
         get_last_target(shared_from_this())->add_event_listener(m_data_channel);
         m_data_channel->set_host_and_port(m_dc_host, m_dc_port);
         AttachDataChannelObserver();
@@ -418,22 +418,22 @@ struct ftp : public protocol {
 
     virtual void AttachDataChannelObserver(void) {
         auto observer = std::make_shared<listener>();
-        observer->setCallback<TListenerOnConnect>({
+        observer->setCallback<TListenerNotifyConnect>({
             [this](bool connected) {
                 connected ? OnDataChannelConnect() :
                     OnDataChannelDisconnect();
             }});
-        observer->setCallback<TListenerOnRead>({
+        observer->setCallback<TListenerNotifyRead>({
             [this](const uint8_t *b, size_t n) {
                 if (!m_data_channel->is_stopped())
                     OnDataChannelIoCompletion(b, n, ftp::download);
             }});
-        observer->setCallback<TListenerOnWrite>({
+        observer->setCallback<TListenerNotifyWrite>({
             [this](const uint8_t *b, size_t n) {
                 if (!m_data_channel->is_stopped())
                     OnDataChannelIoCompletion(b, n, ftp::upload);
             }});
-        observer->setCallback<TListenerOnError>({
+        observer->setCallback<TListenerNotifyError>({
             [this](uint64_t e){
                 OnDataChannelDisconnect();
             }});
@@ -540,16 +540,16 @@ struct ftp : public protocol {
         return (c == '1');
     }
 
-    virtual void onError(uint64_t error) override {
+    virtual void notify_error(uint64_t error) override {
         STATUS(1) << "control channel error " << error;
     }
 
-    virtual void onDisconnect(void) override {
-        protocol::onDisconnect();
+    virtual void notify_disconnect(void) override {
+        protocol::notify_disconnect();
     }
 
-    virtual void onConnect(void) override {
-        protocol::onConnect();
+    virtual void notify_connect(void) override {
+        protocol::notify_connect();
         auto tls = get_channel_tls();
         if (tls == tls::implicit){
             DoCCHandshake();

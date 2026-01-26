@@ -189,7 +189,7 @@ struct websocket_server : public http_client {
         return true; //todo
     }
 
-    virtual void onAccept(void *ctx) override {
+    virtual void notify_accept(void *ctx) override {
         auto sock = get_target_socket_device();
         if (sock) {
             auto aso = std::make_shared<websocket_server>();
@@ -198,7 +198,7 @@ struct websocket_server : public http_client {
         }
     }
 
-    virtual void onConnect(void) override {
+    virtual void notify_connect(void) override {
         send_client_hello();
     }
 };

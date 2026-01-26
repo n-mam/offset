@@ -220,10 +220,6 @@ Item {
         id: listContextMenu
         property int selectedIndex: -1
         MenuItem {
-            text: "Quit"
-            onTriggered: root.model.Quit()
-        }
-        MenuItem {
             text: "Refresh"
             onTriggered: {
                 logger.updateStatus(1, "Ready")
@@ -238,6 +234,10 @@ Item {
                 newRenamePopup.inputValue = ""
                 newRenamePopup.open()
             }
+        }
+        MenuItem {
+            text: "Disconnect"
+            onTriggered: root.model.Quit()
         }
     }
 

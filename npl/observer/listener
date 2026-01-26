@@ -9,52 +9,52 @@ struct TListenerOnLogin { std::function<void (bool)> cbk; };
 struct TListenerOnResponse { std::function<void (const std::string&)> cbk; };
 struct TListenerOnAcceptedClientMessage { std::function<void (npl::spsubject, const std::string&)> cbk; };
 
-struct TListenerOnConnect { std::function<void (bool)> cbk; };
-struct TListenerOnAccept { std::function<void (void *)> cbk; };
-struct TListenerOnError { std::function<void (uint64_t)> cbk; };
-struct TListenerOnRead { std::function<void (const uint8_t *b, size_t n)> cbk; };
-struct TListenerOnWrite { std::function<void (const uint8_t *b, size_t n)> cbk; };
+struct TListenerNotifyConnect { std::function<void (bool)> cbk; };
+struct TListenerNotifyAccept { std::function<void (void *)> cbk; };
+struct TListenerNotifyError { std::function<void (uint64_t)> cbk; };
+struct TListenerNotifyRead { std::function<void (const uint8_t *b, size_t n)> cbk; };
+struct TListenerNotifyWrite { std::function<void (const uint8_t *b, size_t n)> cbk; };
 
 namespace npl {
 
-struct listener : public subject<uint8_t, uint8_t> {
+struct listener : public subject {
 
     listener() = default;
     virtual ~listener(){}
 
-    virtual void onConnect(void) override {
-        subject::onConnect();
+    virtual void notify_connect(void) override {
+        subject::notify_connect();
         if (cbkConnect.cbk) {
             cbkConnect.cbk(true);
         }
     }
 
-    virtual void onAccept(void *ctx) override {
+    virtual void notify_accept(void *ctx) override {
         if (cbkAccept.cbk) {
             cbkAccept.cbk(ctx);
         }
     }
 
-    virtual void onDisconnect(void) override {
-        subject::onDisconnect();
+    virtual void notify_disconnect(void) override {
+        subject::notify_disconnect();
         if (cbkConnect.cbk) {
             cbkConnect.cbk(false);
         }
     }
 
-    virtual void onError(uint64_t error) override {
+    virtual void notify_error(uint64_t error) override {
         if (cbkError.cbk) {
             cbkError.cbk(error);
         }
     }
 
-    virtual void onRead(const uint8_t *b, size_t n) override {
+    virtual void notify_read(const uint8_t *b, size_t n) override {
         if (cbkRead.cbk) {
             cbkRead.cbk(b, n);
         }
     }
 
-    virtual void onWrite(const uint8_t *b, size_t n) override {
+    virtual void notify_write(const uint8_t *b, size_t n) override {
         if (cbkWrite.cbk) {
             cbkWrite.cbk(b, n);
         }
@@ -80,15 +80,15 @@ struct listener : public subject<uint8_t, uint8_t> {
 
     template<typename T>
     void setCallback(T callback) {
-        if constexpr(std::is_same<T, TListenerOnConnect>::value) {
+        if constexpr(std::is_same<T, TListenerNotifyConnect>::value) {
             cbkConnect = callback;
-        } else if constexpr(std::is_same<T, TListenerOnRead>::value) {
+        } else if constexpr(std::is_same<T, TListenerNotifyRead>::value) {
             cbkRead = callback;
-        } else if constexpr(std::is_same<T, TListenerOnWrite>::value) {
+        } else if constexpr(std::is_same<T, TListenerNotifyWrite>::value) {
             cbkWrite = callback;
-        } else if constexpr(std::is_same<T, TListenerOnAccept>::value) {
+        } else if constexpr(std::is_same<T, TListenerNotifyAccept>::value) {
             cbkAccept = callback;
-        } else if constexpr(std::is_same<T, TListenerOnError>::value) {
+        } else if constexpr(std::is_same<T, TListenerNotifyError>::value) {
             cbkError = callback;
         } else if constexpr(std::is_same<T, TListenerOnLogin>::value) {
             cbkLogin = callback;
@@ -105,11 +105,11 @@ struct listener : public subject<uint8_t, uint8_t> {
     TListenerOnResponse cbkResponse {nullptr};
     TListenerOnAcceptedClientMessage cbkAcceptedClientmessage {nullptr};
 
-    TListenerOnRead cbkRead {nullptr};
-    TListenerOnWrite cbkWrite {nullptr};
-    TListenerOnError cbkError {nullptr};
-    TListenerOnAccept cbkAccept {nullptr};
-    TListenerOnConnect cbkConnect {nullptr};
+    TListenerNotifyRead cbkRead {nullptr};
+    TListenerNotifyWrite cbkWrite {nullptr};
+    TListenerNotifyError cbkError {nullptr};
+    TListenerNotifyAccept cbkAccept {nullptr};
+    TListenerNotifyConnect cbkConnect {nullptr};
 };
 
 }

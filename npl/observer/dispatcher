@@ -48,25 +48,25 @@ constexpr inline auto context_type_string(
     decltype(context::type) t) {
     switch (t) {
         case context::accept:
-            return "onAccept";
+            return "notify_accept";
             break;
         case context::connect:
-            return "onConnect";
+            return "notify_connect";
             break;
         case context::read:
-            return "onRead";
+            return "notify_read";
             break;
         case context::write:
-            return "onWrite";
+            return "notify_write";
             break;
         default:
             return "invalid";
     }
 }
 
-struct dispatcher : public subject<uint8_t, uint8_t> {
+struct dispatcher : public subject {
 
-    dispatcher(const std::string& name = "D") : subject(name) {
+    dispatcher() {
         #if __has_include(<sys/event.h>)
         _port = kqueue();
         DBG << "kqueue _port " << _port << ", " << strerror(errno);
@@ -111,13 +111,13 @@ struct dispatcher : public subject<uint8_t, uint8_t> {
     inline auto has_control_initialized() {
         // accept completion on server should generally be queued
         // before connect completion of client. However, we check
-        // both. this->is_connected happens in the server's onAccept
+        // both. this->is_connected happens in the server's notify_accept
         return (_client->is_connected() && this->is_connected());
     }
 
     inline auto initialize_control(void) {
         // connected client read callback
-        TListenerOnRead cbk_server_accepted_client_read = {
+        TListenerNotifyRead cbk_server_accepted_client_read = {
             [=, this, m = std::string()](const uint8_t *b, size_t n) mutable {
                 m.append((char *)b, n);
                 if (m.size() >= sizeof(context)) {
@@ -128,10 +128,10 @@ struct dispatcher : public subject<uint8_t, uint8_t> {
                 }
             }};
         // control server accept callback
-        TListenerOnAccept cbk_server_accept = {
+        TListenerNotifyAccept cbk_server_accept = {
             [=, this] (void *ctx) {
                 auto ac_lsnr = std::make_shared<listener>();
-                ac_lsnr->setCallback<TListenerOnRead>(cbk_server_accepted_client_read);
+                ac_lsnr->setCallback<TListenerNotifyRead>(cbk_server_accepted_client_read);
                 _server->get_accepted_client(((context *)ctx)->as)->add_event_listener(ac_lsnr);
                 mark_connected(true);
             }};
@@ -188,7 +188,7 @@ struct dispatcher : public subject<uint8_t, uint8_t> {
             if (!rc) {
                 error = GetLastError();
                 DBG << "GQCS failed : " << error << " "
-                        << ((subject<uint8_t, uint8_t> *)k)->get_name();
+                        << ((subject *)k)->name();
             }
             if (n == 0 && k == 0 && ol == 0) break;
             #elif linux
@@ -200,7 +200,7 @@ struct dispatcher : public subject<uint8_t, uint8_t> {
                 error = errno;
                 if (errno == EINTR) continue;
                 DBG << "epoll_wait failed : " << strerror(error) << " "
-                        << (k ? ((subject<uint8_t, uint8_t> *)k)->get_name() : "");
+                        << (k ? ((subject *)k)->name() : "");
             }
             Event e {ee.events};
             #elif __has_include(<sys/event.h>)
@@ -210,7 +210,7 @@ struct dispatcher : public subject<uint8_t, uint8_t> {
             if (rc < 0) {
                 error = errno;
                 DBG << "kevent failed : " << strerror(error) << " "
-                        << ((subject<uint8_t, uint8_t> *)k)->get_name();
+                        << ((subject *)k)->name();
                 break;
             }
             k = ke.udata;
@@ -242,31 +242,30 @@ struct dispatcher : public subject<uint8_t, uint8_t> {
     }
 
     void process_event_context(void *key, context *ctx, int rc = 1, uint64_t error = 0) {
-        auto k = (subject<uint8_t, uint8_t> *) key;
-        DBG << k->get_name() << " process_event_context " << std::hex << (uint64_t) k << " "
+        auto k = (subject *) key;
+        DBG << k->name() << " process_event_context " << std::hex << (uint64_t) k << " "
                 <<  context_type_string(ctx->type) << " n " << std::dec << (ssize_t) ctx->n;
         if (rc <= 0) {
-            k->onError(error);
+            k->notify_error(error);
         } else if (ctx->type == context::read) {
             if (ctx->n != 0) {
-                k->onRead(ctx->b, ctx->n);
+                k->notify_read(ctx->b, ctx->n);
             } else {
-                k->onDisconnect();
+                k->notify_disconnect();
             }
         } else if (ctx->type == context::write) {
-            k->onWrite(ctx->b, ctx->n);
+            k->notify_write(ctx->b, ctx->n);
         } else if (ctx->type == context::connect) {
-            k->onConnect();
+            k->notify_connect();
         } else if (ctx->type == context::accept) {
-            k->onAccept(ctx);
+            k->notify_accept(ctx);
         } else {
             assert(false);
         }
-
+        k->process_listeners_marked_for_removal();
         if (ctx->bFree) {
             free((void *)ctx->b);
         }
-
         free(ctx);
     }
 
