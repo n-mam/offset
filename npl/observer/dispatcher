@@ -47,17 +47,20 @@ struct Event {
 constexpr inline auto context_type_string(
     decltype(context::type) t) {
     switch (t) {
+        case context::read:
+            return "notify_read";
+            break;
+        case context::write:
+            return "notify_write";
+            break;
         case context::accept:
             return "notify_accept";
             break;
         case context::connect:
             return "notify_connect";
             break;
-        case context::read:
-            return "notify_read";
-            break;
-        case context::write:
-            return "notify_write";
+        case context::disconnect:
+            return "notify_disconnect";
             break;
         default:
             return "invalid";
@@ -146,7 +149,7 @@ struct dispatcher : public subject {
         assert(device);
         #ifdef linux
         assert(device->get_device_type() == device::socket);
-        EpollControl(device, EPOLL_CTL_ADD, EPOLLIN|EPOLLOUT|EPOLLET);
+        epoll_control(device, EPOLL_CTL_ADD, EPOLLIN|EPOLLOUT|EPOLLET);
         #endif
         #if __has_include(<sys/event.h>)
         struct kevent kevt[2];
@@ -243,10 +246,16 @@ struct dispatcher : public subject {
 
     void process_event_context(void *key, context *ctx, int rc = 1, uint64_t error = 0) {
         auto k = (subject *) key;
-        DBG << k->name() << " process_event_context " << std::hex << (uint64_t) k << " "
-                <<  context_type_string(ctx->type) << " n " << std::dec << (ssize_t) ctx->n;
+        DBG << k->name() << " process_event_context " << std::hex << (uint64_t)k << " "
+                <<  context_type_string(ctx->type) << " n " << std::dec << (ssize_t)ctx->n;
         if (rc <= 0) {
+            #ifdef _WIN32
+            if (ctx->type == context::connect) {
+                k->notify_disconnect();
+            }
+            #else
             k->notify_error(error);
+            #endif
         } else if (ctx->type == context::read) {
             if (ctx->n != 0) {
                 k->notify_read(ctx->b, ctx->n);
@@ -257,6 +266,8 @@ struct dispatcher : public subject {
             k->notify_write(ctx->b, ctx->n);
         } else if (ctx->type == context::connect) {
             k->notify_connect();
+        } else if (ctx->type == context::disconnect) {
+            k->notify_disconnect();
         } else if (ctx->type == context::accept) {
             k->notify_accept(ctx);
         } else {
@@ -281,14 +292,19 @@ struct dispatcher : public subject {
                     << " isConnected : " << isConnected;
             if (isClientSocket && !isConnected) {
                 // writability implies that the connection process has finished.
-                // does not mean success.. it could have failed as well.
+                // does not mean success.. it could have failed as well. use SO_ERROR
+                // on linux to get the connect result.
+                int err;
+                socklen_t len = sizeof(err);
                 auto ctx = (context *)calloc(1, sizeof(context));
-                ctx->type = context::connect;
+                getsockopt(dev->_fd_async, SOL_SOCKET, SO_ERROR, &err, &len);
+                ctx->type = (err == 0) ? context::connect :
+                    context::disconnect;
                 ctx->k = dev.get();
                 contexts.push_back(ctx);
             }
             #ifdef linux
-            EpollControl(dev, EPOLL_CTL_MOD, EPOLLIN | EPOLLET);
+            epoll_control(dev, EPOLL_CTL_MOD, EPOLLIN | EPOLLET);
             #endif
 
             #if __has_include(<sys/event.h>)
@@ -338,7 +354,7 @@ struct dispatcher : public subject {
     }
 
     #ifdef linux
-    virtual void EpollControl(spfile device, int op, uint32_t flags) {
+    virtual void epoll_control(spfile device, int op, uint32_t flags) {
         struct epoll_event e;
         e.events = flags;
         e.data.ptr = device.get();

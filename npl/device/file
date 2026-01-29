@@ -43,7 +43,8 @@ struct context {
         ioctl,
         write,
         accept,
-        connect
+        connect,
+        disconnect
     } type;
     fd as;
     void *k;

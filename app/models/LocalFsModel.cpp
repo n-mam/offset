@@ -100,14 +100,26 @@ void LocalFsModel::setCurrentDirectory(QString directory) {
     m_model.clear();
     m_fileCount = m_folderCount = 0;
     m_model.push_back({"..", "", "", "d"});
-    for (auto& entry : std::filesystem::directory_iterator(m_currentDirectory.utf8())) {
-        auto isDir = std::filesystem::is_directory(entry);
-        isDir ? m_folderCount++ : m_fileCount++;
+    std::error_code ec;
+    for (std::filesystem::directory_iterator entryIt(m_currentDirectory.utf8(), ec);
+            !ec && entryIt != std::filesystem::end(entryIt); entryIt.increment(ec)) {
+        if (ec) continue;
+        const auto& entry = *entryIt;
+        bool isDir = entry.is_directory(ec);
+        if (ec) continue;
+        isDir ? ++m_folderCount : ++m_fileCount;
+        // get name safely
         auto u8name = entry.path().filename().u8string();
         std::string name(reinterpret_cast<const char*>(u8name.data()), u8name.size());
+        // get file size safely
+        std::string sizeStr = "0";
+        if (!isDir) {
+            std::uintmax_t fsize = entry.file_size(ec);
+            if (!ec) sizeStr = std::to_string(fsize);
+        }
         m_model.push_back({
             osl::string(name),
-            (entry.is_regular_file() ? std::to_string(entry.file_size()) : "0"),
+            sizeStr,
             "",
             (isDir ? "d" : "-"),
             false

@@ -546,6 +546,8 @@ struct ftp : public protocol {
 
     virtual void notify_disconnect(void) override {
         protocol::notify_disconnect();
+        auto cc = std::static_pointer_cast<socket_device>(m_target.lock());
+        STATUS(1) << "Disconnected from " << cc->m_host;
     }
 
     virtual void notify_connect(void) override {

@@ -30,7 +30,7 @@ struct subject : public std::enable_shared_from_this<subject> {
     virtual ~subject() {
         std::lock_guard<std::mutex> lg(m_lock);
         remove_all_event_listeners();
-        DBG << "~subject : " << name();
+        DBG << "~subject : " << m_name;
     }
 
     uint8_t get_state() {
@@ -176,20 +176,6 @@ struct subject : public std::enable_shared_from_this<subject> {
         return -1;
     }
 
-    void process_listeners_marked_for_removal(void) {
-        if (this->m_removeAllListeners) {
-            this->remove_all_event_listeners();
-            return;
-        }
-        for (auto it = m_observers.begin(); it != m_observers.end(); ) {
-            if ((*it)->is_marked_remove_self_as_listener()) {
-                it = this->remove_event_listener_internal(*it);
-            } else {
-                it++;
-            }
-        }
-    }
-
     static spsubject get_last_target(spsubject sub) {
         while (sub) {
             auto target = (sub->m_target).lock();
@@ -210,6 +196,20 @@ struct subject : public std::enable_shared_from_this<subject> {
     auto remove_event_listener(const spsubject& observer) {
         std::lock_guard<std::mutex> lg(m_lock);
         remove_event_listener_internal(observer);
+    }
+
+    void process_listeners_marked_for_removal(void) {
+        if (this->m_removeAllListeners) {
+            this->remove_all_event_listeners();
+            return;
+        }
+        for (auto it = m_observers.begin(); it != m_observers.end(); ) {
+            if ((*it)->is_marked_remove_self_as_listener()) {
+                it = this->remove_event_listener_internal(*it);
+            } else {
+                it++;
+            }
+        }
     }
 
     std::string m_name;
