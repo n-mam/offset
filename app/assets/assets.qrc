@@ -32,5 +32,6 @@
     <file>left-arrow.png</file>
     <file>filedelete.png</file>
     <file>right-arrow.png</file>
+    <file>house-plan.png</file>
   </qresource>
 </RCC>

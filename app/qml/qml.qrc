@@ -7,7 +7,7 @@
     <file>screens/Backup.qml</file>
     <file>screens/Compare.qml</file>
     <file>components/List.qml</file>
-    <file>screens/Settings.qml</file>
+    <file>screens/Floor.qml</file>
     <file>components/Login.qml</file>
     <file>components/Player.qml</file>
     <file>components/ButtonX.qml</file>

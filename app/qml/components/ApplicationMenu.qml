@@ -33,7 +33,7 @@ Rectangle {
                 name: "compare.png"
             }
             ListElement {
-                name: "settings.png"
+                name: "house-plan.png"
             }
             ListElement {
                 name: "log.png"

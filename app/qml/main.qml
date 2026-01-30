@@ -55,7 +55,7 @@ ApplicationWindow {
                 Ftp {}
                 Camera {}
                 Compare {}
-                Settings {}
+                Floor {}
                 Trace {}
             }
         }
