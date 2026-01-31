@@ -205,7 +205,7 @@ Item {
         const r = 20 / zoom
         // Draw arc
         ctx.beginPath()
-        ctx.arc(cx, cy, r, 0, angleRad, angleRad < 0)
+        ctx.arc(cx, cy, r, 0, -angleRad, true)
         ctx.strokeStyle = color
         ctx.lineWidth = 2 / zoom
         ctx.stroke()
@@ -278,7 +278,7 @@ Item {
                         const a = wallAngleForDisplay(w)
                         const cx = c.x * pixelsPerFoot
                         const cy = c.y * pixelsPerFoot
-                        drawAngleVisualizer(ctx, cx, cy, a, zoom, "#ff5555")  // red
+                        drawAngleVisualizer(ctx, cx, cy, a, zoom, "#00ff88")
                     }
                 }
             })
@@ -301,9 +301,6 @@ Item {
                 const dx = currentXFeet - startXFeet
                 const dy = currentYFeet - startYFeet
                 let rad = Math.atan2(dy, dx)
-                let angleDeg = rad * 180 / Math.PI
-                if (angleDeg < 0) angleDeg += 360
-                const r = 20 / zoom
                 drawAngleVisualizer(ctx, g.x1, g.y1, -rad, zoom, "#00ff88")
                 // Length label
                 const mx = (g.x1 + g.x2) / 2
