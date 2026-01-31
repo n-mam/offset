@@ -37,6 +37,9 @@ Item {
     property var undoStack: []
     property int maxUndoSteps: 50
 
+    property real moveStepFeet: 0.0416667     // ~0.5 inches
+    property real moveStepFastFeet: 0.1  // 1.2 inches when Shift is held
+
     function screenToFeet(x, y) {
         const px = (x - offsetX) / zoom
         const py = (y - offsetY) / zoom
@@ -148,6 +151,18 @@ Item {
         if (undoStack.length >= maxUndoSteps)
             undoStack.shift()
         undoStack.push(walls.map(w => Object.assign({}, w)))
+    }
+
+    function moveSelectedWall(dxFeet, dyFeet) {
+        if (selectedWall === -1)
+            return
+        pushUndoState()
+        const w = walls[selectedWall]
+        w.x1 += dxFeet
+        w.y1 += dyFeet
+        w.x2 += dxFeet
+        w.y2 += dyFeet
+        canvas.requestPaint()
     }
 
     Rectangle { anchors.fill: parent; color: "#1e1e1e" }
@@ -329,13 +344,35 @@ Item {
     }
 
     Keys.onPressed: event => {
-        if (event.key === Qt.Key_Z && (event.modifiers & Qt.ControlModifier)) {
-            if (undoStack.length > 0) {
-                walls = undoStack.pop()
-                selectedWall = -1
-                canvas.requestPaint()
-            }
-            event.accepted = true
+        const step = (event.modifiers & Qt.ShiftModifier) ?
+                    moveStepFastFeet : moveStepFeet
+        switch (event.key) {
+            case Qt.Key_Left:
+                moveSelectedWall(-step, 0)
+                event.accepted = true
+                break
+            case Qt.Key_Right:
+                moveSelectedWall(step, 0)
+                event.accepted = true
+                break
+            case Qt.Key_Up:
+                moveSelectedWall(0, -step) // Y grows downward in screen space
+                event.accepted = true
+                break
+            case Qt.Key_Down:
+                moveSelectedWall(0, step)
+                event.accepted = true
+                break
+            case Qt.Key_Z:
+                if (event.modifiers & Qt.ControlModifier) {
+                    if (undoStack.length > 0) {
+                        walls = undoStack.pop()
+                        selectedWall = -1
+                        canvas.requestPaint()
+                    }
+                    event.accepted = true
+                }
+                break
         }
     }
 }
