@@ -15,7 +15,7 @@ Item {
 
     // Camera
     property real zoom: 1.0
-    property real pixelsPerFoot: 50
+    property real pixelsPerFoot: 30
     property real offsetX: width / 2
     property real offsetY: height / 2
 
@@ -46,6 +46,14 @@ Item {
 
     property bool resizingWall: false
     property int resizeEnd: 0   // 1 = x1/y1, 2 = x2/y2
+
+    // Dimensions 
+    property var dimensions: []   // {x1, y1, x2, y2} in FEET
+    property bool drawingDimension: false
+    property real dimStartXFeet: 0
+    property real dimStartYFeet: 0
+    property real dimCurrentXFeet: 0
+    property real dimCurrentYFeet: 0
 
     function screenToFeet(x, y) {
         const px = (x - offsetX) / zoom
@@ -133,6 +141,73 @@ Item {
         ctx.strokeStyle = wallOutlineColor
         ctx.lineWidth = 1 / zoom
         ctx.stroke()
+    }
+
+    function drawDimension(ctx, x1Feet, y1Feet, x2Feet, y2Feet,
+                color = "#00ff88", barSizePx = 10) {
+
+        // world → local canvas space (your ctx is already translated + scaled)
+        const x1 = x1Feet * pixelsPerFoot
+        const y1 = y1Feet * pixelsPerFoot
+        const x2 = x2Feet * pixelsPerFoot
+        const y2 = y2Feet * pixelsPerFoot
+
+        // main line
+        ctx.strokeStyle = color
+        ctx.lineWidth = 2 / zoom
+        ctx.beginPath()
+        ctx.moveTo(x1, y1)
+        ctx.lineTo(x2, y2)
+        ctx.stroke()
+
+        // end bars
+        const angle = Math.atan2(y2 - y1, x2 - x1)
+        const px = Math.sin(angle) * (barSizePx / zoom)
+        const py = -Math.cos(angle) * (barSizePx / zoom)
+
+        ctx.beginPath()
+        ctx.moveTo(x1 - px, y1 - py)
+        ctx.lineTo(x1 + px, y1 + py)
+        ctx.moveTo(x2 - px, y2 - py)
+        ctx.lineTo(x2 + px, y2 + py)
+        ctx.stroke()
+
+        // label
+        const dx = x2Feet - x1Feet
+        const dy = y2Feet - y1Feet
+        const lengthFeet = Math.sqrt(dx*dx + dy*dy)
+        const label = formatFeetInches(lengthFeet)
+
+        // midpoint in world (canvas-local) space
+        const mx = (x1 + x2) / 2
+        const my = (y1 + y2) / 2
+
+        // direction
+        const dxp = x2 - x1
+        const dyp = y2 - y1
+        const len = Math.hypot(dxp, dyp) || 1
+
+        // perpendicular normal (consistent "above")
+        const nx = dyp / len
+        const ny = -dxp / len
+
+        // offset in SCREEN pixels
+        const labelOffsetPx = 14
+        const ox = nx * (labelOffsetPx / zoom)
+        const oy = ny * (labelOffsetPx / zoom)
+
+        // final label position (world → screen)
+        ctx.save()
+        ctx.setTransform(1, 0, 0, 1, 0, 0)
+        const sx = (mx + ox) * zoom + offsetX
+        const sy = (my + oy) * zoom + offsetY
+
+        ctx.fillStyle = color
+        ctx.font = "12px sans-serif"
+        ctx.textAlign = "center"
+        ctx.textBaseline = "middle"
+        ctx.fillText(label, sx, sy)
+        ctx.restore()
     }
 
     function distanceToPoint(px, py, x, y) {
@@ -254,15 +329,37 @@ Item {
             ctx.translate(offsetX, offsetY)
             ctx.scale(zoom, zoom)
 
-            // Grid
-            for (let i = -200; i <= 200; i++) {
-                const major = (i % 5 === 0)
-                ctx.strokeStyle = major ? "#505050" : "#3a3a3a"
-                ctx.lineWidth = major ? 2 / zoom : 1 / zoom
+            // Multi-level graduated grid
+            const minorGridFeet = 0.25   // 3 inches
+            const mediumGridFeet = 1     // 1 foot
+            const majorGridFeet = 5      // 5 feet
+            for (let i = -200; i <= 200; i += minorGridFeet) {
+                let lineType = "minor"
+                if (Math.abs(i % majorGridFeet) < 1e-6) 
+                    lineType = "major"
+                else if (Math.abs(i % mediumGridFeet) < 1e-6) 
+                    lineType = "medium"
+
+                switch(lineType) {
+                    case "minor":
+                        ctx.strokeStyle = "#3a3a3a"
+                        ctx.lineWidth = 0.5 / zoom
+                        break
+                    case "medium":
+                        ctx.strokeStyle = "#505050"
+                        ctx.lineWidth = 1 / zoom
+                        break
+                    case "major":
+                        ctx.strokeStyle = "#707070"
+                        ctx.lineWidth = 2 / zoom
+                        break
+                }
+                // vertical line
                 ctx.beginPath()
                 ctx.moveTo(i * pixelsPerFoot, -10000)
                 ctx.lineTo(i * pixelsPerFoot, 10000)
                 ctx.stroke()
+                // horizontal line
                 ctx.beginPath()
                 ctx.moveTo(-10000, i * pixelsPerFoot)
                 ctx.lineTo(10000, i * pixelsPerFoot)
@@ -383,6 +480,24 @@ Item {
                 ctx.textBaseline = "middle"
                 ctx.fillText(label, mx, my)
             }
+
+            // Existing dimensions
+            dimensions.forEach(d => {
+                drawDimension(ctx, d.x1, d.y1, d.x2, d.y2)
+            })
+
+            // Dimension preview while drawing
+            if (drawingDimension) {
+                drawDimension(
+                    ctx,
+                    dimStartXFeet,
+                    dimStartYFeet,
+                    dimCurrentXFeet,
+                    dimCurrentYFeet,
+                    "#00ffaa"
+                )
+            }
+
             ctx.restore()
         }
     }
@@ -394,6 +509,17 @@ Item {
         acceptedButtons: Qt.LeftButton|Qt.RightButton
         onPressed: mouse => {
             root.forceActiveFocus()
+            // START DIMENSION (Shift + Right Click)
+            if ((mouse.modifiers & Qt.ShiftModifier) &&
+                mouse.button === Qt.RightButton) {
+                const p = screenToFeet(mouse.x, mouse.y)
+                drawingDimension = true
+                dimStartXFeet = p.x
+                dimStartYFeet = p.y
+                dimCurrentXFeet = p.x
+                dimCurrentYFeet = p.y
+                return
+            }
             if (mouse.button === Qt.LeftButton) {
                 const p = screenToFeet(mouse.x, mouse.y)
                 // RESIZE HANDLE FIRST
@@ -454,6 +580,13 @@ Item {
         }
 
         onPositionChanged: mouse => {
+            if (drawingDimension && (mouse.buttons & Qt.RightButton)) {
+                const p = screenToFeet(mouse.x, mouse.y)
+                dimCurrentXFeet = p.x
+                dimCurrentYFeet = p.y
+                canvas.requestPaint()
+                return
+            }            
             // RESIZE SELECTED WALL (ENDPOINT DRAG)
             if (resizingWall && (mouse.buttons & Qt.LeftButton)) {
                 const p = screenToFeet(mouse.x, mouse.y)
@@ -497,6 +630,22 @@ Item {
         }
 
         onReleased: mouse => {
+            if (drawingDimension && mouse.button === Qt.RightButton) {
+                const dx = dimCurrentXFeet - dimStartXFeet
+                const dy = dimCurrentYFeet - dimStartYFeet
+                // prevent zero-length dimensions
+                if (Math.hypot(dx, dy) > 0.1) {
+                    dimensions.push({
+                        x1: dimStartXFeet,
+                        y1: dimStartYFeet,
+                        x2: dimCurrentXFeet,
+                        y2: dimCurrentYFeet
+                    })
+                }
+                drawingDimension = false
+                canvas.requestPaint()
+                return
+            }
             if (resizingWall) {
                 resizingWall = false
                 resizeEnd = 0
