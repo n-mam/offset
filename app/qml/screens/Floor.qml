@@ -19,7 +19,6 @@ Item {
     // Walls stored IN FEET
     property var walls: []
     property real wallThicknessFeet: 0.5 // 6 inches
-    property var wallPattern: null
 
     // Colors (centralized)
     property string wallFillColor: "#dcd0aa" // sand color
@@ -33,7 +32,7 @@ Item {
     property real currentXFeet: 0
     property real currentYFeet: 0
     property int selectedWall: -1
-    property real pickTolerancePixels: 5 // feels good: 6–10 px
+    property real pickTolerancePixels: 8 // feels good: 6–10 px
 
     property var undoStack: []
     property int maxUndoSteps: 50
@@ -41,9 +40,39 @@ Item {
     function screenToFeet(x, y) {
         const px = (x - offsetX) / zoom
         const py = (y - offsetY) / zoom
+        return { x: px / pixelsPerFoot, y: py / pixelsPerFoot }
+    }
+
+    function wallGeometry(w) {
+        const dx = w.x2 - w.x1
+        const dy = w.y2 - w.y1
+        const len = Math.hypot(dx, dy)
+        if (len  ===  0) return null
+
+        const tx = dx / len
+        const ty = dy / len
+        const nx = -ty
+        const ny = tx
+
+        const halfThicknessPx = (wallThicknessFeet / 2) * pixelsPerFoot
+        const pxLen = len * pixelsPerFoot
+
+        const x1 = w.x1 * pixelsPerFoot
+        const y1 = w.y1 * pixelsPerFoot
+
         return {
-            x: px / pixelsPerFoot,
-            y: py / pixelsPerFoot
+            len: len,
+            tx: tx, ty: ty,
+            nx: nx, ny: ny,
+            x1: x1, y1: y1,
+            x2: x1 + tx * pxLen,
+            y2: y1 + ty * pxLen,
+            corners: [
+                { x: x1 + nx * halfThicknessPx, y: y1 + ny * halfThicknessPx },
+                { x: x1 + tx * pxLen + nx * halfThicknessPx, y: y1 + ty * pxLen + ny * halfThicknessPx },
+                { x: x1 + tx * pxLen - nx * halfThicknessPx, y: y1 + ty * pxLen - ny * halfThicknessPx },
+                { x: x1 - nx * halfThicknessPx, y: y1 - ny * halfThicknessPx }
+            ]
         }
     }
 
@@ -56,36 +85,15 @@ Item {
     }
 
     function drawWallRect(ctx, w) {
-        const dx = w.x2 - w.x1
-        const dy = w.y2 - w.y1
-        const len = Math.hypot(dx, dy)
-        if (len === 0)
-            return
+        const g = wallGeometry(w)
+        if (!g) return
 
-        const halfThicknessPx = (wallThicknessFeet / 2) * pixelsPerFoot
-        const pxLen = len * pixelsPerFoot
-
-        const x1 = w.x1 * pixelsPerFoot
-        const y1 = w.y1 * pixelsPerFoot
-
-        const tx = dx / len
-        const ty = dy / len
-        const nx = -ty
-        const ny = tx
-
-        const corners = [
-            { x: x1 + nx * halfThicknessPx, y: y1 + ny * halfThicknessPx },
-            { x: x1 + tx * pxLen + nx * halfThicknessPx, y: y1 + ty * pxLen + ny * halfThicknessPx },
-            { x: x1 + tx * pxLen - nx * halfThicknessPx, y: y1 + ty * pxLen - ny * halfThicknessPx },
-            { x: x1 - nx * halfThicknessPx, y: y1 - ny * halfThicknessPx }
-        ]
-
-        polygonPath(ctx, corners)
+        polygonPath(ctx, g.corners)
         ctx.fillStyle = wallFillColor
         ctx.fill()
 
         ctx.save()
-        polygonPath(ctx, corners)
+        polygonPath(ctx, g.corners)
         ctx.clip()
 
         const spacing = 6 / zoom
@@ -93,35 +101,25 @@ Item {
         const cosA = Math.cos(hatchAngle)
         const sinA = Math.sin(hatchAngle)
 
-        const xs = corners.map(c => c.x)
-        const ys = corners.map(c => c.y)
-        const minX = Math.min(...xs)
-        const maxX = Math.max(...xs)
-        const minY = Math.min(...ys)
-        const maxY = Math.max(...ys)
+        const xs = g.corners.map(c => c.x)
+        const ys = g.corners.map(c => c.y)
+        const minX = Math.min.apply(null, xs)
+        const maxX = Math.max.apply(null, xs)
+        const minY = Math.min.apply(null, ys)
+        const maxY = Math.max.apply(null, ys)
         const diagLen = Math.hypot(maxX - minX, maxY - minY)
 
         ctx.strokeStyle = hatchStrokeColor
         ctx.lineWidth = 1 / zoom
-
         for (let i = -diagLen; i < diagLen * 2; i += spacing) {
-            const offsetX = i * (-sinA)
-            const offsetY = i * cosA
-
-            const startX = minX + offsetX
-            const startY = minY + offsetY
-            const endX = startX + diagLen * cosA
-            const endY = startY + diagLen * sinA
-
             ctx.beginPath()
-            ctx.moveTo(startX, startY)
-            ctx.lineTo(endX, endY)
+            ctx.moveTo(minX + i * (-sinA), minY + i * cosA)
+            ctx.lineTo(minX + i * (-sinA) + diagLen * cosA, minY + i * cosA + diagLen * sinA)
             ctx.stroke()
         }
 
         ctx.restore()
-
-        polygonPath(ctx, corners)
+        polygonPath(ctx, g.corners)
         ctx.strokeStyle = wallOutlineColor
         ctx.lineWidth = 1 / zoom
         ctx.stroke()
@@ -136,45 +134,31 @@ Item {
         const vy = y2 - y1
         const wx = px - x1
         const wy = py - y1
-
         const c1 = vx * wx + vy * wy
-        if (c1 <= 0)
+        if (c1 <= 0) 
             return Math.hypot(px - x1, py - y1)
-
         const c2 = vx * vx + vy * vy
         if (c2 <= c1)
             return Math.hypot(px - x2, py - y2)
-
         const b = c1 / c2
-        const bx = x1 + b * vx
-        const by = y1 + b * vy
-
-        return Math.hypot(px - bx, py - by)
+        return Math.hypot(px - (x1 + b * vx), py - (y1 + b * vy))
     }
 
     function pushUndoState() {
         if (undoStack.length >= maxUndoSteps)
             undoStack.shift()
-
         undoStack.push(walls.map(w => Object.assign({}, w)))
     }
 
-    Rectangle {
-        anchors.fill: parent
-        color: "#1e1e1e"
-    }
+    Rectangle { anchors.fill: parent; color: "#1e1e1e" }
 
     Canvas {
         id: canvas
         anchors.fill: parent
-
-        Component.onCompleted: requestPaint()
-
         onPaint: {
             const ctx = getContext("2d")
             ctx.reset()
             ctx.clearRect(0, 0, width, height)
-
             ctx.save()
             ctx.translate(offsetX, offsetY)
             ctx.scale(zoom, zoom)
@@ -184,12 +168,10 @@ Item {
                 const major = (i % 5 === 0)
                 ctx.strokeStyle = major ? "#505050" : "#3a3a3a"
                 ctx.lineWidth = major ? 2 / zoom : 1 / zoom
-
                 ctx.beginPath()
                 ctx.moveTo(i * pixelsPerFoot, -10000)
                 ctx.lineTo(i * pixelsPerFoot, 10000)
                 ctx.stroke()
-
                 ctx.beginPath()
                 ctx.moveTo(-10000, i * pixelsPerFoot)
                 ctx.lineTo(10000, i * pixelsPerFoot)
@@ -199,33 +181,10 @@ Item {
             // Walls
             walls.forEach((w, i) => {
                 drawWallRect(ctx, w)
-
                 if (i === selectedWall) {
-                    const dx = w.x2 - w.x1
-                    const dy = w.y2 - w.y1
-                    const len = Math.hypot(dx, dy)
-                    if (len === 0)
-                        return
-
-                    const halfThicknessPx = (wallThicknessFeet / 2) * pixelsPerFoot
-                    const pxLen = len * pixelsPerFoot
-
-                    const x1 = w.x1 * pixelsPerFoot
-                    const y1 = w.y1 * pixelsPerFoot
-
-                    const tx = dx / len
-                    const ty = dy / len
-                    const nx = -ty
-                    const ny = tx
-
-                    const corners = [
-                        { x: x1 + nx * halfThicknessPx, y: y1 + ny * halfThicknessPx },
-                        { x: x1 + tx * pxLen + nx * halfThicknessPx, y: y1 + ty * pxLen + ny * halfThicknessPx },
-                        { x: x1 + tx * pxLen - nx * halfThicknessPx, y: y1 + ty * pxLen - ny * halfThicknessPx },
-                        { x: x1 - nx * halfThicknessPx, y: y1 - ny * halfThicknessPx }
-                    ]
-
-                    polygonPath(ctx, corners)
+                    const g = wallGeometry(w)
+                    if (!g) return
+                    polygonPath(ctx, g.corners)
                     ctx.strokeStyle = "#ff0000"
                     ctx.lineWidth = 2 / zoom
                     ctx.stroke()
@@ -234,33 +193,28 @@ Item {
 
             // Preview wall
             if (drawingWall) {
-                const x1 = startXFeet * pixelsPerFoot
-                const y1 = startYFeet * pixelsPerFoot
-                const x2 = currentXFeet * pixelsPerFoot
-                const y2 = currentYFeet * pixelsPerFoot
-
+                const tempWall = {x1:startXFeet,y1:startYFeet,x2:currentXFeet,y2:currentYFeet}
+                const g = wallGeometry(tempWall)
+                if (!g) return
+                // Preview line
                 ctx.strokeStyle = "#00ff88"
                 ctx.lineWidth = 2 / zoom
                 ctx.setLineDash([6 / zoom, 6 / zoom])
-
                 ctx.beginPath()
-                ctx.moveTo(x1, y1)
-                ctx.lineTo(x2, y2)
+                ctx.moveTo(g.x1, g.y1)
+                ctx.lineTo(g.x2, g.y2)
                 ctx.stroke()
-
                 ctx.setLineDash([])
-
+                // Angle visualization
                 const dx = currentXFeet - startXFeet
                 const dy = currentYFeet - startYFeet
-
                 let rad = Math.atan2(-dy, dx)
                 let angleDeg = rad * 180 / Math.PI
                 if (angleDeg < 0)
                     angleDeg += 360
-
                 const r = 20 / zoom
                 ctx.beginPath()
-                ctx.arc(x1, y1, r, 0, -rad, rad < 0)
+                ctx.arc(g.x1, g.y1, r, 0, -rad, rad < 0)
                 ctx.strokeStyle = "rgba(0,255,136,0.7)"
                 ctx.lineWidth = 2 / zoom
                 ctx.stroke()
@@ -269,73 +223,50 @@ Item {
                 ctx.font = `${12 / zoom}px sans-serif`
                 ctx.textAlign = "center"
                 ctx.textBaseline = "bottom"
-                ctx.fillText(`${angleDeg.toFixed(0)}°`, x1 + r + 2 / zoom, y1 - r - 2 / zoom)
+                ctx.fillText(`${angleDeg.toFixed(0)}°`, g.x1 + r + 2 / zoom, g.y1 - r - 2 / zoom)
 
-                const lengthFeet = Math.sqrt(dx * dx + dy * dy)
-                const mx = (x1 + x2) / 2
-                const my = (y1 + y2) / 2
+                // Length label
+                const mx = (g.x1 + g.x2) / 2
+                const my = (g.y1 + g.y2) / 2
+                const lengthFeet = Math.sqrt(dx*dx + dy*dy)
                 const label = `${lengthFeet.toFixed(2)} ft`
                 const tw = ctx.measureText(label).width
                 const pad = 4 / zoom
-
                 ctx.fillStyle = "rgba(0,0,0,0.7)"
                 ctx.fillRect(mx - tw / 2 - pad, my - 12 / zoom, tw + pad * 2, 16 / zoom)
-
                 ctx.fillStyle = "#00ff88"
                 ctx.textAlign = "center"
                 ctx.textBaseline = "middle"
                 ctx.fillText(label, mx, my)
             }
-
             ctx.restore()
         }
     }
 
-    onZoomChanged: canvas.requestPaint()
-    onOffsetXChanged: canvas.requestPaint()
-    onOffsetYChanged: canvas.requestPaint()
-
     MouseArea {
-        anchors.fill: parent
-        hoverEnabled: true
-        acceptedButtons: Qt.LeftButton | Qt.RightButton
-        preventStealing: true
-
         property real lastX
         property real lastY
-
-        cursorShape: (pressedButtons & Qt.RightButton)
-                     ? Qt.ClosedHandCursor
-                     : Qt.ArrowCursor
-
+        anchors.fill: parent
+        acceptedButtons: Qt.LeftButton|Qt.RightButton
         onPressed: mouse => {
             root.forceActiveFocus()
-
             if (mouse.button === Qt.LeftButton) {
                 const p = screenToFeet(mouse.x, mouse.y)
-                const pickToleranceFeet = pickTolerancePixels / (pixelsPerFoot * zoom)
-
                 let hit = -1
-                let best = pickToleranceFeet
-
+                let best = pickTolerancePixels/(pixelsPerFoot*zoom)
                 for (let i = 0; i < walls.length; i++) {
                     const w = walls[i]
                     const d = distancePointToSegment(p.x, p.y, w.x1, w.y1, w.x2, w.y2)
-                    const endToleranceFeet = 0.4
-
-                    if (
-                        distanceToPoint(p.x, p.y, w.x1, w.y1) < endToleranceFeet ||
-                        distanceToPoint(p.x, p.y, w.x2, w.y2) < endToleranceFeet
-                    )
-                        continue
-
+                    const endToleranceFeet = 1.5
+                    if (distanceToPoint(p.x, p.y, w.x1, w.y1) < endToleranceFeet ||
+                        distanceToPoint(p.x, p.y, w.x2, w.y2) < endToleranceFeet)
+                            continue
                     if (d < best) {
                         best = d
                         hit = i
                     }
                 }
-
-                if (hit !== -1) {
+                if (hit !== -1) { 
                     selectedWall = hit
                     drawingWall = false
                 } else {
@@ -346,9 +277,8 @@ Item {
                     currentYFeet = p.y
                     drawingWall = true
                 }
-
                 canvas.requestPaint()
-            } else if (mouse.button === Qt.RightButton) {
+            } else {
                 lastX = mouse.x
                 lastY = mouse.y
             }
@@ -365,6 +295,7 @@ Item {
                 offsetY += mouse.y - lastY
                 lastX = mouse.x
                 lastY = mouse.y
+                canvas.requestPaint()
             }
         }
 
@@ -383,8 +314,8 @@ Item {
         }
 
         onWheel: wheel => {
-            const factor = wheel.angleDelta.y > 0 ? 1.1 : 0.9
-            zoom = Math.max(0.2, Math.min(5, zoom * factor))
+            zoom = Math.max(0.2, Math.min(5, zoom*(wheel.angleDelta.y > 0 ? 1.1 : 0.9)))
+            canvas.requestPaint()
         }
     }
 
