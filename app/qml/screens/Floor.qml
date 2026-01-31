@@ -10,6 +10,9 @@ Item {
     focus: true
     Keys.enabled: true
 
+    property var undoStack: []
+    property int maxUndoSteps: 50
+
     // Camera
     property real zoom: 1.0
     property real pixelsPerFoot: 50
@@ -34,8 +37,9 @@ Item {
     property int selectedWall: -1
     property real pickTolerancePixels: 8 // feels good: 6–10 px
 
-    property var undoStack: []
-    property int maxUndoSteps: 50
+    property bool rotatingWall: false
+    property real rotateStartAngle: 0
+    property real rotateBaseAngle: 0
 
     property real moveStepFeet: 0.0416667     // ~0.5 inches
     property real moveStepFastFeet: 0.1  // 1.2 inches when Shift is held
@@ -138,7 +142,7 @@ Item {
         const wx = px - x1
         const wy = py - y1
         const c1 = vx * wx + vy * wy
-        if (c1 <= 0) 
+        if (c1 <= 0)
             return Math.hypot(px - x1, py - y1)
         const c2 = vx * vx + vy * vy
         if (c2 <= c1)
@@ -154,8 +158,7 @@ Item {
     }
 
     function moveSelectedWall(dxFeet, dyFeet) {
-        if (selectedWall === -1)
-            return
+        if (selectedWall === -1) return
         pushUndoState()
         const w = walls[selectedWall]
         w.x1 += dxFeet
@@ -163,6 +166,61 @@ Item {
         w.x2 += dxFeet
         w.y2 += dyFeet
         canvas.requestPaint()
+    }
+
+    function wallCenter(w) {
+        return {
+            x: (w.x1 + w.x2) / 2,
+            y: (w.y1 + w.y2) / 2
+        }
+    }
+
+    function wallAngle(w) {
+        return Math.atan2(w.y2 - w.y1, w.x2 - w.x1)
+    }
+
+    function rotateWall(w, angleRad) {
+        const c = wallCenter(w)
+        const len = Math.hypot(w.x2 - w.x1, w.y2 - w.y1) / 2
+        w.x1 = c.x - Math.cos(angleRad) * len
+        w.y1 = c.y - Math.sin(angleRad) * len
+        w.x2 = c.x + Math.cos(angleRad) * len
+        w.y2 = c.y + Math.sin(angleRad) * len
+    }
+
+    function hitRotateHandle(p, w) {
+        const c = wallCenter(w)
+        const angle = wallAngle(w)
+        // convert pixel distance → feet
+        const handleDistFeet = (20 / zoom) / pixelsPerFoot
+        const radiusFeet = (8 / zoom) / pixelsPerFoot
+        const hx = c.x + Math.cos(angle + Math.PI / 2) * handleDistFeet
+        const hy = c.y + Math.sin(angle + Math.PI / 2) * handleDistFeet
+        return distanceToPoint(p.x, p.y, hx, hy) < radiusFeet
+    }
+
+    function drawAngleVisualizer(ctx, cx, cy, angleRad, zoom, color) {
+        let deg = angleRad * 180 / Math.PI
+        if (deg < 0) deg += 360
+        const r = 20 / zoom
+        // Draw arc
+        ctx.beginPath()
+        ctx.arc(cx, cy, r, 0, angleRad, angleRad < 0)
+        ctx.strokeStyle = color
+        ctx.lineWidth = 2 / zoom
+        ctx.stroke()
+        // Draw angle text
+        ctx.fillStyle = color
+        ctx.font = `${12 / zoom}px sans-serif`
+        ctx.textAlign = "left"
+        ctx.textBaseline = "middle"
+        ctx.fillText(`${deg.toFixed(0)}°`, cx + r + 4 / zoom, cy)
+    }
+
+    function wallAngleForDisplay(w) {
+        const dx = w.x2 - w.x1
+        const dy = w.y2 - w.y1
+        return Math.atan2(-dy, dx)
     }
 
     Rectangle { anchors.fill: parent; color: "#1e1e1e" }
@@ -203,6 +261,25 @@ Item {
                     ctx.strokeStyle = "#ff0000"
                     ctx.lineWidth = 2 / zoom
                     ctx.stroke()
+                    // rotation handle
+                    const mx = (g.x1 + g.x2) / 2
+                    const my = (g.y1 + g.y2) / 2
+                    const handleDist = 20 / zoom
+                    const angle = wallAngle(w)
+                    const hx = mx + Math.cos(angle + Math.PI / 2) * handleDist
+                    const hy = my + Math.sin(angle + Math.PI / 2) * handleDist
+                    ctx.beginPath()
+                    ctx.arc(hx, hy, 5 / zoom, 0, Math.PI * 2)
+                    ctx.fillStyle = "#ff5555"
+                    ctx.fill()
+                    // angle visualizer while rotating
+                    if (rotatingWall) {
+                        const c = wallCenter(w)
+                        const a = wallAngleForDisplay(w)
+                        const cx = c.x * pixelsPerFoot
+                        const cy = c.y * pixelsPerFoot
+                        drawAngleVisualizer(ctx, cx, cy, a, zoom, "#ff5555")  // red
+                    }
                 }
             })
 
@@ -223,23 +300,11 @@ Item {
                 // Angle visualization
                 const dx = currentXFeet - startXFeet
                 const dy = currentYFeet - startYFeet
-                let rad = Math.atan2(-dy, dx)
+                let rad = Math.atan2(dy, dx)
                 let angleDeg = rad * 180 / Math.PI
-                if (angleDeg < 0)
-                    angleDeg += 360
+                if (angleDeg < 0) angleDeg += 360
                 const r = 20 / zoom
-                ctx.beginPath()
-                ctx.arc(g.x1, g.y1, r, 0, -rad, rad < 0)
-                ctx.strokeStyle = "rgba(0,255,136,0.7)"
-                ctx.lineWidth = 2 / zoom
-                ctx.stroke()
-
-                ctx.fillStyle = "rgba(0,255,136,0.9)"
-                ctx.font = `${12 / zoom}px sans-serif`
-                ctx.textAlign = "center"
-                ctx.textBaseline = "bottom"
-                ctx.fillText(`${angleDeg.toFixed(0)}°`, g.x1 + r + 2 / zoom, g.y1 - r - 2 / zoom)
-
+                drawAngleVisualizer(ctx, g.x1, g.y1, -rad, zoom, "#00ff88")
                 // Length label
                 const mx = (g.x1 + g.x2) / 2
                 const my = (g.y1 + g.y2) / 2
@@ -267,6 +332,20 @@ Item {
             root.forceActiveFocus()
             if (mouse.button === Qt.LeftButton) {
                 const p = screenToFeet(mouse.x, mouse.y)
+                // CHECK ROTATION HANDLE FIRST
+                if (selectedWall !== -1) {
+                    const w = walls[selectedWall]
+                    if (hitRotateHandle(p, w)) {
+                        pushUndoState()
+                        rotatingWall = true
+                        rotateBaseAngle = wallAngle(w)
+                        rotateStartAngle = Math.atan2(
+                            p.y - wallCenter(w).y,
+                            p.x - wallCenter(w).x
+                        )
+                        return   // stop normal selection logic
+                    }
+                }
                 let hit = -1
                 let best = pickTolerancePixels/(pixelsPerFoot*zoom)
                 for (let i = 0; i < walls.length; i++) {
@@ -281,7 +360,7 @@ Item {
                         hit = i
                     }
                 }
-                if (hit !== -1) { 
+                if (hit !== -1) {
                     selectedWall = hit
                     drawingWall = false
                 } else {
@@ -300,7 +379,17 @@ Item {
         }
 
         onPositionChanged: mouse => {
-            if (drawingWall && (mouse.buttons & Qt.LeftButton)) {
+            if (rotatingWall && (mouse.buttons & Qt.LeftButton)) {
+                const p = screenToFeet(mouse.x, mouse.y)
+                const w = walls[selectedWall]
+                const currentAngle = Math.atan2(
+                    p.y - wallCenter(w).y,
+                    p.x - wallCenter(w).x
+                )
+                const delta = currentAngle - rotateStartAngle
+                rotateWall(w, rotateBaseAngle + delta)
+                canvas.requestPaint()
+            } else if (drawingWall && (mouse.buttons & Qt.LeftButton)) {
                 const p = screenToFeet(mouse.x, mouse.y)
                 currentXFeet = p.x
                 currentYFeet = p.y
@@ -315,7 +404,13 @@ Item {
         }
 
         onReleased: mouse => {
-            if (drawingWall && mouse.button === Qt.LeftButton) {
+            if (rotatingWall) {
+                rotatingWall = false
+            } else if (drawingWall && mouse.button === Qt.LeftButton) {
+                const dx = currentXFeet - startXFeet
+                const dy = currentYFeet - startYFeet
+                // drop zero-length “click” walls to be selected/created
+                if (Math.hypot(dx, dy) < 0.1) return
                 pushUndoState()
                 walls.push({
                     x1: startXFeet,
@@ -323,6 +418,8 @@ Item {
                     x2: currentXFeet,
                     y2: currentYFeet
                 })
+                //select the newly created wall
+                selectedWall = walls.length - 1
                 drawingWall = false
                 canvas.requestPaint()
             }
