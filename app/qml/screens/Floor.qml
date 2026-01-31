@@ -298,6 +298,40 @@ Item {
                     ctx.beginPath()
                     ctx.arc(g.x2, g.y2, 5 / zoom, 0, Math.PI * 2)
                     ctx.fill()
+                    // Length label while resizing
+                    if (resizingWall) {
+                        let x1 = w.x1
+                        let y1 = w.y1
+                        let x2 = w.x2
+                        let y2 = w.y2
+                        // if resizing one endpoint, use current mouse pos
+                        if (resizeEnd === 1) {
+                            x1 = currentXFeet
+                            y1 = currentYFeet
+                        } else if (resizeEnd === 2) {
+                            x2 = currentXFeet
+                            y2 = currentYFeet
+                        }
+                        const dx = x2 - x1
+                        const dy = y2 - y1
+                        const lengthFeet = Math.sqrt(dx*dx + dy*dy)
+                        const label = formatFeetInches(lengthFeet)
+                        const mx = ((x1 + x2) / 2) * pixelsPerFoot
+                        const my = ((y1 + y2) / 2) * pixelsPerFoot
+
+                        ctx.save()
+                        ctx.setTransform(1, 0, 0, 1, 0, 0) // reset to screen space
+                        // convert wall-local coords to screen coords
+                        const sx = mx * zoom + offsetX
+                        const sy = my * zoom + offsetY
+                        ctx.globalAlpha = 1.0       // ensure full opacity
+                        ctx.fillStyle = "#000000"   // black text
+                        ctx.strokeStyle = "rgba(0,0,0,0)" // no stroke background
+                        ctx.textAlign = "center"
+                        ctx.textBaseline = "middle"
+                        ctx.fillText(label, sx, sy)
+                        ctx.restore()
+                    }
                     // angle visualizer while rotating
                     if (rotatingWall) {
                         const c = wallCenter(w)
@@ -427,9 +461,13 @@ Item {
                 if (resizeEnd === 1) {
                     w.x1 = p.x
                     w.y1 = p.y
+                    currentXFeet = p.x
+                    currentYFeet = p.y
                 } else if (resizeEnd === 2) {
                     w.x2 = p.x
                     w.y2 = p.y
+                    currentXFeet = p.x
+                    currentYFeet = p.y
                 }
                 canvas.requestPaint()
                 return
