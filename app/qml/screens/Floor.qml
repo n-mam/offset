@@ -235,6 +235,12 @@ Item {
         return Math.atan2(-dy, dx)
     }
 
+    function formatFeetInches(lengthFeet) {
+        const feet = Math.floor(lengthFeet)
+        const inches = Math.round((lengthFeet - feet) * 12)
+        return `${feet}'${inches}"`
+    }
+
     Rectangle { anchors.fill: parent; color: "#1e1e1e" }
 
     Canvas {
@@ -333,7 +339,7 @@ Item {
                 const mx = (g.x1 + g.x2) / 2
                 const my = (g.y1 + g.y2) / 2
                 const lengthFeet = Math.sqrt(dx*dx + dy*dy)
-                const label = `${lengthFeet.toFixed(2)} ft`
+                const label = formatFeetInches(lengthFeet)
                 const tw = ctx.measureText(label).width
                 const pad = 4 / zoom
                 ctx.fillStyle = "rgba(0,0,0,0.7)"
