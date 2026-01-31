@@ -44,6 +44,9 @@ Item {
     property real moveStepFeet: 0.0416667     // ~0.5 inches
     property real moveStepFastFeet: 0.1  // 1.2 inches when Shift is held
 
+    property bool resizingWall: false
+    property int resizeEnd: 0   // 1 = x1/y1, 2 = x2/y2
+
     function screenToFeet(x, y) {
         const px = (x - offsetX) / zoom
         const py = (y - offsetY) / zoom
@@ -199,6 +202,15 @@ Item {
         return distanceToPoint(p.x, p.y, hx, hy) < radiusFeet
     }
 
+    function hitWallEndpoint(p, w) {
+        const tolFeet = (8 / zoom) / pixelsPerFoot
+        if (distanceToPoint(p.x, p.y, w.x1, w.y1) < tolFeet)
+            return 1
+        if (distanceToPoint(p.x, p.y, w.x2, w.y2) < tolFeet)
+            return 2
+        return 0
+    }
+
     function drawAngleVisualizer(ctx, cx, cy, angleRad, zoom, color) {
         let deg = angleRad * 180 / Math.PI
         if (deg < 0) deg += 360
@@ -272,6 +284,14 @@ Item {
                     ctx.arc(hx, hy, 5 / zoom, 0, Math.PI * 2)
                     ctx.fillStyle = "#ff5555"
                     ctx.fill()
+                    // endpoint resize handles
+                    ctx.fillStyle = "#00aaff"
+                    ctx.beginPath()
+                    ctx.arc(g.x1, g.y1, 5 / zoom, 0, Math.PI * 2)
+                    ctx.fill()
+                    ctx.beginPath()
+                    ctx.arc(g.x2, g.y2, 5 / zoom, 0, Math.PI * 2)
+                    ctx.fill()
                     // angle visualizer while rotating
                     if (rotatingWall) {
                         const c = wallCenter(w)
@@ -336,7 +356,18 @@ Item {
             root.forceActiveFocus()
             if (mouse.button === Qt.LeftButton) {
                 const p = screenToFeet(mouse.x, mouse.y)
-                // CHECK ROTATION HANDLE FIRST
+                // RESIZE HANDLE FIRST
+                if (selectedWall !== -1) {
+                    const w = walls[selectedWall]
+                    const end = hitWallEndpoint(p, w)
+                    if (end !== 0) {
+                        pushUndoState()
+                        resizingWall = true
+                        resizeEnd = end
+                        return
+                    }
+                }
+                // CHECK ROTATION HANDLE NEXT
                 if (selectedWall !== -1) {
                     const w = walls[selectedWall]
                     if (hitRotateHandle(p, w)) {
@@ -383,6 +414,20 @@ Item {
         }
 
         onPositionChanged: mouse => {
+            // RESIZE SELECTED WALL (ENDPOINT DRAG)
+            if (resizingWall && (mouse.buttons & Qt.LeftButton)) {
+                const p = screenToFeet(mouse.x, mouse.y)
+                const w = walls[selectedWall]
+                if (resizeEnd === 1) {
+                    w.x1 = p.x
+                    w.y1 = p.y
+                } else if (resizeEnd === 2) {
+                    w.x2 = p.x
+                    w.y2 = p.y
+                }
+                canvas.requestPaint()
+                return
+            }
             if (rotatingWall && (mouse.buttons & Qt.LeftButton)) {
                 const p = screenToFeet(mouse.x, mouse.y)
                 const w = walls[selectedWall]
@@ -408,13 +453,22 @@ Item {
         }
 
         onReleased: mouse => {
+            if (resizingWall) {
+                resizingWall = false
+                resizeEnd = 0
+                return
+            }
             if (rotatingWall) {
                 rotatingWall = false
             } else if (drawingWall && mouse.button === Qt.LeftButton) {
                 const dx = currentXFeet - startXFeet
                 const dy = currentYFeet - startYFeet
                 // drop zero-length “click” walls to be selected/created
-                if (Math.hypot(dx, dy) < 0.1) return
+                if (Math.hypot(dx, dy) < 0.1) {
+                    drawingWall = false
+                    canvas.requestPaint()
+                    return
+                }
                 pushUndoState()
                 walls.push({
                     x1: startXFeet,
