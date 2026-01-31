@@ -288,15 +288,22 @@ Item {
                 const tempWall = {x1:startXFeet,y1:startYFeet,x2:currentXFeet,y2:currentYFeet}
                 const g = wallGeometry(tempWall)
                 if (!g) return
-                // Preview line
+                // Preview line (screen-space dashed line)
+                const sx1 = g.x1 * zoom + offsetX
+                const sy1 = g.y1 * zoom + offsetY
+                const sx2 = g.x2 * zoom + offsetX
+                const sy2 = g.y2 * zoom + offsetY
+                ctx.save()
+                ctx.setTransform(1, 0, 0, 1, 0, 0) // reset to screen space
                 ctx.strokeStyle = "#00ff88"
-                ctx.lineWidth = 2 / zoom
-                ctx.setLineDash([6 / zoom, 6 / zoom])
+                ctx.lineWidth = 2
+                ctx.setLineDash([6, 6])
                 ctx.beginPath()
-                ctx.moveTo(g.x1, g.y1)
-                ctx.lineTo(g.x2, g.y2)
+                ctx.moveTo(sx1, sy1)
+                ctx.lineTo(sx2, sy2)
                 ctx.stroke()
                 ctx.setLineDash([])
+                ctx.restore()
                 // Angle visualization
                 const dx = currentXFeet - startXFeet
                 const dy = currentYFeet - startYFeet
