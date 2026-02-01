@@ -47,19 +47,13 @@ Item {
     property bool resizingWall: false
     property int resizeEnd: 0   // 1 = x1/y1, 2 = x2/y2
 
-    // Dimensions 
+    // Dimensions
     property var dimensions: []   // {x1, y1, x2, y2} in FEET
     property bool drawingDimension: false
     property real dimStartXFeet: 0
     property real dimStartYFeet: 0
     property real dimCurrentXFeet: 0
     property real dimCurrentYFeet: 0
-
-    function screenToFeet(x, y) {
-        const px = (x - offsetX) / zoom
-        const py = (y - offsetY) / zoom
-        return { x: px / pixelsPerFoot, y: py / pixelsPerFoot }
-    }
 
     function wallGeometry(w) {
         const dx = w.x2 - w.x1
@@ -199,14 +193,12 @@ Item {
         // final label position (world → screen)
         ctx.save()
         ctx.setTransform(1, 0, 0, 1, 0, 0)
-        const sx = (mx + ox) * zoom + offsetX
-        const sy = (my + oy) * zoom + offsetY
-
+        const p = canvasToScreen({ x: mx + ox, y: my + oy })
         ctx.fillStyle = color
         ctx.font = "12px sans-serif"
         ctx.textAlign = "center"
         ctx.textBaseline = "middle"
-        ctx.fillText(label, sx, sy)
+        ctx.fillText(label, p.x, p.y)
         ctx.restore()
     }
 
@@ -221,12 +213,12 @@ Item {
         const wy = py - y1
         const c1 = vx * wx + vy * wy
         if (c1 <= 0)
-            return Math.hypot(px - x1, py - y1)
+            return distanceToPoint(px, py, x1, y1)
         const c2 = vx * vx + vy * vy
         if (c2 <= c1)
-            return Math.hypot(px - x2, py - y2)
+            return distanceToPoint(px, py, x2, y2)
         const b = c1 / c2
-        return Math.hypot(px - (x1 + b * vx), py - (y1 + b * vy))
+        return distanceToPoint(px, py, (x1 + b * vx), (y1 + b * vy))
     }
 
     function pushUndoState() {
@@ -259,7 +251,7 @@ Item {
 
     function rotateWall(w, angleRad) {
         const c = wallCenter(w)
-        const len = Math.hypot(w.x2 - w.x1, w.y2 - w.y1) / 2
+        const len = distanceToPoint(w.x2, w.y2, w.x1, w.y1) / 2
         w.x1 = c.x - Math.cos(angleRad) * len
         w.y1 = c.y - Math.sin(angleRad) * len
         w.x2 = c.x + Math.cos(angleRad) * len
@@ -316,6 +308,47 @@ Item {
         return `${feet}'${inches}"`
     }
 
+    // ---- Coordinate spaces ----
+    // World: feet
+    // Canvas: pixels, before zoom/offset
+    // Screen: pixels, after zoom/offset
+
+    function worldToCanvas(p) {
+        return {
+            x: p.x * pixelsPerFoot,
+            y: p.y * pixelsPerFoot
+        }
+    }
+
+    function canvasToWorld(p) {
+        return {
+            x: p.x / pixelsPerFoot,
+            y: p.y / pixelsPerFoot
+        }
+    }
+
+    function canvasToScreen(p) {
+        return {
+            x: p.x * zoom + offsetX,
+            y: p.y * zoom + offsetY
+        }
+    }
+
+    function screenToCanvas(p) {
+        return {
+            x: (p.x - offsetX) / zoom,
+            y: (p.y - offsetY) / zoom
+        }
+    }
+
+    function worldToScreen(p) {
+        return canvasToScreen(worldToCanvas(p))
+    }
+
+    function screenToWorld(x, y) {
+        return canvasToWorld(screenToCanvas({ x, y }))
+    }
+
     Rectangle { anchors.fill: parent; color: "#1e1e1e" }
 
     Canvas {
@@ -335,9 +368,9 @@ Item {
             const majorGridFeet = 5      // 5 feet
             for (let i = -200; i <= 200; i += minorGridFeet) {
                 let lineType = "minor"
-                if (Math.abs(i % majorGridFeet) < 1e-6) 
+                if (Math.abs(i % majorGridFeet) < 1e-6)
                     lineType = "major"
-                else if (Math.abs(i % mediumGridFeet) < 1e-6) 
+                else if (Math.abs(i % mediumGridFeet) < 1e-6)
                     lineType = "medium"
 
                 switch(lineType) {
@@ -419,14 +452,13 @@ Item {
                         ctx.save()
                         ctx.setTransform(1, 0, 0, 1, 0, 0) // reset to screen space
                         // convert wall-local coords to screen coords
-                        const sx = mx * zoom + offsetX
-                        const sy = my * zoom + offsetY
-                        ctx.globalAlpha = 1.0       // ensure full opacity
-                        ctx.fillStyle = "#000000"   // black text
+                        const p = canvasToScreen({x: mx, y: my})
+                        ctx.globalAlpha = 1.0  // ensure full opacity
+                        ctx.fillStyle = "#000000" // black text
                         ctx.strokeStyle = "rgba(0,0,0,0)" // no stroke background
                         ctx.textAlign = "center"
                         ctx.textBaseline = "middle"
-                        ctx.fillText(label, sx, sy)
+                        ctx.fillText(label, p.x, p.y)
                         ctx.restore()
                     }
                     // angle visualizer while rotating
@@ -446,18 +478,16 @@ Item {
                 const g = wallGeometry(tempWall)
                 if (!g) return
                 // Preview line (screen-space dashed line)
-                const sx1 = g.x1 * zoom + offsetX
-                const sy1 = g.y1 * zoom + offsetY
-                const sx2 = g.x2 * zoom + offsetX
-                const sy2 = g.y2 * zoom + offsetY
+                const p1 = canvasToScreen({x: g.x1, y: g.y1})
+                const p2 = canvasToScreen({x: g.x2, y: g.y2})
                 ctx.save()
                 ctx.setTransform(1, 0, 0, 1, 0, 0) // reset to screen space
                 ctx.strokeStyle = "#00ff88"
                 ctx.lineWidth = 2
                 ctx.setLineDash([6, 6])
                 ctx.beginPath()
-                ctx.moveTo(sx1, sy1)
-                ctx.lineTo(sx2, sy2)
+                ctx.moveTo(p1.x, p1.y)
+                ctx.lineTo(p2.x, p2.y)
                 ctx.stroke()
                 ctx.setLineDash([])
                 ctx.restore()
@@ -512,7 +542,7 @@ Item {
             // START DIMENSION (Shift + Right Click)
             if ((mouse.modifiers & Qt.ShiftModifier) &&
                 mouse.button === Qt.RightButton) {
-                const p = screenToFeet(mouse.x, mouse.y)
+                const p = screenToWorld(mouse.x, mouse.y)
                 drawingDimension = true
                 dimStartXFeet = p.x
                 dimStartYFeet = p.y
@@ -521,7 +551,7 @@ Item {
                 return
             }
             if (mouse.button === Qt.LeftButton) {
-                const p = screenToFeet(mouse.x, mouse.y)
+                const p = screenToWorld(mouse.x, mouse.y)
                 // RESIZE HANDLE FIRST
                 if (selectedWall !== -1) {
                     const w = walls[selectedWall]
@@ -581,15 +611,15 @@ Item {
 
         onPositionChanged: mouse => {
             if (drawingDimension && (mouse.buttons & Qt.RightButton)) {
-                const p = screenToFeet(mouse.x, mouse.y)
+                const p = screenToWorld(mouse.x, mouse.y)
                 dimCurrentXFeet = p.x
                 dimCurrentYFeet = p.y
                 canvas.requestPaint()
                 return
-            }            
+            }
             // RESIZE SELECTED WALL (ENDPOINT DRAG)
             if (resizingWall && (mouse.buttons & Qt.LeftButton)) {
-                const p = screenToFeet(mouse.x, mouse.y)
+                const p = screenToWorld(mouse.x, mouse.y)
                 const w = walls[selectedWall]
                 if (resizeEnd === 1) {
                     w.x1 = p.x
@@ -606,7 +636,7 @@ Item {
                 return
             }
             if (rotatingWall && (mouse.buttons & Qt.LeftButton)) {
-                const p = screenToFeet(mouse.x, mouse.y)
+                const p = screenToWorld(mouse.x, mouse.y)
                 const w = walls[selectedWall]
                 const currentAngle = Math.atan2(
                     p.y - wallCenter(w).y,
@@ -616,7 +646,7 @@ Item {
                 rotateWall(w, rotateBaseAngle + delta)
                 canvas.requestPaint()
             } else if (drawingWall && (mouse.buttons & Qt.LeftButton)) {
-                const p = screenToFeet(mouse.x, mouse.y)
+                const p = screenToWorld(mouse.x, mouse.y)
                 currentXFeet = p.x
                 currentYFeet = p.y
                 canvas.requestPaint()
