@@ -22,8 +22,10 @@ Item {
     // Walls stored IN FEET
     property var walls: []
     property real wallThicknessFeet: 0.5 // 6 inches
+    // Doors
+    property var doors: []
 
-    // Drawing state
+    // Drawing wall state
     property bool drawingWall: false
     property real startXFeet: 0
     property real startYFeet: 0
@@ -31,6 +33,14 @@ Item {
     property real currentYFeet: 0
     property int selectedWall: -1
     property real pickTolerancePixels: 8 // feels good: 6–10 px
+
+    // Drawing door state
+    property bool doorMode: false
+    property bool drawingDoor: false
+    property real doorStartXFeet: 0
+    property real doorStartYFeet: 0
+    property real doorCurrentXFeet: 0
+    property real doorCurrentYFeet: 0
 
     property bool rotatingWall: false
     property real rotateStartAngle: 0
@@ -149,6 +159,41 @@ Item {
         ctx.strokeStyle = colors.wallOutline
         ctx.lineWidth = 1 / zoom
         ctx.stroke()
+    }
+
+    function drawDoor(ctx, door, preview = false) {
+        const x = door.x * pixelsPerFoot
+        const y = door.y * pixelsPerFoot
+        const w = door.width * pixelsPerFoot
+        const a = door.angle
+
+        ctx.save()
+
+        ctx.strokeStyle = preview ? colors.preview : "#ffffff"
+        ctx.lineWidth = 2 / zoom
+        ctx.fillStyle = "rgba(255,255,255,0.15)"
+
+        // door leaf
+        ctx.beginPath()
+        ctx.moveTo(x, y)
+        ctx.lineTo(
+            x + Math.cos(a) * w,
+            y + Math.sin(a) * w
+        )
+        ctx.stroke()
+
+        // swing arc
+        ctx.beginPath()
+        ctx.arc(
+            x,
+            y,
+            w,
+            a,
+            a + Math.PI / 2
+        )
+        ctx.stroke()
+
+        ctx.restore()
     }
 
     function distanceToPoint(px, py, x, y) {
@@ -512,6 +557,22 @@ Item {
         ctx.restore()
     }
 
+    function drawDoors(ctx) {
+        doors.forEach(d => drawDoor(ctx, d))
+    }
+
+    function drawDoorPreview(ctx) {
+        if (!drawingDoor) return
+        const dx = doorCurrentXFeet - doorStartXFeet
+        const dy = doorCurrentYFeet - doorStartYFeet
+        drawDoor(ctx, {
+            x: doorStartXFeet,
+            y: doorStartYFeet,
+            width: Math.hypot(dx, dy),
+            angle: Math.atan2(dy, dx)
+        }, true)
+    }
+
     Rectangle { anchors.fill: parent; color: "#1e1e1e" }
 
     Canvas {
@@ -531,6 +592,8 @@ Item {
             drawWalls(ctx)
             drawPreviews(ctx)
             drawDimensions(ctx)
+            drawDoors(ctx)
+            drawDoorPreview(ctx)
             ctx.restore()
         }
     }
@@ -543,6 +606,17 @@ Item {
 
         onPressed: mouse => {
             root.forceActiveFocus()
+            // START Door
+            if ((mouse.modifiers & Qt.ControlModifier) &&
+                mouse.button === Qt.LeftButton) {
+                    const p = screenToWorld(mouse.x, mouse.y)
+                    drawingDoor = true
+                    doorStartXFeet = p.x
+                    doorStartYFeet = p.y
+                    doorCurrentXFeet = p.x
+                    doorCurrentYFeet = p.y
+                    return
+            }            
             // START DIMENSION (Shift + Right Click)
             if ((mouse.modifiers & Qt.ShiftModifier) &&
                     mouse.button === Qt.LeftButton) {
@@ -616,6 +690,13 @@ Item {
         }
 
         onPositionChanged: mouse => {
+            if (drawingDoor && (mouse.buttons & Qt.LeftButton)) {
+                const p = screenToWorld(mouse.x, mouse.y)
+                doorCurrentXFeet = p.x
+                doorCurrentYFeet = p.y
+                canvas.requestPaint()
+                return
+            }            
             if (drawingDimension && (mouse.buttons & Qt.LeftButton)) {
                 const p = screenToWorld(mouse.x, mouse.y)
                 dimCurrentXFeet = p.x
@@ -666,6 +747,23 @@ Item {
         }
 
         onReleased: mouse => {
+            if (drawingDoor && mouse.button === Qt.LeftButton) {
+                const dx = doorCurrentXFeet - doorStartXFeet
+                const dy = doorCurrentYFeet - doorStartYFeet
+                const width = Math.hypot(dx, dy)
+                if (width > 1.5) { // min door width
+                    pushUndoState()
+                    doors.push({
+                        x: doorStartXFeet,
+                        y: doorStartYFeet,
+                        width: width,
+                        angle: Math.atan2(dy, dx)
+                    })
+                }
+                drawingDoor = false
+                canvas.requestPaint()
+                return
+            }
             if (drawingDimension && mouse.button === Qt.LeftButton) {
                 const dx = dimCurrentXFeet - dimStartXFeet
                 const dy = dimCurrentYFeet - dimStartYFeet
