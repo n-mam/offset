@@ -173,7 +173,11 @@ Item {
     function pushUndoState() {
         if (undoStack.length >= maxUndoSteps)
             undoStack.shift()
-        undoStack.push(walls.map(w => Object.assign({}, w)))
+        // store **both walls and dimensions** as deep copies
+        undoStack.push({
+            walls: walls.map(w => Object.assign({}, w)),
+            dimensions: dimensions.map(d => Object.assign({}, d))
+        })
     }
 
     function moveSelectedWall(dxFeet, dyFeet) {
@@ -438,7 +442,7 @@ Item {
         ctx.lineWidth = 2 / zoom
         ctx.stroke()
         // Draw angle text
-        ctx.fillStyle = color
+        ctx.fillStyle = colors.preview
         ctx.font = `${12 / zoom}px sans-serif`
         ctx.textAlign = "left"
         ctx.textBaseline = "middle"
@@ -500,7 +504,7 @@ Item {
         ctx.save()
         ctx.setTransform(1, 0, 0, 1, 0, 0)
         const p = canvasToScreen({ x: mx + ox, y: my + oy })
-        ctx.fillStyle = color
+        ctx.fillStyle = colors.preview
         ctx.font = "12px sans-serif"
         ctx.textAlign = "center"
         ctx.textBaseline = "middle"
@@ -543,6 +547,8 @@ Item {
             if ((mouse.modifiers & Qt.ShiftModifier) &&
                     mouse.button === Qt.LeftButton) {
                 const p = screenToWorld(mouse.x, mouse.y)
+                // push undo before starting the dimension
+                pushUndoState()
                 drawingDimension = true
                 dimStartXFeet = p.x
                 dimStartYFeet = p.y
@@ -734,7 +740,7 @@ Item {
                 event.accepted = true
                 break
             case Qt.Key_Up:
-                moveSelectedWall(0, -step) // Y grows downward in screen space
+                moveSelectedWall(0, -step)
                 event.accepted = true
                 break
             case Qt.Key_Down:
@@ -744,7 +750,9 @@ Item {
             case Qt.Key_Z:
                 if (event.modifiers & Qt.ControlModifier) {
                     if (undoStack.length > 0) {
-                        walls = undoStack.pop()
+                        const state = undoStack.pop()
+                        walls = state.walls
+                        dimensions = state.dimensions
                         selectedWall = -1
                         canvas.requestPaint()
                     }
@@ -753,4 +761,5 @@ Item {
                 break
         }
     }
+
 }
