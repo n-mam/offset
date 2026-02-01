@@ -23,11 +23,6 @@ Item {
     property var walls: []
     property real wallThicknessFeet: 0.5 // 6 inches
 
-    // Colors (centralized)
-    property string wallFillColor: "#dcd0aa" // sand color
-    property string hatchStrokeColor: "rgba(140,110,70,0.6)"
-    property string wallOutlineColor: "rgba(120,95,60,0.6)"
-
     // Drawing state
     property bool drawingWall: false
     property real startXFeet: 0
@@ -41,7 +36,7 @@ Item {
     property real rotateStartAngle: 0
     property real rotateBaseAngle: 0
 
-    property real moveStepFeet: 0.0416667     // ~0.5 inches
+    property real moveStepFeet: 0.0416667 // ~0.5 inches
     property real moveStepFastFeet: 0.1  // 1.2 inches when Shift is held
 
     property bool resizingWall: false
@@ -54,6 +49,28 @@ Item {
     property real dimStartYFeet: 0
     property real dimCurrentXFeet: 0
     property real dimCurrentYFeet: 0
+
+    // ---- Coordinate spaces ----
+    // World: feet
+    // Canvas: pixels, before zoom/offset
+    // Screen: pixels, after zoom/offset
+
+    property var gridLevels: [
+        { step: 0.25, color: "#3a3a3a", width: 0.5 },
+        { step: 1,    color: "#505050", width: 1   },
+        { step: 5,    color: "#707070", width: 2   }
+    ]
+
+    // Colors
+    property var colors: ({
+        wallFill: "#dcd0aa",
+        wallOutline: "rgba(120,95,60,0.6)",
+        hatchStroke: "rgba(140,110,70,0.6)",
+        selected: "#ff0000",
+        preview: "#00ff88",
+        rotateHandle: "#ff5555",
+        resizeHandle: "#00aaff"
+    })
 
     function wallGeometry(w) {
         const dx = w.x2 - w.x1
@@ -96,12 +113,9 @@ Item {
         ctx.closePath()
     }
 
-    function drawWallRect(ctx, w) {
-        const g = wallGeometry(w)
-        if (!g) return
-
+    function drawWallRect(ctx, g) {
         polygonPath(ctx, g.corners)
-        ctx.fillStyle = wallFillColor
+        ctx.fillStyle = colors.wallFill
         ctx.fill()
 
         ctx.save()
@@ -121,7 +135,7 @@ Item {
         const maxY = Math.max.apply(null, ys)
         const diagLen = Math.hypot(maxX - minX, maxY - minY)
 
-        ctx.strokeStyle = hatchStrokeColor
+        ctx.strokeStyle = colors.hatchStroke
         ctx.lineWidth = 1 / zoom
         for (let i = -diagLen; i < diagLen * 2; i += spacing) {
             ctx.beginPath()
@@ -132,74 +146,9 @@ Item {
 
         ctx.restore()
         polygonPath(ctx, g.corners)
-        ctx.strokeStyle = wallOutlineColor
+        ctx.strokeStyle = colors.wallOutline
         ctx.lineWidth = 1 / zoom
         ctx.stroke()
-    }
-
-    function drawDimension(ctx, x1Feet, y1Feet, x2Feet, y2Feet,
-                color = "#00ff88", barSizePx = 10) {
-
-        // world → local canvas space (your ctx is already translated + scaled)
-        const x1 = x1Feet * pixelsPerFoot
-        const y1 = y1Feet * pixelsPerFoot
-        const x2 = x2Feet * pixelsPerFoot
-        const y2 = y2Feet * pixelsPerFoot
-
-        // main line
-        ctx.strokeStyle = color
-        ctx.lineWidth = 2 / zoom
-        ctx.beginPath()
-        ctx.moveTo(x1, y1)
-        ctx.lineTo(x2, y2)
-        ctx.stroke()
-
-        // end bars
-        const angle = Math.atan2(y2 - y1, x2 - x1)
-        const px = Math.sin(angle) * (barSizePx / zoom)
-        const py = -Math.cos(angle) * (barSizePx / zoom)
-
-        ctx.beginPath()
-        ctx.moveTo(x1 - px, y1 - py)
-        ctx.lineTo(x1 + px, y1 + py)
-        ctx.moveTo(x2 - px, y2 - py)
-        ctx.lineTo(x2 + px, y2 + py)
-        ctx.stroke()
-
-        // label
-        const dx = x2Feet - x1Feet
-        const dy = y2Feet - y1Feet
-        const lengthFeet = Math.sqrt(dx*dx + dy*dy)
-        const label = formatFeetInches(lengthFeet)
-
-        // midpoint in world (canvas-local) space
-        const mx = (x1 + x2) / 2
-        const my = (y1 + y2) / 2
-
-        // direction
-        const dxp = x2 - x1
-        const dyp = y2 - y1
-        const len = Math.hypot(dxp, dyp) || 1
-
-        // perpendicular normal (consistent "above")
-        const nx = dyp / len
-        const ny = -dxp / len
-
-        // offset in SCREEN pixels
-        const labelOffsetPx = 14
-        const ox = nx * (labelOffsetPx / zoom)
-        const oy = ny * (labelOffsetPx / zoom)
-
-        // final label position (world → screen)
-        ctx.save()
-        ctx.setTransform(1, 0, 0, 1, 0, 0)
-        const p = canvasToScreen({ x: mx + ox, y: my + oy })
-        ctx.fillStyle = color
-        ctx.font = "12px sans-serif"
-        ctx.textAlign = "center"
-        ctx.textBaseline = "middle"
-        ctx.fillText(label, p.x, p.y)
-        ctx.restore()
     }
 
     function distanceToPoint(px, py, x, y) {
@@ -278,24 +227,6 @@ Item {
         return 0
     }
 
-    function drawAngleVisualizer(ctx, cx, cy, angleRad, zoom, color) {
-        let deg = angleRad * 180 / Math.PI
-        if (deg < 0) deg += 360
-        const r = 20 / zoom
-        // Draw arc
-        ctx.beginPath()
-        ctx.arc(cx, cy, r, 0, -angleRad, true)
-        ctx.strokeStyle = color
-        ctx.lineWidth = 2 / zoom
-        ctx.stroke()
-        // Draw angle text
-        ctx.fillStyle = color
-        ctx.font = `${12 / zoom}px sans-serif`
-        ctx.textAlign = "left"
-        ctx.textBaseline = "middle"
-        ctx.fillText(`${deg.toFixed(0)}°`, cx + r + 4 / zoom, cy)
-    }
-
     function wallAngleForDisplay(w) {
         const dx = w.x2 - w.x1
         const dy = w.y2 - w.y1
@@ -303,15 +234,14 @@ Item {
     }
 
     function formatFeetInches(lengthFeet) {
-        const feet = Math.floor(lengthFeet)
-        const inches = Math.round((lengthFeet - feet) * 12)
+        let feet = Math.floor(lengthFeet)
+        let inches = Math.round((lengthFeet - feet) * 12)
+        if (inches === 12) {
+            feet++
+            inches = 0
+        }
         return `${feet}'${inches}"`
     }
-
-    // ---- Coordinate spaces ----
-    // World: feet
-    // Canvas: pixels, before zoom/offset
-    // Screen: pixels, after zoom/offset
 
     function worldToCanvas(p) {
         return {
@@ -349,185 +279,254 @@ Item {
         return canvasToWorld(screenToCanvas({ x, y }))
     }
 
+    function drawGrid(ctx) {
+        gridLevels.forEach(level => {
+            ctx.strokeStyle = level.color
+            ctx.lineWidth = level.width / zoom
+            for (let i = -200; i <= 200; i += level.step) {
+                ctx.beginPath()
+                ctx.moveTo(i * pixelsPerFoot, -10000)
+                ctx.lineTo(i * pixelsPerFoot,  10000)
+                ctx.stroke()
+                ctx.beginPath()
+                ctx.moveTo(-10000, i * pixelsPerFoot)
+                ctx.lineTo( 10000, i * pixelsPerFoot)
+                ctx.stroke()
+            }
+        })
+    }
+
+    function drawWalls(ctx) {
+        walls.forEach((w, i) => {
+            const g = wallGeometry(w)
+            if (!g) return
+            drawWallRect(ctx, g)
+            if (i === selectedWall) {
+                polygonPath(ctx, g.corners)
+                ctx.strokeStyle = colors.selected
+                ctx.lineWidth = 2 / zoom
+                ctx.stroke()
+                // rotation handle
+                const mx = (g.x1 + g.x2) / 2
+                const my = (g.y1 + g.y2) / 2
+                const handleDist = 20 / zoom
+                const angle = wallAngle(w)
+                const hx = mx + Math.cos(angle + Math.PI / 2) * handleDist
+                const hy = my + Math.sin(angle + Math.PI / 2) * handleDist
+                ctx.beginPath()
+                ctx.arc(hx, hy, 5 / zoom, 0, Math.PI * 2)
+                ctx.fillStyle = colors.rotateHandle
+                ctx.fill()
+                // endpoint resize handles
+                ctx.fillStyle = colors.resizeHandle
+                ctx.beginPath()
+                ctx.arc(g.x1, g.y1, 5 / zoom, 0, Math.PI * 2)
+                ctx.fill()
+                ctx.beginPath()
+                ctx.arc(g.x2, g.y2, 5 / zoom, 0, Math.PI * 2)
+                ctx.fill()
+                // Length label while resizing
+                if (resizingWall) {
+                    let x1 = w.x1
+                    let y1 = w.y1
+                    let x2 = w.x2
+                    let y2 = w.y2
+                    // if resizing one endpoint, use current mouse pos
+                    if (resizeEnd === 1) {
+                        x1 = currentXFeet
+                        y1 = currentYFeet
+                    } else if (resizeEnd === 2) {
+                        x2 = currentXFeet
+                        y2 = currentYFeet
+                    }
+                    const dx = x2 - x1
+                    const dy = y2 - y1
+                    const lengthFeet = Math.sqrt(dx*dx + dy*dy)
+                    const label = formatFeetInches(lengthFeet)
+                    const mx = ((x1 + x2) / 2) * pixelsPerFoot
+                    const my = ((y1 + y2) / 2) * pixelsPerFoot
+
+                    ctx.save()
+                    ctx.setTransform(1, 0, 0, 1, 0, 0) // reset to screen space
+                    // convert wall-local coords to screen coords
+                    const p = canvasToScreen({x: mx, y: my})
+                    ctx.globalAlpha = 1.0  // ensure full opacity
+                    ctx.fillStyle = "#000000" // black text
+                    ctx.strokeStyle = "rgba(0,0,0,0)" // no stroke background
+                    ctx.textAlign = "center"
+                    ctx.textBaseline = "middle"
+                    ctx.fillText(label, p.x, p.y)
+                    ctx.restore()
+                }
+                // angle visualizer while rotating
+                if (rotatingWall) {
+                    const c = wallCenter(w)
+                    const a = wallAngleForDisplay(w)
+                    const cx = c.x * pixelsPerFoot
+                    const cy = c.y * pixelsPerFoot
+                    drawAngleVisualizer(ctx, cx, cy, a, zoom)
+                }
+            }
+        })
+    }
+
+    function drawDimensions(ctx) {
+        dimensions.forEach(d => {
+            drawDimension(ctx, d.x1, d.y1, d.x2, d.y2)
+        })
+    }
+
+    function drawPreviews(ctx) {
+        // Preview wall
+        if (drawingWall) {
+            const tempWall = {x1:startXFeet, y1:startYFeet, x2:currentXFeet, y2:currentYFeet}
+            const g = wallGeometry(tempWall)
+            if (!g) return
+            // Preview line (screen-space dashed line)
+            const p1 = canvasToScreen({x: g.x1, y: g.y1})
+            const p2 = canvasToScreen({x: g.x2, y: g.y2})
+            ctx.save()
+            ctx.setTransform(1, 0, 0, 1, 0, 0) // reset to screen space
+            ctx.strokeStyle = colors.preview
+            ctx.lineWidth = 2
+            ctx.setLineDash([6, 6])
+            ctx.beginPath()
+            ctx.moveTo(p1.x, p1.y)
+            ctx.lineTo(p2.x, p2.y)
+            ctx.stroke()
+            ctx.setLineDash([])
+            ctx.restore()
+            // Angle visualization
+            const dx = currentXFeet - startXFeet
+            const dy = currentYFeet - startYFeet
+            let rad = Math.atan2(dy, dx)
+            drawAngleVisualizer(ctx, g.x1, g.y1, -rad, zoom)
+            // Length label
+            const mx = (g.x1 + g.x2) / 2
+            const my = (g.y1 + g.y2) / 2
+            const lengthFeet = Math.sqrt(dx*dx + dy*dy)
+            const label = formatFeetInches(lengthFeet)
+            const tw = ctx.measureText(label).width
+            const pad = 4 / zoom
+            ctx.fillStyle = "rgba(0,0,0,0.7)"
+            ctx.fillRect(mx - tw / 2 - pad, my - 12 / zoom, tw + pad * 2, 16 / zoom)
+            ctx.fillStyle = "#00ff88"
+            ctx.textAlign = "center"
+            ctx.textBaseline = "middle"
+            ctx.fillText(label, mx, my)
+        }
+        // Dimension preview while drawing
+        if (drawingDimension) {
+            drawDimension(
+                ctx,
+                dimStartXFeet,
+                dimStartYFeet,
+                dimCurrentXFeet,
+                dimCurrentYFeet
+            )
+        }
+    }
+
+    function drawAngleVisualizer(ctx, cx, cy, angleRad, zoom) {
+        let deg = angleRad * 180 / Math.PI
+        if (deg < 0) deg += 360
+        const r = 20 / zoom
+        // Draw arc
+        ctx.beginPath()
+        ctx.arc(cx, cy, r, 0, -angleRad, true)
+        ctx.strokeStyle = colors.preview
+        ctx.lineWidth = 2 / zoom
+        ctx.stroke()
+        // Draw angle text
+        ctx.fillStyle = color
+        ctx.font = `${12 / zoom}px sans-serif`
+        ctx.textAlign = "left"
+        ctx.textBaseline = "middle"
+        ctx.fillText(`${deg.toFixed(0)}°`, cx + r + 4 / zoom, cy)
+    }
+
+    function drawDimension(ctx, x1Feet, y1Feet, x2Feet, y2Feet, barSizePx = 10) {
+        // world → local canvas space (your ctx is already translated + scaled)
+        const x1 = x1Feet * pixelsPerFoot
+        const y1 = y1Feet * pixelsPerFoot
+        const x2 = x2Feet * pixelsPerFoot
+        const y2 = y2Feet * pixelsPerFoot
+
+        // main line
+        ctx.strokeStyle = colors.preview
+        ctx.lineWidth = 2 / zoom
+        ctx.beginPath()
+        ctx.moveTo(x1, y1)
+        ctx.lineTo(x2, y2)
+        ctx.stroke()
+
+        // end bars
+        const angle = Math.atan2(y2 - y1, x2 - x1)
+        const px = Math.sin(angle) * (barSizePx / zoom)
+        const py = -Math.cos(angle) * (barSizePx / zoom)
+
+        ctx.beginPath()
+        ctx.moveTo(x1 - px, y1 - py)
+        ctx.lineTo(x1 + px, y1 + py)
+        ctx.moveTo(x2 - px, y2 - py)
+        ctx.lineTo(x2 + px, y2 + py)
+        ctx.stroke()
+
+        // label
+        const dx = x2Feet - x1Feet
+        const dy = y2Feet - y1Feet
+        const lengthFeet = Math.sqrt(dx*dx + dy*dy)
+        const label = formatFeetInches(lengthFeet)
+
+        // midpoint in world (canvas-local) space
+        const mx = (x1 + x2) / 2
+        const my = (y1 + y2) / 2
+
+        // direction
+        const dxp = x2 - x1
+        const dyp = y2 - y1
+        const len = Math.hypot(dxp, dyp) || 1
+
+        // perpendicular normal (consistent "above")
+        const nx = dyp / len
+        const ny = -dxp / len
+
+        // offset in SCREEN pixels
+        const labelOffsetPx = 14
+        const ox = nx * (labelOffsetPx / zoom)
+        const oy = ny * (labelOffsetPx / zoom)
+
+        // final label position (world → screen)
+        ctx.save()
+        ctx.setTransform(1, 0, 0, 1, 0, 0)
+        const p = canvasToScreen({ x: mx + ox, y: my + oy })
+        ctx.fillStyle = color
+        ctx.font = "12px sans-serif"
+        ctx.textAlign = "center"
+        ctx.textBaseline = "middle"
+        ctx.fillText(label, p.x, p.y)
+        ctx.restore()
+    }
+
     Rectangle { anchors.fill: parent; color: "#1e1e1e" }
 
     Canvas {
         id: canvas
         anchors.fill: parent
+
         onPaint: {
             const ctx = getContext("2d")
             ctx.reset()
             ctx.clearRect(0, 0, width, height)
+            // camera transform
             ctx.save()
             ctx.translate(offsetX, offsetY)
             ctx.scale(zoom, zoom)
-
-            // Multi-level graduated grid
-            const minorGridFeet = 0.25   // 3 inches
-            const mediumGridFeet = 1     // 1 foot
-            const majorGridFeet = 5      // 5 feet
-            for (let i = -200; i <= 200; i += minorGridFeet) {
-                let lineType = "minor"
-                if (Math.abs(i % majorGridFeet) < 1e-6)
-                    lineType = "major"
-                else if (Math.abs(i % mediumGridFeet) < 1e-6)
-                    lineType = "medium"
-
-                switch(lineType) {
-                    case "minor":
-                        ctx.strokeStyle = "#3a3a3a"
-                        ctx.lineWidth = 0.5 / zoom
-                        break
-                    case "medium":
-                        ctx.strokeStyle = "#505050"
-                        ctx.lineWidth = 1 / zoom
-                        break
-                    case "major":
-                        ctx.strokeStyle = "#707070"
-                        ctx.lineWidth = 2 / zoom
-                        break
-                }
-                // vertical line
-                ctx.beginPath()
-                ctx.moveTo(i * pixelsPerFoot, -10000)
-                ctx.lineTo(i * pixelsPerFoot, 10000)
-                ctx.stroke()
-                // horizontal line
-                ctx.beginPath()
-                ctx.moveTo(-10000, i * pixelsPerFoot)
-                ctx.lineTo(10000, i * pixelsPerFoot)
-                ctx.stroke()
-            }
-
-            // Walls
-            walls.forEach((w, i) => {
-                drawWallRect(ctx, w)
-                if (i === selectedWall) {
-                    const g = wallGeometry(w)
-                    if (!g) return
-                    polygonPath(ctx, g.corners)
-                    ctx.strokeStyle = "#ff0000"
-                    ctx.lineWidth = 2 / zoom
-                    ctx.stroke()
-                    // rotation handle
-                    const mx = (g.x1 + g.x2) / 2
-                    const my = (g.y1 + g.y2) / 2
-                    const handleDist = 20 / zoom
-                    const angle = wallAngle(w)
-                    const hx = mx + Math.cos(angle + Math.PI / 2) * handleDist
-                    const hy = my + Math.sin(angle + Math.PI / 2) * handleDist
-                    ctx.beginPath()
-                    ctx.arc(hx, hy, 5 / zoom, 0, Math.PI * 2)
-                    ctx.fillStyle = "#ff5555"
-                    ctx.fill()
-                    // endpoint resize handles
-                    ctx.fillStyle = "#00aaff"
-                    ctx.beginPath()
-                    ctx.arc(g.x1, g.y1, 5 / zoom, 0, Math.PI * 2)
-                    ctx.fill()
-                    ctx.beginPath()
-                    ctx.arc(g.x2, g.y2, 5 / zoom, 0, Math.PI * 2)
-                    ctx.fill()
-                    // Length label while resizing
-                    if (resizingWall) {
-                        let x1 = w.x1
-                        let y1 = w.y1
-                        let x2 = w.x2
-                        let y2 = w.y2
-                        // if resizing one endpoint, use current mouse pos
-                        if (resizeEnd === 1) {
-                            x1 = currentXFeet
-                            y1 = currentYFeet
-                        } else if (resizeEnd === 2) {
-                            x2 = currentXFeet
-                            y2 = currentYFeet
-                        }
-                        const dx = x2 - x1
-                        const dy = y2 - y1
-                        const lengthFeet = Math.sqrt(dx*dx + dy*dy)
-                        const label = formatFeetInches(lengthFeet)
-                        const mx = ((x1 + x2) / 2) * pixelsPerFoot
-                        const my = ((y1 + y2) / 2) * pixelsPerFoot
-
-                        ctx.save()
-                        ctx.setTransform(1, 0, 0, 1, 0, 0) // reset to screen space
-                        // convert wall-local coords to screen coords
-                        const p = canvasToScreen({x: mx, y: my})
-                        ctx.globalAlpha = 1.0  // ensure full opacity
-                        ctx.fillStyle = "#000000" // black text
-                        ctx.strokeStyle = "rgba(0,0,0,0)" // no stroke background
-                        ctx.textAlign = "center"
-                        ctx.textBaseline = "middle"
-                        ctx.fillText(label, p.x, p.y)
-                        ctx.restore()
-                    }
-                    // angle visualizer while rotating
-                    if (rotatingWall) {
-                        const c = wallCenter(w)
-                        const a = wallAngleForDisplay(w)
-                        const cx = c.x * pixelsPerFoot
-                        const cy = c.y * pixelsPerFoot
-                        drawAngleVisualizer(ctx, cx, cy, a, zoom, "#00ff88")
-                    }
-                }
-            })
-
-            // Preview wall
-            if (drawingWall) {
-                const tempWall = {x1:startXFeet,y1:startYFeet,x2:currentXFeet,y2:currentYFeet}
-                const g = wallGeometry(tempWall)
-                if (!g) return
-                // Preview line (screen-space dashed line)
-                const p1 = canvasToScreen({x: g.x1, y: g.y1})
-                const p2 = canvasToScreen({x: g.x2, y: g.y2})
-                ctx.save()
-                ctx.setTransform(1, 0, 0, 1, 0, 0) // reset to screen space
-                ctx.strokeStyle = "#00ff88"
-                ctx.lineWidth = 2
-                ctx.setLineDash([6, 6])
-                ctx.beginPath()
-                ctx.moveTo(p1.x, p1.y)
-                ctx.lineTo(p2.x, p2.y)
-                ctx.stroke()
-                ctx.setLineDash([])
-                ctx.restore()
-                // Angle visualization
-                const dx = currentXFeet - startXFeet
-                const dy = currentYFeet - startYFeet
-                let rad = Math.atan2(dy, dx)
-                drawAngleVisualizer(ctx, g.x1, g.y1, -rad, zoom, "#00ff88")
-                // Length label
-                const mx = (g.x1 + g.x2) / 2
-                const my = (g.y1 + g.y2) / 2
-                const lengthFeet = Math.sqrt(dx*dx + dy*dy)
-                const label = formatFeetInches(lengthFeet)
-                const tw = ctx.measureText(label).width
-                const pad = 4 / zoom
-                ctx.fillStyle = "rgba(0,0,0,0.7)"
-                ctx.fillRect(mx - tw / 2 - pad, my - 12 / zoom, tw + pad * 2, 16 / zoom)
-                ctx.fillStyle = "#00ff88"
-                ctx.textAlign = "center"
-                ctx.textBaseline = "middle"
-                ctx.fillText(label, mx, my)
-            }
-
-            // Existing dimensions
-            dimensions.forEach(d => {
-                drawDimension(ctx, d.x1, d.y1, d.x2, d.y2)
-            })
-
-            // Dimension preview while drawing
-            if (drawingDimension) {
-                drawDimension(
-                    ctx,
-                    dimStartXFeet,
-                    dimStartYFeet,
-                    dimCurrentXFeet,
-                    dimCurrentYFeet,
-                    "#00ffaa"
-                )
-            }
-
+            // Draw objects
+            drawGrid(ctx)
+            drawWalls(ctx)
+            drawPreviews(ctx)
+            drawDimensions(ctx)
             ctx.restore()
         }
     }
@@ -537,11 +536,12 @@ Item {
         property real lastY
         anchors.fill: parent
         acceptedButtons: Qt.LeftButton|Qt.RightButton
+
         onPressed: mouse => {
             root.forceActiveFocus()
             // START DIMENSION (Shift + Right Click)
             if ((mouse.modifiers & Qt.ShiftModifier) &&
-                mouse.button === Qt.RightButton) {
+                    mouse.button === Qt.LeftButton) {
                 const p = screenToWorld(mouse.x, mouse.y)
                 drawingDimension = true
                 dimStartXFeet = p.x
@@ -610,7 +610,7 @@ Item {
         }
 
         onPositionChanged: mouse => {
-            if (drawingDimension && (mouse.buttons & Qt.RightButton)) {
+            if (drawingDimension && (mouse.buttons & Qt.LeftButton)) {
                 const p = screenToWorld(mouse.x, mouse.y)
                 dimCurrentXFeet = p.x
                 dimCurrentYFeet = p.y
@@ -660,7 +660,7 @@ Item {
         }
 
         onReleased: mouse => {
-            if (drawingDimension && mouse.button === Qt.RightButton) {
+            if (drawingDimension && mouse.button === Qt.LeftButton) {
                 const dx = dimCurrentXFeet - dimStartXFeet
                 const dy = dimCurrentYFeet - dimStartYFeet
                 // prevent zero-length dimensions
