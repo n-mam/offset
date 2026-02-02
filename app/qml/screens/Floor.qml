@@ -22,21 +22,8 @@ Item {
     property var shapes: []
     property real wallThicknessFeet: 0.5 // 6 inches
 
-    // Drawing wall state
-    property bool drawingWall: false
-    property real startXFeet: 0
-    property real startYFeet: 0
-    property real currentXFeet: 0
-    property real currentYFeet: 0
     property int selected: -1
     property real pickTolerancePixels: 8 // feels good: 6–10 px
-
-    // Drawing door state
-    property bool drawingDoor: false
-    property real doorStartXFeet: 0
-    property real doorStartYFeet: 0
-    property real doorCurrentXFeet: 0
-    property real doorCurrentYFeet: 0
 
     property bool rotatingWall: false
     property real rotateStartAngle: 0
@@ -48,12 +35,14 @@ Item {
     property bool resizingWall: false
     property int resizeEnd: 0   // 1 = x1/y1, 2 = x2/y2
 
-    // Dimensions
-    property bool drawingDimension: false
-    property real dimStartXFeet: 0
-    property real dimStartYFeet: 0
-    property real dimCurrentXFeet: 0
-    property real dimCurrentYFeet: 0
+    property var drawing: ({
+        type: "",
+        active: false,
+        startX: 0,
+        startY: 0,
+        currentX: 0,
+        currentY: 0
+    })
 
     // ---- Coordinate spaces ----
     // World: feet
@@ -77,35 +66,58 @@ Item {
         resizeHandle: "#00aaff"
     })
 
-    function wallGeometry(w) {
-        const dx = w.x2 - w.x1
-        const dy = w.y2 - w.y1
-        const len = Math.hypot(dx, dy)
-        if (len  ===  0) return null
+    function shapeGeometry(s) {
+        let x1, y1, x2, y2, thicknessFeet;
+        switch(s.type) {
+            case "wall":
+                x1 = s.x1; y1 = s.y1;
+                x2 = s.x2; y2 = s.y2;
+                thicknessFeet = wallThicknessFeet;
+                break;
+            case "door":
+                x1 = s.x; y1 = s.y;
+                // approximate door thickness as 0.5 ft or your wallThicknessFeet
+                thicknessFeet = wallThicknessFeet;
+                // for doors, we could also store a rectangle if needed
+                break;
+            case "dimension":
+                x1 = s.x1; y1 = s.y1;
+                x2 = s.x2; y2 = s.y2;
+                const barSizePx = 10; // same as in drawDimension
+                thicknessFeet = (barSizePx / zoom) / pixelsPerFoot; // end bar height in feet
+                break;
+            default:
+                return null;
+        }
 
-        const tx = dx / len
-        const ty = dy / len
-        const nx = -ty
-        const ny = tx
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const len = Math.hypot(dx, dy);
+        if(len === 0) return null;
 
-        const halfThicknessPx = (wallThicknessFeet / 2) * pixelsPerFoot
-        const pxLen = len * pixelsPerFoot
+        const tx = dx / len;
+        const ty = dy / len;
+        const nx = -ty;
+        const ny = tx;
 
-        const x1 = w.x1 * pixelsPerFoot
-        const y1 = w.y1 * pixelsPerFoot
+        const halfThicknessPx = (thicknessFeet / 2) * pixelsPerFoot;
+        const pxLen = len * pixelsPerFoot;
+
+        const x1Px = x1 * pixelsPerFoot;
+        const y1Px = y1 * pixelsPerFoot;
 
         return {
             len: len,
             tx: tx, ty: ty,
             nx: nx, ny: ny,
-            x1: x1, y1: y1,
-            x2: x1 + tx * pxLen,
-            y2: y1 + ty * pxLen,
+            x1: x1Px, y1: y1Px,
+            x2: x1Px + tx * pxLen,
+            y2: y1Px + ty * pxLen,
             corners: [
-                { x: x1 + nx * halfThicknessPx, y: y1 + ny * halfThicknessPx },
-                { x: x1 + tx * pxLen + nx * halfThicknessPx, y: y1 + ty * pxLen + ny * halfThicknessPx },
-                { x: x1 + tx * pxLen - nx * halfThicknessPx, y: y1 + ty * pxLen - ny * halfThicknessPx },
-                { x: x1 - nx * halfThicknessPx, y: y1 - ny * halfThicknessPx }
+                { x: x1Px + nx * halfThicknessPx, y: y1Px + ny * halfThicknessPx },
+                { x: x1Px + tx * pxLen + nx * halfThicknessPx, y: y1Px + ty * pxLen + ny * halfThicknessPx },
+                { x: x1Px + tx * pxLen - nx * halfThicknessPx, y: y1Px + ty * pxLen - ny * halfThicknessPx },
+                { x: x1Px - nx * halfThicknessPx, y: y1Px - ny * halfThicknessPx }
             ]
         }
     }
@@ -370,11 +382,11 @@ Item {
             let y2 = s.y2
             // if resizing one endpoint, use current mouse pos
             if (resizeEnd === 1) {
-                x1 = currentXFeet
-                y1 = currentYFeet
+                x1 = s.x1
+                y1 = s.y1
             } else if (resizeEnd === 2) {
-                x2 = currentXFeet
-                y2 = currentYFeet
+                x2 = s.x2
+                y2 = s.y2
             }
             const dx = x2 - x1
             const dy = y2 - y1
@@ -405,35 +417,26 @@ Item {
         }
     }
 
-    function drawDimensions(ctx) {
-        dimensions.forEach(d => {
-            drawDimension(ctx, d.x1, d.y1, d.x2, d.y2)
-        })
-    }
-
     function drawPreviews(ctx) {
         // Preview wall
-        if (drawingWall) {
-            const tempWall = {x1:startXFeet, y1:startYFeet, x2:currentXFeet, y2:currentYFeet}
-            const g = wallGeometry(tempWall)
+        if (drawing.active && drawing.type === "wall") {
+            const tempWall = {x1: drawing.startX, y1: drawing.startY, x2: drawing.currentX, y2: drawing.currentY}
+            const g = shapeGeometry(tempWall)
             if (!g) return
             // Preview line (screen-space dashed line)
-            const p1 = canvasToScreen({x: g.x1, y: g.y1})
-            const p2 = canvasToScreen({x: g.x2, y: g.y2})
             ctx.save()
-            ctx.setTransform(1, 0, 0, 1, 0, 0) // reset to screen space
             ctx.strokeStyle = colors.preview
-            ctx.lineWidth = 2
-            ctx.setLineDash([6, 6])
+            ctx.lineWidth = 2 / zoom
+            ctx.setLineDash([6 / zoom, 6 / zoom])
             ctx.beginPath()
-            ctx.moveTo(p1.x, p1.y)
-            ctx.lineTo(p2.x, p2.y)
+            ctx.moveTo(g.x1, g.y1)
+            ctx.lineTo(g.x2, g.y2)
             ctx.stroke()
             ctx.setLineDash([])
             ctx.restore()
             // Angle visualization
-            const dx = currentXFeet - startXFeet
-            const dy = currentYFeet - startYFeet
+            const dx = drawing.currentX - drawing.startX
+            const dy = drawing.currentY - drawing.startY
             let rad = Math.atan2(dy, dx)
             drawAngleVisualizer(ctx, g.x1, g.y1, -rad, zoom)
             // Length label
@@ -451,13 +454,13 @@ Item {
             ctx.fillText(label, mx, my)
         }
         // Dimension preview while drawing
-        if (drawingDimension) {
+        if (drawing.active && drawing.type === "dimension") {
             drawDimension(
                 ctx,
-                dimStartXFeet,
-                dimStartYFeet,
-                dimCurrentXFeet,
-                dimCurrentYFeet
+                drawing.startX,
+                drawing.startY,
+                drawing.currentX,
+                drawing.currentY
             )
         }
     }
@@ -544,12 +547,12 @@ Item {
     }
 
     function drawDoorPreview(ctx) {
-        if (!drawingDoor) return
-        const dx = doorCurrentXFeet - doorStartXFeet
-        const dy = doorCurrentYFeet - doorStartYFeet
+        if (!drawing.active || drawing.type !== "door") return
+        const dx = drawing.currentX - drawing.startX
+        const dy = drawing.currentY - drawing.startY
         drawDoor(ctx, {
-            x: doorStartXFeet,
-            y: doorStartYFeet,
+            x: drawing.startX,
+            y: drawing.startY,
             width: Math.hypot(dx, dy),
             angle: Math.atan2(dy, dx)
         }, true)
@@ -563,8 +566,8 @@ Item {
 
         onPaint: {
             const ctx = getContext("2d")
-            ctx.reset()
-            ctx.clearRect(0, 0, width, height)
+            ctx.setTransform(1, 0, 0, 1, 0, 0)
+            ctx.clearRect(0, 0, canvas.width, canvas.height)
             // camera transform
             ctx.save()
             ctx.translate(offsetX, offsetY)
@@ -573,7 +576,7 @@ Item {
             drawGrid(ctx)
             shapes.forEach((s, i) => {
                 if (s.type == "wall") {
-                    const g = wallGeometry(s)
+                    const g = shapeGeometry(s)
                     if (!g) return
                     drawWallRect(ctx, g)
                 } else if (s.type == "door") {
@@ -582,7 +585,8 @@ Item {
                     drawDimension(ctx, s.x1, s.y1, s.x2, s.y2)
                 }
                 if (i === selected) {
-                    annotateShape(ctx, wallGeometry(s), s)
+                    const g = shapeGeometry(s)
+                    if (g) annotateShape(ctx, g, s)
                 }
             })
             drawPreviews(ctx)
@@ -603,11 +607,12 @@ Item {
             if ((mouse.modifiers & Qt.ControlModifier) &&
                 mouse.button === Qt.LeftButton) {
                     const p = screenToWorld(mouse.x, mouse.y)
-                    drawingDoor = true
-                    doorStartXFeet = p.x
-                    doorStartYFeet = p.y
-                    doorCurrentXFeet = p.x
-                    doorCurrentYFeet = p.y
+                    drawing.type = "door"
+                    drawing.active = true
+                    drawing.startX = p.x
+                    drawing.startY = p.y
+                    drawing.currentX = p.x
+                    drawing.currentY = p.y
                     return
             }
             // START DIMENSION (Shift + Right Click)
@@ -616,11 +621,12 @@ Item {
                 const p = screenToWorld(mouse.x, mouse.y)
                 // push undo before starting the dimension
                 pushUndoState()
-                drawingDimension = true
-                dimStartXFeet = p.x
-                dimStartYFeet = p.y
-                dimCurrentXFeet = p.x
-                dimCurrentYFeet = p.y
+                drawing.type = "dimension"
+                drawing.active = true
+                drawing.startX = p.x
+                drawing.startY = p.y
+                drawing.currentX = p.x
+                drawing.currentY = p.y
                 return
             }
             if (mouse.button === Qt.LeftButton) {
@@ -666,14 +672,15 @@ Item {
                 }
                 if (hit !== -1) {
                     selected = hit
-                    drawingWall = false
+                    drawing.active = false
                 } else {
                     selected = -1
-                    startXFeet = p.x
-                    startYFeet = p.y
-                    currentXFeet = p.x
-                    currentYFeet = p.y
-                    drawingWall = true
+                    drawing.type = "wall"
+                    drawing.active = true
+                    drawing.startX = p.x
+                    drawing.startY = p.y
+                    drawing.currentX = p.x
+                    drawing.currentY = p.y
                 }
                 canvas.requestPaint()
             } else {
@@ -683,19 +690,12 @@ Item {
         }
 
         onPositionChanged: mouse => {
-            if (drawingDoor && (mouse.buttons & Qt.LeftButton)) {
+            if (drawing.active && (mouse.buttons & Qt.LeftButton)) {
                 const p = screenToWorld(mouse.x, mouse.y)
-                doorCurrentXFeet = p.x
-                doorCurrentYFeet = p.y
+                drawing.currentX = p.x
+                drawing.currentY = p.y
                 canvas.requestPaint()
-                return
-            }
-            if (drawingDimension && (mouse.buttons & Qt.LeftButton)) {
-                const p = screenToWorld(mouse.x, mouse.y)
-                dimCurrentXFeet = p.x
-                dimCurrentYFeet = p.y
-                canvas.requestPaint()
-                return
+                return;
             }
             // RESIZE SELECTED WALL (ENDPOINT DRAG)
             if (resizingWall && (mouse.buttons & Qt.LeftButton)) {
@@ -704,13 +704,9 @@ Item {
                 if (resizeEnd === 1) {
                     w.x1 = p.x
                     w.y1 = p.y
-                    currentXFeet = p.x
-                    currentYFeet = p.y
                 } else if (resizeEnd === 2) {
                     w.x2 = p.x
                     w.y2 = p.y
-                    currentXFeet = p.x
-                    currentYFeet = p.y
                 }
                 canvas.requestPaint()
                 return
@@ -725,11 +721,6 @@ Item {
                 const delta = currentAngle - rotateStartAngle
                 rotateWall(w, rotateBaseAngle + delta)
                 canvas.requestPaint()
-            } else if (drawingWall && (mouse.buttons & Qt.LeftButton)) {
-                const p = screenToWorld(mouse.x, mouse.y)
-                currentXFeet = p.x
-                currentYFeet = p.y
-                canvas.requestPaint()
             } else if (mouse.buttons & Qt.RightButton) {
                 offsetX += mouse.x - lastX
                 offsetY += mouse.y - lastY
@@ -740,38 +731,48 @@ Item {
         }
 
         onReleased: mouse => {
-            if (drawingDoor && mouse.button === Qt.LeftButton) {
-                const dx = doorCurrentXFeet - doorStartXFeet
-                const dy = doorCurrentYFeet - doorStartYFeet
-                const width = Math.hypot(dx, dy)
-                if (width > 1.5) { // min door width
-                    pushUndoState()
-                    shapes.push({
-                        type: "door",
-                        x: doorStartXFeet,
-                        y: doorStartYFeet,
-                        width: width,
-                        angle: Math.atan2(dy, dx)
-                    })
+            if (drawing.active && mouse.button === Qt.LeftButton) {
+                const dx = drawing.currentX - drawing.startX
+                const dy = drawing.currentY - drawing.startY
+                if (drawing.type === "wall") {
+                    if (Math.hypot(dx, dy) >= 0.1) {
+                        pushUndoState()
+                        shapes.push({
+                            type: "wall",
+                            x1: drawing.startX,
+                            y1: drawing.startY,
+                            x2: drawing.currentX,
+                            y2: drawing.currentY
+                        })
+                        selected = shapes.length - 1
+                    }
+                } else if (drawing.type === "door") {
+                    const width = Math.hypot(dx, dy)
+                    if (width >= 1.5) {
+                        pushUndoState()
+                        shapes.push({
+                            type: "door",
+                            x: drawing.startX,
+                            y: drawing.startY,
+                            width: width,
+                            angle: Math.atan2(dy, dx)
+                        })
+                        selected = shapes.length - 1
+                    }
+                } else if (drawing.type === "dimension") {
+                    if (Math.hypot(dx, dy) > 0.1) {
+                        pushUndoState()
+                        shapes.push({
+                            type: "dimension",
+                            x1: drawing.startX,
+                            y1: drawing.startY,
+                            x2: drawing.currentX,
+                            y2: drawing.currentY
+                        })
+                        selected = shapes.length - 1
+                    }
                 }
-                drawingDoor = false
-                canvas.requestPaint()
-                return
-            }
-            if (drawingDimension && mouse.button === Qt.LeftButton) {
-                const dx = dimCurrentXFeet - dimStartXFeet
-                const dy = dimCurrentYFeet - dimStartYFeet
-                // prevent zero-length dimensions
-                if (Math.hypot(dx, dy) > 0.1) {
-                    shapes.push({
-                        type: "dimension",
-                        x1: dimStartXFeet,
-                        y1: dimStartYFeet,
-                        x2: dimCurrentXFeet,
-                        y2: dimCurrentYFeet
-                    })
-                }
-                drawingDimension = false
+                drawing.active = false
                 canvas.requestPaint()
                 return
             }
@@ -782,27 +783,6 @@ Item {
             }
             if (rotatingWall) {
                 rotatingWall = false
-            } else if (drawingWall && mouse.button === Qt.LeftButton) {
-                const dx = currentXFeet - startXFeet
-                const dy = currentYFeet - startYFeet
-                // drop zero-length “click” walls to be selected/created
-                if (Math.hypot(dx, dy) < 0.1) {
-                    drawingWall = false
-                    canvas.requestPaint()
-                    return
-                }
-                pushUndoState()
-                shapes.push({
-                    type: "wall",
-                    x1: startXFeet,
-                    y1: startYFeet,
-                    x2: currentXFeet,
-                    y2: currentYFeet
-                })
-                //select the newly created wall
-                selected = shapes.length - 1
-                drawingWall = false
-                canvas.requestPaint()
             }
         }
 
