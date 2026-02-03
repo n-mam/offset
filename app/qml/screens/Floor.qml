@@ -25,14 +25,14 @@ Item {
     property int selected: -1
     property real pickTolerancePixels: 8 // feels good: 6–10 px
 
-    property bool rotatingWall: false
+    property bool rotating: false
     property real rotateStartAngle: 0
     property real rotateBaseAngle: 0
 
     property real moveStepFeet: 0.0416667 // ~0.5 inches
     property real moveStepFastFeet: 0.1  // 1.2 inches when Shift is held
 
-    property bool resizingWall: false
+    property bool resizing: false
     property int resizeEnd: 0   // 1 = x1/y1, 2 = x2/y2
 
     property var drawing: ({
@@ -75,10 +75,10 @@ Item {
                 thicknessFeet = wallThicknessFeet;
                 break;
             case "door":
-                x1 = s.x; y1 = s.y;
-                // approximate door thickness as 0.5 ft or your wallThicknessFeet
-                thicknessFeet = wallThicknessFeet;
-                // for doors, we could also store a rectangle if needed
+                x1 = s.x1; y1 = s.y1;
+                x2 = s.x2; y2 = s.y2;
+                // approximate thickness as the "door leaf width" (feet)
+                thicknessFeet = s.width || 0.5; 
                 break;
             case "dimension":
                 x1 = s.x1; y1 = s.y1;
@@ -169,39 +169,38 @@ Item {
     }
 
     function drawDoor(ctx, door, preview = false) {
-        const x = door.x * pixelsPerFoot
-        const y = door.y * pixelsPerFoot
-        const w = door.width * pixelsPerFoot
-        const a = door.angle
+        const x1 = door.x1 * pixelsPerFoot;
+        const y1 = door.y1 * pixelsPerFoot;
+        const x2 = door.x2 * pixelsPerFoot;
+        const y2 = door.y2 * pixelsPerFoot;
+        const w = Math.hypot(x2 - x1, y2 - y1);
+        const a = Math.atan2(y2 - y1, x2 - x1);
 
-        ctx.save()
+        ctx.save();
+        ctx.fillStyle = preview ? "rgba(0, 255, 136, 0.2)" : "rgba(255, 255, 255, 0.15)";
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.arc(x1, y1, w, a, a + Math.PI / 2);
+        ctx.closePath();
+        ctx.fill();
 
-        ctx.strokeStyle = preview ? colors.preview : "#ffffff"
-        ctx.lineWidth = 2 / zoom
-        ctx.fillStyle = "rgba(255,255,255,0.15)"
+        ctx.lineWidth = 6 / zoom;
+        ctx.strokeStyle = preview ? colors.preview : "#ffffff";
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
 
-        // door leaf
-        ctx.beginPath()
-        ctx.moveTo(x, y)
-        ctx.lineTo(
-            x + Math.cos(a) * w,
-            y + Math.sin(a) * w
-        )
-        ctx.stroke()
-
-        // swing arc
-        ctx.beginPath()
-        ctx.arc(
-            x,
-            y,
-            w,
-            a,
-            a + Math.PI / 2
-        )
-        ctx.stroke()
-
-        ctx.restore()
+        ctx.lineWidth = 2 / zoom;
+        ctx.setLineDash([1.5 / zoom, 1.5 / zoom]);
+        ctx.beginPath();
+        ctx.arc(x1, y1, w, a, a + Math.PI / 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
     }
+
 
     function distanceToPoint(px, py, x, y) {
         return Math.hypot(px - x, py - y)
@@ -230,7 +229,7 @@ Item {
         })
     }
 
-    function moveselected(dxFeet, dyFeet) {
+    function moveSelected(dxFeet, dyFeet) {
         if (selected === -1) return
         pushUndoState()
         const w = shapes[selected]
@@ -241,19 +240,19 @@ Item {
         canvas.requestPaint()
     }
 
-    function wallCenter(w) {
+    function shapeCenter(w) {
         return {
             x: (w.x1 + w.x2) / 2,
             y: (w.y1 + w.y2) / 2
         }
     }
 
-    function wallAngle(w) {
+    function shapeAngle(w) {
         return Math.atan2(w.y2 - w.y1, w.x2 - w.x1)
     }
 
-    function rotateWall(w, angleRad) {
-        const c = wallCenter(w)
+    function rotateShape(w, angleRad) {
+        const c = shapeCenter(w)
         const len = distanceToPoint(w.x2, w.y2, w.x1, w.y1) / 2
         w.x1 = c.x - Math.cos(angleRad) * len
         w.y1 = c.y - Math.sin(angleRad) * len
@@ -262,8 +261,8 @@ Item {
     }
 
     function hitRotateHandle(p, w) {
-        const c = wallCenter(w)
-        const angle = wallAngle(w)
+        const c = shapeCenter(w)
+        const angle = shapeAngle(w)
         // convert pixel distance → feet
         const handleDistFeet = (20 / zoom) / pixelsPerFoot
         const radiusFeet = (8 / zoom) / pixelsPerFoot
@@ -359,7 +358,7 @@ Item {
         const mx = (g.x1 + g.x2) / 2
         const my = (g.y1 + g.y2) / 2
         const handleDist = 20 / zoom
-        const angle = wallAngle(s)
+        const angle = shapeAngle(s)
         const hx = mx + Math.cos(angle + Math.PI / 2) * handleDist
         const hy = my + Math.sin(angle + Math.PI / 2) * handleDist
         ctx.beginPath()
@@ -375,7 +374,7 @@ Item {
         ctx.arc(g.x2, g.y2, 5 / zoom, 0, Math.PI * 2)
         ctx.fill()
         // Length label while resizing
-        if (resizingWall) {
+        if (resizing) {
             let x1 = s.x1
             let y1 = s.y1
             let x2 = s.x2
@@ -408,8 +407,8 @@ Item {
             ctx.restore()
         }
         // angle visualizer while rotating
-        if (rotatingWall) {
-            const c = wallCenter(s)
+        if (rotating) {
+            const c = shapeCenter(s)
             const a = wallAngleForDisplay(s)
             const cx = c.x * pixelsPerFoot
             const cy = c.y * pixelsPerFoot
@@ -420,7 +419,7 @@ Item {
     function drawPreviews(ctx) {
         // Preview wall
         if (drawing.active && drawing.type === "wall") {
-            const tempWall = {x1: drawing.startX, y1: drawing.startY, x2: drawing.currentX, y2: drawing.currentY}
+            const tempWall = {type: "wall", x1: drawing.startX, y1: drawing.startY, x2: drawing.currentX, y2: drawing.currentY}
             const g = shapeGeometry(tempWall)
             if (!g) return
             // Preview line (screen-space dashed line)
@@ -637,7 +636,7 @@ Item {
                     const end = hitWallEndpoint(p, s)
                     if (end !== 0) {
                         pushUndoState()
-                        resizingWall = true
+                        resizing = true
                         resizeEnd = end
                         return
                     }
@@ -647,11 +646,11 @@ Item {
                     const w = shapes[selected]
                     if (hitRotateHandle(p, w)) {
                         pushUndoState()
-                        rotatingWall = true
-                        rotateBaseAngle = wallAngle(w)
+                        rotating = true
+                        rotateBaseAngle = shapeAngle(w)
                         rotateStartAngle = Math.atan2(
-                            p.y - wallCenter(w).y,
-                            p.x - wallCenter(w).x
+                            p.y - shapeCenter(w).y,
+                            p.x - shapeCenter(w).x
                         )
                         return   // stop normal selection logic
                     }
@@ -698,7 +697,7 @@ Item {
                 return;
             }
             // RESIZE SELECTED WALL (ENDPOINT DRAG)
-            if (resizingWall && (mouse.buttons & Qt.LeftButton)) {
+            if (resizing && (mouse.buttons & Qt.LeftButton)) {
                 const p = screenToWorld(mouse.x, mouse.y)
                 const w = shapes[selected]
                 if (resizeEnd === 1) {
@@ -711,15 +710,15 @@ Item {
                 canvas.requestPaint()
                 return
             }
-            if (rotatingWall && (mouse.buttons & Qt.LeftButton)) {
+            if (rotating && (mouse.buttons & Qt.LeftButton)) {
                 const p = screenToWorld(mouse.x, mouse.y)
                 const w = shapes[selected]
                 const currentAngle = Math.atan2(
-                    p.y - wallCenter(w).y,
-                    p.x - wallCenter(w).x
+                    p.y - shapeCenter(w).y,
+                    p.x - shapeCenter(w).x
                 )
                 const delta = currentAngle - rotateStartAngle
-                rotateWall(w, rotateBaseAngle + delta)
+                rotateShape(w, rotateBaseAngle + delta)
                 canvas.requestPaint()
             } else if (mouse.buttons & Qt.RightButton) {
                 offsetX += mouse.x - lastX
@@ -747,18 +746,17 @@ Item {
                         selected = shapes.length - 1
                     }
                 } else if (drawing.type === "door") {
-                    const width = Math.hypot(dx, dy)
-                    if (width >= 1.5) {
-                        pushUndoState()
-                        shapes.push({
-                            type: "door",
-                            x: drawing.startX,
-                            y: drawing.startY,
-                            width: width,
-                            angle: Math.atan2(dy, dx)
-                        })
-                        selected = shapes.length - 1
-                    }
+                    pushUndoState()
+                    shapes.push({
+                        type: "door",
+                        x1: drawing.startX,
+                        y1: drawing.startY,
+                        x2: drawing.currentX,
+                        y2: drawing.currentY,
+                        width: Math.hypot(drawing.currentX - drawing.startX, drawing.currentY - drawing.startY),
+                        angle: Math.atan2(drawing.currentY - drawing.startY, drawing.currentX - drawing.startX)
+                    })
+                    selected = shapes.length - 1
                 } else if (drawing.type === "dimension") {
                     if (Math.hypot(dx, dy) > 0.1) {
                         pushUndoState()
@@ -776,13 +774,13 @@ Item {
                 canvas.requestPaint()
                 return
             }
-            if (resizingWall) {
-                resizingWall = false
+            if (resizing) {
+                resizing = false
                 resizeEnd = 0
                 return
             }
-            if (rotatingWall) {
-                rotatingWall = false
+            if (rotating) {
+                rotating = false
             }
         }
 
@@ -806,19 +804,19 @@ Item {
                     moveStepFastFeet : moveStepFeet
         switch (event.key) {
             case Qt.Key_Left:
-                moveselected(-step, 0)
+                moveSelected(-step, 0)
                 event.accepted = true
                 break
             case Qt.Key_Right:
-                moveselected(step, 0)
+                moveSelected(step, 0)
                 event.accepted = true
                 break
             case Qt.Key_Up:
-                moveselected(0, -step)
+                moveSelected(0, -step)
                 event.accepted = true
                 break
             case Qt.Key_Down:
-                moveselected(0, step)
+                moveSelected(0, step)
                 event.accepted = true
                 break
             case Qt.Key_Z:
