@@ -80,6 +80,11 @@ Item {
                 // approximate thickness as the "door leaf width" (feet)
                 thicknessFeet = s.width || 0.5; 
                 break;
+            case "window":
+                x1 = s.x1; y1 = s.y1;
+                x2 = s.x2; y2 = s.y2;
+                thicknessFeet = s.thickness || (wallThicknessFeet * 0.5); // windows thinner than walls by default
+                break;
             case "dimension":
                 x1 = s.x1; y1 = s.y1;
                 x2 = s.x2; y2 = s.y2;
@@ -129,6 +134,36 @@ Item {
             ctx.lineTo(corners[i].x, corners[i].y)
         ctx.closePath()
     }
+
+function drawWindowRect(ctx, g) {
+    // Calculate half thickness in pixels from wallThicknessFeet
+    const halfThicknessPx = (wallThicknessFeet / 2) * pixelsPerFoot;
+
+    // Draw solid white filled polygon for window body
+    polygonPath(ctx, g.corners);
+    ctx.fillStyle = "white";
+    ctx.fill();
+
+    // Draw outline with same wall thickness
+    ctx.lineWidth = wallThicknessFeet * pixelsPerFoot;
+    ctx.strokeStyle = "rgba(0, 191, 255, 0.9)";
+    polygonPath(ctx, g.corners);
+    ctx.stroke();
+
+    // Calculate center line points (midpoints between opposite corners)
+    const midX1 = (g.corners[0].x + g.corners[3].x) / 2;
+    const midY1 = (g.corners[0].y + g.corners[3].y) / 2;
+    const midX2 = (g.corners[1].x + g.corners[2].x) / 2;
+    const midY2 = (g.corners[1].y + g.corners[2].y) / 2;
+
+    // Draw center line with thin stroke
+    ctx.beginPath();
+    ctx.moveTo(midX1, midY1);
+    ctx.lineTo(midX2, midY2);
+    ctx.lineWidth = 1 / zoom;
+    ctx.strokeStyle = "rgba(0, 191, 255, 0.9)";
+    ctx.stroke();
+}
 
     function drawWallRect(ctx, g) {
         polygonPath(ctx, g.corners)
@@ -582,6 +617,10 @@ Item {
                     drawDoor(ctx, s)
                 } else if (s.type == "dimension") {
                     drawDimension(ctx, s.x1, s.y1, s.x2, s.y2)
+                } else if (s.type == "window") {
+                    const g = shapeGeometry(s)
+                    if (!g) return
+                    drawWindowRect(ctx, g)
                 }
                 if (i === selected) {
                     const g = shapeGeometry(s)
@@ -602,6 +641,18 @@ Item {
 
         onPressed: mouse => {
             root.forceActiveFocus()
+            // START WINDOW (Alt + Left Click)
+            if ((mouse.modifiers & Qt.AltModifier) &&
+                mouse.button === Qt.LeftButton) {
+                const p = screenToWorld(mouse.x, mouse.y)
+                drawing.type = "window"
+                drawing.active = true
+                drawing.startX = p.x
+                drawing.startY = p.y
+                drawing.currentX = p.x
+                drawing.currentY = p.y
+                return
+            }
             // START Door
             if ((mouse.modifiers & Qt.ControlModifier) &&
                 mouse.button === Qt.LeftButton) {
@@ -769,7 +820,21 @@ Item {
                         })
                         selected = shapes.length - 1
                     }
+                } else if (drawing.type === "window") {
+                    if (Math.hypot(dx, dy) >= 0.1) {
+                        pushUndoState()
+                        shapes.push({
+                            type: "window",
+                            x1: drawing.startX,
+                            y1: drawing.startY,
+                            x2: drawing.currentX,
+                            y2: drawing.currentY,
+                            thickness: wallThicknessFeet * 0.5 // Example default thickness for windows
+                        })
+                        selected = shapes.length - 1
+                    }
                 }
+
                 drawing.active = false
                 canvas.requestPaint()
                 return
