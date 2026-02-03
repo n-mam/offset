@@ -78,7 +78,7 @@ Item {
                 x1 = s.x1; y1 = s.y1;
                 x2 = s.x2; y2 = s.y2;
                 // approximate thickness as the "door leaf width" (feet)
-                thicknessFeet = s.width || 0.5; 
+                thicknessFeet = s.width || 0.5;
                 break;
             case "window":
                 x1 = s.x1; y1 = s.y1;
@@ -135,35 +135,19 @@ Item {
         ctx.closePath()
     }
 
-function drawWindowRect(ctx, g) {
-    // Calculate half thickness in pixels from wallThicknessFeet
-    const halfThicknessPx = (wallThicknessFeet / 2) * pixelsPerFoot;
-
-    // Draw solid white filled polygon for window body
-    polygonPath(ctx, g.corners);
-    ctx.fillStyle = "white";
-    ctx.fill();
-
-    // Draw outline with same wall thickness
-    ctx.lineWidth = wallThicknessFeet * pixelsPerFoot;
-    ctx.strokeStyle = "rgba(0, 191, 255, 0.9)";
-    polygonPath(ctx, g.corners);
-    ctx.stroke();
-
-    // Calculate center line points (midpoints between opposite corners)
-    const midX1 = (g.corners[0].x + g.corners[3].x) / 2;
-    const midY1 = (g.corners[0].y + g.corners[3].y) / 2;
-    const midX2 = (g.corners[1].x + g.corners[2].x) / 2;
-    const midY2 = (g.corners[1].y + g.corners[2].y) / 2;
-
-    // Draw center line with thin stroke
-    ctx.beginPath();
-    ctx.moveTo(midX1, midY1);
-    ctx.lineTo(midX2, midY2);
-    ctx.lineWidth = 1 / zoom;
-    ctx.strokeStyle = "rgba(0, 191, 255, 0.9)";
-    ctx.stroke();
-}
+    function drawWindowRect(ctx, g, preview) {
+        ctx.save()
+        polygonPath(ctx, g.corners)
+        ctx.fillStyle = preview ? "rgba(180,220,255,0.4)" : "#ffffff"
+        ctx.fill()
+        ctx.beginPath()
+        ctx.moveTo(g.x1, g.y1)
+        ctx.lineTo(g.x2, g.y2)
+        ctx.lineWidth = 1 / zoom
+        ctx.strokeStyle = "#000000"
+        ctx.stroke()
+        ctx.restore()
+    }
 
     function drawWallRect(ctx, g) {
         polygonPath(ctx, g.corners)
@@ -235,7 +219,6 @@ function drawWindowRect(ctx, g) {
         ctx.setLineDash([]);
         ctx.restore();
     }
-
 
     function distanceToPoint(px, py, x, y) {
         return Math.hypot(px - x, py - y)
@@ -452,7 +435,7 @@ function drawWindowRect(ctx, g) {
     }
 
     function drawPreviews(ctx) {
-        // Preview wall
+        // Preview Wall
         if (drawing.active && drawing.type === "wall") {
             const tempWall = {type: "wall", x1: drawing.startX, y1: drawing.startY, x2: drawing.currentX, y2: drawing.currentY}
             const g = shapeGeometry(tempWall)
@@ -487,7 +470,7 @@ function drawWindowRect(ctx, g) {
             ctx.textBaseline = "middle"
             ctx.fillText(label, mx, my)
         }
-        // Dimension preview while drawing
+        // Preview Dimension
         if (drawing.active && drawing.type === "dimension") {
             drawDimension(
                 ctx,
@@ -496,6 +479,37 @@ function drawWindowRect(ctx, g) {
                 drawing.currentX,
                 drawing.currentY
             )
+        }
+        // Preview Window
+        if (drawing.active && drawing.type === "window") {
+            const tempWindow = {
+                type: "window",
+                x1: drawing.startX,
+                y1: drawing.startY,
+                x2: drawing.currentX,
+                y2: drawing.currentY,
+                thickness: wallThicknessFeet * 0.5
+            }
+            const g = shapeGeometry(tempWindow)
+            if (!g) return
+            ctx.save()
+            ctx.globalAlpha = 0.6
+            drawWindowRect(ctx, g, true)
+            ctx.restore()
+        }
+        // Preview door
+        if (drawing.active && drawing.type === "door") {
+            const tempDoor = {
+                type: "door",
+                x1: drawing.startX,
+                y1: drawing.startY,
+                x2: drawing.currentX,
+                y2: drawing.currentY
+            }
+            ctx.save()
+            ctx.globalAlpha = 0.6
+            drawDoor(ctx, tempDoor, true)
+            ctx.restore()
         }
     }
 
@@ -523,7 +537,6 @@ function drawWindowRect(ctx, g) {
         const y1 = y1Feet * pixelsPerFoot
         const x2 = x2Feet * pixelsPerFoot
         const y2 = y2Feet * pixelsPerFoot
-
         // main line
         ctx.strokeStyle = colors.preview
         ctx.lineWidth = 2 / zoom
@@ -531,43 +544,35 @@ function drawWindowRect(ctx, g) {
         ctx.moveTo(x1, y1)
         ctx.lineTo(x2, y2)
         ctx.stroke()
-
         // end bars
         const angle = Math.atan2(y2 - y1, x2 - x1)
         const px = Math.sin(angle) * (barSizePx / zoom)
         const py = -Math.cos(angle) * (barSizePx / zoom)
-
         ctx.beginPath()
         ctx.moveTo(x1 - px, y1 - py)
         ctx.lineTo(x1 + px, y1 + py)
         ctx.moveTo(x2 - px, y2 - py)
         ctx.lineTo(x2 + px, y2 + py)
         ctx.stroke()
-
         // label
         const dx = x2Feet - x1Feet
         const dy = y2Feet - y1Feet
         const lengthFeet = Math.sqrt(dx*dx + dy*dy)
         const label = formatFeetInches(lengthFeet)
-
         // midpoint in world (canvas-local) space
         const mx = (x1 + x2) / 2
         const my = (y1 + y2) / 2
-
         // direction
         const dxp = x2 - x1
         const dyp = y2 - y1
         const len = Math.hypot(dxp, dyp) || 1
-
         // perpendicular normal (consistent "above")
         const nx = dyp / len
         const ny = -dxp / len
-
         // offset in SCREEN pixels
         const labelOffsetPx = 14
         const ox = nx * (labelOffsetPx / zoom)
         const oy = ny * (labelOffsetPx / zoom)
-
         // final label position (world → screen)
         ctx.save()
         ctx.setTransform(1, 0, 0, 1, 0, 0)
@@ -578,18 +583,6 @@ function drawWindowRect(ctx, g) {
         ctx.textBaseline = "middle"
         ctx.fillText(label, p.x, p.y)
         ctx.restore()
-    }
-
-    function drawDoorPreview(ctx) {
-        if (!drawing.active || drawing.type !== "door") return
-        const dx = drawing.currentX - drawing.startX
-        const dy = drawing.currentY - drawing.startY
-        drawDoor(ctx, {
-            x: drawing.startX,
-            y: drawing.startY,
-            width: Math.hypot(dx, dy),
-            angle: Math.atan2(dy, dx)
-        }, true)
     }
 
     Rectangle { anchors.fill: parent; color: "#1e1e1e" }
@@ -609,26 +602,22 @@ function drawWindowRect(ctx, g) {
             // Draw objects
             drawGrid(ctx)
             shapes.forEach((s, i) => {
+                const g = shapeGeometry(s)
+                if (!g) return
                 if (s.type == "wall") {
-                    const g = shapeGeometry(s)
-                    if (!g) return
                     drawWallRect(ctx, g)
                 } else if (s.type == "door") {
                     drawDoor(ctx, s)
                 } else if (s.type == "dimension") {
                     drawDimension(ctx, s.x1, s.y1, s.x2, s.y2)
                 } else if (s.type == "window") {
-                    const g = shapeGeometry(s)
-                    if (!g) return
-                    drawWindowRect(ctx, g)
+                    drawWindowRect(ctx, g, false)
                 }
                 if (i === selected) {
-                    const g = shapeGeometry(s)
-                    if (g) annotateShape(ctx, g, s)
+                    annotateShape(ctx, g, s)
                 }
             })
             drawPreviews(ctx)
-            drawDoorPreview(ctx)
             ctx.restore()
         }
     }
