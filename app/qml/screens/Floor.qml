@@ -1,7 +1,4 @@
 import QtQuick
-import QtQuick.Controls
-import QtQuick.Layouts
-import QtQuick.Dialogs
 
 Item {
     id: root
@@ -43,11 +40,6 @@ Item {
         currentX: 0,
         currentY: 0
     })
-
-    // ---- Coordinate spaces ----
-    // World: feet
-    // Canvas: pixels, before zoom/offset
-    // Screen: pixels, after zoom/offset
 
     property var gridLevels: [
         { step: 0.25, color: "#3a3a3a", width: 0.5 },
@@ -585,6 +577,68 @@ Item {
         ctx.restore()
     }
 
+    function startDrawing(type, mouse, pushUndo = false) {
+        if (pushUndo)
+            pushUndoState()
+        const p = screenToWorld(mouse.x, mouse.y)
+        drawing.type = type
+        drawing.active = true
+        drawing.startX = p.x
+        drawing.startY = p.y
+        drawing.currentX = p.x
+        drawing.currentY = p.y
+    }
+
+    function finishDrawing() {
+        const dx = drawing.currentX - drawing.startX
+        const dy = drawing.currentY - drawing.startY
+        const len = Math.hypot(dx, dy)
+        if (len < 0.1) return
+        pushUndoState()
+        // common base object for all shapes
+        const base = {
+            x1: drawing.startX,
+            y1: drawing.startY,
+            x2: drawing.currentX,
+            y2: drawing.currentY
+        }
+        if (drawing.type === "wall") {
+            shapes.push(Object.assign({ type: "wall" }, base))
+        } else if (drawing.type === "door") {
+            shapes.push(Object.assign({
+                type: "door",
+                width: len,
+                angle: Math.atan2(dy, dx)
+            }, base))
+        } else if (drawing.type === "dimension") {
+            shapes.push(Object.assign({ type: "dimension" }, base))
+        } else if (drawing.type === "window") {
+            shapes.push(Object.assign({
+                type: "window",
+                thickness: wallThicknessFeet * 0.5
+            }, base))
+        }
+        selected = shapes.length - 1
+    }
+
+    function hitTestShapes(p) {
+        let hit = -1
+        let best = pickTolerancePixels / (pixelsPerFoot * zoom)
+        for (let i = 0; i < shapes.length; i++) {
+            const s = shapes[i]
+            const endToleranceFeet = 1.5
+            if (distanceToPoint(p.x, p.y, s.x1, s.y1) < endToleranceFeet ||
+                distanceToPoint(p.x, p.y, s.x2, s.y2) < endToleranceFeet)
+                continue
+            const d = distancePointToSegment(p.x, p.y, s.x1, s.y1, s.x2, s.y2)
+            if (d < best) {
+                best = d
+                hit = i
+            }
+        }
+        return hit
+    }
+
     Rectangle { anchors.fill: parent; color: "#1e1e1e" }
 
     Canvas {
@@ -627,53 +681,20 @@ Item {
         property real lastY
         anchors.fill: parent
         acceptedButtons: Qt.LeftButton|Qt.RightButton
-
         onPressed: mouse => {
             root.forceActiveFocus()
-            // START WINDOW (Alt + Left Click)
-            if ((mouse.modifiers & Qt.AltModifier) &&
-                mouse.button === Qt.LeftButton) {
-                const p = screenToWorld(mouse.x, mouse.y)
-                drawing.type = "window"
-                drawing.active = true
-                drawing.startX = p.x
-                drawing.startY = p.y
-                drawing.currentX = p.x
-                drawing.currentY = p.y
-                return
-            }
-            // START Door
-            if ((mouse.modifiers & Qt.ControlModifier) &&
-                mouse.button === Qt.LeftButton) {
-                    const p = screenToWorld(mouse.x, mouse.y)
-                    drawing.type = "door"
-                    drawing.active = true
-                    drawing.startX = p.x
-                    drawing.startY = p.y
-                    drawing.currentX = p.x
-                    drawing.currentY = p.y
-                    return
-            }
-            // START DIMENSION (Shift + Right Click)
-            if ((mouse.modifiers & Qt.ShiftModifier) &&
-                    mouse.button === Qt.LeftButton) {
-                const p = screenToWorld(mouse.x, mouse.y)
-                // push undo before starting the dimension
-                pushUndoState()
-                drawing.type = "dimension"
-                drawing.active = true
-                drawing.startX = p.x
-                drawing.startY = p.y
-                drawing.currentX = p.x
-                drawing.currentY = p.y
-                return
-            }
+            // Drawing modes
             if (mouse.button === Qt.LeftButton) {
+                if (mouse.modifiers & Qt.AltModifier)
+                    return startDrawing("window", mouse)
+                if (mouse.modifiers & Qt.ControlModifier)
+                    return startDrawing("door", mouse)
+                if (mouse.modifiers & Qt.ShiftModifier)
+                    return startDrawing("dimension", mouse, true)
                 const p = screenToWorld(mouse.x, mouse.y)
-                // RESIZE HANDLE FIRST
+                // Resize handle
                 if (selected !== -1) {
-                    const s = shapes[selected]
-                    const end = hitWallEndpoint(p, s)
+                    const end = hitWallEndpoint(p, shapes[selected])
                     if (end !== 0) {
                         pushUndoState()
                         resizing = true
@@ -681,86 +702,65 @@ Item {
                         return
                     }
                 }
-                // CHECK ROTATION HANDLE NEXT
-                if (selected !== -1) {
-                    const w = shapes[selected]
-                    if (hitRotateHandle(p, w)) {
-                        pushUndoState()
-                        rotating = true
-                        rotateBaseAngle = shapeAngle(w)
-                        rotateStartAngle = Math.atan2(
-                            p.y - shapeCenter(w).y,
-                            p.x - shapeCenter(w).x
-                        )
-                        return   // stop normal selection logic
-                    }
+                // Rotate handle
+                if (selected !== -1 && hitRotateHandle(p, shapes[selected])) {
+                    const s = shapes[selected]
+                    pushUndoState()
+                    rotating = true
+                    rotateBaseAngle = shapeAngle(s)
+                    rotateStartAngle = Math.atan2(
+                        p.y - shapeCenter(s).y,
+                        p.x - shapeCenter(s).x
+                    )
+                    return
                 }
-                let hit = -1
-                let best = pickTolerancePixels/(pixelsPerFoot*zoom)
-                for (let i = 0; i < shapes.length; i++) {
-                    const s = shapes[i]
-                    const d = distancePointToSegment(p.x, p.y, s.x1, s.y1, s.x2, s.y2)
-                    const endToleranceFeet = 1.5
-                    if (distanceToPoint(p.x, p.y, s.x1, s.y1) < endToleranceFeet ||
-                        distanceToPoint(p.x, p.y, s.x2, s.y2) < endToleranceFeet)
-                            continue
-                    if (d < best) {
-                        best = d
-                        hit = i
-                    }
-                }
+                // Selection / new wall
+                const hit = hitTestShapes(p)
                 if (hit !== -1) {
                     selected = hit
                     drawing.active = false
                 } else {
                     selected = -1
-                    drawing.type = "wall"
-                    drawing.active = true
-                    drawing.startX = p.x
-                    drawing.startY = p.y
-                    drawing.currentX = p.x
-                    drawing.currentY = p.y
+                    startDrawing("wall", mouse)
                 }
                 canvas.requestPaint()
-            } else {
-                lastX = mouse.x
-                lastY = mouse.y
+                return
             }
+            // Right button pan start
+            lastX = mouse.x
+            lastY = mouse.y
         }
 
         onPositionChanged: mouse => {
+            const p = screenToWorld(mouse.x, mouse.y)
             if (drawing.active && (mouse.buttons & Qt.LeftButton)) {
-                const p = screenToWorld(mouse.x, mouse.y)
                 drawing.currentX = p.x
                 drawing.currentY = p.y
                 canvas.requestPaint()
-                return;
+                return
             }
-            // RESIZE SELECTED WALL (ENDPOINT DRAG)
+
             if (resizing && (mouse.buttons & Qt.LeftButton)) {
-                const p = screenToWorld(mouse.x, mouse.y)
-                const w = shapes[selected]
+                const s = shapes[selected]
                 if (resizeEnd === 1) {
-                    w.x1 = p.x
-                    w.y1 = p.y
-                } else if (resizeEnd === 2) {
-                    w.x2 = p.x
-                    w.y2 = p.y
+                    s.x1 = p.x; s.y1 = p.y
+                } else {
+                    s.x2 = p.x; s.y2 = p.y
                 }
                 canvas.requestPaint()
                 return
             }
             if (rotating && (mouse.buttons & Qt.LeftButton)) {
-                const p = screenToWorld(mouse.x, mouse.y)
-                const w = shapes[selected]
-                const currentAngle = Math.atan2(
-                    p.y - shapeCenter(w).y,
-                    p.x - shapeCenter(w).x
+                const s = shapes[selected]
+                const angle = Math.atan2(
+                    p.y - shapeCenter(s).y,
+                    p.x - shapeCenter(s).x
                 )
-                const delta = currentAngle - rotateStartAngle
-                rotateShape(w, rotateBaseAngle + delta)
+                rotateShape(s, rotateBaseAngle + (angle - rotateStartAngle))
                 canvas.requestPaint()
-            } else if (mouse.buttons & Qt.RightButton) {
+                return
+            }
+            if (mouse.buttons & Qt.RightButton) {
                 offsetX += mouse.x - lastX
                 offsetY += mouse.y - lastY
                 lastX = mouse.x
@@ -771,59 +771,7 @@ Item {
 
         onReleased: mouse => {
             if (drawing.active && mouse.button === Qt.LeftButton) {
-                const dx = drawing.currentX - drawing.startX
-                const dy = drawing.currentY - drawing.startY
-                if (drawing.type === "wall") {
-                    if (Math.hypot(dx, dy) >= 0.1) {
-                        pushUndoState()
-                        shapes.push({
-                            type: "wall",
-                            x1: drawing.startX,
-                            y1: drawing.startY,
-                            x2: drawing.currentX,
-                            y2: drawing.currentY
-                        })
-                        selected = shapes.length - 1
-                    }
-                } else if (drawing.type === "door") {
-                    pushUndoState()
-                    shapes.push({
-                        type: "door",
-                        x1: drawing.startX,
-                        y1: drawing.startY,
-                        x2: drawing.currentX,
-                        y2: drawing.currentY,
-                        width: Math.hypot(drawing.currentX - drawing.startX, drawing.currentY - drawing.startY),
-                        angle: Math.atan2(drawing.currentY - drawing.startY, drawing.currentX - drawing.startX)
-                    })
-                    selected = shapes.length - 1
-                } else if (drawing.type === "dimension") {
-                    if (Math.hypot(dx, dy) > 0.1) {
-                        pushUndoState()
-                        shapes.push({
-                            type: "dimension",
-                            x1: drawing.startX,
-                            y1: drawing.startY,
-                            x2: drawing.currentX,
-                            y2: drawing.currentY
-                        })
-                        selected = shapes.length - 1
-                    }
-                } else if (drawing.type === "window") {
-                    if (Math.hypot(dx, dy) >= 0.1) {
-                        pushUndoState()
-                        shapes.push({
-                            type: "window",
-                            x1: drawing.startX,
-                            y1: drawing.startY,
-                            x2: drawing.currentX,
-                            y2: drawing.currentY,
-                            thickness: wallThicknessFeet * 0.5 // Example default thickness for windows
-                        })
-                        selected = shapes.length - 1
-                    }
-                }
-
+                finishDrawing()
                 drawing.active = false
                 canvas.requestPaint()
                 return
@@ -839,7 +787,8 @@ Item {
         }
 
         onWheel: wheel => {
-            zoom = Math.max(0.2, Math.min(5, zoom*(wheel.angleDelta.y > 0 ? 1.1 : 0.9)))
+            zoom = Math.max(0.2, Math.min(5,
+                zoom * (wheel.angleDelta.y > 0 ? 1.1 : 0.9)))
             canvas.requestPaint()
         }
     }
