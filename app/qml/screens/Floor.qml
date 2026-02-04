@@ -427,12 +427,18 @@ Item {
     }
 
     function drawPreviews(ctx) {
-        // Preview Wall
-        if (drawing.active && drawing.type === "wall") {
-            const tempWall = {type: "wall", x1: drawing.startX, y1: drawing.startY, x2: drawing.currentX, y2: drawing.currentY}
-            const g = shapeGeometry(tempWall)
+        if (!drawing.active) return
+        const shape = makeShape(
+            drawing.type,
+            drawing.startX,
+            drawing.startY,
+            drawing.currentX,
+            drawing.currentY
+        )
+        if (!shape) return
+        if (shape.type === "wall") {
+            const g = shapeGeometry(shape)
             if (!g) return
-            // Preview line (screen-space dashed line)
             ctx.save()
             ctx.strokeStyle = colors.preview
             ctx.lineWidth = 2 / zoom
@@ -443,65 +449,33 @@ Item {
             ctx.stroke()
             ctx.setLineDash([])
             ctx.restore()
-            // Angle visualization
-            const dx = drawing.currentX - drawing.startX
-            const dy = drawing.currentY - drawing.startY
-            let rad = Math.atan2(dy, dx)
-            drawAngleVisualizer(ctx, g.x1, g.y1, -rad, zoom)
-            // Length label
-            const mx = (g.x1 + g.x2) / 2
-            const my = (g.y1 + g.y2) / 2
-            const lengthFeet = Math.sqrt(dx*dx + dy*dy)
-            const label = formatFeetInches(lengthFeet)
-            const tw = ctx.measureText(label).width
-            const pad = 4 / zoom
-            ctx.fillStyle = "rgba(0,0,0,0.7)"
-            ctx.fillRect(mx - tw / 2 - pad, my - 12 / zoom, tw + pad * 2, 16 / zoom)
-            ctx.fillStyle = "#00ff88"
-            ctx.textAlign = "center"
-            ctx.textBaseline = "middle"
-            ctx.fillText(label, mx, my)
+
+            const dx = shape.x2 - shape.x1
+            const dy = shape.y2 - shape.y1
+            drawAngleVisualizer(ctx, g.x1, g.y1, -Math.atan2(dy, dx), zoom)
         }
-        // Preview Dimension
-        if (drawing.active && drawing.type === "dimension") {
-            drawDimension(
-                ctx,
-                drawing.startX,
-                drawing.startY,
-                drawing.currentX,
-                drawing.currentY
-            )
-        }
-        // Preview Window
-        if (drawing.active && drawing.type === "window") {
-            const tempWindow = {
-                type: "window",
-                x1: drawing.startX,
-                y1: drawing.startY,
-                x2: drawing.currentX,
-                y2: drawing.currentY,
-                thickness: wallThicknessFeet * 0.5
-            }
-            const g = shapeGeometry(tempWindow)
+        else if (shape.type === "window") {
+            const g = shapeGeometry(shape)
             if (!g) return
             ctx.save()
             ctx.globalAlpha = 0.6
             drawWindowRect(ctx, g, true)
             ctx.restore()
         }
-        // Preview door
-        if (drawing.active && drawing.type === "door") {
-            const tempDoor = {
-                type: "door",
-                x1: drawing.startX,
-                y1: drawing.startY,
-                x2: drawing.currentX,
-                y2: drawing.currentY
-            }
+        else if (shape.type === "door") {
             ctx.save()
             ctx.globalAlpha = 0.6
-            drawDoor(ctx, tempDoor, true)
+            drawDoor(ctx, shape, true)
             ctx.restore()
+        }
+        else if (shape.type === "dimension") {
+            drawDimension(
+                ctx,
+                shape.x1,
+                shape.y1,
+                shape.x2,
+                shape.y2
+            )
         }
     }
 
@@ -578,8 +552,7 @@ Item {
     }
 
     function startDrawing(type, mouse, pushUndo = false) {
-        if (pushUndo)
-            pushUndoState()
+        if (pushUndo) pushUndoState()
         const p = screenToWorld(mouse.x, mouse.y)
         drawing.type = type
         drawing.active = true
@@ -589,35 +562,49 @@ Item {
         drawing.currentY = p.y
     }
 
-    function finishDrawing() {
-        const dx = drawing.currentX - drawing.startX
-        const dy = drawing.currentY - drawing.startY
+    function makeShape(type, startX, startY, endX, endY) {
+        const dx = endX - startX
+        const dy = endY - startY
         const len = Math.hypot(dx, dy)
-        if (len < 0.1) return
-        pushUndoState()
-        // common base object for all shapes
+        if (len === 0) return null
         const base = {
-            x1: drawing.startX,
-            y1: drawing.startY,
-            x2: drawing.currentX,
-            y2: drawing.currentY
+            x1: startX,
+            y1: startY,
+            x2: endX,
+            y2: endY
         }
-        if (drawing.type === "wall") {
-            shapes.push(Object.assign({ type: "wall" }, base))
-        } else if (drawing.type === "door") {
-            shapes.push(Object.assign({
-                type: "door",
-                width: len,
-                angle: Math.atan2(dy, dx)
-            }, base))
-        } else if (drawing.type === "dimension") {
-            shapes.push(Object.assign({ type: "dimension" }, base))
-        } else if (drawing.type === "window") {
-            shapes.push(Object.assign({
-                type: "window",
-                thickness: wallThicknessFeet * 0.5
-            }, base))
+        switch (type) {
+            case "wall":
+                return Object.assign({ type: "wall" }, base)
+            case "door":
+                return Object.assign({
+                    type: "door",
+                    width: len,
+                    angle: Math.atan2(dy, dx)
+                }, base)
+            case "window":
+                return Object.assign({
+                    type: "window",
+                    thickness: wallThicknessFeet * 0.5
+                }, base)
+            case "dimension":
+                return Object.assign({ type: "dimension" }, base)
+            default:
+                return null
         }
+    }
+
+    function finishDrawing() {
+        const shape = makeShape(
+            drawing.type,
+            drawing.startX,
+            drawing.startY,
+            drawing.currentX,
+            drawing.currentY
+        )
+        if (!shape) return
+        pushUndoState()
+        shapes.push(shape)
         selected = shapes.length - 1
     }
 
