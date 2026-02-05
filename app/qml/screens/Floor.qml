@@ -32,6 +32,11 @@ Item {
     property bool resizing: false
     property int resizeEnd: 0   // 1 = x1/y1, 2 = x2/y2
 
+    property bool dragging: false
+    property real dragStartX: 0
+    property real dragStartY: 0
+    property var dragOrigShape: null
+
     property var drawing: ({
         type: "",
         active: false,
@@ -705,6 +710,15 @@ Item {
                 const hit = hitTestShapes(p)
                 if (hit !== -1) {
                     selected = hit
+                    pushUndoState()
+                    dragging = true
+                    dragStartX = p.x
+                    dragStartY = p.y
+                    const s = shapes[selected]
+                    dragOrigShape = {
+                        x1: s.x1, y1: s.y1,
+                        x2: s.x2, y2: s.y2
+                    }
                     drawing.active = false
                 } else {
                     selected = -1
@@ -726,7 +740,6 @@ Item {
                 canvas.requestPaint()
                 return
             }
-
             if (resizing && (mouse.buttons & Qt.LeftButton)) {
                 const s = shapes[selected]
                 if (resizeEnd === 1) {
@@ -744,6 +757,17 @@ Item {
                     p.x - shapeCenter(s).x
                 )
                 rotateShape(s, rotateBaseAngle + (angle - rotateStartAngle))
+                canvas.requestPaint()
+                return
+            }
+            if (dragging && (mouse.buttons & Qt.LeftButton)) {
+                const dx = p.x - dragStartX
+                const dy = p.y - dragStartY
+                const s = shapes[selected]
+                s.x1 = dragOrigShape.x1 + dx
+                s.y1 = dragOrigShape.y1 + dy
+                s.x2 = dragOrigShape.x2 + dx
+                s.y2 = dragOrigShape.y2 + dy
                 canvas.requestPaint()
                 return
             }
@@ -770,6 +794,11 @@ Item {
             }
             if (rotating) {
                 rotating = false
+            }
+            if (dragging) {
+                dragging = false
+                dragOrigShape = null
+                return
             }
         }
 
