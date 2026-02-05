@@ -20,6 +20,7 @@ Item {
     property real wallThicknessFeet: 0.5 // 6 inches
 
     property int selected: -1
+    property real minDrawPixels: 6   // 4–8 px feels good
     property real pickTolerancePixels: 8 // feels good: 6–10 px
 
     property bool rotating: false
@@ -600,6 +601,15 @@ Item {
     }
 
     function finishDrawing() {
+        const dx = drawing.currentX - drawing.startX
+        const dy = drawing.currentY - drawing.startY
+        const lenFeet = Math.hypot(dx, dy)
+        // convert min pixels → feet (accounting for zoom)
+        const minFeet = (minDrawPixels / zoom) / pixelsPerFoot
+        if (lenFeet < minFeet) {
+            drawing.active = false
+            return
+        }
         const shape = makeShape(
             drawing.type,
             drawing.startX,
@@ -615,13 +625,16 @@ Item {
 
     function hitTestShapes(p) {
         let hit = -1
-        let best = pickTolerancePixels / (pixelsPerFoot * zoom)
+        let best = pickTolerancePixels / (pixelsPerFoot * zoom)  // zoom-aware selection
         for (let i = 0; i < shapes.length; i++) {
             const s = shapes[i]
-            const endToleranceFeet = 1.5
-            if (distanceToPoint(p.x, p.y, s.x1, s.y1) < endToleranceFeet ||
-                distanceToPoint(p.x, p.y, s.x2, s.y2) < endToleranceFeet)
-                continue
+            // endpoint tolerance in world units (screen pixels converted)
+            const endpointTolFeet = 8 / (pixelsPerFoot * zoom)
+            const nearEndpoint =
+                distanceToPoint(p.x, p.y, s.x1, s.y1) < endpointTolFeet ||
+                distanceToPoint(p.x, p.y, s.x2, s.y2) < endpointTolFeet
+            // skip endpoints only if needed (resizing)
+            if (nearEndpoint) continue
             const d = distancePointToSegment(p.x, p.y, s.x1, s.y1, s.x2, s.y2)
             if (d < best) {
                 best = d
