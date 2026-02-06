@@ -18,6 +18,8 @@ Item {
 
     property var shapes: []
     property real wallThicknessFeet: 0.5 // 6 inches
+    property real openingThicknessFeet: wallThicknessFeet
+
 
     property int selected: -1
     property real minDrawPixels: 6   // 4–8 px feels good
@@ -81,7 +83,7 @@ Item {
             case "window":
                 x1 = s.x1; y1 = s.y1;
                 x2 = s.x2; y2 = s.y2;
-                thicknessFeet = s.thickness || (wallThicknessFeet * 0.5); // windows thinner than walls by default
+                thicknessFeet = root.openingThicknessFeet;
                 break;
             case "dimension":
                 x1 = s.x1; y1 = s.y1;
@@ -134,18 +136,26 @@ Item {
     }
 
     function drawWindowRect(ctx, g, preview) {
-        ctx.save()
-        polygonPath(ctx, g.corners)
-        ctx.fillStyle = preview ? "rgba(180,220,255,0.4)" : "#ffffff"
-        ctx.fill()
-        ctx.beginPath()
-        ctx.moveTo(g.x1, g.y1)
-        ctx.lineTo(g.x2, g.y2)
-        ctx.lineWidth = 1 / zoom
-        ctx.strokeStyle = "#000000"
-        ctx.stroke()
-        ctx.restore()
+        ctx.save();
+        // fill
+        polygonPath(ctx, g.corners);
+        ctx.fillStyle = preview ? "rgba(180,220,255,0.4)" : "#ffffff";
+        ctx.fill();
+        // BLUE WINDOW BORDER (perimeter)
+        polygonPath(ctx, g.corners);
+        ctx.lineWidth = 1 / zoom;
+        ctx.strokeStyle = "#3da5ff";
+        ctx.stroke();
+        // centerline (optional – keep black if you want)
+        ctx.beginPath();
+        ctx.moveTo(g.x1, g.y1);
+        ctx.lineTo(g.x2, g.y2);
+        ctx.lineWidth = 1 / zoom;
+        ctx.strokeStyle = "#000000";
+        ctx.stroke();
+        ctx.restore();
     }
+
 
     function drawWallRect(ctx, g) {
         polygonPath(ctx, g.corners)
@@ -185,38 +195,50 @@ Item {
         ctx.stroke()
     }
 
-    function drawDoor(ctx, door, preview = false) {
-        const x1 = door.x1 * pixelsPerFoot;
-        const y1 = door.y1 * pixelsPerFoot;
-        const x2 = door.x2 * pixelsPerFoot;
-        const y2 = door.y2 * pixelsPerFoot;
-        const w = Math.hypot(x2 - x1, y2 - y1);
-        const a = Math.atan2(y2 - y1, x2 - x1);
-
-        ctx.save();
-        ctx.fillStyle = preview ? "rgba(0, 255, 136, 0.2)" : "rgba(255, 255, 255, 0.15)";
-        ctx.beginPath();
-        ctx.moveTo(x1, y1);
-        ctx.lineTo(x2, y2);
-        ctx.arc(x1, y1, w, a, a + Math.PI / 2);
-        ctx.closePath();
-        ctx.fill();
-
-        ctx.lineWidth = 6 / zoom;
-        ctx.strokeStyle = preview ? colors.preview : "#ffffff";
-        ctx.beginPath();
-        ctx.moveTo(x1, y1);
-        ctx.lineTo(x2, y2);
-        ctx.stroke();
-
-        ctx.lineWidth = 2 / zoom;
-        ctx.setLineDash([1.5 / zoom, 1.5 / zoom]);
-        ctx.beginPath();
-        ctx.arc(x1, y1, w, a, a + Math.PI / 2);
-        ctx.stroke();
-        ctx.setLineDash([]);
-        ctx.restore();
-    }
+function drawDoor(ctx, door, preview = false) {
+    const x1 = door.x1 * pixelsPerFoot; // hinge
+    const y1 = door.y1 * pixelsPerFoot;
+    const x2 = door.x2 * pixelsPerFoot; // base end
+    const y2 = door.y2 * pixelsPerFoot;
+    const r = Math.hypot(x2 - x1, y2 - y1);
+    const a = Math.atan2(y2 - y1, x2 - x1);
+    // arc end point (TOP-LEFT EDGE)
+    const ax = x1 + Math.cos(a + Math.PI / 2) * r;
+    const ay = y1 + Math.sin(a + Math.PI / 2) * r;
+    ctx.save();
+    // fill
+    ctx.fillStyle = preview
+        ? "rgba(0,255,136,0.2)"
+        : "rgba(255,255,255,0.15)";
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.arc(x1, y1, r, a, a + Math.PI / 2);
+    ctx.closePath();
+    ctx.fill();
+    // base (thick)
+    ctx.lineWidth = openingThicknessFeet * pixelsPerFoot;
+    ctx.strokeStyle = "#ffffff";
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+    // TOP-LEFT radial edge (1px white) ✅
+    ctx.lineWidth = 1 / zoom;
+    ctx.strokeStyle = "#ffffff";
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(ax, ay);
+    ctx.stroke();
+    // arc
+    ctx.lineWidth = 2 / zoom;
+    ctx.setLineDash([1.5 / zoom, 1.5 / zoom]);
+    ctx.beginPath();
+    ctx.arc(x1, y1, r, a, a + Math.PI / 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+}
 
     function distanceToPoint(px, py, x, y) {
         return Math.hypot(px - x, py - y)
@@ -590,8 +612,7 @@ Item {
                 }, base)
             case "window":
                 return Object.assign({
-                    type: "window",
-                    thickness: wallThicknessFeet * 0.5
+                    type: "window"
                 }, base)
             case "dimension":
                 return Object.assign({ type: "dimension" }, base)
