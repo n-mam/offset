@@ -1,4 +1,6 @@
 import QtQuick
+import "qrc:/components"
+
 
 Item {
     id: root
@@ -39,6 +41,10 @@ Item {
     property real dragStartX: 0
     property real dragStartY: 0
     property var dragOrigShape: null
+
+    PropertyEditor {
+        id: editor
+    }
 
     property var drawing: ({
         type: "",
@@ -375,16 +381,30 @@ function drawDoor(ctx, door, preview = false) {
             ctx.strokeStyle = level.color
             ctx.lineWidth = level.width / zoom
             for (let i = -200; i <= 200; i += level.step) {
+                // Vertical lines
                 ctx.beginPath()
                 ctx.moveTo(i * pixelsPerFoot, -10000)
-                ctx.lineTo(i * pixelsPerFoot,  10000)
+                ctx.lineTo(i * pixelsPerFoot, 10000)
                 ctx.stroke()
+                // Horizontal lines
                 ctx.beginPath()
                 ctx.moveTo(-10000, i * pixelsPerFoot)
-                ctx.lineTo( 10000, i * pixelsPerFoot)
+                ctx.lineTo(10000, i * pixelsPerFoot)
                 ctx.stroke()
+                // Draw labels for major grid (e.g., every 5 units)
+                if (i % 5 === 0 && i !== 0) {
+                    ctx.fillStyle = "#ffffff"
+                    ctx.font = "12px sans-serif"
+                    ctx.fillText(i, i * pixelsPerFoot + 2, 12)     // X-axis label
+                    ctx.fillText(-i, 2, i * pixelsPerFoot - 2)    // Y-axis label
+                }
             }
         })
+        // Draw origin
+        ctx.fillStyle = "#ffffff"
+        ctx.beginPath()
+        ctx.arc(0, 0, 4, 0, 2 * Math.PI)
+        ctx.fill()
     }
 
     function annotateShape(ctx, g, s) {
@@ -707,6 +727,7 @@ function drawDoor(ctx, door, preview = false) {
         property real lastY
         anchors.fill: parent
         acceptedButtons: Qt.LeftButton|Qt.RightButton
+
         onPressed: mouse => {
             root.forceActiveFocus()
             // Drawing modes
@@ -840,6 +861,15 @@ function drawDoor(ctx, door, preview = false) {
             zoom = Math.max(0.2, Math.min(5,
                 zoom * (wheel.angleDelta.y > 0 ? 1.1 : 0.9)))
             canvas.requestPaint()
+        }
+
+        onDoubleClicked: mouse => {
+            const p = screenToWorld(mouse.x, mouse.y)
+            const hit = hitTestShapes(p)
+            if (hit !== -1) {
+                selected = hit
+                editor.showEditor(shapes[hit], hit)
+            }
         }
     }
 
