@@ -373,79 +373,83 @@ Item {
     }
 
     function drawGrid(ctx) {
-        // Visible canvas bounds in *canvas-local space* (after translate+scale)
-        const left   = (-offsetX) / zoom
-        const right  = (canvas.width - offsetX) / zoom
-        const top    = (-offsetY) / zoom
-        const bottom = (canvas.height - offsetY) / zoom
+        const left   = (-offsetX) / (zoom * pixelsPerFoot)
+        const right  = (canvas.width - offsetX) / (zoom * pixelsPerFoot)
+        const top    = (-offsetY) / (zoom * pixelsPerFoot)
+        const bottom = (canvas.height - offsetY) / (zoom * pixelsPerFoot)
+        const labelTop  = (-offsetY) / zoom
+        const labelLeft = (-offsetX) / zoom
         gridLevels.forEach(level => {
             const stepFeet = level.step
-            const stepPx = stepFeet * pixelsPerFoot
+
             ctx.strokeStyle = level.color
             ctx.lineWidth = level.width / zoom
-            // Clamp grid lines to visible region
-            const startX = Math.floor(left / stepPx) * stepPx
-            const endX   = Math.ceil(right / stepPx) * stepPx
-            const startY = Math.floor(top / stepPx) * stepPx
-            const endY   = Math.ceil(bottom / stepPx) * stepPx
+
+            const startX = Math.floor(left / stepFeet) * stepFeet
+            const endX   = Math.ceil(right / stepFeet) * stepFeet
+            const startY = Math.floor(top / stepFeet) * stepFeet
+            const endY   = Math.ceil(bottom / stepFeet) * stepFeet
 
             // Vertical lines
-            for (let x = startX; x <= endX; x += stepPx) {
+            for (let x = startX; x <= endX; x += stepFeet) {
+                const cx = x * pixelsPerFoot
                 ctx.beginPath()
-                ctx.moveTo(x, top)
-                ctx.lineTo(x, bottom)
+                ctx.moveTo(cx, top * pixelsPerFoot)
+                ctx.lineTo(cx, bottom * pixelsPerFoot)
                 ctx.stroke()
             }
 
             // Horizontal lines
-            for (let y = startY; y <= endY; y += stepPx) {
+            for (let y = startY; y <= endY; y += stepFeet) {
+                const cy = y * pixelsPerFoot
                 ctx.beginPath()
-                ctx.moveTo(left, y)
-                ctx.lineTo(right, y)
+                ctx.moveTo(left * pixelsPerFoot, cy)
+                ctx.lineTo(right * pixelsPerFoot, cy)
                 ctx.stroke()
             }
-            // Labels only for major grid (step === 5)
+            // Major labels
             if (stepFeet === 5) {
                 ctx.fillStyle = "#ffffff"
                 ctx.font = `${12 / zoom}px sans-serif`
-                for (let x = startX; x <= endX; x += stepPx) {
-                    const value = Math.round(x / pixelsPerFoot)
-                    if (value !== 0) {
-                        ctx.fillText(value, x + 2 / zoom, top + 12 / zoom)
-                    }
+                for (let x = startX; x <= endX; x += stepFeet) {
+                    if (x !== 0)
+                        ctx.fillText(
+                            Math.round(x),
+                            x * pixelsPerFoot + 2 / zoom,
+                            labelTop + 12 / zoom
+                        )
                 }
-                for (let y = startY; y <= endY; y += stepPx) {
-                    const value = Math.round(y / pixelsPerFoot)
-                    if (value !== 0) {
-                        ctx.fillText(value, left + 2 / zoom, y - 2 / zoom)
-                    }
+                for (let y = startY; y <= endY; y += stepFeet) {
+                    if (y !== 0)
+                        ctx.fillText(
+                            Math.round(y),
+                            labelLeft + 2 / zoom,
+                            y * pixelsPerFoot - 2 / zoom
+                        )
                 }
             }
-            // Labels for 3-inch grid at high zoom only
+            // 3-inch labels
             if (stepFeet === 0.25 && zoom >= 2.5) {
                 ctx.fillStyle = "#bbbbbb"
                 ctx.font = `${10 / zoom}px sans-serif`
-                for (let x = startX; x <= endX; x += stepPx) {
-                    const feet = x / pixelsPerFoot
-                    const inches = Math.round(feet * 12)
-                    if (inches % 3 === 0 && inches !== 0) {
+
+                for (let x = startX; x <= endX; x += stepFeet) {
+                    const inches = Math.round(x * 12)
+                    if (inches % 3 === 0 && inches !== 0)
                         ctx.fillText(
                             `${inches}"`,
-                            x + 2 / zoom,
-                            top + 10 / zoom
+                            x * pixelsPerFoot + 2 / zoom,
+                            labelTop + 10 / zoom
                         )
-                    }
                 }
-                for (let y = startY; y <= endY; y += stepPx) {
-                    const feet = -y / pixelsPerFoot
-                    const inches = Math.round(feet * 12)
-                    if (inches % 3 === 0 && inches !== 0) {
+                for (let y = startY; y <= endY; y += stepFeet) {
+                    const inches = Math.round(y * 12)
+                    if (inches % 3 === 0 && inches !== 0)
                         ctx.fillText(
                             `${inches}"`,
-                            left + 2 / zoom,
-                            y - 2 / zoom
+                            labelLeft + 2 / zoom,
+                            y * pixelsPerFoot - 2 / zoom
                         )
-                    }
                 }
             }
         })
