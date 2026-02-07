@@ -18,8 +18,6 @@ Item {
     property real offsetY: 0
 
     property var shapes: []
-    property real wallThicknessFeet: 0.5 // 6 inches
-    property real openingThicknessFeet: wallThicknessFeet
 
     property int selected: -1
     property real minDrawPixels: 6   // 4–8 px feels good
@@ -50,7 +48,8 @@ Item {
         startX: 0,
         startY: 0,
         currentX: 0,
-        currentY: 0
+        currentY: 0,
+        thickness: 0.5
     })
 
     property var gridLevels: [
@@ -76,18 +75,18 @@ Item {
             case "wall":
                 x1 = s.x1; y1 = s.y1;
                 x2 = s.x2; y2 = s.y2;
-                thicknessFeet = wallThicknessFeet;
+                thicknessFeet = s.thickness;
                 break;
             case "door":
                 x1 = s.x1; y1 = s.y1;
                 x2 = s.x2; y2 = s.y2;
                 // approximate thickness as the "door leaf width" (feet)
-                thicknessFeet = s.width || 0.5;
+                thicknessFeet = s.thickness
                 break;
             case "window":
                 x1 = s.x1; y1 = s.y1;
                 x2 = s.x2; y2 = s.y2;
-                thicknessFeet = root.openingThicknessFeet;
+                thicknessFeet = s.thickness;
                 break;
             case "dimension":
                 x1 = s.x1; y1 = s.y1;
@@ -220,7 +219,7 @@ Item {
         ctx.closePath();
         ctx.fill();
         // base (thick)
-        ctx.lineWidth = openingThicknessFeet * pixelsPerFoot;
+        ctx.lineWidth = door.thickness * pixelsPerFoot;
         ctx.strokeStyle = "#ffffff";
         ctx.beginPath();
         ctx.moveTo(x1, y1);
@@ -379,14 +378,11 @@ Item {
         const right  = (canvas.width - offsetX) / zoom
         const top    = (-offsetY) / zoom
         const bottom = (canvas.height - offsetY) / zoom
-
         gridLevels.forEach(level => {
             const stepFeet = level.step
             const stepPx = stepFeet * pixelsPerFoot
-
             ctx.strokeStyle = level.color
             ctx.lineWidth = level.width / zoom
-
             // Clamp grid lines to visible region
             const startX = Math.floor(left / stepPx) * stepPx
             const endX   = Math.ceil(right / stepPx) * stepPx
@@ -408,19 +404,16 @@ Item {
                 ctx.lineTo(right, y)
                 ctx.stroke()
             }
-
             // Labels only for major grid (step === 5)
             if (stepFeet === 5) {
                 ctx.fillStyle = "#ffffff"
                 ctx.font = `${12 / zoom}px sans-serif`
-
                 for (let x = startX; x <= endX; x += stepPx) {
                     const value = Math.round(x / pixelsPerFoot)
                     if (value !== 0) {
                         ctx.fillText(value, x + 2 / zoom, top + 12 / zoom)
                     }
                 }
-
                 for (let y = startY; y <= endY; y += stepPx) {
                     const value = Math.round(y / pixelsPerFoot)
                     if (value !== 0) {
@@ -428,12 +421,10 @@ Item {
                     }
                 }
             }
-
             // Labels for 3-inch grid at high zoom only
             if (stepFeet === 0.25 && zoom >= 2.5) {
                 ctx.fillStyle = "#bbbbbb"
                 ctx.font = `${10 / zoom}px sans-serif`
-
                 for (let x = startX; x <= endX; x += stepPx) {
                     const feet = x / pixelsPerFoot
                     const inches = Math.round(feet * 12)
@@ -445,7 +436,6 @@ Item {
                         )
                     }
                 }
-
                 for (let y = startY; y <= endY; y += stepPx) {
                     const feet = -y / pixelsPerFoot
                     const inches = Math.round(feet * 12)
@@ -537,7 +527,8 @@ Item {
             drawing.startX,
             drawing.startY,
             drawing.currentX,
-            drawing.currentY
+            drawing.currentY,
+            drawing.thickness
         )
         if (!shape) return
         if (shape.type === "wall") {
@@ -667,7 +658,7 @@ Item {
         drawing.currentY = p.y
     }
 
-    function makeShape(type, startX, startY, endX, endY) {
+    function makeShape(type, startX, startY, endX, endY, thickness) {
         const dx = endX - startX
         const dy = endY - startY
         const len = Math.hypot(dx, dy)
@@ -676,7 +667,8 @@ Item {
             x1: startX,
             y1: startY,
             x2: endX,
-            y2: endY
+            y2: endY,
+            thickness: thickness
         }
         switch (type) {
             case "wall":
@@ -713,7 +705,8 @@ Item {
             drawing.startX,
             drawing.startY,
             drawing.currentX,
-            drawing.currentY
+            drawing.currentY,
+            drawing.thickness
         )
         if (!shape) return
         pushUndoState()

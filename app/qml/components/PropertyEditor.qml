@@ -19,6 +19,22 @@ Popup {
         open()
     }
 
+    function feetToText(feet) {
+        if (feet === undefined || isNaN(feet)) return "0'0\"";
+        var f = Math.floor(feet);
+        var inches = Math.round((feet - f) * 12);
+        return f + "'" + inches + "\"";
+    }
+
+    function textToFeet(text) {
+        // Match: optional feet and optional inches, e.g. 5'3" or 5' or 3"
+        var match = text.match(/^\s*(?:(\d+)')?\s*(?:(\d+)\")?\s*$/);
+        if (!match) return 0;
+        var f = parseInt(match[1] || "0");
+        var i = parseInt(match[2] || "0");
+        return f + i/12;
+    }
+
     ColumnLayout {
         id: mainLayout
         spacing: 6
@@ -26,7 +42,6 @@ Popup {
         anchors.fill: parent
         // Tighten up implicit width to fit children exactly
         implicitWidth: commonWidth + 5
-        // For convenience, calculate max width needed by rows
         property int commonWidth: {
             var maxWidth = 0
             for(var i=0; i<children.length; i++) {
@@ -45,12 +60,11 @@ Popup {
             }
             TextField {
                 width: 70
-                text: shape && shape.x1 !== undefined ? shape.x1.toFixed(2) : "0"
-                validator: DoubleValidator {}
-                onEditingFinished: function() { 
+                text: shape ? feetToText(shape.x1) : "0'0\""
+                onEditingFinished: function() {
                     if (shape) {
-                        shape.x1 = parseFloat(text)
-                        canvas.requestPaint();
+                        shape.x1 = textToFeet(text)
+                        canvas.requestPaint()
                     }
                 }
             }
@@ -65,13 +79,11 @@ Popup {
             }
             TextField {
                 width: 70
-                text: shape && shape.y1 !== undefined ? shape.y1.toFixed(2) : "0"
-                validator: DoubleValidator {}
-                onEditingFinished: 
-                function() {
+                text: shape ? feetToText(shape.y1) : "0'0\""
+                onEditingFinished: function() {
                     if (shape) {
-                        shape.y1 = parseFloat(text)
-                        canvas.requestPaint();
+                        shape.y1 = textToFeet(text)
+                        canvas.requestPaint()
                     }
                 }
             }
@@ -86,12 +98,11 @@ Popup {
             }
             TextField {
                 width: 70
-                text: shape && shape.x2 !== undefined ? shape.x2.toFixed(2) : "0"
-                validator: DoubleValidator {}
+                text: shape ? feetToText(shape.x2) : "0'0\""
                 onEditingFinished: function() {
                     if (shape) {
-                        shape.x2 = parseFloat(text)
-                        canvas.requestPaint();
+                        shape.x2 = textToFeet(text)
+                        canvas.requestPaint()
                     }
                 }
             }
@@ -106,12 +117,11 @@ Popup {
             }
             TextField {
                 width: 70
-                text: shape && shape.y2 !== undefined ? shape.y2.toFixed(2) : "0"
-                validator: DoubleValidator {}
+                text: shape ? feetToText(shape.y2) : "0'0\""
                 onEditingFinished: function() {
-                    if (shape) { 
-                        shape.y2 = parseFloat(text)
-                        canvas.requestPaint();
+                    if (shape) {
+                        shape.y2 = textToFeet(text)
+                        canvas.requestPaint()
                     }
                 }
             }
@@ -120,16 +130,13 @@ Popup {
         Loader {
             id: wallLoader
             sourceComponent: {
-                if (!shape)
-                    return undefined
-                if (shape.type === "wall")
-                    return wallEditor
+                if (!shape) return undefined
+                if (shape.type === "wall") return wallEditor
                 return undefined
             }
         }
     }
 
-    // Wall editor component
     Component {
         id: wallEditor
         ColumnLayout {
@@ -145,14 +152,11 @@ Popup {
                 }
                 TextField {
                     width: 70
-                    text: shape && shape.thickness !== undefined
-                          ? shape.thickness.toFixed(2)
-                          : "0.50"
-                    validator: DoubleValidator { bottom: 0 }
+                    text: shape ? feetToText(shape.thickness) : "0'6\""
                     onEditingFinished: function() {
                         if (shape) {
-                            shape.thickness = parseFloat(text)
-                            canvas.requestPaint();
+                            shape.thickness = textToFeet(text)
+                            canvas.requestPaint()
                         }
                     }
                 }
