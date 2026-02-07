@@ -147,9 +147,9 @@ Item {
         // BLUE WINDOW BORDER (perimeter)
         polygonPath(ctx, g.corners);
         ctx.lineWidth = 1 / zoom;
-        ctx.strokeStyle = "#3da5ff";
+        ctx.strokeStyle = "#000000";
         ctx.stroke();
-        // centerline (optional – keep black if you want)
+        // centerline
         ctx.beginPath();
         ctx.moveTo(g.x1, g.y1);
         ctx.lineTo(g.x2, g.y2);
@@ -163,33 +163,35 @@ Item {
         polygonPath(ctx, g.corners)
         ctx.fillStyle = colors.wallFill
         ctx.fill()
-
+        //hatch
         ctx.save()
         polygonPath(ctx, g.corners)
         ctx.clip()
-
         const spacing = 6 / zoom
-        const hatchAngle = Math.PI / 4
-        const cosA = Math.cos(hatchAngle)
-        const sinA = Math.sin(hatchAngle)
-
+        const wallAngle = Math.atan2(g.ty, g.tx)
+        const hatchAngle = wallAngle + Math.PI / 4
+        // bounding box (you already computed these)
         const xs = g.corners.map(c => c.x)
         const ys = g.corners.map(c => c.y)
         const minX = Math.min.apply(null, xs)
         const maxX = Math.max.apply(null, xs)
         const minY = Math.min.apply(null, ys)
         const maxY = Math.max.apply(null, ys)
-        const diagLen = Math.hypot(maxX - minX, maxY - minY)
-
+        // center of the wall area
+        const cx = (minX + maxX) * 0.5
+        const cy = (minY + maxY) * 0.5
+        ctx.translate(cx, cy)
+        ctx.rotate(hatchAngle)
         ctx.strokeStyle = colors.hatchStroke
         ctx.lineWidth = 1 / zoom
-        for (let i = -diagLen; i < diagLen * 2; i += spacing) {
+        // long enough to cover any rotation
+        const L = Math.max(maxX - minX, maxY - minY) * 2
+        for (let y = -L; y <= L; y += spacing) {
             ctx.beginPath()
-            ctx.moveTo(minX + i * (-sinA), minY + i * cosA)
-            ctx.lineTo(minX + i * (-sinA) + diagLen * cosA, minY + i * cosA + diagLen * sinA)
+            ctx.moveTo(-L, y)
+            ctx.lineTo(L, y)
             ctx.stroke()
         }
-
         ctx.restore()
         polygonPath(ctx, g.corners)
         ctx.strokeStyle = colors.wallOutline
@@ -225,7 +227,7 @@ Item {
         ctx.moveTo(x1, y1);
         ctx.lineTo(x2, y2);
         ctx.stroke();
-        // TOP-LEFT radial edge (1px white) ✅
+        // TOP-LEFT radial edge (1px white)
         ctx.lineWidth = 1 / zoom;
         ctx.strokeStyle = "#ffffff";
         ctx.beginPath();
@@ -432,7 +434,6 @@ Item {
             if (stepFeet === 0.25 && zoom >= 2.5) {
                 ctx.fillStyle = "#bbbbbb"
                 ctx.font = `${10 / zoom}px sans-serif`
-
                 for (let x = startX; x <= endX; x += stepFeet) {
                     const inches = Math.round(x * 12)
                     if (inches % 3 === 0 && inches !== 0)
@@ -850,7 +851,7 @@ MouseArea {
             drawing.currentY = p.y
         } else if (resizing && isLeftPressed(mouse)) {
             const s = shapes[selected]
-            if (resizeEnd === 1) { s.x1 = p.x; s.y1 = p.y } 
+            if (resizeEnd === 1) { s.x1 = p.x; s.y1 = p.y }
             else { s.x2 = p.x; s.y2 = p.y }
         } else if (rotating && isLeftPressed(mouse)) {
             const s = shapes[selected]
