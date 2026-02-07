@@ -466,6 +466,31 @@ Item {
         ctx.fill()
     }
 
+    function drawWallLengthLabel(ctx, x1Feet, y1Feet, x2Feet, y2Feet, color = "#000000") {
+        const dx = x2Feet - x1Feet
+        const dy = y2Feet - y1Feet
+        const lengthFeet = Math.hypot(dx, dy)
+        if (lengthFeet === 0) return
+        const label = formatFeetInches(lengthFeet)
+        // midpoint in canvas space
+        const mx = ((x1Feet + x2Feet) / 2) * pixelsPerFoot
+        const my = ((y1Feet + y2Feet) / 2) * pixelsPerFoot
+        // perpendicular offset
+        const lenPx = Math.hypot(dx, dy) * pixelsPerFoot
+        const ox = (dy / lenPx) * (14 / zoom)
+        const oy = (-dx / lenPx) * (14 / zoom)
+        // convert to screen space
+        const p = canvasToScreen({ x: mx + ox, y: my + oy })
+        ctx.save()
+        ctx.setTransform(1, 0, 0, 1, 0, 0)
+        ctx.fillStyle = color
+        ctx.font = "12px sans-serif"
+        ctx.textAlign = "center"
+        ctx.textBaseline = "middle"
+        ctx.fillText(label, p.x, p.y)
+        ctx.restore()
+    }
+
     function annotateShape(ctx, g, s) {
         polygonPath(ctx, g.corners)
         ctx.strokeStyle = colors.selected
@@ -490,39 +515,11 @@ Item {
         ctx.beginPath()
         ctx.arc(g.x2, g.y2, 5 / zoom, 0, Math.PI * 2)
         ctx.fill()
-        // Length label while resizing
-        if (resizing) {
-            let x1 = s.x1
-            let y1 = s.y1
-            let x2 = s.x2
-            let y2 = s.y2
-            // if resizing one endpoint, use current mouse pos
-            if (resizeEnd === 1) {
-                x1 = s.x1
-                y1 = s.y1
-            } else if (resizeEnd === 2) {
-                x2 = s.x2
-                y2 = s.y2
-            }
-            const dx = x2 - x1
-            const dy = y2 - y1
-            const lengthFeet = Math.sqrt(dx*dx + dy*dy)
-            const label = formatFeetInches(lengthFeet)
-            const mx = ((x1 + x2) / 2) * pixelsPerFoot
-            const my = ((y1 + y2) / 2) * pixelsPerFoot
-
-            ctx.save()
-            ctx.setTransform(1, 0, 0, 1, 0, 0) // reset to screen space
-            // convert wall-local coords to screen coords
-            const p = canvasToScreen({x: mx, y: my})
-            ctx.globalAlpha = 1.0  // ensure full opacity
-            ctx.fillStyle = "#000000" // black text
-            ctx.strokeStyle = "rgba(0,0,0,0)" // no stroke background
-            ctx.textAlign = "center"
-            ctx.textBaseline = "middle"
-            ctx.fillText(label, p.x, p.y)
-            ctx.restore()
-        }
+        drawWallLengthLabel(
+            ctx,
+            s.x1, s.y1,
+            s.x2, s.y2,
+            "#000000")
         // angle visualizer while rotating
         if (rotating) {
             const c = shapeCenter(s)
@@ -556,7 +553,13 @@ Item {
             ctx.stroke()
             ctx.setLineDash([])
             ctx.restore()
-
+            drawWallLengthLabel(
+                ctx,
+                shape.x1,
+                shape.y1,
+                shape.x2,
+                shape.y2,
+                colors.preview)
             const dx = shape.x2 - shape.x1
             const dy = shape.y2 - shape.y1
             drawAngleVisualizer(ctx, g.x1, g.y1, -Math.atan2(dy, dx), zoom)
