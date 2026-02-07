@@ -1,7 +1,6 @@
 import QtQuick
 import "qrc:/components"
 
-
 Item {
     id: root
     width: 800
@@ -21,7 +20,6 @@ Item {
     property var shapes: []
     property real wallThicknessFeet: 0.5 // 6 inches
     property real openingThicknessFeet: wallThicknessFeet
-
 
     property int selected: -1
     property real minDrawPixels: 6   // 4–8 px feels good
@@ -162,7 +160,6 @@ Item {
         ctx.restore();
     }
 
-
     function drawWallRect(ctx, g) {
         polygonPath(ctx, g.corners)
         ctx.fillStyle = colors.wallFill
@@ -201,50 +198,50 @@ Item {
         ctx.stroke()
     }
 
-function drawDoor(ctx, door, preview = false) {
-    const x1 = door.x1 * pixelsPerFoot; // hinge
-    const y1 = door.y1 * pixelsPerFoot;
-    const x2 = door.x2 * pixelsPerFoot; // base end
-    const y2 = door.y2 * pixelsPerFoot;
-    const r = Math.hypot(x2 - x1, y2 - y1);
-    const a = Math.atan2(y2 - y1, x2 - x1);
-    // arc end point (TOP-LEFT EDGE)
-    const ax = x1 + Math.cos(a + Math.PI / 2) * r;
-    const ay = y1 + Math.sin(a + Math.PI / 2) * r;
-    ctx.save();
-    // fill
-    ctx.fillStyle = preview
-        ? "rgba(0,255,136,0.2)"
-        : "rgba(255,255,255,0.15)";
-    ctx.beginPath();
-    ctx.moveTo(x1, y1);
-    ctx.lineTo(x2, y2);
-    ctx.arc(x1, y1, r, a, a + Math.PI / 2);
-    ctx.closePath();
-    ctx.fill();
-    // base (thick)
-    ctx.lineWidth = openingThicknessFeet * pixelsPerFoot;
-    ctx.strokeStyle = "#ffffff";
-    ctx.beginPath();
-    ctx.moveTo(x1, y1);
-    ctx.lineTo(x2, y2);
-    ctx.stroke();
-    // TOP-LEFT radial edge (1px white) ✅
-    ctx.lineWidth = 1 / zoom;
-    ctx.strokeStyle = "#ffffff";
-    ctx.beginPath();
-    ctx.moveTo(x1, y1);
-    ctx.lineTo(ax, ay);
-    ctx.stroke();
-    // arc
-    ctx.lineWidth = 2 / zoom;
-    ctx.setLineDash([1.5 / zoom, 1.5 / zoom]);
-    ctx.beginPath();
-    ctx.arc(x1, y1, r, a, a + Math.PI / 2);
-    ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.restore();
-}
+    function drawDoor(ctx, door, preview = false) {
+        const x1 = door.x1 * pixelsPerFoot; // hinge
+        const y1 = door.y1 * pixelsPerFoot;
+        const x2 = door.x2 * pixelsPerFoot; // base end
+        const y2 = door.y2 * pixelsPerFoot;
+        const r = Math.hypot(x2 - x1, y2 - y1);
+        const a = Math.atan2(y2 - y1, x2 - x1);
+        // arc end point (TOP-LEFT EDGE)
+        const ax = x1 + Math.cos(a + Math.PI / 2) * r;
+        const ay = y1 + Math.sin(a + Math.PI / 2) * r;
+        ctx.save();
+        // fill
+        ctx.fillStyle = preview
+            ? "rgba(0,255,136,0.2)"
+            : "rgba(255,255,255,0.15)";
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.arc(x1, y1, r, a, a + Math.PI / 2);
+        ctx.closePath();
+        ctx.fill();
+        // base (thick)
+        ctx.lineWidth = openingThicknessFeet * pixelsPerFoot;
+        ctx.strokeStyle = "#ffffff";
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+        // TOP-LEFT radial edge (1px white) ✅
+        ctx.lineWidth = 1 / zoom;
+        ctx.strokeStyle = "#ffffff";
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(ax, ay);
+        ctx.stroke();
+        // arc
+        ctx.lineWidth = 2 / zoom;
+        ctx.setLineDash([1.5 / zoom, 1.5 / zoom]);
+        ctx.beginPath();
+        ctx.arc(x1, y1, r, a, a + Math.PI / 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
+    }
 
     function distanceToPoint(px, py, x, y) {
         return Math.hypot(px - x, py - y)
@@ -608,57 +605,52 @@ function drawDoor(ctx, door, preview = false) {
     }
 
     function drawDimension(ctx, x1Feet, y1Feet, x2Feet, y2Feet, barSizePx = 10) {
-        // world → local canvas space (your ctx is already translated + scaled)
-        const x1 = x1Feet * pixelsPerFoot
-        const y1 = y1Feet * pixelsPerFoot
-        const x2 = x2Feet * pixelsPerFoot
-        const y2 = y2Feet * pixelsPerFoot
-        // main line
-        ctx.strokeStyle = colors.preview
-        ctx.lineWidth = 2 / zoom
-        ctx.beginPath()
-        ctx.moveTo(x1, y1)
-        ctx.lineTo(x2, y2)
-        ctx.stroke()
-        // end bars
-        const angle = Math.atan2(y2 - y1, x2 - x1)
-        const px = Math.sin(angle) * (barSizePx / zoom)
-        const py = -Math.cos(angle) * (barSizePx / zoom)
-        ctx.beginPath()
-        ctx.moveTo(x1 - px, y1 - py)
-        ctx.lineTo(x1 + px, y1 + py)
-        ctx.moveTo(x2 - px, y2 - py)
-        ctx.lineTo(x2 + px, y2 + py)
-        ctx.stroke()
-        // label
-        const dx = x2Feet - x1Feet
-        const dy = y2Feet - y1Feet
-        const lengthFeet = Math.sqrt(dx*dx + dy*dy)
-        const label = formatFeetInches(lengthFeet)
-        // midpoint in world (canvas-local) space
-        const mx = (x1 + x2) / 2
-        const my = (y1 + y2) / 2
-        // direction
-        const dxp = x2 - x1
-        const dyp = y2 - y1
-        const len = Math.hypot(dxp, dyp) || 1
-        // perpendicular normal (consistent "above")
-        const nx = dyp / len
-        const ny = -dxp / len
-        // offset in SCREEN pixels
-        const labelOffsetPx = 14
-        const ox = nx * (labelOffsetPx / zoom)
-        const oy = ny * (labelOffsetPx / zoom)
-        // final label position (world → screen)
-        ctx.save()
-        ctx.setTransform(1, 0, 0, 1, 0, 0)
-        const p = canvasToScreen({ x: mx + ox, y: my + oy })
-        ctx.fillStyle = colors.preview
-        ctx.font = "12px sans-serif"
-        ctx.textAlign = "center"
-        ctx.textBaseline = "middle"
-        ctx.fillText(label, p.x, p.y)
-        ctx.restore()
+        // world (feet) → canvas (pixels)
+        const x1 = x1Feet * pixelsPerFoot;
+        const y1 = y1Feet * pixelsPerFoot;
+        const x2 = x2Feet * pixelsPerFoot;
+        const y2 = y2Feet * pixelsPerFoot;
+        // Vector from start → end
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const length = Math.hypot(dx, dy) || 1; // prevent divide-by-zero
+        // Main line
+        ctx.strokeStyle = colors.preview;
+        ctx.lineWidth = 2 / zoom;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+        // End bars (perpendicular to main line)
+        const px = (dy / length) * (barSizePx / zoom);
+        const py = (-dx / length) * (barSizePx / zoom);
+        ctx.beginPath();
+        ctx.moveTo(x1 - px, y1 - py);
+        ctx.lineTo(x1 + px, y1 + py);
+        ctx.moveTo(x2 - px, y2 - py);
+        ctx.lineTo(x2 + px, y2 + py);
+        ctx.stroke();
+        // Label text
+        const lengthFeet = Math.hypot(x2Feet - x1Feet, y2Feet - y1Feet);
+        const label = formatFeetInches(lengthFeet);
+        // Midpoint
+        const mx = (x1 + x2) / 2;
+        const my = (y1 + y2) / 2;
+        // Perpendicular offset for label
+        const labelOffsetPx = 14 / zoom;
+        const ox = (dy / length) * labelOffsetPx;
+        const oy = (-dx / length) * labelOffsetPx;
+        // Convert midpoint + offset to screen space
+        const p = canvasToScreen({ x: mx + ox, y: my + oy });
+        // Draw label
+        ctx.save();
+        ctx.setTransform(1, 0, 0, 1, 0, 0); // reset transform for screen coords
+        ctx.fillStyle = colors.preview;
+        ctx.font = "12px sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(label, p.x, p.y);
+        ctx.restore();
     }
 
     function startDrawing(type, mouse, pushUndo = false) {
@@ -784,156 +776,146 @@ function drawDoor(ctx, door, preview = false) {
         }
     }
 
-    MouseArea {
-        property real lastX
-        property real lastY
-        anchors.fill: parent
-        acceptedButtons: Qt.LeftButton|Qt.RightButton
+MouseArea {
+    property real lastX
+    property real lastY
+    anchors.fill: parent
+    acceptedButtons: Qt.LeftButton|Qt.RightButton
 
-        onPressed: mouse => {
-            root.forceActiveFocus()
-            // Drawing modes
-            if (mouse.button === Qt.LeftButton) {
-                if (mouse.modifiers & Qt.AltModifier)
-                    return startDrawing("window", mouse)
-                if (mouse.modifiers & Qt.ControlModifier)
-                    return startDrawing("door", mouse)
-                if (mouse.modifiers & Qt.ShiftModifier)
-                    return startDrawing("dimension", mouse, true)
-                const p = screenToWorld(mouse.x, mouse.y)
+    function getMouseWorldPos(mouse) {
+        return screenToWorld(mouse.x, mouse.y)
+    }
+
+    function isLeftButton(mouse) { return mouse.button === Qt.LeftButton }
+    function isLeftPressed(mouse) { return mouse.buttons & Qt.LeftButton }
+    function isRightPressed(mouse) { return mouse.buttons & Qt.RightButton }
+
+    onPressed: mouse => {
+        root.forceActiveFocus()
+
+        if (isLeftButton(mouse)) {
+            const p = getMouseWorldPos(mouse)
+            // Drawing shortcuts
+            if (mouse.modifiers & Qt.AltModifier) return startDrawing("window", mouse)
+            if (mouse.modifiers & Qt.ControlModifier) return startDrawing("door", mouse)
+            if (mouse.modifiers & Qt.ShiftModifier) return startDrawing("dimension", mouse, true)
+
+            if (selected !== -1) {
+                const s = shapes[selected]
                 // Resize handle
-                if (selected !== -1) {
-                    const end = hitWallEndpoint(p, shapes[selected])
-                    if (end !== 0) {
-                        pushUndoState()
-                        resizing = true
-                        resizeEnd = end
-                        return
-                    }
+                const end = hitWallEndpoint(p, s)
+                if (end !== 0) {
+                    pushUndoState()
+                    resizing = true
+                    resizeEnd = end
+                    return
                 }
                 // Rotate handle
-                if (selected !== -1 && hitRotateHandle(p, shapes[selected])) {
-                    const s = shapes[selected]
+                if (hitRotateHandle(p, s)) {
                     pushUndoState()
                     rotating = true
                     rotateBaseAngle = shapeAngle(s)
-                    rotateStartAngle = Math.atan2(
-                        p.y - shapeCenter(s).y,
-                        p.x - shapeCenter(s).x
-                    )
+                    const center = shapeCenter(s)
+                    rotateStartAngle = Math.atan2(p.y - center.y, p.x - center.x)
                     return
                 }
-                // Selection / new wall
-                const hit = hitTestShapes(p)
-                if (hit !== -1) {
-                    selected = hit
-                    pushUndoState()
-                    dragging = true
-                    dragStartX = p.x
-                    dragStartY = p.y
-                    const s = shapes[selected]
-                    dragOrigShape = {
-                        x1: s.x1, y1: s.y1,
-                        x2: s.x2, y2: s.y2
-                    }
-                    drawing.active = false
-                } else {
-                    selected = -1
-                    startDrawing("wall", mouse)
-                }
-                canvas.requestPaint()
-                return
             }
-            // Right button pan start
-            lastX = mouse.x
-            lastY = mouse.y
-        }
-
-        onPositionChanged: mouse => {
-            const p = screenToWorld(mouse.x, mouse.y)
-            if (drawing.active && (mouse.buttons & Qt.LeftButton)) {
-                drawing.currentX = p.x
-                drawing.currentY = p.y
-                canvas.requestPaint()
-                return
-            }
-            if (resizing && (mouse.buttons & Qt.LeftButton)) {
-                const s = shapes[selected]
-                if (resizeEnd === 1) {
-                    s.x1 = p.x; s.y1 = p.y
-                } else {
-                    s.x2 = p.x; s.y2 = p.y
-                }
-                canvas.requestPaint()
-                return
-            }
-            if (rotating && (mouse.buttons & Qt.LeftButton)) {
-                const s = shapes[selected]
-                const angle = Math.atan2(
-                    p.y - shapeCenter(s).y,
-                    p.x - shapeCenter(s).x
-                )
-                rotateShape(s, rotateBaseAngle + (angle - rotateStartAngle))
-                canvas.requestPaint()
-                return
-            }
-            if (dragging && (mouse.buttons & Qt.LeftButton)) {
-                const dx = p.x - dragStartX
-                const dy = p.y - dragStartY
-                const s = shapes[selected]
-                s.x1 = dragOrigShape.x1 + dx
-                s.y1 = dragOrigShape.y1 + dy
-                s.x2 = dragOrigShape.x2 + dx
-                s.y2 = dragOrigShape.y2 + dy
-                canvas.requestPaint()
-                return
-            }
-            if (mouse.buttons & Qt.RightButton) {
-                offsetX += mouse.x - lastX
-                offsetY += mouse.y - lastY
-                lastX = mouse.x
-                lastY = mouse.y
-                canvas.requestPaint()
-            }
-        }
-
-        onReleased: mouse => {
-            if (drawing.active && mouse.button === Qt.LeftButton) {
-                finishDrawing()
-                drawing.active = false
-                canvas.requestPaint()
-                return
-            }
-            if (resizing) {
-                resizing = false
-                resizeEnd = 0
-                return
-            }
-            if (rotating) {
-                rotating = false
-            }
-            if (dragging) {
-                dragging = false
-                dragOrigShape = null
-                return
-            }
-        }
-
-        onWheel: wheel => {
-            zoom = Math.max(0.2, Math.min(5,
-                zoom * (wheel.angleDelta.y > 0 ? 1.1 : 0.9)))
-            canvas.requestPaint()
-        }
-
-        onDoubleClicked: mouse => {
-            const p = screenToWorld(mouse.x, mouse.y)
+            // Selection / new wall
             const hit = hitTestShapes(p)
             if (hit !== -1) {
                 selected = hit
-                editor.showEditor(shapes[hit], hit)
+                pushUndoState()
+                dragging = true
+                dragStartX = p.x
+                dragStartY = p.y
+                const s = shapes[selected]
+                dragOrigShape = { x1: s.x1, y1: s.y1, x2: s.x2, y2: s.y2 }
+                drawing.active = false
+            } else {
+                selected = -1
+                startDrawing("wall", mouse)
             }
+            canvas.requestPaint()
+            return
+        }
+        // Right button pan
+        lastX = mouse.x
+        lastY = mouse.y
+    }
+
+    onPositionChanged: mouse => {
+        const p = getMouseWorldPos(mouse)
+        if (drawing.active && isLeftPressed(mouse)) {
+            drawing.currentX = p.x
+            drawing.currentY = p.y
+        } else if (resizing && isLeftPressed(mouse)) {
+            const s = shapes[selected]
+            if (resizeEnd === 1) { s.x1 = p.x; s.y1 = p.y } 
+            else { s.x2 = p.x; s.y2 = p.y }
+        } else if (rotating && isLeftPressed(mouse)) {
+            const s = shapes[selected]
+            const center = shapeCenter(s)
+            const angle = Math.atan2(p.y - center.y, p.x - center.x)
+            rotateShape(s, rotateBaseAngle + (angle - rotateStartAngle))
+        } else if (dragging && isLeftPressed(mouse)) {
+            const dx = p.x - dragStartX
+            const dy = p.y - dragStartY
+            const s = shapes[selected]
+            s.x1 = dragOrigShape.x1 + dx
+            s.y1 = dragOrigShape.y1 + dy
+            s.x2 = dragOrigShape.x2 + dx
+            s.y2 = dragOrigShape.y2 + dy
+        } else if (isRightPressed(mouse)) {
+            offsetX += mouse.x - lastX
+            offsetY += mouse.y - lastY
+            lastX = mouse.x
+            lastY = mouse.y
+        } else return // Nothing changed
+
+        canvas.requestPaint()
+    }
+
+    onReleased: mouse => {
+        if (drawing.active && isLeftButton(mouse)) {
+            finishDrawing()        // commits the new shape
+            drawing.active = false
+            canvas.requestPaint()
+            return
+        }
+        if (resizing) {
+            pushUndoState()        // commit resize
+            resizing = false
+            resizeEnd = 0
+            canvas.requestPaint()
+        }
+        if (rotating) {
+            pushUndoState()        // commit rotation
+            rotating = false
+            canvas.requestPaint()
+        }
+        if (dragging) {
+            pushUndoState()        // commit drag
+            dragging = false
+            dragOrigShape = null
+            canvas.requestPaint()
         }
     }
+
+    onWheel: wheel => {
+        const factor = wheel.angleDelta.y > 0 ? 1.1 : 0.9
+        zoom = Math.max(0.2, Math.min(5, zoom * factor))
+        canvas.requestPaint()
+    }
+
+    onDoubleClicked: mouse => {
+        const p = getMouseWorldPos(mouse)
+        const hit = hitTestShapes(p)
+        if (hit !== -1) {
+            selected = hit
+            editor.showEditor(shapes[hit], hit)
+        }
+    }
+}
 
     Keys.onDeletePressed: {
         if (selected !== -1) {

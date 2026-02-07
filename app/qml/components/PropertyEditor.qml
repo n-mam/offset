@@ -47,7 +47,12 @@ Popup {
                 width: 70
                 text: shape && shape.x1 !== undefined ? shape.x1.toFixed(2) : "0"
                 validator: DoubleValidator {}
-                onEditingFinished: if (shape) shape.x1 = parseFloat(text)
+                onEditingFinished: function() { 
+                    if (shape) {
+                        shape.x1 = parseFloat(text)
+                        canvas.requestPaint();
+                    }
+                }
             }
         }
 
@@ -62,7 +67,13 @@ Popup {
                 width: 70
                 text: shape && shape.y1 !== undefined ? shape.y1.toFixed(2) : "0"
                 validator: DoubleValidator {}
-                onEditingFinished: if (shape) shape.y1 = parseFloat(text)
+                onEditingFinished: 
+                function() {
+                    if (shape) {
+                        shape.y1 = parseFloat(text)
+                        canvas.requestPaint();
+                    }
+                }
             }
         }
 
@@ -77,7 +88,12 @@ Popup {
                 width: 70
                 text: shape && shape.x2 !== undefined ? shape.x2.toFixed(2) : "0"
                 validator: DoubleValidator {}
-                onEditingFinished: if (shape) shape.x2 = parseFloat(text)
+                onEditingFinished: function() {
+                    if (shape) {
+                        shape.x2 = parseFloat(text)
+                        canvas.requestPaint();
+                    }
+                }
             }
         }
 
@@ -92,7 +108,12 @@ Popup {
                 width: 70
                 text: shape && shape.y2 !== undefined ? shape.y2.toFixed(2) : "0"
                 validator: DoubleValidator {}
-                onEditingFinished: if (shape) shape.y2 = parseFloat(text)
+                onEditingFinished: function() {
+                    if (shape) { 
+                        shape.y2 = parseFloat(text)
+                        canvas.requestPaint();
+                    }
+                }
             }
         }
 
@@ -128,8 +149,12 @@ Popup {
                           ? shape.thickness.toFixed(2)
                           : "0.50"
                     validator: DoubleValidator { bottom: 0 }
-                    onEditingFinished: if (shape)
-                        shape.thickness = parseFloat(text)
+                    onEditingFinished: function() {
+                        if (shape) {
+                            shape.thickness = parseFloat(text)
+                            canvas.requestPaint();
+                        }
+                    }
                 }
             }
         }
