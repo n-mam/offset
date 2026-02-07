@@ -377,33 +377,95 @@ function drawDoor(ctx, door, preview = false) {
     }
 
     function drawGrid(ctx) {
+        // Visible canvas bounds in *canvas-local space* (after translate+scale)
+        const left   = (-offsetX) / zoom
+        const right  = (canvas.width - offsetX) / zoom
+        const top    = (-offsetY) / zoom
+        const bottom = (canvas.height - offsetY) / zoom
+
         gridLevels.forEach(level => {
+            const stepFeet = level.step
+            const stepPx = stepFeet * pixelsPerFoot
+
             ctx.strokeStyle = level.color
             ctx.lineWidth = level.width / zoom
-            for (let i = -200; i <= 200; i += level.step) {
-                // Vertical lines
+
+            // Clamp grid lines to visible region
+            const startX = Math.floor(left / stepPx) * stepPx
+            const endX   = Math.ceil(right / stepPx) * stepPx
+            const startY = Math.floor(top / stepPx) * stepPx
+            const endY   = Math.ceil(bottom / stepPx) * stepPx
+
+            // Vertical lines
+            for (let x = startX; x <= endX; x += stepPx) {
                 ctx.beginPath()
-                ctx.moveTo(i * pixelsPerFoot, -10000)
-                ctx.lineTo(i * pixelsPerFoot, 10000)
+                ctx.moveTo(x, top)
+                ctx.lineTo(x, bottom)
                 ctx.stroke()
-                // Horizontal lines
+            }
+
+            // Horizontal lines
+            for (let y = startY; y <= endY; y += stepPx) {
                 ctx.beginPath()
-                ctx.moveTo(-10000, i * pixelsPerFoot)
-                ctx.lineTo(10000, i * pixelsPerFoot)
+                ctx.moveTo(left, y)
+                ctx.lineTo(right, y)
                 ctx.stroke()
-                // Draw labels for major grid (e.g., every 5 units)
-                if (i % 5 === 0 && i !== 0) {
-                    ctx.fillStyle = "#ffffff"
-                    ctx.font = "12px sans-serif"
-                    ctx.fillText(i, i * pixelsPerFoot + 2, 12)     // X-axis label
-                    ctx.fillText(-i, 2, i * pixelsPerFoot - 2)    // Y-axis label
+            }
+
+            // Labels only for major grid (step === 5)
+            if (stepFeet === 5) {
+                ctx.fillStyle = "#ffffff"
+                ctx.font = `${12 / zoom}px sans-serif`
+
+                for (let x = startX; x <= endX; x += stepPx) {
+                    const value = Math.round(x / pixelsPerFoot)
+                    if (value !== 0) {
+                        ctx.fillText(value, x + 2 / zoom, top + 12 / zoom)
+                    }
+                }
+
+                for (let y = startY; y <= endY; y += stepPx) {
+                    const value = Math.round(-y / pixelsPerFoot)
+                    if (value !== 0) {
+                        ctx.fillText(value, left + 2 / zoom, y - 2 / zoom)
+                    }
+                }
+            }
+
+            // Labels for 3-inch grid at high zoom only
+            if (stepFeet === 0.25 && zoom >= 2.5) {
+                ctx.fillStyle = "#bbbbbb"
+                ctx.font = `${10 / zoom}px sans-serif`
+
+                for (let x = startX; x <= endX; x += stepPx) {
+                    const feet = x / pixelsPerFoot
+                    const inches = Math.round(feet * 12)
+                    if (inches % 3 === 0 && inches !== 0) {
+                        ctx.fillText(
+                            `${inches}"`,
+                            x + 2 / zoom,
+                            top + 10 / zoom
+                        )
+                    }
+                }
+
+                for (let y = startY; y <= endY; y += stepPx) {
+                    const feet = -y / pixelsPerFoot
+                    const inches = Math.round(feet * 12)
+                    if (inches % 3 === 0 && inches !== 0) {
+                        ctx.fillText(
+                            `${inches}"`,
+                            left + 2 / zoom,
+                            y - 2 / zoom
+                        )
+                    }
                 }
             }
         })
-        // Draw origin
+        // Origin
         ctx.fillStyle = "#ffffff"
         ctx.beginPath()
-        ctx.arc(0, 0, 4, 0, 2 * Math.PI)
+        ctx.arc(0, 0, 4 / zoom, 0, Math.PI * 2)
         ctx.fill()
     }
 
