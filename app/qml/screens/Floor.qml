@@ -14,8 +14,8 @@ Item {
     // Camera
     property real zoom: 1.0
     property real pixelsPerFoot: 30
-    property real offsetX: width / 2
-    property real offsetY: height / 2
+    property real offsetX: 0
+    property real offsetY: 0
 
     property var shapes: []
     property real wallThicknessFeet: 0.5 // 6 inches
@@ -422,7 +422,7 @@ Item {
                 }
 
                 for (let y = startY; y <= endY; y += stepPx) {
-                    const value = Math.round(-y / pixelsPerFoot)
+                    const value = Math.round(y / pixelsPerFoot)
                     if (value !== 0) {
                         ctx.fillText(value, left + 2 / zoom, y - 2 / zoom)
                     }
