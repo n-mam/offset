@@ -34,7 +34,7 @@ Item {
 
     property bool resizing: false
     property int resizeEnd: 0   // 1 = x1/y1, 2 = x2/y2
-    property url lastSaveUrl: ""
+    property var lastSaveUrl: ""
 
     property bool dragging: false
     property real dragStartX: 0
@@ -50,7 +50,6 @@ Item {
         title: "Save Floor Plan"
         fileMode: FileDialog.SaveFile
         nameFilters: [ "Floor Plan (*.json)" ]
-        defaultSuffix: "myfloor"
         onAccepted: {
             const path = currentFile.toString().replace(/^file:\/\//, "")
             console.log(path)
@@ -58,7 +57,22 @@ Item {
             saveToFile(path)
         }
     }
-
+    FileDialog {
+        id: loadDialog
+        title: "Load Floor Plan"
+        fileMode: FileDialog.OpenFile
+        nameFilters: [ "Floor Plan (*.json)" ]
+        onAccepted: {
+            const path = currentFile.toString().replace(/^file:\/\//, "")
+            console.log(path)
+            var j = floorManager.loadFromFile(path);
+            if (j) {
+                loadProject(j, path);
+            } else {
+                console.warn("Failed to load project file");
+            }
+        }
+    }
     property var drawing: ({
         type: "",
         active: false,
@@ -803,7 +817,7 @@ Item {
         }, null, 2)
     }
 
-    function loadProject(jsonText) {
+    function loadProject(jsonText, path) {
         const doc = JSON.parse(jsonText)
         if (doc.format !== "FloorPlanProject")
             throw "Not a floor plan project"
@@ -825,6 +839,7 @@ Item {
         selected = -1
         drawing.active = false
         canvas.requestPaint()
+        lastSaveUrl = path
     }
 
     function saveProject() {
@@ -1063,6 +1078,12 @@ Item {
             case Qt.Key_S:
                 if (event.modifiers & Qt.ControlModifier) {
                     saveProject()
+                    event.accepted = true
+                }
+                break
+            case Qt.Key_L:
+                if (event.modifiers & Qt.ControlModifier) {
+                    loadDialog.open()
                     event.accepted = true
                 }
                 break
