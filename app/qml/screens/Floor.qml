@@ -1,4 +1,6 @@
 import QtQuick
+import QtQuick.Dialogs
+import Qt.labs.platform
 import "qrc:/components"
 
 Item {
@@ -32,6 +34,7 @@ Item {
 
     property bool resizing: false
     property int resizeEnd: 0   // 1 = x1/y1, 2 = x2/y2
+    property url lastSaveUrl: ""
 
     property bool dragging: false
     property real dragStartX: 0
@@ -40,6 +43,18 @@ Item {
 
     PropertyEditor {
         id: editor
+    }
+
+    FileDialog {
+        id: saveDialog
+        title: "Save Floor Plan"
+        fileMode: FileDialog.SaveFile
+        nameFilters: [ "Floor Plan (*.json)" ]
+        defaultSuffix: "myfloor"
+        onAccepted: {
+            lastSaveUrl = selectedFile
+            saveToFile(selectedFile)
+        }
     }
 
     property var drawing: ({
@@ -68,6 +83,10 @@ Item {
         rotateHandle: "#ff5555",
         resizeHandle: "#00aaff"
     })
+
+    function uid() {
+        return "e" + Math.random().toString(36).slice(2, 9)
+    }
 
     function shapeGeometry(s) {
         let x1, y1, x2, y2, thicknessFeet;
@@ -682,6 +701,7 @@ Item {
         const len = Math.hypot(dx, dy)
         if (len === 0) return null
         const base = {
+            id: uid(),
             x1: startX,
             y1: startY,
             x2: endX,
@@ -753,6 +773,75 @@ Item {
         return hit
     }
 
+    function serializeProject() {
+        return JSON.stringify({
+            format: "FloorPlanProject",
+            version: 1,
+            units: { length: "feet" },
+            settings: {
+                pixelsPerUnit: pixelsPerFoot
+            },
+            entities: shapes.map(s => ({
+                id: s.id,
+                type: s.type,
+                geometry: {
+                    x1: s.x1,
+                    y1: s.y1,
+                    x2: s.x2,
+                    y2: s.y2
+                },
+                properties: {
+                    thickness: s.thickness
+                }
+            })),
+            meta: {
+                created: new Date().toISOString(),
+                modified: new Date().toISOString()
+            }
+        }, null, 2)
+    }
+
+    function loadProject(jsonText) {
+        const doc = JSON.parse(jsonText)
+        if (doc.format !== "FloorPlanProject")
+            throw "Not a floor plan project"
+        if (doc.version > 1)
+            throw "Project version too new"
+        pixelsPerFoot =
+            doc.settings?.pixelsPerUnit ?? pixelsPerFoot
+        shapes = doc.entities.map(e => ({
+            id: e.id,
+            type: e.type,
+            x1: e.geometry.x1,
+            y1: e.geometry.y1,
+            x2: e.geometry.x2,
+            y2: e.geometry.y2,
+            thickness: e.properties?.thickness ?? 0.5
+        }))
+        // reset transient editor state
+        undoStack = []
+        selected = -1
+        drawing.active = false
+        canvas.requestPaint()
+    }
+
+    function saveProject() {
+        if (lastSaveUrl && lastSaveUrl.length > 0) {
+            saveToFile(lastSaveUrl)
+        } else {
+            saveDialog.open()
+        }
+    }
+
+    function saveToFile(url) {
+        const xhr = new XMLHttpRequest()
+        xhr.open("PUT", url.toString())
+        xhr.onerror = () => {
+            console.error("Save failed:", url)
+        }
+        xhr.send(serializeProject())
+    }
+
     Rectangle { anchors.fill: parent; color: "#1e1e1e" }
 
     Canvas {
@@ -793,146 +882,146 @@ Item {
         }
     }
 
-MouseArea {
-    property real lastX
-    property real lastY
-    anchors.fill: parent
-    acceptedButtons: Qt.LeftButton|Qt.RightButton
+    MouseArea {
+        property real lastX
+        property real lastY
+        anchors.fill: parent
+        acceptedButtons: Qt.LeftButton|Qt.RightButton
 
-    function getMouseWorldPos(mouse) {
-        return screenToWorld(mouse.x, mouse.y)
-    }
+        function getMouseWorldPos(mouse) {
+            return screenToWorld(mouse.x, mouse.y)
+        }
 
-    function isLeftButton(mouse) { return mouse.button === Qt.LeftButton }
-    function isLeftPressed(mouse) { return mouse.buttons & Qt.LeftButton }
-    function isRightPressed(mouse) { return mouse.buttons & Qt.RightButton }
+        function isLeftButton(mouse) { return mouse.button === Qt.LeftButton }
+        function isLeftPressed(mouse) { return mouse.buttons & Qt.LeftButton }
+        function isRightPressed(mouse) { return mouse.buttons & Qt.RightButton }
 
-    onPressed: mouse => {
-        root.forceActiveFocus()
+        onPressed: mouse => {
+            root.forceActiveFocus()
 
-        if (isLeftButton(mouse)) {
-            const p = getMouseWorldPos(mouse)
-            // Drawing shortcuts
-            if (mouse.modifiers & Qt.AltModifier) return startDrawing("window", mouse)
-            if (mouse.modifiers & Qt.ControlModifier) return startDrawing("door", mouse)
-            if (mouse.modifiers & Qt.ShiftModifier) return startDrawing("dimension", mouse, true)
+            if (isLeftButton(mouse)) {
+                const p = getMouseWorldPos(mouse)
+                // Drawing shortcuts
+                if (mouse.modifiers & Qt.AltModifier) return startDrawing("window", mouse)
+                if (mouse.modifiers & Qt.ControlModifier) return startDrawing("door", mouse)
+                if (mouse.modifiers & Qt.ShiftModifier) return startDrawing("dimension", mouse, true)
 
-            if (selected !== -1) {
-                const s = shapes[selected]
-                // Resize handle
-                const end = hitWallEndpoint(p, s)
-                if (end !== 0) {
-                    pushUndoState()
-                    resizing = true
-                    resizeEnd = end
-                    return
+                if (selected !== -1) {
+                    const s = shapes[selected]
+                    // Resize handle
+                    const end = hitWallEndpoint(p, s)
+                    if (end !== 0) {
+                        pushUndoState()
+                        resizing = true
+                        resizeEnd = end
+                        return
+                    }
+                    // Rotate handle
+                    if (hitRotateHandle(p, s)) {
+                        pushUndoState()
+                        rotating = true
+                        rotateBaseAngle = shapeAngle(s)
+                        const center = shapeCenter(s)
+                        rotateStartAngle = Math.atan2(p.y - center.y, p.x - center.x)
+                        return
+                    }
                 }
-                // Rotate handle
-                if (hitRotateHandle(p, s)) {
+                // Selection / new wall
+                const hit = hitTestShapes(p)
+                if (hit !== -1) {
+                    selected = hit
                     pushUndoState()
-                    rotating = true
-                    rotateBaseAngle = shapeAngle(s)
-                    const center = shapeCenter(s)
-                    rotateStartAngle = Math.atan2(p.y - center.y, p.x - center.x)
-                    return
+                    dragging = true
+                    dragStartX = p.x
+                    dragStartY = p.y
+                    const s = shapes[selected]
+                    dragOrigShape = { x1: s.x1, y1: s.y1, x2: s.x2, y2: s.y2 }
+                    drawing.active = false
+                } else {
+                    selected = -1
+                    startDrawing("wall", mouse)
                 }
+                canvas.requestPaint()
+                return
             }
-            // Selection / new wall
+            // Right button pan
+            lastX = mouse.x
+            lastY = mouse.y
+        }
+
+        onPositionChanged: mouse => {
+            const p = getMouseWorldPos(mouse)
+            if (drawing.active && isLeftPressed(mouse)) {
+                drawing.currentX = p.x
+                drawing.currentY = p.y
+            } else if (resizing && isLeftPressed(mouse)) {
+                const s = shapes[selected]
+                if (resizeEnd === 1) { s.x1 = p.x; s.y1 = p.y }
+                else { s.x2 = p.x; s.y2 = p.y }
+            } else if (rotating && isLeftPressed(mouse)) {
+                const s = shapes[selected]
+                const center = shapeCenter(s)
+                const angle = Math.atan2(p.y - center.y, p.x - center.x)
+                rotateShape(s, rotateBaseAngle + (angle - rotateStartAngle))
+            } else if (dragging && isLeftPressed(mouse)) {
+                const dx = p.x - dragStartX
+                const dy = p.y - dragStartY
+                const s = shapes[selected]
+                s.x1 = dragOrigShape.x1 + dx
+                s.y1 = dragOrigShape.y1 + dy
+                s.x2 = dragOrigShape.x2 + dx
+                s.y2 = dragOrigShape.y2 + dy
+            } else if (isRightPressed(mouse)) {
+                offsetX += mouse.x - lastX
+                offsetY += mouse.y - lastY
+                lastX = mouse.x
+                lastY = mouse.y
+            } else return // Nothing changed
+
+            canvas.requestPaint()
+        }
+
+        onReleased: mouse => {
+            if (drawing.active && isLeftButton(mouse)) {
+                finishDrawing()        // commits the new shape
+                drawing.active = false
+                canvas.requestPaint()
+                return
+            }
+            if (resizing) {
+                pushUndoState()        // commit resize
+                resizing = false
+                resizeEnd = 0
+                canvas.requestPaint()
+            }
+            if (rotating) {
+                pushUndoState()        // commit rotation
+                rotating = false
+                canvas.requestPaint()
+            }
+            if (dragging) {
+                pushUndoState()        // commit drag
+                dragging = false
+                dragOrigShape = null
+                canvas.requestPaint()
+            }
+        }
+
+        onWheel: wheel => {
+            const factor = wheel.angleDelta.y > 0 ? 1.1 : 0.9
+            zoom = Math.max(0.2, Math.min(5, zoom * factor))
+            canvas.requestPaint()
+        }
+
+        onDoubleClicked: mouse => {
+            const p = getMouseWorldPos(mouse)
             const hit = hitTestShapes(p)
             if (hit !== -1) {
                 selected = hit
-                pushUndoState()
-                dragging = true
-                dragStartX = p.x
-                dragStartY = p.y
-                const s = shapes[selected]
-                dragOrigShape = { x1: s.x1, y1: s.y1, x2: s.x2, y2: s.y2 }
-                drawing.active = false
-            } else {
-                selected = -1
-                startDrawing("wall", mouse)
+                editor.showEditor(shapes[hit], hit)
             }
-            canvas.requestPaint()
-            return
-        }
-        // Right button pan
-        lastX = mouse.x
-        lastY = mouse.y
-    }
-
-    onPositionChanged: mouse => {
-        const p = getMouseWorldPos(mouse)
-        if (drawing.active && isLeftPressed(mouse)) {
-            drawing.currentX = p.x
-            drawing.currentY = p.y
-        } else if (resizing && isLeftPressed(mouse)) {
-            const s = shapes[selected]
-            if (resizeEnd === 1) { s.x1 = p.x; s.y1 = p.y }
-            else { s.x2 = p.x; s.y2 = p.y }
-        } else if (rotating && isLeftPressed(mouse)) {
-            const s = shapes[selected]
-            const center = shapeCenter(s)
-            const angle = Math.atan2(p.y - center.y, p.x - center.x)
-            rotateShape(s, rotateBaseAngle + (angle - rotateStartAngle))
-        } else if (dragging && isLeftPressed(mouse)) {
-            const dx = p.x - dragStartX
-            const dy = p.y - dragStartY
-            const s = shapes[selected]
-            s.x1 = dragOrigShape.x1 + dx
-            s.y1 = dragOrigShape.y1 + dy
-            s.x2 = dragOrigShape.x2 + dx
-            s.y2 = dragOrigShape.y2 + dy
-        } else if (isRightPressed(mouse)) {
-            offsetX += mouse.x - lastX
-            offsetY += mouse.y - lastY
-            lastX = mouse.x
-            lastY = mouse.y
-        } else return // Nothing changed
-
-        canvas.requestPaint()
-    }
-
-    onReleased: mouse => {
-        if (drawing.active && isLeftButton(mouse)) {
-            finishDrawing()        // commits the new shape
-            drawing.active = false
-            canvas.requestPaint()
-            return
-        }
-        if (resizing) {
-            pushUndoState()        // commit resize
-            resizing = false
-            resizeEnd = 0
-            canvas.requestPaint()
-        }
-        if (rotating) {
-            pushUndoState()        // commit rotation
-            rotating = false
-            canvas.requestPaint()
-        }
-        if (dragging) {
-            pushUndoState()        // commit drag
-            dragging = false
-            dragOrigShape = null
-            canvas.requestPaint()
         }
     }
-
-    onWheel: wheel => {
-        const factor = wheel.angleDelta.y > 0 ? 1.1 : 0.9
-        zoom = Math.max(0.2, Math.min(5, zoom * factor))
-        canvas.requestPaint()
-    }
-
-    onDoubleClicked: mouse => {
-        const p = getMouseWorldPos(mouse)
-        const hit = hitTestShapes(p)
-        if (hit !== -1) {
-            selected = hit
-            editor.showEditor(shapes[hit], hit)
-        }
-    }
-}
 
     Keys.onDeletePressed: {
         if (selected !== -1) {
@@ -945,7 +1034,7 @@ MouseArea {
 
     Keys.onPressed: event => {
         const step = (event.modifiers & Qt.ShiftModifier) ?
-                    moveStepFastFeet : moveStepFeet
+            moveStepFastFeet : moveStepFeet
         switch (event.key) {
             case Qt.Key_Left:
                 moveSelected(-step, 0)
@@ -971,6 +1060,12 @@ MouseArea {
                         selected = -1
                         canvas.requestPaint()
                     }
+                    event.accepted = true
+                }
+                break
+            case Qt.Key_S:
+                if (event.modifiers & Qt.ControlModifier) {
+                    saveProject()
                     event.accepted = true
                 }
                 break
