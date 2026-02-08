@@ -9,6 +9,7 @@
 #include <AppConfig.h>
 #include <osl/singleton>
 #include <LocalFsModel.h>
+#include <FloorManager.h>
 #include <RemoteFsModel.h>
 #include <VideoRenderer.h>
 #include <CompareManager.h>
@@ -65,6 +66,7 @@ int main(int argc, char *argv[])
 
     engine.rootContext()->setContextProperty("logger", new Logger());
     engine.rootContext()->setContextProperty("localFsModel", getInstance<LocalFsModel>());
+    engine.rootContext()->setContextProperty("floorManager", getInstance<FloorManager>());
     engine.rootContext()->setContextProperty("remoteFsModel", getInstance<RemoteFsModel>());
     engine.rootContext()->setContextProperty("compareManager", getInstance<CompareManager>());
     engine.rootContext()->setContextProperty("transferManager", getInstance<TransferManager>());

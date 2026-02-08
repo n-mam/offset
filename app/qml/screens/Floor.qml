@@ -52,8 +52,10 @@ Item {
         nameFilters: [ "Floor Plan (*.json)" ]
         defaultSuffix: "myfloor"
         onAccepted: {
-            lastSaveUrl = selectedFile
-            saveToFile(selectedFile)
+            const path = currentFile.toString().replace(/^file:\/\//, "")
+            console.log(path)
+            lastSaveUrl = path
+            saveToFile(path)
         }
     }
 
@@ -834,12 +836,7 @@ Item {
     }
 
     function saveToFile(url) {
-        const xhr = new XMLHttpRequest()
-        xhr.open("PUT", url.toString())
-        xhr.onerror = () => {
-            console.error("Save failed:", url)
-        }
-        xhr.send(serializeProject())
+        floorManager.saveToFile(url, serializeProject())
     }
 
     Rectangle { anchors.fill: parent; color: "#1e1e1e" }
