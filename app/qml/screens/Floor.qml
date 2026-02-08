@@ -374,6 +374,19 @@ Item {
         return canvasToWorld(screenToCanvas({ x, y }))
     }
 
+    function buildAllWallPath(ctx) {
+        ctx.beginPath()
+        shapes.forEach(s => {
+            if (s.type !== "wall") return
+            const g = shapeGeometry(s)
+            if (!g) return
+            ctx.moveTo(g.corners[0].x, g.corners[0].y)
+            for (let i = 1; i < g.corners.length; i++)
+                ctx.lineTo(g.corners[i].x, g.corners[i].y)
+            ctx.closePath()
+        })
+    }
+
     function drawGrid(ctx) {
         const left   = (-offsetX) / (zoom * pixelsPerFoot)
         const right  = (canvas.width - offsetX) / (zoom * pixelsPerFoot)
@@ -759,9 +772,12 @@ Item {
             shapes.forEach((s, i) => {
                 const g = shapeGeometry(s)
                 if (!g) return
-                if (s.type == "wall") {
-                    drawWallRect(ctx, g)
-                } else if (s.type == "door") {
+                ctx.save()
+                buildAllWallPath(ctx)
+                ctx.fillStyle = colors.wallFill
+                ctx.fill("evenodd")
+                ctx.restore()
+                if (s.type == "door") {
                     drawDoor(ctx, s)
                 } else if (s.type == "dimension") {
                     drawDimension(ctx, s.x1, s.y1, s.x2, s.y2)
