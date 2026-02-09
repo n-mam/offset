@@ -2,6 +2,8 @@ import QtQuick
 import QtQuick.Dialogs
 import Qt.labs.platform
 import "qrc:/components"
+import "qrc:/screens/Shape.js" as Shape
+import "qrc:/screens/Geometry.js" as Geo
 
 Item {
     id: root
@@ -15,9 +17,9 @@ Item {
 
     // Camera
     property real zoom: 1.0
-    property real pixelsPerFoot: 30
     property real offsetX: 0
     property real offsetY: 0
+    property real pixelsPerFoot: 30
 
     property var shapes: []
 
@@ -34,7 +36,8 @@ Item {
 
     property bool resizing: false
     property int resizeEnd: 0   // 1 = x1/y1, 2 = x2/y2
-    property var lastSaveUrl: ""
+    property url lastSaveUrl
+    property string fileDialogMode: "save" // or "load"
 
     property bool dragging: false
     property real dragStartX: 0
@@ -46,33 +49,17 @@ Item {
     }
 
     FileDialog {
-        id: saveDialog
-        title: "Save Floor Plan"
-        fileMode: FileDialog.SaveFile
+        id: fileDialog
+        title: fileDialogMode === "save"
+            ? "Save Floor Plan"
+            : "Load Floor Plan"
+        fileMode: fileDialogMode === "save"
+            ? FileDialog.SaveFile
+            : FileDialog.OpenFile
         nameFilters: [ "Floor Plan (*.json)" ]
-        onAccepted: {
-            const path = currentFile.toString().replace(/^file:\/\//, "")
-            console.log(path)
-            lastSaveUrl = path
-            saveToFile(path)
-        }
+        onAccepted: handleFileDialogAccepted(this, fileDialogMode)
     }
-    FileDialog {
-        id: loadDialog
-        title: "Load Floor Plan"
-        fileMode: FileDialog.OpenFile
-        nameFilters: [ "Floor Plan (*.json)" ]
-        onAccepted: {
-            const path = currentFile.toString().replace(/^file:\/\//, "")
-            console.log(path)
-            var j = floorManager.loadFromFile(path);
-            if (j) {
-                loadProject(j, path);
-            } else {
-                console.warn("Failed to load project file");
-            }
-        }
-    }
+
     property var drawing: ({
         type: "",
         active: false,
@@ -89,7 +76,6 @@ Item {
         { step: 5,    color: "#707070", width: 2   }
     ]
 
-    // Colors
     property var colors: ({
         wallFill: "#dcd0aa",
         wallOutline: "rgba(120,95,60,0.6)",
@@ -99,71 +85,6 @@ Item {
         rotateHandle: "#ff5555",
         resizeHandle: "#00aaff"
     })
-
-    function uid() {
-        return "e" + Math.random().toString(36).slice(2, 9)
-    }
-
-    function shapeGeometry(s) {
-        let x1, y1, x2, y2, thicknessFeet;
-        switch(s.type) {
-            case "wall":
-                x1 = s.x1; y1 = s.y1;
-                x2 = s.x2; y2 = s.y2;
-                thicknessFeet = s.thickness;
-                break;
-            case "door":
-                x1 = s.x1; y1 = s.y1;
-                x2 = s.x2; y2 = s.y2;
-                // approximate thickness as the "door leaf width" (feet)
-                thicknessFeet = s.thickness
-                break;
-            case "window":
-                x1 = s.x1; y1 = s.y1;
-                x2 = s.x2; y2 = s.y2;
-                thicknessFeet = s.thickness;
-                break;
-            case "dimension":
-                x1 = s.x1; y1 = s.y1;
-                x2 = s.x2; y2 = s.y2;
-                const barSizePx = 10; // same as in drawDimension
-                thicknessFeet = (barSizePx / zoom) / pixelsPerFoot; // end bar height in feet
-                break;
-            default:
-                return null;
-        }
-
-        const dx = x2 - x1;
-        const dy = y2 - y1;
-        const len = Math.hypot(dx, dy);
-        if(len === 0) return null;
-
-        const tx = dx / len;
-        const ty = dy / len;
-        const nx = -ty;
-        const ny = tx;
-
-        const halfThicknessPx = (thicknessFeet / 2) * pixelsPerFoot;
-        const pxLen = len * pixelsPerFoot;
-
-        const x1Px = x1 * pixelsPerFoot;
-        const y1Px = y1 * pixelsPerFoot;
-
-        return {
-            len: len,
-            tx: tx, ty: ty,
-            nx: nx, ny: ny,
-            x1: x1Px, y1: y1Px,
-            x2: x1Px + tx * pxLen,
-            y2: y1Px + ty * pxLen,
-            corners: [
-                { x: x1Px + nx * halfThicknessPx, y: y1Px + ny * halfThicknessPx },
-                { x: x1Px + tx * pxLen + nx * halfThicknessPx, y: y1Px + ty * pxLen + ny * halfThicknessPx },
-                { x: x1Px + tx * pxLen - nx * halfThicknessPx, y: y1Px + ty * pxLen - ny * halfThicknessPx },
-                { x: x1Px - nx * halfThicknessPx, y: y1Px - ny * halfThicknessPx }
-            ]
-        }
-    }
 
     function polygonPath(ctx, corners) {
         ctx.beginPath()
@@ -279,25 +200,6 @@ Item {
         ctx.restore();
     }
 
-    function distanceToPoint(px, py, x, y) {
-        return Math.hypot(px - x, py - y)
-    }
-
-    function distancePointToSegment(px, py, x1, y1, x2, y2) {
-        const vx = x2 - x1
-        const vy = y2 - y1
-        const wx = px - x1
-        const wy = py - y1
-        const c1 = vx * wx + vy * wy
-        if (c1 <= 0)
-            return distanceToPoint(px, py, x1, y1)
-        const c2 = vx * vx + vy * vy
-        if (c2 <= c1)
-            return distanceToPoint(px, py, x2, y2)
-        const b = c1 / c2
-        return distanceToPoint(px, py, (x1 + b * vx), (y1 + b * vy))
-    }
-
     function pushUndoState() {
         if (undoStack.length >= maxUndoSteps)
             undoStack.shift()
@@ -317,42 +219,22 @@ Item {
         canvas.requestPaint()
     }
 
-    function shapeCenter(w) {
-        return {
-            x: (w.x1 + w.x2) / 2,
-            y: (w.y1 + w.y2) / 2
-        }
-    }
-
-    function shapeAngle(w) {
-        return Math.atan2(w.y2 - w.y1, w.x2 - w.x1)
-    }
-
-    function rotateShape(w, angleRad) {
-        const c = shapeCenter(w)
-        const len = distanceToPoint(w.x2, w.y2, w.x1, w.y1) / 2
-        w.x1 = c.x - Math.cos(angleRad) * len
-        w.y1 = c.y - Math.sin(angleRad) * len
-        w.x2 = c.x + Math.cos(angleRad) * len
-        w.y2 = c.y + Math.sin(angleRad) * len
-    }
-
     function hitRotateHandle(p, w) {
-        const c = shapeCenter(w)
-        const angle = shapeAngle(w)
+        const c = Shape.center(w)
+        const angle = Shape.angle(w)
         // convert pixel distance → feet
         const handleDistFeet = (20 / zoom) / pixelsPerFoot
         const radiusFeet = (8 / zoom) / pixelsPerFoot
         const hx = c.x + Math.cos(angle + Math.PI / 2) * handleDistFeet
         const hy = c.y + Math.sin(angle + Math.PI / 2) * handleDistFeet
-        return distanceToPoint(p.x, p.y, hx, hy) < radiusFeet
+        return Geo.distanceToPoint(p.x, p.y, hx, hy) < radiusFeet
     }
 
     function hitWallEndpoint(p, w) {
         const tolFeet = (8 / zoom) / pixelsPerFoot
-        if (distanceToPoint(p.x, p.y, w.x1, w.y1) < tolFeet)
+        if (Geo.distanceToPoint(p.x, p.y, w.x1, w.y1) < tolFeet)
             return 1
-        if (distanceToPoint(p.x, p.y, w.x2, w.y2) < tolFeet)
+        if (Geo.distanceToPoint(p.x, p.y, w.x2, w.y2) < tolFeet)
             return 2
         return 0
     }
@@ -363,57 +245,11 @@ Item {
         return Math.atan2(-dy, dx)
     }
 
-    function formatFeetInches(lengthFeet) {
-        let feet = Math.floor(lengthFeet)
-        let inches = Math.round((lengthFeet - feet) * 12)
-        if (inches === 12) {
-            feet++
-            inches = 0
-        }
-        return `${feet}'${inches}"`
-    }
-
-    function worldToCanvas(p) {
-        return {
-            x: p.x * pixelsPerFoot,
-            y: p.y * pixelsPerFoot
-        }
-    }
-
-    function canvasToWorld(p) {
-        return {
-            x: p.x / pixelsPerFoot,
-            y: p.y / pixelsPerFoot
-        }
-    }
-
-    function canvasToScreen(p) {
-        return {
-            x: p.x * zoom + offsetX,
-            y: p.y * zoom + offsetY
-        }
-    }
-
-    function screenToCanvas(p) {
-        return {
-            x: (p.x - offsetX) / zoom,
-            y: (p.y - offsetY) / zoom
-        }
-    }
-
-    function worldToScreen(p) {
-        return canvasToScreen(worldToCanvas(p))
-    }
-
-    function screenToWorld(x, y) {
-        return canvasToWorld(screenToCanvas({ x, y }))
-    }
-
     function buildAllWallPath(ctx) {
         ctx.beginPath()
         shapes.forEach(s => {
             if (s.type !== "wall") return
-            const g = shapeGeometry(s)
+            const g = Shape.geometry(s)
             if (!g) return
             ctx.moveTo(g.corners[0].x, g.corners[0].y)
             for (let i = 1; i < g.corners.length; i++)
@@ -514,7 +350,7 @@ Item {
         const dy = y2Feet - y1Feet
         const lengthFeet = Math.hypot(dx, dy)
         if (lengthFeet === 0) return
-        const label = formatFeetInches(lengthFeet)
+        const label = Geo.formatFeetInches(lengthFeet)
         // midpoint in canvas space
         const mx = ((x1Feet + x2Feet) / 2) * pixelsPerFoot
         const my = ((y1Feet + y2Feet) / 2) * pixelsPerFoot
@@ -523,7 +359,7 @@ Item {
         const ox = (dy / lenPx) * (14 / zoom)
         const oy = (-dx / lenPx) * (14 / zoom)
         // convert to screen space
-        const p = canvasToScreen({ x: mx + ox, y: my + oy })
+        const p = Geo.canvasToScreen({ x: mx + ox, y: my + oy })
         ctx.save()
         ctx.setTransform(1, 0, 0, 1, 0, 0)
         ctx.fillStyle = color
@@ -543,7 +379,7 @@ Item {
         const mx = (g.x1 + g.x2) / 2
         const my = (g.y1 + g.y2) / 2
         const handleDist = 20 / zoom
-        const angle = shapeAngle(s)
+        const angle = Shape.angle(s)
         const hx = mx + Math.cos(angle + Math.PI / 2) * handleDist
         const hy = my + Math.sin(angle + Math.PI / 2) * handleDist
         ctx.beginPath()
@@ -565,7 +401,7 @@ Item {
             "#000000")
         // angle visualizer while rotating
         if (rotating) {
-            const c = shapeCenter(s)
+            const c = Shape.center(s)
             const a = wallAngleForDisplay(s)
             const cx = c.x * pixelsPerFoot
             const cy = c.y * pixelsPerFoot
@@ -575,7 +411,7 @@ Item {
 
     function drawPreviews(ctx) {
         if (!drawing.active) return
-        const shape = makeShape(
+        const shape = Shape.make(
             drawing.type,
             drawing.startX,
             drawing.startY,
@@ -585,7 +421,7 @@ Item {
         )
         if (!shape) return
         if (shape.type === "wall") {
-            const g = shapeGeometry(shape)
+            const g = Shape.geometry(shape)
             if (!g) return
             ctx.save()
             ctx.strokeStyle = colors.preview
@@ -609,7 +445,7 @@ Item {
             drawAngleVisualizer(ctx, g.x1, g.y1, -Math.atan2(dy, dx), zoom)
         }
         else if (shape.type === "window") {
-            const g = shapeGeometry(shape)
+            const g = Shape.geometry(shape)
             if (!g) return
             ctx.save()
             ctx.globalAlpha = 0.6
@@ -679,7 +515,7 @@ Item {
         ctx.stroke();
         // Label text
         const lengthFeet = Math.hypot(x2Feet - x1Feet, y2Feet - y1Feet);
-        const label = formatFeetInches(lengthFeet);
+        const label = Geo.formatFeetInches(lengthFeet);
         // Midpoint
         const mx = (x1 + x2) / 2;
         const my = (y1 + y2) / 2;
@@ -688,7 +524,7 @@ Item {
         const ox = (dy / length) * labelOffsetPx;
         const oy = (-dx / length) * labelOffsetPx;
         // Convert midpoint + offset to screen space
-        const p = canvasToScreen({ x: mx + ox, y: my + oy });
+        const p = Geo.canvasToScreen({ x: mx + ox, y: my + oy });
         // Draw label
         ctx.save();
         ctx.setTransform(1, 0, 0, 1, 0, 0); // reset transform for screen coords
@@ -702,46 +538,13 @@ Item {
 
     function startDrawing(type, mouse, pushUndo = false) {
         if (pushUndo) pushUndoState()
-        const p = screenToWorld(mouse.x, mouse.y)
+        const p = Geo.screenToWorld(mouse.x, mouse.y)
         drawing.type = type
         drawing.active = true
         drawing.startX = p.x
         drawing.startY = p.y
         drawing.currentX = p.x
         drawing.currentY = p.y
-    }
-
-    function makeShape(type, startX, startY, endX, endY, thickness) {
-        const dx = endX - startX
-        const dy = endY - startY
-        const len = Math.hypot(dx, dy)
-        if (len === 0) return null
-        const base = {
-            id: uid(),
-            x1: startX,
-            y1: startY,
-            x2: endX,
-            y2: endY,
-            thickness: thickness
-        }
-        switch (type) {
-            case "wall":
-                return Object.assign({ type: "wall" }, base)
-            case "door":
-                return Object.assign({
-                    type: "door",
-                    width: len,
-                    angle: Math.atan2(dy, dx)
-                }, base)
-            case "window":
-                return Object.assign({
-                    type: "window"
-                }, base)
-            case "dimension":
-                return Object.assign({ type: "dimension" }, base)
-            default:
-                return null
-        }
     }
 
     function finishDrawing() {
@@ -754,7 +557,7 @@ Item {
             drawing.active = false
             return
         }
-        const shape = makeShape(
+        const shape = Shape.make(
             drawing.type,
             drawing.startX,
             drawing.startY,
@@ -768,90 +571,29 @@ Item {
         selected = shapes.length - 1
     }
 
-    function hitTestShapes(p) {
-        let hit = -1
-        let best = pickTolerancePixels / (pixelsPerFoot * zoom)  // zoom-aware selection
-        for (let i = 0; i < shapes.length; i++) {
-            const s = shapes[i]
-            // endpoint tolerance in world units (screen pixels converted)
-            const endpointTolFeet = 8 / (pixelsPerFoot * zoom)
-            const nearEndpoint =
-                distanceToPoint(p.x, p.y, s.x1, s.y1) < endpointTolFeet ||
-                distanceToPoint(p.x, p.y, s.x2, s.y2) < endpointTolFeet
-            // skip endpoints only if needed (resizing)
-            if (nearEndpoint) continue
-            const d = distancePointToSegment(p.x, p.y, s.x1, s.y1, s.x2, s.y2)
-            if (d < best) {
-                best = d
-                hit = i
-            }
-        }
-        return hit
-    }
-
-    function serializeProject() {
-        return JSON.stringify({
-            format: "FloorPlanProject",
-            version: 1,
-            units: { length: "feet" },
-            settings: {
-                pixelsPerUnit: pixelsPerFoot
-            },
-            entities: shapes.map(s => ({
-                id: s.id,
-                type: s.type,
-                geometry: {
-                    x1: s.x1,
-                    y1: s.y1,
-                    x2: s.x2,
-                    y2: s.y2
-                },
-                properties: {
-                    thickness: s.thickness
-                }
-            })),
-            meta: {
-                created: new Date().toISOString(),
-                modified: new Date().toISOString()
-            }
-        }, null, 2)
-    }
-
-    function loadProject(jsonText, path) {
-        const doc = JSON.parse(jsonText)
-        if (doc.format !== "FloorPlanProject")
-            throw "Not a floor plan project"
-        if (doc.version > 1)
-            throw "Project version too new"
-        pixelsPerFoot =
-            doc.settings?.pixelsPerUnit ?? pixelsPerFoot
-        shapes = doc.entities.map(e => ({
-            id: e.id,
-            type: e.type,
-            x1: e.geometry.x1,
-            y1: e.geometry.y1,
-            x2: e.geometry.x2,
-            y2: e.geometry.y2,
-            thickness: e.properties?.thickness ?? 0.5
-        }))
-        // reset transient editor state
-        undoStack = []
-        selected = -1
-        drawing.active = false
-        canvas.requestPaint()
-        lastSaveUrl = path
-    }
-
     function saveProject() {
-        if (lastSaveUrl && lastSaveUrl.length > 0) {
-            saveToFile(lastSaveUrl)
+        if (lastSaveUrl && lastSaveUrl.toString().length > 0) {
+            floorManager.saveToFile(lastSaveUrl, Shape.serializeProject())
         } else {
-            saveDialog.open()
+            fileDialogMode = "save"
+            fileDialog.open()
         }
     }
 
-    function saveToFile(url) {
-        floorManager.saveToFile(url, serializeProject())
+    function handleFileDialogAccepted(dialog, mode) {
+        const path = dialog.currentFile
+        if (mode === "save") {
+            lastSaveUrl = path
+            floorManager.saveToFile(path, Shape.serializeProject())
+        } else if (mode === "load") {
+            const json = floorManager.loadFromFile(path)
+            if (json) {
+                lastSaveUrl = path
+                Shape.deserializeProject(json, path)
+            } else {
+                console.warn("Failed to load project file")
+            }
+        }
     }
 
     Rectangle { anchors.fill: parent; color: "#1e1e1e" }
@@ -871,7 +613,7 @@ Item {
             // Draw objects
             drawGrid(ctx)
             shapes.forEach((s, i) => {
-                const g = shapeGeometry(s)
+                const g = Shape.geometry(s)
                 if (!g) return
                 ctx.save()
                 buildAllWallPath(ctx)
@@ -901,7 +643,7 @@ Item {
         acceptedButtons: Qt.LeftButton|Qt.RightButton
 
         function getMouseWorldPos(mouse) {
-            return screenToWorld(mouse.x, mouse.y)
+            return Geo.screenToWorld(mouse.x, mouse.y)
         }
 
         function isLeftButton(mouse) { return mouse.button === Qt.LeftButton }
@@ -932,14 +674,14 @@ Item {
                     if (hitRotateHandle(p, s)) {
                         pushUndoState()
                         rotating = true
-                        rotateBaseAngle = shapeAngle(s)
-                        const center = shapeCenter(s)
+                        rotateBaseAngle = Shape.angle(s)
+                        const center = Shape.center(s)
                         rotateStartAngle = Math.atan2(p.y - center.y, p.x - center.x)
                         return
                     }
                 }
                 // Selection / new wall
-                const hit = hitTestShapes(p)
+                const hit = Shape.hitTest(p)
                 if (hit !== -1) {
                     selected = hit
                     pushUndoState()
@@ -972,9 +714,9 @@ Item {
                 else { s.x2 = p.x; s.y2 = p.y }
             } else if (rotating && isLeftPressed(mouse)) {
                 const s = shapes[selected]
-                const center = shapeCenter(s)
+                const center = Shape.center(s)
                 const angle = Math.atan2(p.y - center.y, p.x - center.x)
-                rotateShape(s, rotateBaseAngle + (angle - rotateStartAngle))
+                Shape.rotate(s, rotateBaseAngle + (angle - rotateStartAngle))
             } else if (dragging && isLeftPressed(mouse)) {
                 const dx = p.x - dragStartX
                 const dy = p.y - dragStartY
@@ -1027,7 +769,7 @@ Item {
 
         onDoubleClicked: mouse => {
             const p = getMouseWorldPos(mouse)
-            const hit = hitTestShapes(p)
+            const hit = Shape.hitTest(p)
             if (hit !== -1) {
                 selected = hit
                 editor.showEditor(shapes[hit], hit)
@@ -1083,7 +825,8 @@ Item {
                 break
             case Qt.Key_L:
                 if (event.modifiers & Qt.ControlModifier) {
-                    loadDialog.open()
+                    fileDialogMode = "load"
+                    fileDialog.open()
                     event.accepted = true
                 }
                 break

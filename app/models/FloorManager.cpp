@@ -3,8 +3,8 @@
 FloorManager::FloorManager(){}
 FloorManager::~FloorManager(){}
 
-void FloorManager::saveToFile(QString path, QString json) {
-    QFile file(path);
+void FloorManager::saveToFile(QUrl path, QString json) {
+    QFile file(path.toLocalFile());
     if (!file.open(QIODevice::WriteOnly|QIODevice::Truncate|QIODevice::Text)) {
         qWarning() << "Failed to open file for writing:" << path
             << "-" << file.errorString();
@@ -16,8 +16,8 @@ void FloorManager::saveToFile(QString path, QString json) {
     file.close();
 }
 
-QString FloorManager::loadFromFile(QString path) {
-    QFile file(path);
+QString FloorManager::loadFromFile(QUrl path) {
+    QFile file(path.toLocalFile());
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         qWarning() << "Failed to open:" << path;
         return ""; // empty string on failure

@@ -1,6 +1,7 @@
 #ifndef FLOOR_HPP
 #define FLOOR_HPP
 
+#include <QUrl>
 #include <QFile>
 #include <QDebug>
 #include <QObject>
@@ -15,8 +16,8 @@ struct FloorManager : public QObject {
     FloorManager();
     ~FloorManager();
 
-    Q_INVOKABLE QString loadFromFile(QString path);
-    Q_INVOKABLE void saveToFile(QString path, QString json);
+    Q_INVOKABLE QString loadFromFile(QUrl path);
+    Q_INVOKABLE void saveToFile(QUrl path, QString json);
 };
 
 #endif
