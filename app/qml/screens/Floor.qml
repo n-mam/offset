@@ -82,8 +82,9 @@ Item {
         hatchStroke: "rgba(140,110,70,0.6)",
         selected: "#ff0000",
         preview: "#00ff88",
-        rotateHandle: "#ff5555",
-        resizeHandle: "#00aaff"
+        rotateHandle: "#00aaff",
+        resizeStart: "#00b45d", // start point (green)
+        resizeEnd: "#ff3131"    // end point (orange)
     })
 
     function polygonPath(ctx, corners) {
@@ -345,25 +346,50 @@ Item {
         ctx.fill()
     }
 
-    function drawWallLengthLabel(ctx, x1Feet, y1Feet, x2Feet, y2Feet, color = "#000000") {
-        const dx = x2Feet - x1Feet
-        const dy = y2Feet - y1Feet
-        const lengthFeet = Math.hypot(dx, dy)
-        if (lengthFeet === 0) return
+    function drawWallLengthLabel(ctx, s) {
+        // World → pixel
+        const x1 = s.x1 * pixelsPerFoot
+        const y1 = s.y1 * pixelsPerFoot
+        const x2 = s.x2 * pixelsPerFoot
+        const y2 = s.y2 * pixelsPerFoot
+
+        const dx = x2 - x1
+        const dy = y2 - y1
+        const len = Math.hypot(dx, dy)
+        if (len < 1e-6) return
+
+        // Midpoint (pixel space)
+        const mx = (x1 + x2) * 0.5
+        const my = (y1 + y2) * 0.5
+
+        // Perpendicular unit normal
+        let nx = -dy / len
+        let ny = dx / len
+
+        // Force "top" (screen-up = negative Y)
+        if (ny > 0) {
+            nx = -nx
+            ny = -ny
+        }
+
+        // Wall half thickness + padding
+        const wallHalfPx = (s.thickness * pixelsPerFoot) / 2
+        const paddingPx = 6 / zoom
+
+        const px = mx + nx * (wallHalfPx + paddingPx)
+        const py = my + ny * (wallHalfPx + paddingPx)
+
+        // Screen space
+        const p = Geo.canvasToScreen({ x: px, y: py })
+
+        // Label text
+        const lengthFeet = Math.hypot(s.x2 - s.x1, s.y2 - s.y1)
         const label = Geo.formatFeetInches(lengthFeet)
-        // midpoint in canvas space
-        const mx = ((x1Feet + x2Feet) / 2) * pixelsPerFoot
-        const my = ((y1Feet + y2Feet) / 2) * pixelsPerFoot
-        // perpendicular offset
-        const lenPx = Math.hypot(dx, dy) * pixelsPerFoot
-        const ox = (dy / lenPx) * (14 / zoom)
-        const oy = (-dx / lenPx) * (14 / zoom)
-        // convert to screen space
-        const p = Geo.canvasToScreen({ x: mx + ox, y: my + oy })
+
         ctx.save()
         ctx.setTransform(1, 0, 0, 1, 0, 0)
-        ctx.fillStyle = color
         ctx.font = "12px sans-serif"
+        ctx.fillStyle = "#ffffff"
         ctx.textAlign = "center"
         ctx.textBaseline = "middle"
         ctx.fillText(label, p.x, p.y)
@@ -390,15 +416,13 @@ Item {
         ctx.fillStyle = colors.resizeHandle
         ctx.beginPath()
         ctx.arc(g.x1, g.y1, 5 / zoom, 0, Math.PI * 2)
+        ctx.fillStyle = colors.resizeStart
         ctx.fill()
         ctx.beginPath()
         ctx.arc(g.x2, g.y2, 5 / zoom, 0, Math.PI * 2)
+        ctx.fillStyle = colors.resizeEnd
         ctx.fill()
-        drawWallLengthLabel(
-            ctx,
-            s.x1, s.y1,
-            s.x2, s.y2,
-            "#000000")
+        drawWallLengthLabel(ctx, s)
         // angle visualizer while rotating
         if (rotating) {
             const c = Shape.center(s)
@@ -433,13 +457,7 @@ Item {
             ctx.stroke()
             ctx.setLineDash([])
             ctx.restore()
-            drawWallLengthLabel(
-                ctx,
-                shape.x1,
-                shape.y1,
-                shape.x2,
-                shape.y2,
-                colors.preview)
+            drawWallLengthLabel(ctx, s)
             const dx = shape.x2 - shape.x1
             const dy = shape.y2 - shape.y1
             drawAngleVisualizer(ctx, g.x1, g.y1, -Math.atan2(dy, dx), zoom)
