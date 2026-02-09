@@ -77,6 +77,7 @@ Item {
     ]
 
     property var colors: ({
+        white: "#ffffff",
         wallFill: "#dcd0aa",
         wallOutline: "rgba(120,95,60,0.6)",
         hatchStroke: "rgba(140,110,70,0.6)",
@@ -505,7 +506,7 @@ Item {
         ctx.fillText(`${deg.toFixed(0)}°`, cx + r + 4 / zoom, cy)
     }
 
-    function drawDimension(ctx, x1Feet, y1Feet, x2Feet, y2Feet, barSizePx = 10) {
+    function drawDimension(ctx, x1Feet, y1Feet, x2Feet, y2Feet, barSizePx = 4) {
         // world (feet) → canvas (pixels)
         const x1 = x1Feet * pixelsPerFoot;
         const y1 = y1Feet * pixelsPerFoot;
@@ -515,8 +516,9 @@ Item {
         const dx = x2 - x1;
         const dy = y2 - y1;
         const length = Math.hypot(dx, dy) || 1; // prevent divide-by-zero
+        const isVertical = Math.abs(dy) > Math.abs(dx);
         // Main line
-        ctx.strokeStyle = colors.preview;
+        ctx.strokeStyle = colors.white;
         ctx.lineWidth = 2 / zoom;
         ctx.beginPath();
         ctx.moveTo(x1, y1);
@@ -544,14 +546,24 @@ Item {
         // Convert midpoint + offset to screen space
         const p = Geo.canvasToScreen({ x: mx + ox, y: my + oy });
         // Draw label
-        ctx.save();
-        ctx.setTransform(1, 0, 0, 1, 0, 0); // reset transform for screen coords
-        ctx.fillStyle = colors.preview;
-        ctx.font = "12px sans-serif";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText(label, p.x, p.y);
-        ctx.restore();
+        ctx.save()
+        // reset to screen space
+        ctx.setTransform(1, 0, 0, 1, 0, 0)
+        // move origin to label position
+        ctx.translate(p.x, p.y)
+        // rotate if vertical
+        if (isVertical) {
+            // keep text readable (not upside down)
+            const angle = dy > 0 ? Math.PI / 2 : -Math.PI / 2
+            ctx.rotate(angle)
+        }
+        ctx.fillStyle = colors.white
+        ctx.font = "12px sans-serif"
+        ctx.textAlign = "center"
+        ctx.textBaseline = "middle"
+        // draw at origin
+        ctx.fillText(label, 0, 0)
+        ctx.restore()
     }
 
     function startDrawing(type, mouse, pushUndo = false) {
@@ -630,19 +642,21 @@ Item {
             ctx.scale(zoom, zoom)
             // Draw objects
             drawGrid(ctx)
+            // fill all walls once
+            ctx.save()
+            buildAllWallPath(ctx)
+            ctx.fillStyle = colors.wallFill
+            ctx.fill("evenodd")
+            ctx.restore()
+            // draw per-shape details
             shapes.forEach((s, i) => {
                 const g = Shape.geometry(s)
                 if (!g) return
-                ctx.save()
-                buildAllWallPath(ctx)
-                ctx.fillStyle = colors.wallFill
-                ctx.fill("evenodd")
-                ctx.restore()
-                if (s.type == "door") {
+                if (s.type === "door") {
                     drawDoor(ctx, s)
-                } else if (s.type == "dimension") {
+                } else if (s.type === "dimension") {
                     drawDimension(ctx, s.x1, s.y1, s.x2, s.y2)
-                } else if (s.type == "window") {
+                } else if (s.type === "window") {
                     drawWindowRect(ctx, g, false)
                 }
                 if (i === selected) {
