@@ -34,9 +34,9 @@ Item {
     property real moveStepFeet: 0.0416667 // ~0.5 inches
     property real moveStepFastFeet: 0.1  // 1.2 inches when Shift is held
 
+    property url lastSaveUrl
     property bool resizing: false
     property int resizeEnd: 0   // 1 = x1/y1, 2 = x2/y2
-    property url lastSaveUrl
     property string fileDialogMode: "save" // or "load"
 
     property bool dragging: false
@@ -457,7 +457,7 @@ Item {
             ctx.stroke()
             ctx.setLineDash([])
             ctx.restore()
-            drawWallLengthLabel(ctx, s)
+            drawWallLengthLabel(ctx, shape)
             const dx = shape.x2 - shape.x1
             const dy = shape.y2 - shape.y1
             drawAngleVisualizer(ctx, g.x1, g.y1, -Math.atan2(dy, dx), zoom)

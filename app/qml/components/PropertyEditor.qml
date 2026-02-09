@@ -9,6 +9,12 @@ Popup {
     focus: true
     closePolicy: Popup.CloseOnEscape|Popup.CloseOnPressOutside
 
+    background: Rectangle {
+        color: "#2f3234"
+        opacity: 0.65 
+        radius: 6
+    }
+
     property var shape
     property int shapeIndex: -1
     property int labelWidth: 85
