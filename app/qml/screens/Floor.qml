@@ -634,7 +634,7 @@ Item {
         const path = dialog.currentFile
         if (mode === "save") {
             lastSaveUrl = path
-            floorManager.saveToFile(path, Shape.serializeProject())
+            floorManager.saveToFile(path, Shape.serializeProject(shapes, pixelsPerFoot))
         } else if (mode === "load") {
             const json = floorManager.loadFromFile(path)
             if (json) {
@@ -642,6 +642,8 @@ Item {
                 const result = Shape.deserializeProject(json)
                 pixelsPerFoot = result.pixelsPerFoot ?? pixelsPerFoot
                 shapes = result.shapes
+                undoStack = []
+                selected = -1                
                 Qt.callLater(() => {
                     fitDrawingToView()
                     canvas.requestPaint()
