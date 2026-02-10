@@ -368,7 +368,7 @@ Item {
         ctx.fill()
     }
 
-    function drawWallLengthLabel(ctx, s) {
+    function drawLengthLabel(ctx, s) {
         // World → pixel
         const x1 = s.x1 * pixelsPerFoot
         const y1 = s.y1 * pixelsPerFoot
@@ -444,7 +444,9 @@ Item {
         ctx.arc(g.x2, g.y2, 5 / zoom, 0, Math.PI * 2)
         ctx.fillStyle = colors.resizeEnd
         ctx.fill()
-        drawWallLengthLabel(ctx, s)
+        if (s.type !== "dimension") {
+            drawLengthLabel(ctx, s)
+        }
         // angle visualizer while rotating
         if (rotating) {
             const c = Shape.center(s)
@@ -478,7 +480,7 @@ Item {
             ctx.stroke()
             ctx.setLineDash([])
             ctx.restore()
-            drawWallLengthLabel(ctx, shape)
+            drawLengthLabel(ctx, shape)
             const dx = shape.x2 - shape.x1
             const dy = shape.y2 - shape.y1
             drawAngleVisualizer(ctx, g.x1, g.y1, -Math.atan2(dy, dx), zoom)
@@ -643,11 +645,11 @@ Item {
                 pixelsPerFoot = result.pixelsPerFoot ?? pixelsPerFoot
                 shapes = result.shapes
                 undoStack = []
-                selected = -1                
+                selected = -1
                 Qt.callLater(() => {
                     fitDrawingToView()
                     canvas.requestPaint()
-                })                
+                })
             } else {
                 console.warn("Failed to load project file")
             }
@@ -858,7 +860,19 @@ Item {
 
         onWheel: wheel => {
             const factor = wheel.angleDelta.y > 0 ? 1.1 : 0.9
-            zoom = Math.max(0.2, Math.min(5, zoom * factor))
+            // Mouse position in screen space
+            const mx = wheel.x
+            const my = wheel.y
+            // World position under mouse BEFORE zoom
+            const wx = (mx - offsetX) / zoom
+            const wy = (my - offsetY) / zoom
+            // Apply zoom (clamped)
+            const newZoom = Math.max(0.2, Math.min(5, zoom * factor))
+            if (newZoom === zoom) return
+            zoom = newZoom
+            // Recompute offset so mouse stays fixed
+            offsetX = mx - wx * zoom
+            offsetY = my - wy * zoom
             canvas.requestPaint()
         }
 

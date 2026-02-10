@@ -4,8 +4,8 @@ import QtQuick.Layouts 1.15
 
 Popup {
     id: root
-    closePolicy: Popup.NoAutoClose 
     modal: false
+    closePolicy: Popup.NoAutoClose
     property string currentTool: "wall"
 
     property var tools: [
@@ -18,8 +18,8 @@ Popup {
     ColumnLayout {
         id: column
         spacing: 16
-        anchors.centerIn: parent
         anchors.margins: 4
+        anchors.centerIn: parent
 
         Repeater {
             model: root.tools
