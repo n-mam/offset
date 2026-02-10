@@ -48,6 +48,10 @@ Item {
         id: editor
     }
 
+    ShapeSelector {
+        id: shapeSelector
+    }
+
     FileDialog {
         id: fileDialog
         title: fileDialogMode === "save"
@@ -862,7 +866,10 @@ Item {
                     fileDialog.open()
                     event.accepted = true
                 }
-                break
+                break              
         }
+    }
+    Component.onCompleted: {
+        shapeSelector.open()
     }
 }
