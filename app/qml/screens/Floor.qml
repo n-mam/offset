@@ -272,7 +272,7 @@ Item {
         ctx.beginPath()
         shapes.forEach(s => {
             if (s.type !== "wall") return
-            const g = Shape.geometry(s)
+            const g = Shape.geometry(s, pixelsPerFoot)
             if (!g) return
             ctx.moveTo(g.corners[0].x, g.corners[0].y)
             for (let i = 1; i < g.corners.length; i++)
@@ -463,11 +463,10 @@ Item {
             drawing.startY,
             drawing.currentX,
             drawing.currentY,
-            drawing.thickness
-        )
+            drawing.thickness)
         if (!shape) return
         if (shape.type === "wall") {
-            const g = Shape.geometry(shape)
+            const g = Shape.geometry(shape, pixelsPerFoot)
             if (!g) return
             ctx.save()
             ctx.strokeStyle = colors.preview
@@ -485,7 +484,7 @@ Item {
             drawAngleVisualizer(ctx, g.x1, g.y1, -Math.atan2(dy, dx), zoom)
         }
         else if (shape.type === "window") {
-            const g = Shape.geometry(shape)
+            const g = Shape.geometry(shape, pixelsPerFoot)
             if (!g) return
             ctx.save()
             ctx.globalAlpha = 0.6
@@ -624,7 +623,7 @@ Item {
 
     function saveProject() {
         if (lastSaveUrl && lastSaveUrl.toString().length > 0) {
-            floorManager.saveToFile(lastSaveUrl, Shape.serializeProject())
+            floorManager.saveToFile(lastSaveUrl, Shape.serializeProject(shapes, pixelsPerFoot))
         } else {
             fileDialogMode = "save"
             fileDialog.open()
@@ -640,7 +639,9 @@ Item {
             const json = floorManager.loadFromFile(path)
             if (json) {
                 lastSaveUrl = path
-                Shape.deserializeProject(json, path)
+                const result = Shape.deserializeProject(json)
+                pixelsPerFoot = result.pixelsPerFoot ?? pixelsPerFoot
+                shapes = result.shapes
             } else {
                 console.warn("Failed to load project file")
             }
@@ -671,7 +672,7 @@ Item {
             ctx.restore()
             // draw per-shape details
             shapes.forEach((s, i) => {
-                const g = Shape.geometry(s)
+                const g = Shape.geometry(s, pixelsPerFoot)
                 if (!g) return
                 if (s.type === "door") {
                     drawDoor(ctx, s)
@@ -728,7 +729,12 @@ Item {
                     }
                 }
                 // Selection / new wall
-                const hit = Shape.hitTest(p)
+                const hit = Shape.hitTest(
+                    p,
+                    shapes,
+                    pixelsPerFoot,
+                    zoom,
+                    pickTolerancePixels)
                 if (hit !== -1) {
                     selected = hit
                     pushUndoState()
@@ -818,7 +824,12 @@ Item {
 
         onDoubleClicked: mouse => {
             const p = getMouseWorldPos(mouse)
-            const hit = Shape.hitTest(p)
+            const hit = Shape.hitTest(
+                p,
+                shapes,
+                pixelsPerFoot,
+                zoom,
+                pickTolerancePixels)
             if (hit !== -1) {
                 selected = hit
                 editor.showEditor(shapes[hit], hit)
