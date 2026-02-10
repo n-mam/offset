@@ -56,8 +56,9 @@ Item {
         fileMode: fileDialogMode === "save"
             ? FileDialog.SaveFile
             : FileDialog.OpenFile
-        nameFilters: [ "Floor Plan (*.json)" ]
+        nameFilters: [ "All Files (*)" ]
         onAccepted: handleFileDialogAccepted(this, fileDialogMode)
+        folder: StandardPaths.writableLocation(StandardPaths.DesktopLocation)
     }
 
     property var drawing: ({
@@ -100,7 +101,7 @@ Item {
         ctx.save();
         // fill
         polygonPath(ctx, g.corners);
-        ctx.fillStyle = preview ? "rgba(180,220,255,0.4)" : "#ffffff";
+        ctx.fillStyle = "rgba(174, 174, 174, 0.5)" 
         ctx.fill();
         // BLUE WINDOW BORDER (perimeter)
         polygonPath(ctx, g.corners);
@@ -180,7 +181,7 @@ Item {
         ctx.fill();
         // base (thick)
         ctx.lineWidth = door.thickness * pixelsPerFoot;
-        ctx.strokeStyle = "#ffffff";
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
         ctx.beginPath();
         ctx.moveTo(x1, y1);
         ctx.lineTo(x2, y2);
