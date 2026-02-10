@@ -642,10 +642,48 @@ Item {
                 const result = Shape.deserializeProject(json)
                 pixelsPerFoot = result.pixelsPerFoot ?? pixelsPerFoot
                 shapes = result.shapes
+                Qt.callLater(() => {
+                    fitDrawingToView()
+                    canvas.requestPaint()
+                })                
             } else {
                 console.warn("Failed to load project file")
             }
         }
+    }
+
+    function fitDrawingToView(paddingPx = 40) {
+        if (!shapes || shapes.length === 0) return
+        let minX = Infinity, minY = Infinity
+        let maxX = -Infinity, maxY = -Infinity
+        shapes.forEach(s => {
+            minX = Math.min(minX, s.x1, s.x2)
+            minY = Math.min(minY, s.y1, s.y2)
+            maxX = Math.max(maxX, s.x1, s.x2)
+            maxY = Math.max(maxY, s.y1, s.y2)
+            if (s.thickness) {
+                const pad = s.thickness * 0.5
+                minX -= pad
+                minY -= pad
+                maxX += pad
+                maxY += pad
+            }
+        })
+        // size in world units (feet)
+        const widthFeet  = Math.max(1e-6, maxX - minX)
+        const heightFeet = Math.max(1e-6, maxY - minY)
+        // convert to pixels
+        const widthPx  = widthFeet  * pixelsPerFoot
+        const heightPx = heightFeet * pixelsPerFoot
+        // choose zoom to fit viewport
+        const zx = (canvas.width  - paddingPx * 2) / widthPx
+        const zy = (canvas.height - paddingPx * 2) / heightPx
+        zoom = Math.max(0.2, Math.min(5, Math.min(zx, zy)))
+        // center of drawing
+        const cxFeet = (minX + maxX) * 0.5
+        const cyFeet = (minY + maxY) * 0.5
+        offsetX = canvas.width  * 0.5 - cxFeet * pixelsPerFoot * zoom
+        offsetY = canvas.height * 0.5 - cyFeet * pixelsPerFoot * zoom
     }
 
     Rectangle { anchors.fill: parent; color: "#1e1e1e" }
@@ -887,6 +925,13 @@ Item {
                 if (event.modifiers & Qt.ControlModifier) {
                     fileDialogMode = "load"
                     fileDialog.open()
+                    event.accepted = true
+                }
+                break
+            case Qt.Key_F:
+                if (event.modifiers & Qt.ControlModifier) {
+                    fitDrawingToView()
+                    canvas.requestPaint()
                     event.accepted = true
                 }
                 break
