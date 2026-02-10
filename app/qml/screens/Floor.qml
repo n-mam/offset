@@ -93,6 +93,22 @@ Item {
         resizeEnd: "#ff3131"    // end point (orange)
     })
 
+    function resolveTool(mouse) {
+        if (mouse.modifiers & Qt.AltModifier) {
+            shapeSelector.currentTool = "window"
+            return "window"
+        }
+        if (mouse.modifiers & Qt.ControlModifier) {
+            shapeSelector.currentTool = "door"
+            return "door"
+        }
+        if (mouse.modifiers & Qt.ShiftModifier) {
+            shapeSelector.currentTool = "dimension"
+            return "dimension"
+        }
+        return shapeSelector.currentTool
+    }
+
     function polygonPath(ctx, corners) {
         ctx.beginPath()
         ctx.moveTo(corners[0].x, corners[0].y)
@@ -105,7 +121,7 @@ Item {
         ctx.save();
         // fill
         polygonPath(ctx, g.corners);
-        ctx.fillStyle = "rgba(174, 174, 174, 0.5)" 
+        ctx.fillStyle = "rgba(174, 174, 174, 0.5)"
         ctx.fill();
         // BLUE WINDOW BORDER (perimeter)
         polygonPath(ctx, g.corners);
@@ -692,14 +708,8 @@ Item {
 
             if (isLeftButton(mouse)) {
                 const p = getMouseWorldPos(mouse)
-                // Drawing shortcuts
-                if (mouse.modifiers & Qt.AltModifier) return startDrawing("window", mouse)
-                if (mouse.modifiers & Qt.ControlModifier) return startDrawing("door", mouse)
-                if (mouse.modifiers & Qt.ShiftModifier) return startDrawing("dimension", mouse, true)
-
                 if (selected !== -1) {
                     const s = shapes[selected]
-                    // Resize handle
                     const end = hitWallEndpoint(p, s)
                     if (end !== 0) {
                         pushUndoState()
@@ -729,8 +739,10 @@ Item {
                     dragOrigShape = { x1: s.x1, y1: s.y1, x2: s.x2, y2: s.y2 }
                     drawing.active = false
                 } else {
+                    const tool = resolveTool(mouse)
+                    const pushUndo = (tool === "dimension")
                     selected = -1
-                    startDrawing("wall", mouse)
+                    startDrawing(tool, mouse, pushUndo)
                 }
                 canvas.requestPaint()
                 return
@@ -866,7 +878,7 @@ Item {
                     fileDialog.open()
                     event.accepted = true
                 }
-                break              
+                break
         }
     }
     Component.onCompleted: {
