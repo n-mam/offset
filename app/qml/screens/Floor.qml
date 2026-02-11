@@ -117,11 +117,12 @@ Item {
         ctx.closePath()
     }
 
-    function drawWindowRect(ctx, g, preview) {
+    function drawWindowRect(ctx, g, s, preview) {
         ctx.save();
         // fill
         polygonPath(ctx, g.corners);
-        ctx.fillStyle = "rgba(174, 174, 174, 0.5)"
+        ctx.fillStyle = preview ?
+            "rgba(0,255,136,0.2)" : (s.color || "rgba(174,174,174,0.5)")
         ctx.fill();
         // BLUE WINDOW BORDER (perimeter)
         polygonPath(ctx, g.corners);
@@ -138,9 +139,9 @@ Item {
         ctx.restore();
     }
 
-    function drawWallRect(ctx, g) {
+    function drawWallRect(ctx, g, s) {
         polygonPath(ctx, g.corners)
-        ctx.fillStyle = colors.wallFill
+        ctx.fillStyle = s.color || colors.wallFill
         ctx.fill()
         //hatch
         ctx.save()
@@ -201,7 +202,7 @@ Item {
         ctx.fill();
         // base (thick)
         ctx.lineWidth = door.thickness * pixelsPerFoot;
-        ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
+        ctx.strokeStyle = door.color || "rgba(255,255,255,0.5)";
         ctx.beginPath();
         ctx.moveTo(x1, y1);
         ctx.lineTo(x2, y2);
@@ -484,29 +485,20 @@ Item {
             const dx = shape.x2 - shape.x1
             const dy = shape.y2 - shape.y1
             drawAngleVisualizer(ctx, g.x1, g.y1, -Math.atan2(dy, dx), zoom)
-        }
-        else if (shape.type === "window") {
+        } else if (shape.type === "window") {
             const g = Shape.geometry(shape, pixelsPerFoot)
             if (!g) return
             ctx.save()
             ctx.globalAlpha = 0.6
-            drawWindowRect(ctx, g, true)
+            drawWindowRect(ctx, g, shape, true)
             ctx.restore()
-        }
-        else if (shape.type === "door") {
+        } else if (shape.type === "door") {
             ctx.save()
             ctx.globalAlpha = 0.6
             drawDoor(ctx, shape, true)
             ctx.restore()
-        }
-        else if (shape.type === "dimension") {
-            drawDimension(
-                ctx,
-                shape.x1,
-                shape.y1,
-                shape.x2,
-                shape.y2
-            )
+        } else if (shape.type === "dimension") {
+            drawDimension(ctx, shape)
         }
     }
 
@@ -528,19 +520,23 @@ Item {
         ctx.fillText(`${deg.toFixed(0)}°`, cx + r + 4 / zoom, cy)
     }
 
-    function drawDimension(ctx, x1Feet, y1Feet, x2Feet, y2Feet, barSizePx = 4) {
+    function drawDimension(ctx, s, barSizePx = 4) {
         // world (feet) → canvas (pixels)
-        const x1 = x1Feet * pixelsPerFoot;
-        const y1 = y1Feet * pixelsPerFoot;
-        const x2 = x2Feet * pixelsPerFoot;
-        const y2 = y2Feet * pixelsPerFoot;
+        const x1Feet = s.x1
+        const y1Feet = s.y1
+        const x2Feet = s.x2
+        const y2Feet = s.y2
+        const x1 = x1Feet * pixelsPerFoot
+        const y1 = y1Feet * pixelsPerFoot
+        const x2 = x2Feet * pixelsPerFoot
+        const y2 = y2Feet * pixelsPerFoot
         // Vector from start → end
         const dx = x2 - x1;
         const dy = y2 - y1;
         const length = Math.hypot(dx, dy) || 1; // prevent divide-by-zero
         const isVertical = Math.abs(dy) > Math.abs(dx);
         // Main line
-        ctx.strokeStyle = colors.white;
+        ctx.strokeStyle = s.color || colors.white;
         ctx.lineWidth = 2 / zoom;
         ctx.beginPath();
         ctx.moveTo(x1, y1);
@@ -579,7 +575,7 @@ Item {
             const angle = dy > 0 ? Math.PI / 2 : -Math.PI / 2
             ctx.rotate(angle)
         }
-        ctx.fillStyle = colors.white
+        ctx.fillStyle = s.color || colors.white
         ctx.font = "12px sans-serif"
         ctx.textAlign = "center"
         ctx.textBaseline = "middle"
@@ -706,12 +702,15 @@ Item {
             ctx.scale(zoom, zoom)
             // Draw objects
             drawGrid(ctx)
-            // fill all walls once
-            ctx.save()
-            buildAllWallPath(ctx)
-            ctx.fillStyle = colors.wallFill
-            ctx.fill("evenodd")
-            ctx.restore()
+            // fill all walls once individually so each can have its own color
+            shapes.forEach(s => {
+                if (s.type !== "wall") return
+                const g = Shape.geometry(s, pixelsPerFoot)
+                if (!g) return
+                polygonPath(ctx, g.corners)
+                ctx.fillStyle = s.color || colors.wallFill
+                ctx.fill()
+            })
             // draw per-shape details
             shapes.forEach((s, i) => {
                 const g = Shape.geometry(s, pixelsPerFoot)
@@ -719,9 +718,9 @@ Item {
                 if (s.type === "door") {
                     drawDoor(ctx, s)
                 } else if (s.type === "dimension") {
-                    drawDimension(ctx, s.x1, s.y1, s.x2, s.y2)
+                    drawDimension(ctx, s)
                 } else if (s.type === "window") {
-                    drawWindowRect(ctx, g, false)
+                    drawWindowRect(ctx, g, s, false)
                 }
                 if (i === selected) {
                     annotateShape(ctx, g, s)

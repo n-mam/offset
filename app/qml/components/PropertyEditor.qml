@@ -1,6 +1,7 @@
 import QtQuick
-import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Dialogs
+import QtQuick.Controls
 
 Popup {
     id: root
@@ -11,13 +12,24 @@ Popup {
 
     background: Rectangle {
         color: "#2f3234"
-        opacity: 0.65 
+        opacity: 0.65
         radius: 6
     }
 
     property var shape
     property int shapeIndex: -1
     property int labelWidth: 85
+
+    ColorDialog {
+        id: colorDialog
+        title: "Select Color"
+        onAccepted: {
+            if (root.shape) {
+                root.shape.color = selectedColor.toString()
+                canvas.requestPaint()
+            }
+        }
+    }
 
     function showEditor(s, index) {
         shape = s
@@ -94,6 +106,26 @@ Popup {
                 width: 60
                 text: shape ? feetToText(shape.y2) : "0'0\""
                 onEditingFinished: assignIfValid("y2", text)
+            }
+        }
+
+        RowLayout {
+            Label { text: "Color"; Layout.preferredWidth: root.labelWidth }
+            Rectangle {
+                width: 40
+                height: 20
+                radius: 3
+                border.color: "#888"
+                border.width: 1
+                color: shape && shape.color ? shape.color : "#ffffff"
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: {
+                        if (!shape) return
+                        colorDialog.selectedColor = Qt.color(shape.color || "#ffffff")
+                        colorDialog.open()
+                    }
+                }
             }
         }
 

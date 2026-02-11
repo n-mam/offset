@@ -114,7 +114,9 @@ function make(type, startX, startY, endX, endY, thickness) {
         y1: startY,
         x2: endX,
         y2: endY,
-        thickness
+        thickness,
+        color: defaultColorForType(type).toString()
+
     }
     switch (type) {
         case "wall":
@@ -134,6 +136,16 @@ function make(type, startX, startY, endX, endY, thickness) {
     }
 }
 
+function defaultColorForType(type) {
+    switch (type) {
+        case "wall": return "#dcd0aa"
+        case "window": return "#aeb0b0"
+        case "door": return "#ffffff"
+        case "dimension": return "#ffffff"
+        default: return "#ffffff"
+    }
+}
+
 function serializeProject(shapes, pixelsPerFoot) {
     return JSON.stringify({
         format: "FloorPlanProject",
@@ -144,7 +156,10 @@ function serializeProject(shapes, pixelsPerFoot) {
             id: s.id,
             type: s.type,
             geometry: { x1: s.x1, y1: s.y1, x2: s.x2, y2: s.y2 },
-            properties: { thickness: s.thickness }
+            properties: {
+                thickness: s.thickness,
+                color: s.color ?? null
+            }
         }))
     }, null, 2)
 }
@@ -162,7 +177,8 @@ function deserializeProject(jsonText) {
             y1: e.geometry.y1,
             x2: e.geometry.x2,
             y2: e.geometry.y2,
-            thickness: e.properties?.thickness ?? 0.5
+            thickness: e.properties?.thickness ?? 0.5,
+            color: e.properties?.color ?? defaultColorForType(e.type)
         }))
     }
 }
