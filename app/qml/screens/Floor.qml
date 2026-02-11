@@ -24,25 +24,25 @@ Item {
     property var shapes: []
 
     property int selected: -1
+    property url lastSaveUrl
     property real minDrawPixels: 6   // 4–8 px feels good
     property real pickTolerancePixels: 8 // feels good: 6–10 px
 
-    property bool rotating: false
-    property real rotateStartAngle: 0
-    property real rotateBaseAngle: 0
-
     property real moveStepFeet: 0.0416667 // ~0.5 inches
     property real moveStepFastFeet: 0.1  // 1.2 inches when Shift is held
-
-    property url lastSaveUrl
-    property bool resizing: false
     property int resizeEnd: 0   // 1 = x1/y1, 2 = x2/y2
     property string fileDialogMode: "save" // or "load"
 
+    property bool panning: false
+    property bool rotating: false
     property bool dragging: false
+    property bool resizing: false
+
     property real dragStartX: 0
     property real dragStartY: 0
     property var dragOrigShape: null
+    property real rotateBaseAngle: 0
+    property real rotateStartAngle: 0
 
     PropertyEditor {
         id: editor
@@ -67,12 +67,12 @@ Item {
 
     property var drawing: ({
         type: "",
-        active: false,
         startX: 0,
         startY: 0,
         currentX: 0,
         currentY: 0,
-        thickness: 0.5
+        thickness: 1,
+        active: false
     })
 
     property var gridLevels: [
@@ -737,124 +737,121 @@ Item {
         anchors.fill: parent
         acceptedButtons: Qt.LeftButton|Qt.RightButton
 
-        function getMouseWorldPos(mouse) {
-            return Geo.screenToWorld(mouse.x, mouse.y)
-        }
-
         function isLeftButton(mouse) { return mouse.button === Qt.LeftButton }
         function isLeftPressed(mouse) { return mouse.buttons & Qt.LeftButton }
         function isRightPressed(mouse) { return mouse.buttons & Qt.RightButton }
 
         onPressed: mouse => {
             root.forceActiveFocus()
-
-            if (isLeftButton(mouse)) {
-                const p = getMouseWorldPos(mouse)
-                if (selected !== -1) {
-                    const s = shapes[selected]
-                    const end = hitWallEndpoint(p, s)
-                    if (end !== 0) {
-                        pushUndoState()
-                        resizing = true
-                        resizeEnd = end
-                        return
-                    }
-                    // Rotate handle
-                    if (hitRotateHandle(p, s)) {
-                        pushUndoState()
-                        rotating = true
-                        rotateBaseAngle = Shape.angle(s)
-                        const center = Shape.center(s)
-                        rotateStartAngle = Math.atan2(p.y - center.y, p.x - center.x)
-                        return
-                    }
-                }
-                // Selection / new wall
-                const hit = Shape.hitTest(
-                    p,
-                    shapes,
-                    pixelsPerFoot,
-                    zoom,
-                    pickTolerancePixels)
-                if (hit !== -1) {
-                    selected = hit
-                    pushUndoState()
-                    dragging = true
-                    dragStartX = p.x
-                    dragStartY = p.y
-                    const s = shapes[selected]
-                    dragOrigShape = { x1: s.x1, y1: s.y1, x2: s.x2, y2: s.y2 }
-                    drawing.active = false
-                } else {
-                    const tool = resolveTool(mouse)
-                    const pushUndo = (tool === "dimension")
-                    selected = -1
-                    startDrawing(tool, mouse, pushUndo)
-                }
-                canvas.requestPaint()
-                return
-            }
-            // Right button pan
             lastX = mouse.x
             lastY = mouse.y
+            if (!isLeftButton(mouse)) return
+            const p = Geo.screenToWorld(mouse.x, mouse.y)
+            if (selected !== -1) {
+                const s = shapes[selected]
+                const end = hitWallEndpoint(p, s)
+                if (end !== 0) {
+                    pushUndoState()
+                    resizing = true
+                    resizeEnd = end
+                    return
+                }
+                // Rotate handle
+                if (hitRotateHandle(p, s)) {
+                    pushUndoState()
+                    rotating = true
+                    rotateBaseAngle = Shape.angle(s)
+                    const center = Shape.center(s)
+                    rotateStartAngle = Math.atan2(p.y - center.y, p.x - center.x)
+                    return
+                }
+            }
+            // Selection / start drawing tool
+            selected = -1
+            const hit = Shape.hitTest(
+                p,
+                shapes,
+                pixelsPerFoot,
+                zoom,
+                pickTolerancePixels)
+            if (hit !== -1) {
+                selected = hit
+                pushUndoState()
+                dragging = true
+                dragStartX = p.x
+                dragStartY = p.y
+                const s = shapes[selected]
+                dragOrigShape = { x1: s.x1, y1: s.y1, x2: s.x2, y2: s.y2 }
+                drawing.active = false
+            } else if (shapeSelector.currentTool === "idle") {
+                panning = true
+                return
+            } else {
+                const tool = resolveTool(mouse)
+                const pushUndo = (tool === "dimension")
+                startDrawing(tool, mouse, pushUndo)
+            }
+            canvas.requestPaint()
         }
 
         onPositionChanged: mouse => {
-            const p = getMouseWorldPos(mouse)
-            if (drawing.active && isLeftPressed(mouse)) {
+            if (!isLeftPressed(mouse)) return
+            const p = Geo.screenToWorld(mouse.x, mouse.y)
+            const s = selected !== -1 ? shapes[selected] : null
+            if (drawing.active) {
                 drawing.currentX = p.x
                 drawing.currentY = p.y
-            } else if (resizing && isLeftPressed(mouse)) {
-                const s = shapes[selected]
-                if (resizeEnd === 1) { s.x1 = p.x; s.y1 = p.y }
-                else { s.x2 = p.x; s.y2 = p.y }
-            } else if (rotating && isLeftPressed(mouse)) {
-                const s = shapes[selected]
+            } else if (resizing && s) {
+                if (resizeEnd === 1) {
+                    s.x1 = p.x
+                    s.y1 = p.y
+                } else {
+                    s.x2 = p.x
+                    s.y2 = p.y
+                }
+            } else if (rotating && s) {
                 const center = Shape.center(s)
                 const angle = Math.atan2(p.y - center.y, p.x - center.x)
                 Shape.rotate(s, rotateBaseAngle + (angle - rotateStartAngle))
-            } else if (dragging && isLeftPressed(mouse)) {
+            } else if (dragging && s) {
                 const dx = p.x - dragStartX
                 const dy = p.y - dragStartY
-                const s = shapes[selected]
                 s.x1 = dragOrigShape.x1 + dx
                 s.y1 = dragOrigShape.y1 + dy
                 s.x2 = dragOrigShape.x2 + dx
                 s.y2 = dragOrigShape.y2 + dy
-            } else if (isRightPressed(mouse)) {
+            } else if (panning) {
                 offsetX += mouse.x - lastX
                 offsetY += mouse.y - lastY
                 lastX = mouse.x
                 lastY = mouse.y
-            } else return // Nothing changed
-
+            } else {
+                return
+            }
             canvas.requestPaint()
         }
 
         onReleased: mouse => {
-            if (drawing.active && isLeftButton(mouse)) {
-                finishDrawing()        // commits the new shape
+            if (panning) panning = false
+            if (drawing.active) {
+                finishDrawing()
                 drawing.active = false
-                canvas.requestPaint()
-                return
             }
             if (resizing) {
-                pushUndoState()        // commit resize
-                resizing = false
+                pushUndoState();
+                resizing = false;
                 resizeEnd = 0
-                canvas.requestPaint()
             }
             if (rotating) {
-                pushUndoState()        // commit rotation
+                pushUndoState();
                 rotating = false
-                canvas.requestPaint()
             }
             if (dragging) {
-                pushUndoState()        // commit drag
-                dragging = false
+                pushUndoState();
+                dragging = false;
                 dragOrigShape = null
-                canvas.requestPaint()
             }
+            canvas.requestPaint()
         }
 
         onWheel: wheel => {
@@ -876,7 +873,7 @@ Item {
         }
 
         onDoubleClicked: mouse => {
-            const p = getMouseWorldPos(mouse)
+            const p = Geo.screenToWorld(mouse.x, mouse.y)
             const hit = Shape.hitTest(
                 p,
                 shapes,
@@ -952,6 +949,7 @@ Item {
                 break
         }
     }
+
     Component.onCompleted: {
         shapeSelector.open()
     }
