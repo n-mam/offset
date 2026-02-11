@@ -6,7 +6,7 @@ Popup {
     id: root
     modal: false
     closePolicy: Popup.NoAutoClose
-    property string currentTool: "idle"
+    property string currentTool: "wall"
 
     property var tools: [
         { name: "idle", icon: "qrc:/idle.png"},

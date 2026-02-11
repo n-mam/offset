@@ -1,4 +1,4 @@
-.import "Geometry.js" as Geo
+.import "Geometry.js" as Geometry
 
 function uid() {
     return "e" + Math.random().toString(36).slice(2, 9)
@@ -73,7 +73,7 @@ function angle(w) {
 
 function rotate(w, angleRad) {
     const c = center(w)
-    const halfLen = Geo.distanceToPoint(w.x2, w.y2, w.x1, w.y1) / 2
+    const halfLen = Geometry.distanceToPoint(w.x2, w.y2, w.x1, w.y1) / 2
     w.x1 = c.x - Math.cos(angleRad) * halfLen
     w.y1 = c.y - Math.sin(angleRad) * halfLen
     w.x2 = c.x + Math.cos(angleRad) * halfLen
@@ -87,11 +87,11 @@ function hitTest(p, shapes, pixelsPerFoot, zoom, pickTolerancePixels) {
         const s = shapes[i]
         const endpointTolFeet = 8 / (pixelsPerFoot * zoom)
         const nearEndpoint =
-            Geo.distanceToPoint(p.x, p.y, s.x1, s.y1) < endpointTolFeet ||
-            Geo.distanceToPoint(p.x, p.y, s.x2, s.y2) < endpointTolFeet
+            Geometry.distanceToPoint(p.x, p.y, s.x1, s.y1) < endpointTolFeet ||
+            Geometry.distanceToPoint(p.x, p.y, s.x2, s.y2) < endpointTolFeet
 
         if (nearEndpoint) continue
-        const d = Geo.distancePointToSegment(
+        const d = Geometry.distancePointToSegment(
             p.x, p.y,
             s.x1, s.y1,
             s.x2, s.y2

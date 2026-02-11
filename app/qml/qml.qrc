@@ -7,6 +7,7 @@
     <file>screens/Floor.qml</file>
     <file>screens/Camera.qml</file>
     <file>screens/Backup.qml</file>
+    <file>screens/Drawing.js</file>
     <file>screens/Compare.qml</file>
     <file>screens/Geometry.js</file>
     <file>components/List.qml</file>
