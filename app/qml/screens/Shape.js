@@ -122,8 +122,10 @@ function make(type, startX, startY, endX, endY, thickness) {
         case "wall":
         case "window":
         case "dimension":
-            return Object.assign({ type }, base)
-
+            return Object.assign({ 
+                type,
+                snap: { left:false, right:false, top:false, bottom:false }
+            }, base)
         case "door":
             return Object.assign({
                 type: "door",

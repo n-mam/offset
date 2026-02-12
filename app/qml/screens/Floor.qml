@@ -20,7 +20,7 @@ Item {
     property real zoom: 1.0
     property real offsetX: 0
     property real offsetY: 0
-    property real pixelsPerFoot: 30
+    property real pixelsPerFoot: 52
 
     property var shapes: []
 
@@ -45,7 +45,12 @@ Item {
     property real rotateBaseAngle: 0
     property real rotateStartAngle: 0
 
-    PropertyEditor { id: editor }
+    PropertyEditor { 
+        id: editor
+        onSnapRequested: (direction, mode) => {
+            Draw.moveOrSnapSelectedWall(direction, mode)
+        }        
+    }
     ShapeSelector { id: shapeSelector }
 
     FileDialog {
@@ -119,17 +124,6 @@ Item {
         for (let i = 1; i < corners.length; i++)
             ctx.lineTo(corners[i].x, corners[i].y)
         ctx.closePath()
-    }
-
-    function moveSelected(dxFeet, dyFeet) {
-        if (selected === -1) return
-        pushUndoState()
-        const w = shapes[selected]
-        w.x1 += dxFeet
-        w.y1 += dyFeet
-        w.x2 += dxFeet
-        w.y2 += dyFeet
-        canvas.requestPaint()
     }
 
     function hitRotateHandle(p, w) {
@@ -527,19 +521,19 @@ Item {
             moveStepFastFeet : moveStepFeet
         switch (event.key) {
             case Qt.Key_Left:
-                moveSelected(-step, 0)
+                Draw.moveSelected(-step, 0)
                 event.accepted = true
                 break
             case Qt.Key_Right:
-                moveSelected(step, 0)
+                Draw.moveSelected(step, 0)
                 event.accepted = true
                 break
             case Qt.Key_Up:
-                moveSelected(0, -step)
+                Draw.moveSelected(0, -step)
                 event.accepted = true
                 break
             case Qt.Key_Down:
-                moveSelected(0, step)
+                Draw.moveSelected(0, step)
                 event.accepted = true
                 break
             case Qt.Key_Z:

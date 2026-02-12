@@ -354,3 +354,69 @@ function angleVisualizer(ctx, cx, cy, angleRad, zoom) {
     ctx.textBaseline = "middle"
     ctx.fillText(`${deg.toFixed(0)}°`, cx + r + 4 / zoom, cy)
 }
+
+function moveSelected(dxFeet, dyFeet) {
+    if (selected === -1) return
+    pushUndoState()
+    const w = shapes[selected]
+    w.x1 += dxFeet
+    w.y1 += dyFeet
+    w.x2 += dxFeet
+    w.y2 += dyFeet
+    canvas.requestPaint()
+}
+
+function snapValue(v) {
+    var snapStepFeet = 1.0;
+    return Math.round(v / snapStepFeet) * snapStepFeet
+}
+
+function moveOrSnapSelectedWall(direction, mode) {
+    if (selected === -1) return;
+    const s = shapes[selected];
+    if (s.type !== "wall") return;
+
+    pushUndoState();
+
+    const step = 0.25; // same as your QML arrow step
+
+    if (mode === "move") {
+        // Duplicate the working arrow handler logic exactly
+        switch (direction) {
+            case "left":  moveSelected(-step, 0); break;
+            case "right": moveSelected( step, 0); break;
+            case "up":    moveSelected(0, -step); break;
+            case "down":  moveSelected(0,  step); break;
+        }
+    } else if (mode === "snap") {
+        // Snap logic here (same as your constrained snapping)
+        let ax, ay, oppositeX, oppositeY;
+
+        if (direction === "left")       { ax = s.x1; ay = s.y1; oppositeX = s.x2; oppositeY = s.y2; }
+        else if (direction === "right") { ax = s.x2; ay = s.y2; oppositeX = s.x1; oppositeY = s.y1; }
+        else if (direction === "up")   { ax = s.x1; ay = s.y1; oppositeX = s.x2; oppositeY = s.y2; }
+        else if (direction === "down"){ ax = s.x2; ay = s.y2; oppositeX = s.x1; oppositeY = s.y1; }
+
+        const snappedX = snapValue(ax);
+        const snappedY = snapValue(ay);
+
+        // Horizontal snapping
+        if (Math.abs(oppositeX - snapValue(oppositeX)) < 1e-6) {
+            if (direction === "left")  s.x1 = snappedX;
+            if (direction === "right") s.x2 = snappedX;
+        } else {
+            const dx = snappedX - ax;
+            s.x1 += dx; s.x2 += dx;
+        }
+
+        // Vertical snapping
+        if (Math.abs(oppositeY - snapValue(oppositeY)) < 1e-6) {
+            if (direction === "up")    s.y1 = snappedY;
+            if (direction === "down") s.y2 = snappedY;
+        } else {
+            const dy = snappedY - ay;
+            s.y1 += dy; s.y2 += dy;
+        }
+        canvas.requestPaint();
+    }
+}

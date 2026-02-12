@@ -5,7 +5,7 @@ import QtQuick.Controls
 
 Popup {
     id: root
-    height: 350
+    height: 440
     modal: false
     focus: true
     closePolicy: Popup.CloseOnEscape|Popup.CloseOnPressOutside
@@ -19,6 +19,8 @@ Popup {
     property var shape
     property int shapeIndex: -1
     property int labelWidth: 85
+    property string transformMode: "move"
+    signal snapRequested(string direction, string mode)
 
     ColorDialog {
         id: colorDialog
@@ -136,6 +138,87 @@ Popup {
                 if (shape.type === "door") return doorEditor
                 if (shape.type === "window") return windowEditor
                 return undefined
+            }
+        }
+
+        RowLayout {
+            ColumnLayout {
+                spacing: 4        
+                ButtonGroup {
+                    id: radioGroup
+                }
+                RadioButton {
+                    text: "Move"
+                    spacing: 4   // space between circle and text
+                    implicitHeight: 20
+                    ButtonGroup.group: radioGroup
+                    checked: true  
+                    onCheckedChanged: if (checked) root.transformMode = "move"
+                }
+                RadioButton {
+                    text: "Snap"
+                    spacing: 4   // space between circle and text
+                    implicitHeight: 20
+                    ButtonGroup.group: radioGroup
+                    onCheckedChanged: if (checked) root.transformMode = "snap"
+                }
+            }
+            Item {
+                id: snapControl
+                Layout.alignment: Qt.AlignHCenter
+                Layout.topMargin: 10
+                width: 72
+                height: 72
+                Rectangle {
+                    anchors.fill: parent
+                    radius: width / 2
+                    color: "transparent"
+                    border.color: "#666"
+                    border.width: 1
+                }
+                // Top Snap
+                RoundButton {
+                    width: 28
+                    height: 28
+                    text: "↑"
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.top: parent.top
+                    anchors.topMargin: 4
+                    onClicked: snapRequested("up", transformMode)
+                }
+
+                // Bottom Snap
+                RoundButton {
+                    width: 28
+                    height: 28
+                    text: "↓"
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.bottom: parent.bottom
+                    anchors.bottomMargin: 4
+                    onClicked: snapRequested("down", transformMode)
+                }
+
+                // Left Snap
+                RoundButton {
+                    width: 28
+                    height: 28
+                    text: "←"
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.left: parent.left
+                    anchors.leftMargin: 4
+                    onClicked: snapRequested("left", transformMode)
+                }
+
+                // Right Snap
+                RoundButton {
+                    width: 28
+                    height: 28
+                    text: "→"
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.right: parent.right
+                    anchors.rightMargin: 4
+                    onClicked: snapRequested("right", transformMode)
+                }
             }
         }
     }
