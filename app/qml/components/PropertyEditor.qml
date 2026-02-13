@@ -21,7 +21,7 @@ Popup {
     property int shapeIndex: -1
     property int labelWidth: 85
     property string transformMode: "move"
-    signal snapRequested(string direction, string mode)
+    signal transformRequested(string direction, string mode)
 
     ColorDialog {
         id: colorDialog
@@ -80,6 +80,7 @@ Popup {
             Label { text: "Start X"; Layout.preferredWidth: root.labelWidth }
             TextField {
                 Layout.preferredWidth:  80
+                Layout.preferredHeight:  40
                 text: shape ? feetToText(shape.x1) : "0'0\""
                 onEditingFinished: assignIfValid("x1", text)
             }
@@ -89,6 +90,7 @@ Popup {
             Label { text: "Start Y"; Layout.preferredWidth: root.labelWidth }
             TextField {
                 Layout.preferredWidth:  80
+                Layout.preferredHeight:  40
                 text: shape ? feetToText(shape.y1) : "0'0\""
                 onEditingFinished: assignIfValid("y1", text)
             }
@@ -98,6 +100,7 @@ Popup {
             Label { text: "End X"; Layout.preferredWidth: root.labelWidth }
             TextField {
                 Layout.preferredWidth:  80
+                Layout.preferredHeight:  40
                 text: shape ? feetToText(shape.x2) : "0'0\""
                 onEditingFinished: assignIfValid("x2", text)
             }
@@ -107,6 +110,7 @@ Popup {
             Label { text: "End Y"; Layout.preferredWidth: root.labelWidth }
             TextField {
                 Layout.preferredWidth:  80
+                Layout.preferredHeight:  40
                 text: shape ? feetToText(shape.y2) : "0'0\""
                 onEditingFinished: assignIfValid("y2", text)
             }
@@ -125,8 +129,8 @@ Popup {
         RowLayout {
             Label { text: "Color"; Layout.preferredWidth: root.labelWidth }
             Rectangle {
-                width: 40
-                height: 20
+                width: 60
+                height: 30
                 radius: 3
                 border.color: "#888"
                 border.width: 1
@@ -167,7 +171,6 @@ Popup {
             Item {
                 id: snapControl
                 Layout.alignment: Qt.AlignHCenter
-                Layout.topMargin: 10
                 width: 72
                 height: 72
                 Rectangle {
@@ -185,9 +188,8 @@ Popup {
                     anchors.horizontalCenter: parent.horizontalCenter
                     anchors.top: parent.top
                     anchors.topMargin: 4
-                    onClicked: snapRequested("up", transformMode)
+                    onClicked: transformRequested("up", transformMode)
                 }
-
                 // Bottom Snap
                 RoundButton {
                     width: 28
@@ -196,9 +198,8 @@ Popup {
                     anchors.horizontalCenter: parent.horizontalCenter
                     anchors.bottom: parent.bottom
                     anchors.bottomMargin: 4
-                    onClicked: snapRequested("down", transformMode)
+                    onClicked: transformRequested("down", transformMode)
                 }
-
                 // Left Snap
                 RoundButton {
                     width: 28
@@ -207,9 +208,8 @@ Popup {
                     anchors.verticalCenter: parent.verticalCenter
                     anchors.left: parent.left
                     anchors.leftMargin: 4
-                    onClicked: snapRequested("left", transformMode)
+                    onClicked: transformRequested("left", transformMode)
                 }
-
                 // Right Snap
                 RoundButton {
                     width: 28
@@ -218,7 +218,7 @@ Popup {
                     anchors.verticalCenter: parent.verticalCenter
                     anchors.right: parent.right
                     anchors.rightMargin: 4
-                    onClicked: snapRequested("right", transformMode)
+                    onClicked: transformRequested("right", transformMode)
                 }
             }
             ColumnLayout {
@@ -243,6 +243,7 @@ Popup {
                 Label { text: "Thickness"; Layout.preferredWidth: root.labelWidth }
                 TextField {
                     Layout.preferredWidth: 80
+                    Layout.preferredHeight:  40
                     text: shape ? feetToText(shape.thickness) : "0'6\""
                     onEditingFinished: assignIfValid("thickness", text)
                 }
@@ -257,6 +258,7 @@ Popup {
                 Label { text: "Thickness"; Layout.preferredWidth: root.labelWidth }
                 TextField {
                     Layout.preferredWidth: 80
+                    Layout.preferredHeight:  40
                     text: shape ? feetToText(shape.thickness) : "0'6\""
                     onEditingFinished: assignIfValid("thickness", text)
                 }
@@ -271,6 +273,7 @@ Popup {
                 Label { text: "Thickness"; Layout.preferredWidth: root.labelWidth }
                 TextField {
                     Layout.preferredWidth: 80
+                    Layout.preferredHeight:  40
                     text: shape ? feetToText(shape.thickness) : "0'6\""
                     onEditingFinished: assignIfValid("thickness", text)
                 }

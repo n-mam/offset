@@ -355,17 +355,6 @@ function angleVisualizer(ctx, cx, cy, angleRad, zoom) {
     ctx.fillText(`${deg.toFixed(0)}°`, cx + r + 4 / zoom, cy)
 }
 
-function moveSelected(dxFeet, dyFeet) {
-    if (selected === -1) return
-    pushUndoState()
-    const w = shapes[selected]
-    w.x1 += dxFeet
-    w.y1 += dyFeet
-    w.x2 += dxFeet
-    w.y2 += dyFeet
-    canvas.requestPaint()
-}
-
 function makeHorizontal(shape) {
     const x1 = shape.x1;
     const y1 = shape.y1;
@@ -397,6 +386,24 @@ function makeVertical(shape) {
     canvas.requestPaint();
 }
 
+function moveShape(s, direction, step = 0.25) {
+    pushUndoState()
+    let dxFeet, dyFeet
+    switch (direction) {
+        case "left": dxFeet = -step; dyFeet = 0; break;
+        case "right": dxFeet = step; dyFeet = 0; break;
+        case "up": dxFeet = 0; dyFeet = -step; break;
+        case "down": dxFeet = 0; dyFeet = step; break;
+    }
+    s.x1 += dxFeet
+    s.y1 += dyFeet
+    s.x2 += dxFeet
+    s.y2 += dyFeet
+    // Moving cancels all constraints
+    for (const key in s.snap) s.snap[key] = false;    
+    canvas.requestPaint()
+}
+
 function snapValue(v) {
     var snapStepFeet = 1.0;
     return Math.round(v / snapStepFeet) * snapStepFeet
@@ -406,30 +413,10 @@ function snapValue(v) {
 // of that point to the nearest vertical grid line.
 // When snapping up or down, only snap y-coordinate 
 // of that point to the nearest horizontal grid line.
-function moveOrSnapSelectedWall(direction, mode) {
-    
-    if (selected === -1) return;
-    const s = shapes[selected];
-    if (s.type !== "wall") return;
-
+function snapShape(s, direction) {
     pushUndoState();
-    const step = 0.25;
-
-    if (mode === "move") {
-        switch (direction) {
-            case "left":  moveSelected(-step, 0); break;
-            case "right": moveSelected(step, 0); break;
-            case "up":    moveSelected(0, -step); break;
-            case "down":  moveSelected(0, step); break;
-        }
-        // Moving cancels all constraints
-        for (const key in s.snap) s.snap[key] = false;
-        return;
-    }
-
     // Snap
     let target, delta;
-
     switch (direction) {
         case "left":
             target = snapValue(s.x1);
@@ -442,7 +429,6 @@ function moveOrSnapSelectedWall(direction, mode) {
             }
             s.snap.left = true;
             break;
-
         case "right":
             target = snapValue(s.x2);
             if (!s.snap.left) {
@@ -454,7 +440,6 @@ function moveOrSnapSelectedWall(direction, mode) {
             }
             s.snap.right = true;
             break;
-
         case "up":
             // pick the point closer to x-axis (smaller y)
             if (s.y1 < s.y2) {
@@ -479,7 +464,6 @@ function moveOrSnapSelectedWall(direction, mode) {
                 s.snap.top = true;
             }
             break;
-
         case "down":
             // pick the point farther from x-axis (larger y)
             if (s.y1 > s.y2) {

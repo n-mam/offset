@@ -47,8 +47,14 @@ Item {
 
     PropertyEditor { 
         id: editor
-        onSnapRequested: (direction, mode) => {
-            Draw.moveOrSnapSelectedWall(direction, mode)
+        onTransformRequested: (direction, mode) => {
+            if (selected === -1) return;
+            var s = shapes[selected];          
+            if (mode === "move") {
+                Draw.moveShape(s, direction)
+            } else if (mode === "snap") {
+                Draw.snapShape(s, direction)
+            }
         }        
     }
     ShapeSelector { id: shapeSelector }
@@ -519,21 +525,22 @@ Item {
     Keys.onPressed: event => {
         const step = (event.modifiers & Qt.ShiftModifier) ?
             moveStepFastFeet : moveStepFeet
+        var s = shapes[selected]
         switch (event.key) {
             case Qt.Key_Left:
-                Draw.moveSelected(-step, 0)
+                Draw.moveShape(s, "left", step)
                 event.accepted = true
                 break
             case Qt.Key_Right:
-                Draw.moveSelected(step, 0)
+                Draw.moveShape(s, "right", step)
                 event.accepted = true
                 break
             case Qt.Key_Up:
-                Draw.moveSelected(0, -step)
+                Draw.moveShape(s, "up", step)
                 event.accepted = true
                 break
             case Qt.Key_Down:
-                Draw.moveSelected(0, step)
+                Draw.moveShape(s, "down", step)
                 event.accepted = true
                 break
             case Qt.Key_Z:
