@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Dialogs
 import QtQuick.Controls
+import "qrc:/screens/Drawing.js" as Draw
 
 Popup {
     id: root
@@ -78,7 +79,7 @@ Popup {
         RowLayout {
             Label { text: "Start X"; Layout.preferredWidth: root.labelWidth }
             TextField {
-                width: 60
+                Layout.preferredWidth:  80
                 text: shape ? feetToText(shape.x1) : "0'0\""
                 onEditingFinished: assignIfValid("x1", text)
             }
@@ -87,7 +88,7 @@ Popup {
         RowLayout {
             Label { text: "Start Y"; Layout.preferredWidth: root.labelWidth }
             TextField {
-                width: 60
+                Layout.preferredWidth:  80
                 text: shape ? feetToText(shape.y1) : "0'0\""
                 onEditingFinished: assignIfValid("y1", text)
             }
@@ -96,7 +97,7 @@ Popup {
         RowLayout {
             Label { text: "End X"; Layout.preferredWidth: root.labelWidth }
             TextField {
-                width: 60
+                Layout.preferredWidth:  80
                 text: shape ? feetToText(shape.x2) : "0'0\""
                 onEditingFinished: assignIfValid("x2", text)
             }
@@ -105,9 +106,19 @@ Popup {
         RowLayout {
             Label { text: "End Y"; Layout.preferredWidth: root.labelWidth }
             TextField {
-                width: 60
+                Layout.preferredWidth:  80
                 text: shape ? feetToText(shape.y2) : "0'0\""
                 onEditingFinished: assignIfValid("y2", text)
+            }
+        }
+
+        Loader {
+            sourceComponent: {
+                if (!shape) return undefined
+                if (shape.type === "wall") return wallEditor
+                if (shape.type === "door") return doorEditor
+                if (shape.type === "window") return windowEditor
+                return undefined
             }
         }
 
@@ -128,16 +139,6 @@ Popup {
                         colorDialog.open()
                     }
                 }
-            }
-        }
-
-        Loader {
-            sourceComponent: {
-                if (!shape) return undefined
-                if (shape.type === "wall") return wallEditor
-                if (shape.type === "door") return doorEditor
-                if (shape.type === "window") return windowEditor
-                return undefined
             }
         }
 
@@ -220,6 +221,18 @@ Popup {
                     onClicked: snapRequested("right", transformMode)
                 }
             }
+            ColumnLayout {
+                ToolButton {
+                    text: qsTr("V")
+                    onClicked: Draw.makeVertical(shape)
+                    implicitHeight: 20
+                }
+                ToolButton {
+                    text: qsTr("H")
+                    onClicked: Draw.makeHorizontal(shape)
+                    implicitHeight: 20
+                }
+            }
         }
     }
 
@@ -229,7 +242,7 @@ Popup {
             RowLayout {
                 Label { text: "Thickness"; Layout.preferredWidth: root.labelWidth }
                 TextField {
-                    width: 60
+                    Layout.preferredWidth: 80
                     text: shape ? feetToText(shape.thickness) : "0'6\""
                     onEditingFinished: assignIfValid("thickness", text)
                 }
@@ -243,7 +256,7 @@ Popup {
             RowLayout {
                 Label { text: "Thickness"; Layout.preferredWidth: root.labelWidth }
                 TextField {
-                    width: 60
+                    Layout.preferredWidth: 80
                     text: shape ? feetToText(shape.thickness) : "0'6\""
                     onEditingFinished: assignIfValid("thickness", text)
                 }
@@ -257,7 +270,7 @@ Popup {
             RowLayout {
                 Label { text: "Thickness"; Layout.preferredWidth: root.labelWidth }
                 TextField {
-                    width: 60
+                    Layout.preferredWidth: 80
                     text: shape ? feetToText(shape.thickness) : "0'6\""
                     onEditingFinished: assignIfValid("thickness", text)
                 }

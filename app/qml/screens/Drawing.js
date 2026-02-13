@@ -366,57 +366,144 @@ function moveSelected(dxFeet, dyFeet) {
     canvas.requestPaint()
 }
 
+function makeHorizontal(shape) {
+    const x1 = shape.x1;
+    const y1 = shape.y1;
+    const x2 = shape.x2;
+    const y2 = shape.y2;
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const r = Math.sqrt(dx * dx + dy * dy);
+    // Preserve original horizontal direction
+    const dir = Math.sign(dx) || 1; // fallback if dx == 0
+    shape.y2 = y1;
+    shape.x2 = x1 + dir * r;
+    canvas.requestPaint();
+}
+
+function makeVertical(shape) {
+    const x1 = shape.x1;
+    const y1 = shape.y1;
+    const x2 = shape.x2;
+    const y2 = shape.y2;
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const r = Math.sqrt(dx * dx + dy * dy);
+    // Preserve original vertical direction
+    const dir = Math.sign(dy) || 1; // fallback if dy == 0
+    console.log(dir, r)
+    shape.x2 = x1;
+    shape.y2 = y1 + dir * r;
+    canvas.requestPaint();
+}
+
 function snapValue(v) {
     var snapStepFeet = 1.0;
     return Math.round(v / snapStepFeet) * snapStepFeet
 }
 
+// When snapping left or right, only snap x-coordinate 
+// of that point to the nearest vertical grid line.
+// When snapping up or down, only snap y-coordinate 
+// of that point to the nearest horizontal grid line.
 function moveOrSnapSelectedWall(direction, mode) {
+    
     if (selected === -1) return;
     const s = shapes[selected];
     if (s.type !== "wall") return;
 
     pushUndoState();
-
-    const step = 0.25; // same as your QML arrow step
+    const step = 0.25;
 
     if (mode === "move") {
-        // Duplicate the working arrow handler logic exactly
         switch (direction) {
             case "left":  moveSelected(-step, 0); break;
-            case "right": moveSelected( step, 0); break;
+            case "right": moveSelected(step, 0); break;
             case "up":    moveSelected(0, -step); break;
-            case "down":  moveSelected(0,  step); break;
+            case "down":  moveSelected(0, step); break;
         }
-    } else if (mode === "snap") {
-        // Snap logic here (same as your constrained snapping)
-        let ax, ay, oppositeX, oppositeY;
-
-        if (direction === "left")       { ax = s.x1; ay = s.y1; oppositeX = s.x2; oppositeY = s.y2; }
-        else if (direction === "right") { ax = s.x2; ay = s.y2; oppositeX = s.x1; oppositeY = s.y1; }
-        else if (direction === "up")   { ax = s.x1; ay = s.y1; oppositeX = s.x2; oppositeY = s.y2; }
-        else if (direction === "down"){ ax = s.x2; ay = s.y2; oppositeX = s.x1; oppositeY = s.y1; }
-
-        const snappedX = snapValue(ax);
-        const snappedY = snapValue(ay);
-
-        // Horizontal snapping
-        if (Math.abs(oppositeX - snapValue(oppositeX)) < 1e-6) {
-            if (direction === "left")  s.x1 = snappedX;
-            if (direction === "right") s.x2 = snappedX;
-        } else {
-            const dx = snappedX - ax;
-            s.x1 += dx; s.x2 += dx;
-        }
-
-        // Vertical snapping
-        if (Math.abs(oppositeY - snapValue(oppositeY)) < 1e-6) {
-            if (direction === "up")    s.y1 = snappedY;
-            if (direction === "down") s.y2 = snappedY;
-        } else {
-            const dy = snappedY - ay;
-            s.y1 += dy; s.y2 += dy;
-        }
-        canvas.requestPaint();
+        // Moving cancels all constraints
+        for (const key in s.snap) s.snap[key] = false;
+        return;
     }
+
+    // Snap
+    let target, delta;
+
+    switch (direction) {
+        case "left":
+            target = snapValue(s.x1);
+            if (!s.snap.right) {
+                delta = target - s.x1;
+                s.x1 += delta;
+                s.x2 += delta; // translate whole wall
+            } else {
+                s.x1 = target; // resize only
+            }
+            s.snap.left = true;
+            break;
+
+        case "right":
+            target = snapValue(s.x2);
+            if (!s.snap.left) {
+                delta = target - s.x2;
+                s.x1 += delta;
+                s.x2 += delta;
+            } else {
+                s.x2 = target;
+            }
+            s.snap.right = true;
+            break;
+
+        case "up":
+            // pick the point closer to x-axis (smaller y)
+            if (s.y1 < s.y2) {
+                target = snapValue(s.y1);
+                if (!s.snap.bottom) {
+                    delta = target - s.y1;
+                    s.y1 += delta;
+                    s.y2 += delta; // translate whole wall
+                } else {
+                    s.y1 = target;
+                }
+                s.snap.top = true;
+            } else {
+                target = snapValue(s.y2);
+                if (!s.snap.bottom) {
+                    delta = target - s.y2;
+                    s.y1 += delta;
+                    s.y2 += delta;
+                } else {
+                    s.y2 = target;
+                }
+                s.snap.top = true;
+            }
+            break;
+
+        case "down":
+            // pick the point farther from x-axis (larger y)
+            if (s.y1 > s.y2) {
+                target = snapValue(s.y1);
+                if (!s.snap.top) {
+                    delta = target - s.y1;
+                    s.y1 += delta;
+                    s.y2 += delta;
+                } else {
+                    s.y1 = target;
+                }
+                s.snap.bottom = true;
+            } else {
+                target = snapValue(s.y2);
+                if (!s.snap.top) {
+                    delta = target - s.y2;
+                    s.y1 += delta;
+                    s.y2 += delta;
+                } else {
+                    s.y2 = target;
+                }
+                s.snap.bottom = true;
+            }
+            break;
+    }
+    canvas.requestPaint();
 }
