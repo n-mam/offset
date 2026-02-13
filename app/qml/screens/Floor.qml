@@ -528,18 +528,22 @@ Item {
         var s = shapes[selected]
         switch (event.key) {
             case Qt.Key_Left:
+                if (!selected) return
                 Draw.moveShape(s, "left", step)
                 event.accepted = true
                 break
             case Qt.Key_Right:
+                if (!selected) return
                 Draw.moveShape(s, "right", step)
                 event.accepted = true
                 break
             case Qt.Key_Up:
+                if (!selected) return
                 Draw.moveShape(s, "up", step)
                 event.accepted = true
                 break
             case Qt.Key_Down:
+                if (!selected) return
                 Draw.moveShape(s, "down", step)
                 event.accepted = true
                 break
@@ -571,6 +575,20 @@ Item {
                 if (event.modifiers & Qt.ControlModifier) {
                     fitDrawingToView()
                     canvas.requestPaint()
+                    event.accepted = true
+                }
+                break
+            case Qt.Key_H:
+                if (!selected) return
+                if (event.modifiers & Qt.ControlModifier) {
+                    Draw.makeHorizontal(s)
+                    event.accepted = true
+                }
+                break
+            case Qt.Key_V:
+                if (!selected) return
+                if (event.modifiers & Qt.ControlModifier) {
+                    Draw.makeVertical(s)
                     event.accepted = true
                 }
                 break

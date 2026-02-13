@@ -380,7 +380,6 @@ function makeVertical(shape) {
     const r = Math.sqrt(dx * dx + dy * dy);
     // Preserve original vertical direction
     const dir = Math.sign(dy) || 1; // fallback if dy == 0
-    console.log(dir, r)
     shape.x2 = x1;
     shape.y2 = y1 + dir * r;
     canvas.requestPaint();
