@@ -113,10 +113,6 @@ Item {
             shapeSelector.currentTool = "window"
             return "window"
         }
-        if (mouse.modifiers & Qt.ControlModifier) {
-            shapeSelector.currentTool = "door"
-            return "door"
-        }
         if (mouse.modifiers & Qt.ShiftModifier) {
             shapeSelector.currentTool = "dimension"
             return "dimension"
@@ -409,9 +405,10 @@ Item {
                 const s = shapes[selected]
                 dragOrigShape = { x1: s.x1, y1: s.y1, x2: s.x2, y2: s.y2 }
                 drawing.active = false
-            } else if (shapeSelector.currentTool === "idle") {
-                panning = true
-                return
+            } else if (shapeSelector.currentTool === "idle" || 
+                (mouse.modifiers & Qt.ControlModifier)) {
+                    panning = true
+                    return
             } else {
                 const tool = resolveTool(mouse)
                 const pushUndo = (tool === "dimension")

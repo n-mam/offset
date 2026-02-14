@@ -6,7 +6,7 @@ import "qrc:/screens/Drawing.js" as Draw
 
 Popup {
     id: root
-    height: 440
+    height: 600
     modal: false
     focus: true
     closePolicy: Popup.CloseOnEscape|Popup.CloseOnPressOutside
@@ -21,7 +21,7 @@ Popup {
     property int shapeIndex: -1
     property int labelWidth: 85
     property string transformMode: "snap"
-    property string rotationMode: "C"
+    property string anchorPoint: "C"
     signal transformRequested(string direction, string mode)
 
     ColorDialog {
@@ -223,47 +223,83 @@ Popup {
                 }
             }
         }
-        Label { text: "Rotate Around:"; Layout.preferredWidth: root.labelWidth }
-        RowLayout {
-            ColumnLayout {
-                spacing: 4
+        
+        ColumnLayout {
+            spacing: 2
+            RowLayout {
+                spacing: 2
+                Layout.preferredHeight:  30
                 ButtonGroup {
-                    id: rotationGroup
+                    id: anchorPointGroup
                 }
                 RadioButton {
                     text: qsTr("🟢")
-                    spacing: 4   // space between circle and text
+                    spacing: 2   // space between circle and text
                     implicitHeight: 20
-                    ButtonGroup.group: rotationGroup
-                    onCheckedChanged: if (checked) root.rotationMode = "S"
+                    ButtonGroup.group: anchorPointGroup
+                    onCheckedChanged: if (checked) root.anchorPoint = "S"
                 }
                 RadioButton {
                     text: qsTr("🔵")
-                    spacing: 4   // space between circle and text
+                    spacing: 2  // space between circle and text
                     implicitHeight: 20
                     checked: true
-                    ButtonGroup.group: rotationGroup
-                    onCheckedChanged: if (checked) root.rotationMode = "C"
+                    ButtonGroup.group: anchorPointGroup
+                    onCheckedChanged: if (checked) root.anchorPoint = "C"
                 }
                 RadioButton {
                     text: qsTr("🔴")
                     spacing: 4   // space between circle and text
                     implicitHeight: 20
-                    ButtonGroup.group: rotationGroup
-                    onCheckedChanged: if (checked) root.rotationMode = "E"
+                    ButtonGroup.group: anchorPointGroup
+                    onCheckedChanged: if (checked) root.anchorPoint = "E"
+                }
+                RadioButton {
+                    text: qsTr("⚪") 
+                    spacing: 2   // space between circle and text
+                    implicitHeight: 20
+                    ButtonGroup.group: anchorPointGroup
+                    onCheckedChanged: if (checked) root.anchorPoint = "none"
                 }
             }
-            ColumnLayout {
-                ToolButton {
-                    text: qsTr("H")
-                    onClicked: Draw.makeHorizontal(shape, root.rotationMode)
-                    implicitHeight: 20
+        }
+
+        RowLayout {
+            Layout.preferredHeight:  30
+            Label { text: "Align"; Layout.preferredWidth: root.labelWidth }
+            ToolButton {
+                text: qsTr("H")
+                onClicked: Draw.makeHorizontal(shape, root.anchorPoint)
+                implicitHeight: 24
+                implicitWidth: 50
+                background: Rectangle {
+                    radius: 4
+                    color: "#656565"
+                    border.color: "#555"
                 }
-                ToolButton {
-                    text: qsTr("V")
-                    onClicked: Draw.makeVertical(shape, root.rotationMode)
-                    implicitHeight: 20
+            }
+            ToolButton {
+                text: qsTr("V")
+                onClicked: Draw.makeVertical(shape, root.anchorPoint)
+                implicitHeight: 24
+                implicitWidth: 50
+                background: Rectangle {
+                    radius: 4
+                    color: "#656565"
+                    border.color: "#555"
                 }
+            }                    
+        }
+
+        RowLayout {
+            Layout.preferredHeight:  30
+            Label { text: "Length"; Layout.preferredWidth: root.labelWidth }
+            TextField {
+                Layout.preferredWidth: 80
+                Layout.preferredHeight:  40
+                text: shape ? feetToText(
+                    Math.hypot(shape.x2 - shape.x1, shape.y2 - shape.y1)) : "0'0\""
+                onEditingFinished: console.log("fixme")
             }
         }
     }

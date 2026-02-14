@@ -355,64 +355,64 @@ function angleVisualizer(ctx, cx, cy, angleRad, zoom) {
     ctx.fillText(`${deg.toFixed(0)}°`, cx + r + 4 / zoom, cy)
 }
 
-function makeHorizontal(s, around) {
+function makeHorizontal(s, anchor) {
     const dx = s.x2 - s.x1;
     const dy = s.y2 - s.y1;
     const r = Math.sqrt(dx * dx + dy * dy);
     // rotation center
     let cx = (s.x1 + s.x2) / 2;
     let cy = (s.y1 + s.y2) / 2;
-    if (around === "S") {
+    if (anchor === "S") {
         cx = s.x1
         cy = s.y1
-    } else if (around === "E") {
+    } else if (anchor === "E") {
         cx = s.x2
         cy = s.y2
     }
     // Preserve original horizontal direction
     const dir = Math.sign(dx) || 1;
     const half = r / 2;
-    if (around === "S") {
+    if (anchor === "S") {
         s.x2 = cx + r * dir
         s.y2 = cy
-    } else if (around === "C") {
+    } else if (anchor === "C") {
         s.x1 = cx - dir * half;
         s.y1 = cy;
         s.x2 = cx + dir * half;
         s.y2 = cy;
-    } else if (around === "E") {
+    } else if (anchor === "E") {
         s.x1 = cx - r * dir
         s.y1 = cy
     }
     canvas.requestPaint();
 }
 
-function makeVertical(s, around) {
+function makeVertical(s, anchor) {
     const dx = s.x2 - s.x1;
     const dy = s.y2 - s.y1;
     const r = Math.sqrt(dx * dx + dy * dy);
     // rotation center
     let cx = (s.x1 + s.x2) / 2;
     let cy = (s.y1 + s.y2) / 2;
-    if (around === "S") {
+    if (anchor === "S") {
         cx = s.x1;
         cy = s.y1;
-    } else if (around === "E") {
+    } else if (anchor === "E") {
         cx = s.x2;
         cy = s.y2;
     }
     // Preserve original vertical direction
     const dir = Math.sign(dy) || 1;
     const half = r / 2;
-    if (around === "S") {
+    if (anchor === "S") {
         s.x2 = cx;
         s.y2 = cy + r * dir;
-    } else if (around === "C") {
+    } else if (anchor === "C") {
         s.x1 = cx;
         s.y1 = cy - dir * half;
         s.x2 = cx;
         s.y2 = cy + dir * half;
-    } else if (around === "E") {
+    } else if (anchor === "E") {
         s.x1 = cx;
         s.y1 = cy - r * dir;
     }
