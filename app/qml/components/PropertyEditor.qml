@@ -227,12 +227,11 @@ Popup {
         }
 
         RowLayout {
-            Layout.preferredHeight:  30
-            Label { text: "Flip"; Layout.preferredWidth: root.labelWidth }
+            Label { text: "Flip"; Layout.preferredWidth: root.labelWidth * 0.70 }
             ToolButton {
                 text: qsTr("H")
                 onClicked: Shape.flip(shape, true)
-                implicitHeight: 24
+                implicitHeight: 30
                 implicitWidth: 50
                 background: Rectangle {
                     radius: 4
@@ -243,7 +242,7 @@ Popup {
             ToolButton {
                 text: qsTr("V")
                 onClicked: Shape.flip(shape, false)
-                implicitHeight: 24
+                implicitHeight: 30
                 implicitWidth: 50
                 background: Rectangle {
                     radius: 4
@@ -253,46 +252,66 @@ Popup {
             }
         }
 
-        ColumnLayout {
-            spacing: 2
-            RowLayout {
-                spacing: 2
-                Layout.preferredHeight:  30
-                ButtonGroup {
-                    id: anchorPointGroup
-                }
-                RadioButton {
-                    text: qsTr("🟢")
-                    spacing: 2   // space between circle and text
-                    implicitHeight: 20
+        Rectangle {
+            // Set width to fill its parent and height to 1 pixel
+            Layout.fillWidth: true
+            width: parent.width
+            height: 2
+            color: "#C0C0C0" // A light gray color
+            // Optional: Add margins using anchors or Layout.margins
+        }
+
+        RowLayout {
+            spacing: 12
+            Layout.alignment: Qt.AlignHCenter
+            ButtonGroup { id: anchorPointGroup }
+            Repeater {
+                model: [
+                    { color: "green", value: "S" },
+                    { color: "blue",  value: "C" },
+                    { color: "red",   value: "E" }
+                ]
+                delegate: RadioButton {
+                    id: radio
+                    checked: modelData.value === "C"
                     ButtonGroup.group: anchorPointGroup
-                    onCheckedChanged: if (checked) root.anchorPoint = "S"
-                }
-                RadioButton {
-                    text: qsTr("🔵")
-                    spacing: 2  // space between circle and text
-                    implicitHeight: 20
-                    checked: true
-                    ButtonGroup.group: anchorPointGroup
-                    onCheckedChanged: if (checked) root.anchorPoint = "C"
-                }
-                RadioButton {
-                    text: qsTr("🔴")
-                    spacing: 4   // space between circle and text
-                    implicitHeight: 20
-                    ButtonGroup.group: anchorPointGroup
-                    onCheckedChanged: if (checked) root.anchorPoint = "E"
+                    onCheckedChanged: {
+                        if (checked)
+                            root.anchorPoint = modelData.value
+                    }
+                    contentItem: Row {
+                        spacing: 6
+                        anchors.verticalCenter: parent.verticalCenter
+                        Rectangle {
+                            id: circle
+                            width: radio.checked ? 18 : 14
+                            height: width
+                            radius: width / 2
+                            color: modelData.color
+                            opacity: 1.0
+                            border.width: radio.checked ? 3 : 1
+                            border.color: "white"
+                            anchors.verticalCenter: parent.verticalCenter
+                            Behavior on width {
+                                NumberAnimation { duration: 120 }
+                            }
+                            Behavior on opacity {
+                                NumberAnimation { duration: 120 }
+                            }
+                        }
+                    }
+                    // hide default radio circle
+                    indicator.visible: false
                 }
             }
         }
 
         RowLayout {
-            Layout.preferredHeight:  30
-            Label { text: "Align"; Layout.preferredWidth: root.labelWidth }
+            Label { text: "Align"; Layout.preferredWidth: root.labelWidth * 0.7 }
             ToolButton {
                 text: qsTr("H")
                 onClicked: Draw.makeHorizontal(shape, root.anchorPoint)
-                implicitHeight: 24
+                implicitHeight: 30
                 implicitWidth: 50
                 background: Rectangle {
                     radius: 4
@@ -303,7 +322,7 @@ Popup {
             ToolButton {
                 text: qsTr("V")
                 onClicked: Draw.makeVertical(shape, root.anchorPoint)
-                implicitHeight: 24
+                implicitHeight: 30
                 implicitWidth: 50
                 background: Rectangle {
                     radius: 4
@@ -314,8 +333,7 @@ Popup {
         }
 
         RowLayout {
-            Layout.preferredHeight:  30
-            Label { text: "Length"; Layout.preferredWidth: root.labelWidth }
+            Label { text: "Length"; Layout.preferredWidth: root.labelWidth * 0.75 }
             TextField {
                 Layout.preferredWidth: 80
                 Layout.preferredHeight:  40
