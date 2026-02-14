@@ -80,6 +80,58 @@ function rotate(w, angleRad) {
     w.y2 = c.y + Math.sin(angleRad) * halfLen
 }
 
+function flip(s, horizontal = true) {
+    if (!s) return;
+
+    switch (s.type) {
+        case "door": {
+            // hinge is always x1,y1
+            if (horizontal) {
+                s.x2 = 2 * s.x1 - s.x2; // mirror leaf across hinge X
+            } else {
+                s.y2 = 2 * s.y1 - s.y2; // mirror leaf across hinge Y
+            }
+            // recompute angle and width
+            s.angle = Math.atan2(s.y2 - s.y1, s.x2 - s.x1);
+            s.width = Math.hypot(s.x2 - s.x1, s.y2 - s.y1);
+            break;
+        }
+
+        case "window": {
+            // flip windows around center
+            const cx = (s.x1 + s.x2) / 2;
+            const cy = (s.y1 + s.y2) / 2;
+            if (horizontal) {
+                s.x1 = 2 * cx - s.x1;
+                s.x2 = 2 * cx - s.x2;
+            }
+            if (!horizontal) {
+                s.y1 = 2 * cy - s.y1;
+                s.y2 = 2 * cy - s.y2;
+            }
+            break;
+        }
+
+        default: {
+            // walls, dimensions: flip around center
+            const cx = (s.x1 + s.x2) / 2;
+            const cy = (s.y1 + s.y2) / 2;
+            if (horizontal) {
+                s.x1 = 2 * cx - s.x1;
+                s.x2 = 2 * cx - s.x2;
+            }
+            if (!horizontal) {
+                s.y1 = 2 * cy - s.y1;
+                s.y2 = 2 * cy - s.y2;
+            }
+            break;
+        }
+    }
+
+    canvas.requestPaint();
+}
+
+
 function hitTest(p, shapes, pixelsPerFoot, zoom, pickTolerancePixels) {
     let hit = -1
     let best = pickTolerancePixels / (pixelsPerFoot * zoom)
@@ -116,23 +168,16 @@ function make(type, startX, startY, endX, endY, thickness) {
         y2: endY,
         thickness,
         color: defaultColorForType(type).toString()
-
     }
     switch (type) {
         case "wall":
+        case "door":
         case "window":
         case "dimension":
-            return Object.assign({ 
-                type,
-                snap: { left:false, right:false, top:false, bottom:false }
-            }, base)
-        case "door":
             return Object.assign({
-                type: "door",
-                width: Math.hypot(dx, dy),
-                angle: Math.atan2(dy, dx)
+                type,
+                snap: { left: false, right: false, top: false, bottom: false }
             }, base)
-
         default:
             return null
     }

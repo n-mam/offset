@@ -2,6 +2,8 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Dialogs
 import QtQuick.Controls
+
+import "qrc:/screens/Shape.js" as Shape
 import "qrc:/screens/Drawing.js" as Draw
 
 Popup {
@@ -223,7 +225,34 @@ Popup {
                 }
             }
         }
-        
+
+        RowLayout {
+            Layout.preferredHeight:  30
+            Label { text: "Flip"; Layout.preferredWidth: root.labelWidth }
+            ToolButton {
+                text: qsTr("H")
+                onClicked: Shape.flip(shape, true)
+                implicitHeight: 24
+                implicitWidth: 50
+                background: Rectangle {
+                    radius: 4
+                    color: "#656565"
+                    border.color: "#555"
+                }
+            }
+            ToolButton {
+                text: qsTr("V")
+                onClicked: Shape.flip(shape, false)
+                implicitHeight: 24
+                implicitWidth: 50
+                background: Rectangle {
+                    radius: 4
+                    color: "#656565"
+                    border.color: "#555"
+                }
+            }
+        }
+
         ColumnLayout {
             spacing: 2
             RowLayout {
@@ -254,13 +283,6 @@ Popup {
                     ButtonGroup.group: anchorPointGroup
                     onCheckedChanged: if (checked) root.anchorPoint = "E"
                 }
-                RadioButton {
-                    text: qsTr("⚪") 
-                    spacing: 2   // space between circle and text
-                    implicitHeight: 20
-                    ButtonGroup.group: anchorPointGroup
-                    onCheckedChanged: if (checked) root.anchorPoint = "none"
-                }
             }
         }
 
@@ -288,7 +310,7 @@ Popup {
                     color: "#656565"
                     border.color: "#555"
                 }
-            }                    
+            }
         }
 
         RowLayout {
@@ -299,7 +321,7 @@ Popup {
                 Layout.preferredHeight:  40
                 text: shape ? feetToText(
                     Math.hypot(shape.x2 - shape.x1, shape.y2 - shape.y1)) : "0'0\""
-                onEditingFinished: console.log("fixme")
+                onEditingFinished: Draw.changeLength(shape, textToFeet(text), root.anchorPoint)
             }
         }
     }

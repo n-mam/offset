@@ -387,6 +387,38 @@ function makeHorizontal(s, anchor) {
     canvas.requestPaint();
 }
 
+function changeLength(s, length, anchor) {
+    if (isNaN(length)) return
+    const dx = s.x2 - s.x1;
+    const dy = s.y2 - s.y1;
+    const currentLength = Math.sqrt(dx * dx + dy * dy);
+    // Prevent division by zero
+    if (currentLength === 0) return;
+    // Unit direction vector
+    const ux = dx / currentLength;
+    const uy = dy / currentLength;
+    if (anchor === "S") {
+        // Keep (x1, y1) fixed
+        s.x2 = s.x1 + ux * length;
+        s.y2 = s.y1 + uy * length;
+    } else if (anchor === "E") {
+        // Keep (x2, y2) fixed
+        s.x1 = s.x2 - ux * length;
+        s.y1 = s.y2 - uy * length;
+    } else if (anchor === "C") {
+        // Keep midpoint fixed
+        const cx = (s.x1 + s.x2) / 2;
+        const cy = (s.y1 + s.y2) / 2;
+        const half = length / 2;
+        s.x1 = cx - ux * half;
+        s.y1 = cy - uy * half;
+        s.x2 = cx + ux * half;
+        s.y2 = cy + uy * half;
+    }
+    canvas.requestPaint();
+}
+
+
 function makeVertical(s, anchor) {
     const dx = s.x2 - s.x1;
     const dy = s.y2 - s.y1;
