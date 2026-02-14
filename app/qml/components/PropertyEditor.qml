@@ -20,7 +20,7 @@ Popup {
     property var shape
     property int shapeIndex: -1
     property int labelWidth: 85
-    property string transformMode: "move"
+    property string transformMode: "snap"
     property string rotationMode: "C"
     signal transformRequested(string direction, string mode)
 
@@ -158,13 +158,13 @@ Popup {
                     spacing: 4   // space between circle and text
                     implicitHeight: 20
                     ButtonGroup.group: radioGroup
-                    checked: true  
                     onCheckedChanged: if (checked) root.transformMode = "move"
                 }
                 RadioButton {
                     text: "Snap"
                     spacing: 4   // space between circle and text
                     implicitHeight: 20
+                    checked: true  
                     ButtonGroup.group: radioGroup
                     onCheckedChanged: if (checked) root.transformMode = "snap"
                 }
