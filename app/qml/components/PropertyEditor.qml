@@ -21,6 +21,7 @@ Popup {
     property int shapeIndex: -1
     property int labelWidth: 85
     property string transformMode: "move"
+    property string rotationMode: "C"
     signal transformRequested(string direction, string mode)
 
     ColorDialog {
@@ -221,18 +222,48 @@ Popup {
                     onClicked: transformRequested("right", transformMode)
                 }
             }
+        }
+        RowLayout {
             ColumnLayout {
-                ToolButton {
-                    text: qsTr("V")
-                    onClicked: Draw.makeVertical(shape)
-                    implicitHeight: 20
+                spacing: 4        
+                ButtonGroup {
+                    id: rotationGroup
                 }
-                ToolButton {
-                    text: qsTr("H")
-                    onClicked: Draw.makeHorizontal(shape)
+                RadioButton {
+                    text: qsTr("🔴")
+                    spacing: 4   // space between circle and text
                     implicitHeight: 20
+                    ButtonGroup.group: rotationGroup
+                    onCheckedChanged: if (checked) root.rotationMode = "E"
+                }
+                RadioButton {
+                    text: qsTr("🟢")
+                    spacing: 4   // space between circle and text
+                    implicitHeight: 20
+                    ButtonGroup.group: rotationGroup
+                    onCheckedChanged: if (checked) root.rotationMode = "S"
+                }
+                RadioButton {
+                    text: qsTr("🔵")
+                    spacing: 4   // space between circle and text
+                    implicitHeight: 20
+                    checked: true  
+                    ButtonGroup.group: rotationGroup
+                    onCheckedChanged: if (checked) root.rotationMode = "C"
                 }
             }
+            ColumnLayout {
+                ToolButton {
+                    text: qsTr("H")
+                    onClicked: Draw.makeHorizontal(shape, root.rotationMode)
+                    implicitHeight: 20
+                }
+                ToolButton {
+                    text: qsTr("V")
+                    onClicked: Draw.makeVertical(shape, root.rotationMode)
+                    implicitHeight: 20
+                }
+            }        
         }
     }
 

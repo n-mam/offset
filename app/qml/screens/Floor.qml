@@ -84,8 +84,8 @@ Item {
 
     property var gridLevels: [
         //{ step: 0.25, color: "#3a3a3a", width: 0.5 },
-        { step: 1,    color: "#505050", width: 1   },
-        { step: 5,    color: "#707070", width: 2   }
+        { step: 1,    color: "#6a6a6a", width: 1   },
+        { step: 5,    color: "#929292", width: 2   }
     ]
 
     property var colors: ({
@@ -573,13 +573,13 @@ Item {
             case Qt.Key_H:
                 if (selected === -1) break
                 if (event.modifiers & Qt.ControlModifier) {
-                    Draw.makeHorizontal(s)
+                    Draw.makeHorizontal(s, "C")
                 }
                 break
             case Qt.Key_V:
                 if (selected === -1) break
                 if (event.modifiers & Qt.ControlModifier) {
-                    Draw.makeVertical(s)
+                    Draw.makeVertical(s, "C")
                 }
                 break
         }

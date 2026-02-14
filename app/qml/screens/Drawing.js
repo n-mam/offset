@@ -355,45 +355,73 @@ function angleVisualizer(ctx, cx, cy, angleRad, zoom) {
     ctx.fillText(`${deg.toFixed(0)}°`, cx + r + 4 / zoom, cy)
 }
 
-function makeHorizontal(shape) {
-    const x1 = shape.x1;
-    const y1 = shape.y1;
-    const x2 = shape.x2;
-    const y2 = shape.y2;
-    const dx = x2 - x1;
-    const dy = y2 - y1;
+function makeHorizontal(s, around) {
+    const dx = s.x2 - s.x1;
+    const dy = s.y2 - s.y1;
     const r = Math.sqrt(dx * dx + dy * dy);
-    // Midpoint (center of rotation)
-    const cx = (x1 + x2) / 2;
-    const cy = (y1 + y2) / 2;
+    // rotation center
+    let cx = (s.x1 + s.x2) / 2;
+    let cy = (s.y1 + s.y2) / 2;
+    if (around === "S") {
+        cx = s.x1
+        cy = s.y1
+    } else if (around === "E") {
+        cx = s.x2
+        cy = s.y2
+    }
     // Preserve original horizontal direction
     const dir = Math.sign(dx) || 1;
     const half = r / 2;
-    shape.x1 = cx - dir * half;
-    shape.y1 = cy;
-    shape.x2 = cx + dir * half;
-    shape.y2 = cy;
+    if (around === "S") {
+        s.x2 = cx + r * dir
+        s.y2 = cy
+    } else if (around === "C") {
+        s.x1 = cx - dir * half;
+        s.y1 = cy;
+        s.x2 = cx + dir * half;
+        s.y2 = cy;
+    } else if (around === "E") {
+        s.x1 = cx - r * dir
+        s.y1 = cy
+        console.log(s.x1, s.y1, s.x2, s.y2)
+    }
     canvas.requestPaint();
 }
 
-function makeVertical(shape) {
-    const x1 = shape.x1;
-    const y1 = shape.y1;
-    const x2 = shape.x2;
-    const y2 = shape.y2;
-    const dx = x2 - x1;
-    const dy = y2 - y1;
+function makeVertical(s, around) {
+    const dx = s.x2 - s.x1;
+    const dy = s.y2 - s.y1;
     const r = Math.sqrt(dx * dx + dy * dy);
-    // Midpoint (center of rotation)
-    const cx = (x1 + x2) / 2;
-    const cy = (y1 + y2) / 2;
+
+    // rotation center
+    let cx = (s.x1 + s.x2) / 2;
+    let cy = (s.y1 + s.y2) / 2;
+
+    if (around === "S") {
+        cx = s.x1;
+        cy = s.y1;
+    } else if (around === "E") {
+        cx = s.x2;
+        cy = s.y2;
+    }
+
     // Preserve original vertical direction
     const dir = Math.sign(dy) || 1;
     const half = r / 2;
-    shape.x1 = cx;
-    shape.y1 = cy - dir * half;
-    shape.x2 = cx;
-    shape.y2 = cy + dir * half;
+
+    if (around === "S") {
+        s.x2 = cx;
+        s.y2 = cy + r * dir;
+    } else if (around === "C") {
+        s.x1 = cx;
+        s.y1 = cy - dir * half;
+        s.x2 = cx;
+        s.y2 = cy + dir * half;
+    } else if (around === "E") {
+        s.x1 = cx;
+        s.y1 = cy - r * dir;
+    }
+
     canvas.requestPaint();
 }
 
