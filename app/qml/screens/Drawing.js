@@ -433,7 +433,7 @@ function moveShape(s, direction, step = 0.25) {
     s.x2 += dxFeet
     s.y2 += dyFeet
     // Moving cancels all constraints
-    for (const key in s.snap) s.snap[key] = false;    
+    for (const key in s.snap) s.snap[key] = false;
     canvas.requestPaint()
 }
 
@@ -448,15 +448,15 @@ function snapShape(s, direction) {
     // Snap
     let isVertical = Math.abs(s.y1 - s.y2) > Math.abs(s.x1 - s.x2)
     let isHorizontal = Math.abs(s.x1 - s.x2) > Math.abs(s.y1 - s.y2)
+    if (isVertical) makeVertical(s, "C")
+    if (isHorizontal) makeHorizontal(s, "C")
     switch (direction) {
         case "left":
             if (isVertical) {
-                makeVertical(s, "C")
                 let lface = snapValue(Math.min(s.x1, s.x2) - (s.thickness / 2));
                 s.x1 = s.x2 = lface + (s.thickness / 2)
                 console.log(s.x1, s.x2, lface)
             } else {
-                makeHorizontal(s, "C")
                 let lface = snapValue(Math.min(s.x1, s.x2));
                 let delta = lface - Math.min(s.x1, s.x2)
                 s.x1 += delta
@@ -466,11 +466,9 @@ function snapShape(s, direction) {
             break;
         case "right":
             if (isVertical) {
-                makeVertical(s, "C")
                 let rface = snapValue(Math.max(s.x1, s.x2) + (s.thickness / 2));
                 s.x1 = s.x2 = rface - (s.thickness / 2)
             } else {
-                makeHorizontal(s, "C")
                 let rface = snapValue(Math.max(s.x1, s.x2));
                 let delta = rface - Math.max(s.x1, s.x2)
                 s.x1 += delta
@@ -480,13 +478,11 @@ function snapShape(s, direction) {
             break;
         case "up":
             if (isVertical) {
-                makeVertical(s, "C")
                 let uface = snapValue(Math.min(s.y1, s.y2))
                 let delta = uface - Math.min(s.y1, s.y2)
                 s.y1 += delta
                 s.y2 += delta
             } else {
-                makeHorizontal(s, "C")
                 let uface = snapValue(Math.min(s.y1, s.y2) - (s.thickness / 2))
                 let delta = uface - Math.min(s.y1, s.y2)
                 s.y1 += delta + (s.thickness / 2)
@@ -496,13 +492,11 @@ function snapShape(s, direction) {
             break;
         case "down":
             if (isVertical) {
-                makeVertical(s, "C")
                 let dface = snapValue(Math.max(s.y1, s.y2))
                 let delta = dface - Math.max(s.y1, s.y2)
                 s.y1 += delta
                 s.y2 += delta
             } else {
-                makeHorizontal(s, "C")
                 let dface = snapValue(Math.max(s.y1, s.y2) + (s.thickness / 2))
                 let delta = dface - Math.max(s.y1, s.y2)
                 s.y1 += delta - (s.thickness / 2)

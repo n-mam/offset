@@ -149,7 +149,7 @@ Popup {
 
         RowLayout {
             ColumnLayout {
-                spacing: 4        
+                spacing: 4
                 ButtonGroup {
                     id: radioGroup
                 }
@@ -164,7 +164,7 @@ Popup {
                     text: "Snap"
                     spacing: 4   // space between circle and text
                     implicitHeight: 20
-                    checked: true  
+                    checked: true
                     ButtonGroup.group: radioGroup
                     onCheckedChanged: if (checked) root.transformMode = "snap"
                 }
@@ -223,18 +223,12 @@ Popup {
                 }
             }
         }
+        Label { text: "Rotate Around:"; Layout.preferredWidth: root.labelWidth }
         RowLayout {
             ColumnLayout {
-                spacing: 4        
+                spacing: 4
                 ButtonGroup {
                     id: rotationGroup
-                }
-                RadioButton {
-                    text: qsTr("🔴")
-                    spacing: 4   // space between circle and text
-                    implicitHeight: 20
-                    ButtonGroup.group: rotationGroup
-                    onCheckedChanged: if (checked) root.rotationMode = "E"
                 }
                 RadioButton {
                     text: qsTr("🟢")
@@ -247,9 +241,16 @@ Popup {
                     text: qsTr("🔵")
                     spacing: 4   // space between circle and text
                     implicitHeight: 20
-                    checked: true  
+                    checked: true
                     ButtonGroup.group: rotationGroup
                     onCheckedChanged: if (checked) root.rotationMode = "C"
+                }
+                RadioButton {
+                    text: qsTr("🔴")
+                    spacing: 4   // space between circle and text
+                    implicitHeight: 20
+                    ButtonGroup.group: rotationGroup
+                    onCheckedChanged: if (checked) root.rotationMode = "E"
                 }
             }
             ColumnLayout {
@@ -263,7 +264,7 @@ Popup {
                     onClicked: Draw.makeVertical(shape, root.rotationMode)
                     implicitHeight: 20
                 }
-            }        
+            }
         }
     }
 
