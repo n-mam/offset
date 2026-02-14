@@ -363,10 +363,16 @@ function makeHorizontal(shape) {
     const dx = x2 - x1;
     const dy = y2 - y1;
     const r = Math.sqrt(dx * dx + dy * dy);
+    // Midpoint (center of rotation)
+    const cx = (x1 + x2) / 2;
+    const cy = (y1 + y2) / 2;
     // Preserve original horizontal direction
-    const dir = Math.sign(dx) || 1; // fallback if dx == 0
-    shape.y2 = y1;
-    shape.x2 = x1 + dir * r;
+    const dir = Math.sign(dx) || 1;
+    const half = r / 2;
+    shape.x1 = cx - dir * half;
+    shape.y1 = cy;
+    shape.x2 = cx + dir * half;
+    shape.y2 = cy;
     canvas.requestPaint();
 }
 
@@ -378,10 +384,16 @@ function makeVertical(shape) {
     const dx = x2 - x1;
     const dy = y2 - y1;
     const r = Math.sqrt(dx * dx + dy * dy);
+    // Midpoint (center of rotation)
+    const cx = (x1 + x2) / 2;
+    const cy = (y1 + y2) / 2;
     // Preserve original vertical direction
-    const dir = Math.sign(dy) || 1; // fallback if dy == 0
-    shape.x2 = x1;
-    shape.y2 = y1 + dir * r;
+    const dir = Math.sign(dy) || 1;
+    const half = r / 2;
+    shape.x1 = cx;
+    shape.y1 = cy - dir * half;
+    shape.x2 = cx;
+    shape.y2 = cy + dir * half;
     canvas.requestPaint();
 }
 
@@ -415,31 +427,40 @@ function snapValue(v) {
 function snapShape(s, direction) {
     pushUndoState();
     // Snap
-    let target, delta;
+    let isVertical = Math.abs(s.y1 - s.y2) > Math.abs(s.x1 - s.x2)
+    let isHorizontal = Math.abs(s.x1 - s.x2) > Math.abs(s.y1 - s.y2)
     switch (direction) {
         case "left":
-            target = snapValue(s.x1);
-            if (!s.snap.right) {
-                delta = target - s.x1;
-                s.x1 += delta;
-                s.x2 += delta; // translate whole wall
+            if (isVertical) {
+                let lface = snapValue(Math.min(s.x1, s.x2) - (s.thickness / 2));
+                s.x1 = s.x2 = lface + (s.thickness / 2)
+                console.log(s.x1, s.x2, lface)
             } else {
-                s.x1 = target; // resize only
+                let lface = snapValue(Math.min(s.x1, s.x2));
+                let delta = Math.abs(lface - Math.min(s.x1, s.x2))
+                s.x1 -= delta
+                s.x2 -= delta
             }
             s.snap.left = true;
             break;
         case "right":
-            target = snapValue(s.x2);
-            if (!s.snap.left) {
-                delta = target - s.x2;
-                s.x1 += delta;
-                s.x2 += delta;
+            if (isVertical) {
+                let rface = snapValue(Math.max(s.x1, s.x2) + (s.thickness / 2));
+                s.x1 = s.x2 = rface - (s.thickness / 2)
             } else {
-                s.x2 = target;
+                let rface = snapValue(Math.max(s.x1, s.x2));
+                let delta = Math.abs(rface - Math.max(s.x1, s.x2))
+                s.x1 += delta
+                s.x2 += delta
             }
             s.snap.right = true;
             break;
         case "up":
+            if (isVertical) {
+
+            } else {
+                
+            }
             // pick the point closer to x-axis (smaller y)
             if (s.y1 < s.y2) {
                 target = snapValue(s.y1);

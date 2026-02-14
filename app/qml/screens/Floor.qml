@@ -528,24 +528,20 @@ Item {
         var s = shapes[selected]
         switch (event.key) {
             case Qt.Key_Left:
-                if (!selected) return
+                if (selected === -1) break
                 Draw.moveShape(s, "left", step)
-                event.accepted = true
                 break
             case Qt.Key_Right:
-                if (!selected) return
+                if (selected === -1) break
                 Draw.moveShape(s, "right", step)
-                event.accepted = true
                 break
             case Qt.Key_Up:
-                if (!selected) return
+                if (selected === -1) break
                 Draw.moveShape(s, "up", step)
-                event.accepted = true
                 break
             case Qt.Key_Down:
-                if (!selected) return
+                if (selected === -1) break
                 Draw.moveShape(s, "down", step)
-                event.accepted = true
                 break
             case Qt.Key_Z:
                 if (event.modifiers & Qt.ControlModifier) {
@@ -555,44 +551,39 @@ Item {
                         selected = -1
                         canvas.requestPaint()
                     }
-                    event.accepted = true
                 }
                 break
             case Qt.Key_S:
                 if (event.modifiers & Qt.ControlModifier) {
                     saveProject()
-                    event.accepted = true
                 }
                 break
             case Qt.Key_L:
                 if (event.modifiers & Qt.ControlModifier) {
                     fileDialogMode = "load"
                     fileDialog.open()
-                    event.accepted = true
                 }
                 break
             case Qt.Key_F:
                 if (event.modifiers & Qt.ControlModifier) {
                     fitDrawingToView()
                     canvas.requestPaint()
-                    event.accepted = true
                 }
                 break
             case Qt.Key_H:
-                if (!selected) return
+                if (selected === -1) break
                 if (event.modifiers & Qt.ControlModifier) {
                     Draw.makeHorizontal(s)
-                    event.accepted = true
                 }
                 break
             case Qt.Key_V:
-                if (!selected) return
+                if (selected === -1) break
                 if (event.modifiers & Qt.ControlModifier) {
                     Draw.makeVertical(s)
-                    event.accepted = true
                 }
                 break
         }
+        event.accepted = true
     }
 
     Component.onCompleted: {
