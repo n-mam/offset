@@ -22,7 +22,7 @@ Popup {
     property var shape
     property int shapeIndex: -1
     property int labelWidth: 85
-    property string transformMode: "snap"
+    property string snapGrid: "major"
     property string anchorPoint: "C"
     signal transformRequested(string direction, string mode)
 
@@ -150,27 +150,96 @@ Popup {
         }
 
         RowLayout {
+            Label { text: "Snap"; Layout.preferredWidth: root.labelWidth }
             ColumnLayout {
                 spacing: 4
-                ButtonGroup {
-                    id: radioGroup
-                }
+                ButtonGroup { id: snapModeGroup }
                 RadioButton {
-                    text: "Move"
-                    spacing: 4   // space between circle and text
-                    implicitHeight: 20
-                    ButtonGroup.group: radioGroup
-                    onCheckedChanged: if (checked) root.transformMode = "move"
-                }
-                RadioButton {
-                    text: "Snap"
-                    spacing: 4   // space between circle and text
-                    implicitHeight: 20
+                    id: majorRadio
                     checked: true
-                    ButtonGroup.group: radioGroup
-                    onCheckedChanged: if (checked) root.transformMode = "snap"
+                    ButtonGroup.group: snapModeGroup
+                    padding: 0
+                    spacing: 0
+                    topPadding: 0
+                    bottomPadding: 0
+                    leftPadding: 0
+                    rightPadding: 0
+                    implicitHeight: 18
+                    implicitWidth: contentItem.implicitWidth
+                    onCheckedChanged: if (checked) root.snapGrid = "major"
+                    contentItem: Row {
+                        spacing: 6
+                        anchors.verticalCenter: parent.verticalCenter
+                        Rectangle {
+                            width: 14
+                            height: 14
+                            radius: width / 2
+                            color: "#585858"
+                            border.width: 1
+                            border.color: "white"
+                            Rectangle {
+                                anchors.centerIn: parent
+                                width: majorRadio.checked ? 8 : 0
+                                height: width
+                                radius: width / 2
+                                color: "white"
+                                Behavior on width {
+                                    NumberAnimation { duration: 120 }
+                                }
+                            }
+                        }
+                        Text {
+                            text: "Major"
+                            color: "white"
+                            verticalAlignment: Text.AlignVCenter
+                        }
+                    }
+                    indicator: Item {}
+                }
+
+                RadioButton {
+                    id: minorRadio
+                    ButtonGroup.group: snapModeGroup
+                    padding: 0
+                    spacing: 0
+                    topPadding: 0
+                    bottomPadding: 0
+                    leftPadding: 0
+                    rightPadding: 0
+                    implicitHeight: 18
+                    implicitWidth: contentItem.implicitWidth
+                    onCheckedChanged: if (checked) root.snapGrid = "minor"
+                    contentItem: Row {
+                        spacing: 6
+                        anchors.verticalCenter: parent.verticalCenter
+                        Rectangle {
+                            width: 14
+                            height: 14
+                            radius: width / 2
+                            color: "#585858"
+                            border.width: 1
+                            border.color: "white"
+                            Rectangle {
+                                anchors.centerIn: parent
+                                width: minorRadio.checked ? 8 : 0
+                                height: width
+                                radius: width / 2
+                                color: "white"
+                                Behavior on width {
+                                    NumberAnimation { duration: 120 }
+                                }
+                            }
+                        }
+                        Text {
+                            text: "Minor"
+                            color: "white"
+                            verticalAlignment: Text.AlignVCenter
+                        }
+                    }
+                    indicator: Item {}
                 }
             }
+
             Item {
                 id: snapControl
                 Layout.alignment: Qt.AlignHCenter
@@ -191,7 +260,7 @@ Popup {
                     anchors.horizontalCenter: parent.horizontalCenter
                     anchors.top: parent.top
                     anchors.topMargin: 4
-                    onClicked: transformRequested("up", transformMode)
+                    onClicked: transformRequested("up", snapGrid)
                 }
                 // Bottom Snap
                 RoundButton {
@@ -201,7 +270,7 @@ Popup {
                     anchors.horizontalCenter: parent.horizontalCenter
                     anchors.bottom: parent.bottom
                     anchors.bottomMargin: 4
-                    onClicked: transformRequested("down", transformMode)
+                    onClicked: transformRequested("down", snapGrid)
                 }
                 // Left Snap
                 RoundButton {
@@ -211,7 +280,7 @@ Popup {
                     anchors.verticalCenter: parent.verticalCenter
                     anchors.left: parent.left
                     anchors.leftMargin: 4
-                    onClicked: transformRequested("left", transformMode)
+                    onClicked: transformRequested("left", snapGrid)
                 }
                 // Right Snap
                 RoundButton {
@@ -221,7 +290,7 @@ Popup {
                     anchors.verticalCenter: parent.verticalCenter
                     anchors.right: parent.right
                     anchors.rightMargin: 4
-                    onClicked: transformRequested("right", transformMode)
+                    onClicked: transformRequested("right", snapGrid)
                 }
             }
         }
@@ -257,7 +326,7 @@ Popup {
             Layout.fillWidth: true
             width: parent.width
             height: 2
-            color: "#C0C0C0" // A light gray color
+            color: "#a5a5a5" // A light gray color
             // Optional: Add margins using anchors or Layout.margins
         }
 
@@ -275,33 +344,42 @@ Popup {
                     id: radio
                     checked: modelData.value === "C"
                     ButtonGroup.group: anchorPointGroup
+                    padding: 0
+                    spacing: 0
+                    topPadding: 0
+                    bottomPadding: 0
+                    leftPadding: 0
+                    rightPadding: 0
+                    // IMPORTANT: fixed size so layout never changes
+                    implicitWidth: 18
+                    implicitHeight: 18
                     onCheckedChanged: {
-                        if (checked)
-                            root.anchorPoint = modelData.value
+                        if (checked) root.anchorPoint = modelData.value
                     }
-                    contentItem: Row {
-                        spacing: 6
-                        anchors.verticalCenter: parent.verticalCenter
+                    contentItem: Item {
+                        anchors.fill: parent
                         Rectangle {
-                            id: circle
-                            width: radio.checked ? 18 : 14
-                            height: width
-                            radius: width / 2
+                            anchors.centerIn: parent
+                            width: 18
+                            height: 18
+                            radius: 9
                             color: modelData.color
-                            opacity: 1.0
-                            border.width: radio.checked ? 3 : 1
+                            border.width: 1
                             border.color: "white"
-                            anchors.verticalCenter: parent.verticalCenter
-                            Behavior on width {
-                                NumberAnimation { duration: 120 }
-                            }
-                            Behavior on opacity {
-                                NumberAnimation { duration: 120 }
+                            // animated inner ring
+                            Rectangle {
+                                anchors.centerIn: parent
+                                width: radio.checked ? 10 : 0
+                                height: width
+                                radius: width / 2
+                                color: "white"
+                                Behavior on width {
+                                    NumberAnimation { duration: 120 }
+                                }
                             }
                         }
                     }
-                    // hide default radio circle
-                    indicator.visible: false
+                    indicator: Item {}
                 }
             }
         }

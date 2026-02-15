@@ -49,12 +49,8 @@ Item {
         id: editor
         onTransformRequested: (direction, mode) => {
             if (selected === -1) return;
-            var s = shapes[selected];          
-            if (mode === "move") {
-                Draw.moveShape(s, direction)
-            } else if (mode === "snap") {
-                Draw.snapShape(s, direction)
-            }
+            var s = shapes[selected];
+            Draw.snapShape(s, direction, mode)
         }        
     }
     ShapeSelector { id: shapeSelector }

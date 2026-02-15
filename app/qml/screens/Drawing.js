@@ -234,40 +234,44 @@ function door(ctx, door, preview = false) {
     const x2 = door.x2 * pixelsPerFoot; // base end
     const y2 = door.y2 * pixelsPerFoot;
     const r = Math.hypot(x2 - x1, y2 - y1);
+    // base angle
     const a = Math.atan2(y2 - y1, x2 - x1);
-    // arc end point (TOP-LEFT EDGE)
-    const ax = x1 + Math.cos(a + Math.PI / 2) * r;
-    const ay = y1 + Math.sin(a + Math.PI / 2) * r;
+    // Rotate arc so it’s drawn counterclockwise upward-left (1st quadrant)
+    const startAngle = a - Math.PI / 2;
+    const endAngle = a;
+    // arc end point (top-left edge)
+    const ax = x1 + Math.cos(startAngle) * r;
+    const ay = y1 + Math.sin(startAngle) * r;
     ctx.save();
-    // fill
+    // fill the door swing area with corrected path order
     ctx.fillStyle = preview
         ? "rgba(0,255,136,0.2)"
         : "rgba(255,255,255,0.15)";
     ctx.beginPath();
-    ctx.moveTo(x1, y1);
-    ctx.lineTo(x2, y2);
-    ctx.arc(x1, y1, r, a, a + Math.PI / 2);
+    ctx.moveTo(x1, y1);                           // hinge
+    ctx.arc(x1, y1, r, startAngle, endAngle);    // arc
+    ctx.lineTo(x2, y2);                           // base end
     ctx.closePath();
     ctx.fill();
-    // base (thick)
+    // base (thick line)
     ctx.lineWidth = door.thickness * pixelsPerFoot;
     ctx.strokeStyle = door.color || "rgba(255,255,255,0.5)";
     ctx.beginPath();
     ctx.moveTo(x1, y1);
     ctx.lineTo(x2, y2);
     ctx.stroke();
-    // TOP-LEFT radial edge (1px white)
+    // radial edge (thin white line)
     ctx.lineWidth = 1 / zoom;
     ctx.strokeStyle = "#ffffff";
     ctx.beginPath();
     ctx.moveTo(x1, y1);
     ctx.lineTo(ax, ay);
     ctx.stroke();
-    // arc
+    // dashed arc line
     ctx.lineWidth = 2 / zoom;
     ctx.setLineDash([1.5 / zoom, 1.5 / zoom]);
     ctx.beginPath();
-    ctx.arc(x1, y1, r, a, a + Math.PI / 2);
+    ctx.arc(x1, y1, r, startAngle, endAngle);
     ctx.stroke();
     ctx.setLineDash([]);
     ctx.restore();
@@ -469,13 +473,12 @@ function moveShape(s, direction, step = 0.25) {
     canvas.requestPaint()
 }
 
-function snapValue(v) {
-    // nearest major grid line
-    var snapStepFeet = 5.0;
+function snapValue(v, grid) {
+    var snapStepFeet = ((grid === "major") ? 5.0 : 1.0);
     return Math.round(v / snapStepFeet) * snapStepFeet
 }
 
-function snapShape(s, direction) {
+function snapShape(s, direction, grid) {
     pushUndoState();
     // Snap
     let isVertical = Math.abs(s.y1 - s.y2) > Math.abs(s.x1 - s.x2)
@@ -485,11 +488,11 @@ function snapShape(s, direction) {
     switch (direction) {
         case "left":
             if (isVertical) {
-                let lface = snapValue(Math.min(s.x1, s.x2) - (s.thickness / 2));
+                let lface = snapValue(Math.min(s.x1, s.x2) - (s.thickness / 2), grid);
                 s.x1 = s.x2 = lface + (s.thickness / 2)
                 console.log(s.x1, s.x2, lface)
             } else {
-                let lface = snapValue(Math.min(s.x1, s.x2));
+                let lface = snapValue(Math.min(s.x1, s.x2), grid);
                 let delta = lface - Math.min(s.x1, s.x2)
                 s.x1 += delta
                 s.x2 += delta
@@ -498,10 +501,10 @@ function snapShape(s, direction) {
             break;
         case "right":
             if (isVertical) {
-                let rface = snapValue(Math.max(s.x1, s.x2) + (s.thickness / 2));
+                let rface = snapValue(Math.max(s.x1, s.x2) + (s.thickness / 2), grid);
                 s.x1 = s.x2 = rface - (s.thickness / 2)
             } else {
-                let rface = snapValue(Math.max(s.x1, s.x2));
+                let rface = snapValue(Math.max(s.x1, s.x2), grid);
                 let delta = rface - Math.max(s.x1, s.x2)
                 s.x1 += delta
                 s.x2 += delta
@@ -510,12 +513,12 @@ function snapShape(s, direction) {
             break;
         case "up":
             if (isVertical) {
-                let uface = snapValue(Math.min(s.y1, s.y2))
+                let uface = snapValue(Math.min(s.y1, s.y2), grid);
                 let delta = uface - Math.min(s.y1, s.y2)
                 s.y1 += delta
                 s.y2 += delta
             } else {
-                let uface = snapValue(Math.min(s.y1, s.y2) - (s.thickness / 2))
+                let uface = snapValue(Math.min(s.y1, s.y2) - (s.thickness / 2), grid);
                 let delta = uface - Math.min(s.y1, s.y2)
                 s.y1 += delta + (s.thickness / 2)
                 s.y2 += delta + (s.thickness / 2)
@@ -524,12 +527,12 @@ function snapShape(s, direction) {
             break;
         case "down":
             if (isVertical) {
-                let dface = snapValue(Math.max(s.y1, s.y2))
+                let dface = snapValue(Math.max(s.y1, s.y2), grid);
                 let delta = dface - Math.max(s.y1, s.y2)
                 s.y1 += delta
                 s.y2 += delta
             } else {
-                let dface = snapValue(Math.max(s.y1, s.y2) + (s.thickness / 2))
+                let dface = snapValue(Math.max(s.y1, s.y2) + (s.thickness / 2), grid);
                 let delta = dface - Math.max(s.y1, s.y2)
                 s.y1 += delta - (s.thickness / 2)
                 s.y2 += delta - (s.thickness / 2)
