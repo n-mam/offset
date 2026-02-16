@@ -131,6 +131,14 @@ function flip(s, horizontal = true) {
     canvas.requestPaint();
 }
 
+function hitShapeEndpoint(p, w) {
+    const tolFeet = (8 / zoom) / pixelsPerFoot
+    if (Geometry.distanceToPoint(p.x, p.y, w.x1, w.y1) < tolFeet)
+        return 1
+    if (Geometry.distanceToPoint(p.x, p.y, w.x2, w.y2) < tolFeet)
+        return 2
+    return 0
+}
 
 function hitTest(p, shapes, pixelsPerFoot, zoom, pickTolerancePixels) {
     let hit = -1
@@ -148,7 +156,7 @@ function hitTest(p, shapes, pixelsPerFoot, zoom, pickTolerancePixels) {
             s.x1, s.y1,
             s.x2, s.y2
         )
-        if (d < best) {
+        if (d < (best + (s.thickness / 4))) {
             best = d
             hit = i
         }

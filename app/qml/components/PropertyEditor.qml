@@ -298,7 +298,10 @@ Popup {
         RowLayout {
             Label { text: "Flip"; Layout.preferredWidth: root.labelWidth * 0.70 }
             ToolButton {
-                text: qsTr("H")
+                icon.source: "qrc:/flip-h.png"
+                icon.width: 24
+                icon.height: 24
+                display: AbstractButton.IconOnly
                 onClicked: Shape.flip(shape, true)
                 implicitHeight: 30
                 implicitWidth: 50
@@ -309,7 +312,10 @@ Popup {
                 }
             }
             ToolButton {
-                text: qsTr("V")
+                icon.source: "qrc:/flip-v.png"
+                icon.width: 24
+                icon.height: 24
+                display: AbstractButton.IconOnly
                 onClicked: Shape.flip(shape, false)
                 implicitHeight: 30
                 implicitWidth: 50

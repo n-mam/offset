@@ -135,15 +135,6 @@ Item {
         return Geometry.distanceToPoint(p.x, p.y, hx, hy) < radiusFeet
     }
 
-    function hitWallEndpoint(p, w) {
-        const tolFeet = (8 / zoom) / pixelsPerFoot
-        if (Geometry.distanceToPoint(p.x, p.y, w.x1, w.y1) < tolFeet)
-            return 1
-        if (Geometry.distanceToPoint(p.x, p.y, w.x2, w.y2) < tolFeet)
-            return 2
-        return 0
-    }
-
     function wallAngleForDisplay(w) {
         const dx = w.x2 - w.x1
         const dy = w.y2 - w.y1
@@ -367,7 +358,7 @@ Item {
             const p = Geometry.screenToWorld(mouse.x, mouse.y)
             if (selected !== -1) {
                 const s = shapes[selected]
-                const end = hitWallEndpoint(p, s)
+                const end = Shape.hitShapeEndpoint(p, s)
                 if (end !== 0) {
                     pushUndoState()
                     resizing = true

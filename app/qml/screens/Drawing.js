@@ -523,7 +523,7 @@ function snapShape(s, direction, grid) {
                 s.y1 += delta + (s.thickness / 2)
                 s.y2 += delta + (s.thickness / 2)
             }
-            s.snap.up = true;
+            s.snap.top = true;
             break;
         case "down":
             if (isVertical) {
