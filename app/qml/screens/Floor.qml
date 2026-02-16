@@ -45,15 +45,14 @@ Item {
     property real rotateBaseAngle: 0
     property real rotateStartAngle: 0
 
-    PropertyEditor { 
+    PropertyEditor {
         id: editor
         onTransformRequested: (direction, mode) => {
             if (selected === -1) return;
             var s = shapes[selected];
             Draw.snapShape(s, direction, mode)
-        }        
+        }
     }
-    ShapeSelector { id: shapeSelector }
 
     FileDialog {
         id: fileDialog
@@ -340,6 +339,14 @@ Item {
         }
     }
 
+    ShapeSelector {
+        id: shapeSelector
+        z: 1000
+        anchors.margins: 8
+        anchors.right: parent.right
+        anchors.verticalCenter: parent.verticalCenter
+    }
+
     MouseArea {
         property real lastX
         property real lastY
@@ -392,7 +399,7 @@ Item {
                 const s = shapes[selected]
                 dragOrigShape = { x1: s.x1, y1: s.y1, x2: s.x2, y2: s.y2 }
                 drawing.active = false
-            } else if (shapeSelector.currentTool === "idle" || 
+            } else if (shapeSelector.currentTool === "idle" ||
                 (mouse.modifiers & Qt.ControlModifier)) {
                     panning = true
                     return
@@ -566,11 +573,14 @@ Item {
                     Draw.makeVertical(s, "C")
                 }
                 break
+            case Qt.Key_Return:
+            case Qt.Key_Enter:
+                if (selected === -1) break
+                editor.showEditor(shapes[selected], selected)
+                break;
         }
         event.accepted = true
     }
 
-    Component.onCompleted: {
-        shapeSelector.open()
-    }
+    Component.onCompleted: {}
 }

@@ -207,33 +207,75 @@ function serializeProject(shapes, pixelsPerFoot) {
         version: 1,
         units: { length: "feet" },
         settings: { pixelsPerUnit: pixelsPerFoot },
-        entities: shapes.map(s => ({
-            id: s.id,
-            type: s.type,
-            geometry: { x1: s.x1, y1: s.y1, x2: s.x2, y2: s.y2 },
-            properties: {
-                thickness: s.thickness,
-                color: s.color ?? null
+        entities: shapes.map(function(s) {
+            // Build snap data containing only TRUE flags
+            var snapData = null
+            if (s.snap) {
+                var filtered = {}
+                if (s.snap.left === true)
+                    filtered.left = true
+                if (s.snap.right === true)
+                    filtered.right = true
+                if (s.snap.top === true)
+                    filtered.top = true
+                if (s.snap.bottom === true)
+                    filtered.bottom = true
+                if (Object.keys(filtered).length > 0)
+                    snapData = filtered
             }
-        }))
+            // Build entity object
+            var entity = {
+                id: s.id,
+                type: s.type,
+                geometry: {
+                    x1: s.x1,
+                    y1: s.y1,
+                    x2: s.x2,
+                    y2: s.y2
+                },
+                properties: {
+                    thickness: s.thickness,
+                    color: (s.color !== undefined ? s.color : null)
+                }
+            }
+            // Only attach snap if at least one flag is true
+            if (snapData !== null) {
+                entity.properties.snap = snapData
+            }
+            return entity
+        })
     }, null, 2)
 }
 
 function deserializeProject(jsonText) {
-    const doc = JSON.parse(jsonText)
+    var doc = JSON.parse(jsonText)
     if (doc.format !== "FloorPlanProject")
         throw "Not a floor plan project"
     return {
-        pixelsPerFoot: doc.settings?.pixelsPerUnit,
-        shapes: doc.entities.map(e => ({
-            id: e.id,
-            type: e.type,
-            x1: e.geometry.x1,
-            y1: e.geometry.y1,
-            x2: e.geometry.x2,
-            y2: e.geometry.y2,
-            thickness: e.properties?.thickness ?? 0.5,
-            color: e.properties?.color ?? defaultColorForType(e.type)
-        }))
+        pixelsPerFoot: (doc.settings && doc.settings.pixelsPerUnit)
+                        ? doc.settings.pixelsPerUnit : undefined,
+        shapes: doc.entities.map(function(e) {
+            var props = e.properties ? e.properties : {}
+            var savedSnap = props.snap ? props.snap : {}
+            return {
+                id: e.id,
+                type: e.type,
+                x1: e.geometry.x1,
+                y1: e.geometry.y1,
+                x2: e.geometry.x2,
+                y2: e.geometry.y2,
+                thickness: (props.thickness !== undefined)
+                           ? props.thickness : 0.5,
+                color: (props.color !== undefined && props.color !== null)
+                       ? props.color : defaultColorForType(e.type),
+                // Reconstruct full snap object
+                snap: {
+                    left: savedSnap.left === true,
+                    right: savedSnap.right === true,
+                    top: savedSnap.top === true,
+                    bottom: savedSnap.bottom === true
+                }
+            }
+        })
     }
 }
