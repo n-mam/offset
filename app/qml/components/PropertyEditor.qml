@@ -119,12 +119,20 @@ Popup {
             }
         }
 
+        RowLayout {
+            Label { text: "Thickness"; Layout.preferredWidth: root.labelWidth }
+            TextField {
+                Layout.preferredWidth: 80
+                Layout.preferredHeight:  40
+                text: shape ? feetToText(shape.thickness) : "0'6\""
+                onEditingFinished: assignIfValid("thickness", text)
+            }
+        }
+
         Loader {
             sourceComponent: {
                 if (!shape) return undefined
-                if (shape.type === "wall") return wallEditor
-                if (shape.type === "door") return doorEditor
-                if (shape.type === "window") return windowEditor
+                if (shape.type === "xyz") return xyzEditor
                 return undefined
             }
         }
@@ -429,37 +437,7 @@ Popup {
     }
 
     Component {
-        id: wallEditor
-        ColumnLayout {
-            RowLayout {
-                Label { text: "Thickness"; Layout.preferredWidth: root.labelWidth }
-                TextField {
-                    Layout.preferredWidth: 80
-                    Layout.preferredHeight:  40
-                    text: shape ? feetToText(shape.thickness) : "0'6\""
-                    onEditingFinished: assignIfValid("thickness", text)
-                }
-            }
-        }
-    }
-
-    Component {
-        id: doorEditor
-        ColumnLayout {
-            RowLayout {
-                Label { text: "Thickness"; Layout.preferredWidth: root.labelWidth }
-                TextField {
-                    Layout.preferredWidth: 80
-                    Layout.preferredHeight:  40
-                    text: shape ? feetToText(shape.thickness) : "0'6\""
-                    onEditingFinished: assignIfValid("thickness", text)
-                }
-            }
-        }
-    }
-
-    Component {
-        id: windowEditor
+        id: xyzEditor
         ColumnLayout {
             RowLayout {
                 Label { text: "Thickness"; Layout.preferredWidth: root.labelWidth }

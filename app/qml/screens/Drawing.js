@@ -228,50 +228,67 @@ function windowRect(ctx, g, s, preview) {
     ctx.restore();
 }
 
-function door(ctx, door, preview = false) {
-    const x1 = door.x1 * pixelsPerFoot; // hinge
-    const y1 = door.y1 * pixelsPerFoot;
-    const x2 = door.x2 * pixelsPerFoot; // base end
-    const y2 = door.y2 * pixelsPerFoot;
-    const r = Math.hypot(x2 - x1, y2 - y1);
+function door(ctx, s, preview) {
+    const sx = (s.swing ? s.x1 : s.x2) * pixelsPerFoot; // hinge
+    const sy = (s.swing ? s.y1 : s.y2) * pixelsPerFoot;
+    const ex = (s.swing ? s.x2 : s.x1) * pixelsPerFoot; // base end
+    const ey = (s.swing ? s.y2 : s.y1) * pixelsPerFoot;
+    const r = Math.hypot(ex - sx, ey - sy);
     // base angle
-    const a = Math.atan2(y2 - y1, x2 - x1);
-    // Rotate arc so it’s drawn counterclockwise upward-left (1st quadrant)
-    const startAngle = a - Math.PI / 2;
-    const endAngle = a;
+    const a = Math.atan2(ey - sy, ex - sx);
+    // Rotate arc so it’s drawn counterclockwise 
+    let startAngle, endAngle;
+    if (s.swing) {
+      startAngle = a - Math.PI / 2;
+      endAngle = a;
+    } else {
+      startAngle = a;
+      endAngle = a + Math.PI / 2;
+    }
     // arc end point (top-left edge)
-    const ax = x1 + Math.cos(startAngle) * r;
-    const ay = y1 + Math.sin(startAngle) * r;
+    const ax = sx + Math.cos(startAngle) * r;
+    const ay = sy + Math.sin(startAngle) * r;
     ctx.save();
     // fill the door swing area with corrected path order
     ctx.fillStyle = preview
         ? "rgba(0,255,136,0.2)"
         : "rgba(255,255,255,0.15)";
     ctx.beginPath();
-    ctx.moveTo(x1, y1);                           // hinge
-    ctx.arc(x1, y1, r, startAngle, endAngle);    // arc
-    ctx.lineTo(x2, y2);                           // base end
+    ctx.moveTo(sx, sy);                          // hinge
+    ctx.arc(sx, sy, r, startAngle, endAngle);    // arc
+    ctx.lineTo(sx, sy);                          // base end
     ctx.closePath();
     ctx.fill();
-    // base (thick line)
-    ctx.lineWidth = door.thickness * pixelsPerFoot;
-    ctx.strokeStyle = door.color || "rgba(255,255,255,0.5)";
+    // stroke line from arc end back to hinge in white
+    const arcEndX = sx + Math.cos(endAngle) * r;
+    const arcEndY = sy + Math.sin(endAngle) * r;
     ctx.beginPath();
-    ctx.moveTo(x1, y1);
-    ctx.lineTo(x2, y2);
+    ctx.moveTo(arcEndX, arcEndY);
+    ctx.lineTo(sx, sy);
+    ctx.strokeStyle = "white";
+    ctx.lineWidth = 1;
     ctx.stroke();
-    // radial edge (thin white line)
-    ctx.lineWidth = 1 / zoom;
-    ctx.strokeStyle = "#ffffff";
+    // base (filled thick line)
+    const halfThickness = (s.thickness * pixelsPerFoot) / 2;
+    const dx = (ey - sy) / r * halfThickness; // perpendicular offset x
+    const dy = (ex - sx) / r * halfThickness; // perpendicular offset y
+    ctx.fillStyle = s.color || "rgba(152, 132, 132, 0.26)";
+    ctx.strokeStyle = "black";
+    ctx.lineWidth = 1 / zoom; 
     ctx.beginPath();
-    ctx.moveTo(x1, y1);
-    ctx.lineTo(ax, ay);
-    ctx.stroke();
+    ctx.moveTo(sx - dx, sy + dy);
+    ctx.lineTo(ex - dx, ey + dy);
+    ctx.lineTo(ex + dx, ey - dy);
+    ctx.lineTo(sx + dx, sy - dy);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke(); 
     // dashed arc line
+    ctx.strokeStyle = "white";
     ctx.lineWidth = 2 / zoom;
     ctx.setLineDash([1.5 / zoom, 1.5 / zoom]);
     ctx.beginPath();
-    ctx.arc(x1, y1, r, startAngle, endAngle);
+    ctx.arc(sx, sy, r, startAngle, endAngle);
     ctx.stroke();
     ctx.setLineDash([]);
     ctx.restore();

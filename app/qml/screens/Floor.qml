@@ -324,7 +324,7 @@ Item {
                 const g = Shape.geometry(s, pixelsPerFoot)
                 if (!g) return
                 if (s.type === "door") {
-                    Draw.door(ctx, s)
+                    Draw.door(ctx, s, false, true)
                 } else if (s.type === "dimension") {
                     Draw.dimension(ctx, s)
                 } else if (s.type === "window") {

@@ -82,52 +82,21 @@ function rotate(w, angleRad) {
 
 function flip(s, horizontal = true) {
     if (!s) return;
-
-    switch (s.type) {
-        case "door": {
-            // hinge is always x1,y1
-            if (horizontal) {
-                s.x2 = 2 * s.x1 - s.x2; // mirror leaf across hinge X
-            } else {
-                s.y2 = 2 * s.y1 - s.y2; // mirror leaf across hinge Y
-            }
-            // recompute angle and width
-            s.angle = Math.atan2(s.y2 - s.y1, s.x2 - s.x1);
-            s.width = Math.hypot(s.x2 - s.x1, s.y2 - s.y1);
-            break;
+    if (s.type === "door") {
+        if (horizontal) s.swing = !s.swing
+    } else {
+        // walls, dimensions: flip around center
+        const cx = (s.x1 + s.x2) / 2;
+        const cy = (s.y1 + s.y2) / 2;
+        if (horizontal) {
+            s.x1 = 2 * cx - s.x1;
+            s.x2 = 2 * cx - s.x2;
         }
-
-        case "window": {
-            // flip windows around center
-            const cx = (s.x1 + s.x2) / 2;
-            const cy = (s.y1 + s.y2) / 2;
-            if (horizontal) {
-                s.x1 = 2 * cx - s.x1;
-                s.x2 = 2 * cx - s.x2;
-            }
-            if (!horizontal) {
-                s.y1 = 2 * cy - s.y1;
-                s.y2 = 2 * cy - s.y2;
-            }
-            break;
-        }
-
-        default: {
-            // walls, dimensions: flip around center
-            const cx = (s.x1 + s.x2) / 2;
-            const cy = (s.y1 + s.y2) / 2;
-            if (horizontal) {
-                s.x1 = 2 * cx - s.x1;
-                s.x2 = 2 * cx - s.x2;
-            }
-            if (!horizontal) {
-                s.y1 = 2 * cy - s.y1;
-                s.y2 = 2 * cy - s.y2;
-            }
-            break;
+        if (!horizontal) {
+            s.y1 = 2 * cy - s.y1;
+            s.y2 = 2 * cy - s.y2;
         }
     }
-
     canvas.requestPaint();
 }
 
@@ -175,6 +144,7 @@ function make(type, startX, startY, endX, endY, thickness) {
         x2: endX,
         y2: endY,
         thickness,
+        swing: false,
         color: defaultColorForType(type).toString()
     }
     switch (type) {
@@ -193,9 +163,9 @@ function make(type, startX, startY, endX, endY, thickness) {
 
 function defaultColorForType(type) {
     switch (type) {
-        case "wall": return "#dcd0aa"
+        case "wall": return "#d2cab0"
         case "window": return "#aeb0b0"
-        case "door": return "#ffffff"
+        case "door": return "#c4a9a9a3"
         case "dimension": return "#ffffff"
         default: return "#ffffff"
     }
@@ -235,7 +205,8 @@ function serializeProject(shapes, pixelsPerFoot) {
                 },
                 properties: {
                     thickness: s.thickness,
-                    color: (s.color !== undefined ? s.color : null)
+                    color: (s.color !== undefined ? s.color : null),
+                    swing: s.swing === true
                 }
             }
             // Only attach snap if at least one flag is true
@@ -268,7 +239,7 @@ function deserializeProject(jsonText) {
                            ? props.thickness : 0.5,
                 color: (props.color !== undefined && props.color !== null)
                        ? props.color : defaultColorForType(e.type),
-                // Reconstruct full snap object
+                swing: props.swing === true,
                 snap: {
                     left: savedSnap.left === true,
                     right: savedSnap.right === true,
