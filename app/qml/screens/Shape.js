@@ -235,10 +235,9 @@ function deserializeProject(jsonText) {
                 y1: e.geometry.y1,
                 x2: e.geometry.x2,
                 y2: e.geometry.y2,
-                thickness: (props.thickness !== undefined)
-                           ? props.thickness : 0.5,
-                color: (props.color !== undefined && props.color !== null)
-                       ? props.color : defaultColorForType(e.type),
+                thickness: (props.thickness !== undefined) ? props.thickness : 0.5,
+                color: (props.color !== undefined && props.color !== null) ?
+                    props.color : defaultColorForType(e.type),
                 swing: props.swing === true,
                 snap: {
                     left: savedSnap.left === true,

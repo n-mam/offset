@@ -229,6 +229,7 @@ function windowRect(ctx, g, s, preview) {
 }
 
 function door(ctx, s, preview) {
+    // start and end points
     const sx = (s.swing ? s.x1 : s.x2) * pixelsPerFoot; // hinge
     const sy = (s.swing ? s.y1 : s.y2) * pixelsPerFoot;
     const ex = (s.swing ? s.x2 : s.x1) * pixelsPerFoot; // base end
@@ -236,7 +237,6 @@ function door(ctx, s, preview) {
     const r = Math.hypot(ex - sx, ey - sy);
     // base angle
     const a = Math.atan2(ey - sy, ex - sx);
-    // Rotate arc so it’s drawn counterclockwise 
     let startAngle, endAngle;
     if (s.swing) {
       startAngle = a - Math.PI / 2;
@@ -246,13 +246,12 @@ function door(ctx, s, preview) {
       endAngle = a + Math.PI / 2;
     }
     // arc end point (top-left edge)
-    const ax = sx + Math.cos(startAngle) * r;
-    const ay = sy + Math.sin(startAngle) * r;
+    const ax = sx + Math.cos(s.swing ? startAngle : endAngle) * r;
+    const ay = sy + Math.sin(s.swing ? startAngle : endAngle) * r;
     ctx.save();
     // fill the door swing area with corrected path order
-    ctx.fillStyle = preview
-        ? "rgba(0,255,136,0.2)"
-        : "rgba(255,255,255,0.15)";
+    ctx.fillStyle = preview ? "rgba(156, 255, 255, 0.2)" :
+        "rgba(255,255,255,0.15)";
     ctx.beginPath();
     ctx.moveTo(sx, sy);                          // hinge
     ctx.arc(sx, sy, r, startAngle, endAngle);    // arc
@@ -260,13 +259,11 @@ function door(ctx, s, preview) {
     ctx.closePath();
     ctx.fill();
     // stroke line from arc end back to hinge in white
-    const arcEndX = sx + Math.cos(endAngle) * r;
-    const arcEndY = sy + Math.sin(endAngle) * r;
     ctx.beginPath();
-    ctx.moveTo(arcEndX, arcEndY);
+    ctx.moveTo(ax, ay);
     ctx.lineTo(sx, sy);
     ctx.strokeStyle = "white";
-    ctx.lineWidth = 1;
+    ctx.lineWidth = 1 / zoom;
     ctx.stroke();
     // base (filled thick line)
     const halfThickness = (s.thickness * pixelsPerFoot) / 2;
@@ -274,7 +271,7 @@ function door(ctx, s, preview) {
     const dy = (ex - sx) / r * halfThickness; // perpendicular offset y
     ctx.fillStyle = s.color || "rgba(152, 132, 132, 0.26)";
     ctx.strokeStyle = "black";
-    ctx.lineWidth = 1 / zoom; 
+    ctx.lineWidth = 1 / zoom;
     ctx.beginPath();
     ctx.moveTo(sx - dx, sy + dy);
     ctx.lineTo(ex - dx, ey + dy);
@@ -282,7 +279,7 @@ function door(ctx, s, preview) {
     ctx.lineTo(sx + dx, sy - dy);
     ctx.closePath();
     ctx.fill();
-    ctx.stroke(); 
+    ctx.stroke();
     // dashed arc line
     ctx.strokeStyle = "white";
     ctx.lineWidth = 2 / zoom;
@@ -507,7 +504,6 @@ function snapShape(s, direction, grid) {
             if (isVertical) {
                 let lface = snapValue(Math.min(s.x1, s.x2) - (s.thickness / 2), grid);
                 s.x1 = s.x2 = lface + (s.thickness / 2)
-                console.log(s.x1, s.x2, lface)
             } else {
                 let lface = snapValue(Math.min(s.x1, s.x2), grid);
                 let delta = lface - Math.min(s.x1, s.x2)
