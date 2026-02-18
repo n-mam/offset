@@ -31,7 +31,7 @@ Popup {
         title: "Select Color"
         onAccepted: {
             if (root.shape) {
-                root.shape.color = selectedColor.toString()
+                root.shape.color = currentColor.text = selectedColor.toString()
                 canvas.requestPaint()
             }
         }
@@ -82,7 +82,7 @@ Popup {
         RowLayout {
             Label { text: "Start X"; Layout.preferredWidth: root.labelWidth }
             TextField {
-                Layout.preferredWidth:  80
+                Layout.preferredWidth: 90
                 Layout.preferredHeight:  40
                 text: shape ? feetToText(shape.x1) : "0'0\""
                 onEditingFinished: assignIfValid("x1", text)
@@ -92,7 +92,7 @@ Popup {
         RowLayout {
             Label { text: "Start Y"; Layout.preferredWidth: root.labelWidth }
             TextField {
-                Layout.preferredWidth:  80
+                Layout.preferredWidth: 90
                 Layout.preferredHeight:  40
                 text: shape ? feetToText(shape.y1) : "0'0\""
                 onEditingFinished: assignIfValid("y1", text)
@@ -102,7 +102,7 @@ Popup {
         RowLayout {
             Label { text: "End X"; Layout.preferredWidth: root.labelWidth }
             TextField {
-                Layout.preferredWidth:  80
+                Layout.preferredWidth: 90
                 Layout.preferredHeight:  40
                 text: shape ? feetToText(shape.x2) : "0'0\""
                 onEditingFinished: assignIfValid("x2", text)
@@ -112,7 +112,7 @@ Popup {
         RowLayout {
             Label { text: "End Y"; Layout.preferredWidth: root.labelWidth }
             TextField {
-                Layout.preferredWidth:  80
+                Layout.preferredWidth: 90
                 Layout.preferredHeight:  40
                 text: shape ? feetToText(shape.y2) : "0'0\""
                 onEditingFinished: assignIfValid("y2", text)
@@ -122,7 +122,7 @@ Popup {
         RowLayout {
             Label { text: "Thickness"; Layout.preferredWidth: root.labelWidth }
             TextField {
-                Layout.preferredWidth: 80
+                Layout.preferredWidth: 90
                 Layout.preferredHeight:  40
                 text: shape ? feetToText(shape.thickness) : "0'6\""
                 onEditingFinished: assignIfValid("thickness", text)
@@ -154,6 +154,11 @@ Popup {
                         colorDialog.open()
                     }
                 }
+            }
+            Label { 
+                id: currentColor;
+                Layout.preferredWidth: 
+                root.labelWidth 
             }
         }
 
@@ -427,7 +432,7 @@ Popup {
         RowLayout {
             Label { text: "Length"; Layout.preferredWidth: root.labelWidth * 0.75 }
             TextField {
-                Layout.preferredWidth: 80
+                Layout.preferredWidth: 90
                 Layout.preferredHeight:  40
                 text: shape ? feetToText(
                     Math.hypot(shape.x2 - shape.x1, shape.y2 - shape.y1)) : "0'0\""
@@ -442,7 +447,7 @@ Popup {
             RowLayout {
                 Label { text: "Thickness"; Layout.preferredWidth: root.labelWidth }
                 TextField {
-                    Layout.preferredWidth: 80
+                    Layout.preferredWidth: 90
                     Layout.preferredHeight:  40
                     text: shape ? feetToText(shape.thickness) : "0'6\""
                     onEditingFinished: assignIfValid("thickness", text)

@@ -208,12 +208,10 @@ function lengthLabel(ctx, s) {
 
 function windowRect(ctx, g, s, preview) {
     ctx.save();
-    // fill
     polygonPath(ctx, g.corners);
-    ctx.fillStyle = preview ?
-        "rgba(0,255,136,0.2)" : (s.color || "rgba(174,174,174,0.5)")
+    ctx.fillStyle = preview ? "rgba(0,255,136,0.2)" : 
+        (s.color || "rgba(174,174,174,0.5)")
     ctx.fill();
-    // BLUE WINDOW BORDER (perimeter)
     polygonPath(ctx, g.corners);
     ctx.lineWidth = 1 / zoom;
     ctx.strokeStyle = "#000000";
@@ -250,7 +248,7 @@ function door(ctx, s, preview) {
     const ay = sy + Math.sin(s.swing ? startAngle : endAngle) * r;
     ctx.save();
     // fill the door swing area with corrected path order
-    ctx.fillStyle = preview ? "rgba(156, 255, 255, 0.2)" :
+    ctx.fillStyle = preview ? "rgba(0,255,136,0.2)" :
         "rgba(255,255,255,0.15)";
     ctx.beginPath();
     ctx.moveTo(sx, sy);                          // hinge
@@ -435,7 +433,6 @@ function changeLength(s, length, anchor) {
     }
     canvas.requestPaint();
 }
-
 
 function makeVertical(s, anchor) {
     const dx = s.x2 - s.x1;
