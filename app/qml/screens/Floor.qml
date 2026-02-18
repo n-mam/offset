@@ -50,7 +50,7 @@ Item {
         onTransformRequested: (direction, mode) => {
             if (selected === -1) return;
             var s = shapes[selected];
-            Draw.snapShape(s, direction, mode)
+            Shape.snap(s, direction, mode)
         }
     }
 
@@ -89,7 +89,7 @@ Item {
         wallOutline: "rgba(120,95,60,0.6)",
         hatchStroke: "rgba(140,110,70,0.6)",
         selected: "#ff0000",
-        preview: "#00ff88",
+        preview: "#007b41",
         rotateHandle: "#00aaff",
         resizeStart: "#00b45d", // start point (green)
         resizeEnd: "#ff3131"    // end point (orange)
@@ -520,19 +520,19 @@ Item {
         switch (event.key) {
             case Qt.Key_Left:
                 if (selected === -1) break
-                Draw.moveShape(s, "left", step)
+                Shape.move(s, "left", step)
                 break
             case Qt.Key_Right:
                 if (selected === -1) break
-                Draw.moveShape(s, "right", step)
+                Shape.move(s, "right", step)
                 break
             case Qt.Key_Up:
                 if (selected === -1) break
-                Draw.moveShape(s, "up", step)
+                Shape.move(s, "up", step)
                 break
             case Qt.Key_Down:
                 if (selected === -1) break
-                Draw.moveShape(s, "down", step)
+                Shape.move(s, "down", step)
                 break
             case Qt.Key_Z:
                 if (event.modifiers & Qt.ControlModifier) {
@@ -564,19 +564,19 @@ Item {
             case Qt.Key_H:
                 if (selected === -1) break
                 if (event.modifiers & Qt.ControlModifier) {
-                    Draw.makeHorizontal(s, "C")
+                    Shape.makeHorizontal(s, "C")
                 }
                 break
             case Qt.Key_V:
                 if (selected === -1) break
                 if (event.modifiers & Qt.ControlModifier) {
-                    Draw.makeVertical(s, "C")
+                    Shape.makeVertical(s, "C")
                 }
                 break
             case Qt.Key_Return:
             case Qt.Key_Enter:
                 if (selected === -1) break
-                editor.showEditor(shapes[selected], selected)
+                editor.showEditor(s, selected)
                 break;
         }
         event.accepted = true

@@ -407,7 +407,7 @@ Popup {
             Label { text: "Align"; Layout.preferredWidth: root.labelWidth * 0.7 }
             ToolButton {
                 text: qsTr("H")
-                onClicked: Draw.makeHorizontal(shape, root.anchorPoint)
+                onClicked: Shape.makeHorizontal(shape, root.anchorPoint)
                 implicitHeight: 30
                 implicitWidth: 50
                 background: Rectangle {
@@ -418,7 +418,7 @@ Popup {
             }
             ToolButton {
                 text: qsTr("V")
-                onClicked: Draw.makeVertical(shape, root.anchorPoint)
+                onClicked: Shape.makeVertical(shape, root.anchorPoint)
                 implicitHeight: 30
                 implicitWidth: 50
                 background: Rectangle {
@@ -436,7 +436,7 @@ Popup {
                 Layout.preferredHeight:  40
                 text: shape ? feetToText(
                     Math.hypot(shape.x2 - shape.x1, shape.y2 - shape.y1)) : "0'0\""
-                onEditingFinished: Draw.changeLength(shape, textToFeet(text), root.anchorPoint)
+                onEditingFinished: Shape.changeLength(shape, textToFeet(text), root.anchorPoint)
             }
         }
     }
