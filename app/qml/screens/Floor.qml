@@ -329,7 +329,7 @@ Item {
                 } else if (s.type === "dimension") {
                     Draw.dimension(ctx, s)
                 } else if (s.type === "window") {
-                    Draw.windowRect(ctx, g, s, false)
+                    Draw.window(ctx, g, s, false)
                 }
                 if (i === selected) {
                     annotateShape(ctx, g, s)
@@ -575,9 +575,10 @@ Item {
                     copy.x2 += 1
                     copy.y2 += 1
                     shapes.push(copy)
-                    console.log("paint")
                     canvas.requestPaint()
-                }
+                } else if (event.modifiers & Qt.ShiftModifier) {
+                    Shape.makeVertical(s, "C")
+                }                
                 break
             case Qt.Key_F:
                 if (event.modifiers & Qt.ControlModifier) {
@@ -589,12 +590,6 @@ Item {
                 if (selected === -1) break
                 if (event.modifiers & Qt.ShiftModifier) {
                     Shape.makeHorizontal(s, "C")
-                }
-                break
-            case Qt.Key_V:
-                if (selected === -1) break
-                if (event.modifiers & Qt.ShiftModifier) {
-                    Shape.makeVertical(s, "C")
                 }
                 break
             case Qt.Key_Return:

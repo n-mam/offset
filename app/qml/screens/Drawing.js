@@ -113,7 +113,7 @@ function previews(ctx) {
         if (!g) return
         ctx.save()
         ctx.globalAlpha = 0.6
-        Draw.windowRect(ctx, g, shape, true)
+        Draw.window(ctx, g, shape, true)
         ctx.restore()
     } else if (shape.type === "door") {
         ctx.save()
@@ -206,7 +206,7 @@ function lengthLabel(ctx, s) {
     ctx.restore()
 }
 
-function windowRect(ctx, g, s, preview) {
+function window(ctx, g, s, preview) {
     ctx.save();
     polygonPath(ctx, g.corners);
     ctx.fillStyle = preview ? "rgba(0,255,136,0.2)" : 
