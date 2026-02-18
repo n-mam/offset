@@ -163,8 +163,8 @@ function make(type, startX, startY, endX, endY, thickness) {
 
 function defaultColorForType(type) {
     switch (type) {
-        case "wall": return "#d2cab0"
-        case "window": return "#aeb0b0"
+        case "wall": return "#c6bd9c"
+        case "window": return "#c4a9a9a3"
         case "door": return "#c4a9a9a3"
         case "dimension": return "#ffffff"
         default: return "#ffffff"

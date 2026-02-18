@@ -24,6 +24,7 @@ Item {
 
     property var shapes: []
 
+    property int copied: -1
     property int selected: -1
     property url lastSaveUrl
     property real minDrawPixels: 6   // 4–8 px feels good
@@ -555,6 +556,29 @@ Item {
                     fileDialog.open()
                 }
                 break
+            case Qt.Key_C:
+                if (selected === -1) break
+                if (event.modifiers & Qt.ControlModifier) {
+                    copied = selected;
+                }
+                break
+            case Qt.Key_V:
+                if (event.modifiers & Qt.ControlModifier) {
+                    if (copied < 0 || copied >= shapes.length) break
+                    var original = shapes[copied]
+                    // deep copy
+                    var copy = JSON.parse(JSON.stringify(original))
+                    copy.id = Shape.uid()
+                    // offset so user sees the new shape
+                    copy.x1 += 1
+                    copy.y1 += 1
+                    copy.x2 += 1
+                    copy.y2 += 1
+                    shapes.push(copy)
+                    console.log("paint")
+                    canvas.requestPaint()
+                }
+                break
             case Qt.Key_F:
                 if (event.modifiers & Qt.ControlModifier) {
                     fitDrawingToView()
@@ -563,13 +587,13 @@ Item {
                 break
             case Qt.Key_H:
                 if (selected === -1) break
-                if (event.modifiers & Qt.ControlModifier) {
+                if (event.modifiers & Qt.ShiftModifier) {
                     Shape.makeHorizontal(s, "C")
                 }
                 break
             case Qt.Key_V:
                 if (selected === -1) break
-                if (event.modifiers & Qt.ControlModifier) {
+                if (event.modifiers & Qt.ShiftModifier) {
                     Shape.makeVertical(s, "C")
                 }
                 break

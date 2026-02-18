@@ -32,6 +32,7 @@ Popup {
         onAccepted: {
             if (root.shape) {
                 root.shape.color = currentColor.text = selectedColor.toString()
+                colorRect.color = selectedColor
                 canvas.requestPaint()
             }
         }
@@ -140,6 +141,7 @@ Popup {
         RowLayout {
             Label { text: "Color"; Layout.preferredWidth: root.labelWidth }
             Rectangle {
+                id: colorRect
                 width: 60
                 height: 30
                 radius: 3
@@ -156,9 +158,10 @@ Popup {
                 }
             }
             Label { 
-                id: currentColor;
+                id: currentColor
                 Layout.preferredWidth: 
                 root.labelWidth 
+                text: (shape !== undefined) ? shape.color : ""          
             }
         }
 
@@ -340,13 +343,12 @@ Popup {
             }
         }
 
+        // Divider
         Rectangle {
-            // Set width to fill its parent and height to 1 pixel
             Layout.fillWidth: true
             width: parent.width
             height: 2
-            color: "#a5a5a5" // A light gray color
-            // Optional: Add margins using anchors or Layout.margins
+            color: "#a5a5a5"
         }
 
         RowLayout {
