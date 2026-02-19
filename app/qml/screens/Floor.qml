@@ -116,14 +116,6 @@ Item {
         return shapeSelector.currentTool
     }
 
-    function polygonPath(ctx, corners) {
-        ctx.beginPath()
-        ctx.moveTo(corners[0].x, corners[0].y)
-        for (let i = 1; i < corners.length; i++)
-            ctx.lineTo(corners[i].x, corners[i].y)
-        ctx.closePath()
-    }
-
     function hitRotateHandle(p, w) {
         const c = Shape.center(w)
         const angle = Shape.angle(w)
@@ -155,10 +147,7 @@ Item {
     }
 
     function annotateShape(ctx, g, s) {
-        polygonPath(ctx, g.corners)
-        ctx.strokeStyle = colors.selected
-        ctx.lineWidth = 2 / zoom
-        ctx.stroke()
+        Draw.polygonOutline(ctx, g, colors.selected)
         // rotation handle
         const mx = (g.x1 + g.x2) / 2
         const my = (g.y1 + g.y2) / 2
@@ -316,9 +305,7 @@ Item {
                 if (s.type !== "wall") return
                 const g = Shape.geometry(s, pixelsPerFoot)
                 if (!g) return
-                polygonPath(ctx, g.corners)
-                ctx.fillStyle = s.color || colors.wallFill
-                ctx.fill()
+                Draw.polygonFill(ctx, g, s.color || colors.wallFill)
             })
             // draw per-shape details
             shapes.forEach((s, i) => {

@@ -101,7 +101,6 @@ function stairGeometry(s, pixelsPerFoot) {
     };
 }
 
-
 function center(w) {
     return {
         x: (w.x1 + w.x2) / 2,
@@ -206,7 +205,7 @@ function make(type, startX, startY, endX, endY, thickness) {
 
 function defaultColorForType(type) {
     switch (type) {
-        case "wall": return "#c6bd9c"
+        case "wall": return "#fff2a5"
         case "window": return "#c4a9a9a3"
         case "door": return "#c4a9a9a3"
         case "dimension": return "#ffffff"
@@ -293,7 +292,7 @@ function deserializeProject(jsonText) {
     }
 }
 
-function changeLength(s, length, anchor) {
+function setLength(s, length, anchor) {
     if (isNaN(length)) return
     const dx = s.x2 - s.x1;
     const dy = s.y2 - s.y1;
@@ -406,7 +405,7 @@ function move(s, direction, step = 0.25) {
     canvas.requestPaint()
 }
 
-function snapValue(v, grid) {
+function snapValueToGrid(v, grid) {
     var snapStepFeet = ((grid === "major") ? 5.0 : 1.0);
     return Math.round(v / snapStepFeet) * snapStepFeet
 }
@@ -421,10 +420,10 @@ function snap(s, direction, grid) {
     switch (direction) {
         case "left":
             if (isVertical) {
-                let lface = snapValue(Math.min(s.x1, s.x2) - (s.thickness / 2), grid);
+                let lface = snapValueToGrid(Math.min(s.x1, s.x2) - (s.thickness / 2), grid);
                 s.x1 = s.x2 = lface + (s.thickness / 2)
             } else {
-                let lface = snapValue(Math.min(s.x1, s.x2), grid);
+                let lface = snapValueToGrid(Math.min(s.x1, s.x2), grid);
                 let delta = lface - Math.min(s.x1, s.x2)
                 s.x1 += delta
                 s.x2 += delta
@@ -433,10 +432,10 @@ function snap(s, direction, grid) {
             break;
         case "right":
             if (isVertical) {
-                let rface = snapValue(Math.max(s.x1, s.x2) + (s.thickness / 2), grid);
+                let rface = snapValueToGrid(Math.max(s.x1, s.x2) + (s.thickness / 2), grid);
                 s.x1 = s.x2 = rface - (s.thickness / 2)
             } else {
-                let rface = snapValue(Math.max(s.x1, s.x2), grid);
+                let rface = snapValueToGrid(Math.max(s.x1, s.x2), grid);
                 let delta = rface - Math.max(s.x1, s.x2)
                 s.x1 += delta
                 s.x2 += delta
@@ -445,12 +444,12 @@ function snap(s, direction, grid) {
             break;
         case "up":
             if (isVertical) {
-                let uface = snapValue(Math.min(s.y1, s.y2), grid);
+                let uface = snapValueToGrid(Math.min(s.y1, s.y2), grid);
                 let delta = uface - Math.min(s.y1, s.y2)
                 s.y1 += delta
                 s.y2 += delta
             } else {
-                let uface = snapValue(Math.min(s.y1, s.y2) - (s.thickness / 2), grid);
+                let uface = snapValueToGrid(Math.min(s.y1, s.y2) - (s.thickness / 2), grid);
                 let delta = uface - Math.min(s.y1, s.y2)
                 s.y1 += delta + (s.thickness / 2)
                 s.y2 += delta + (s.thickness / 2)
@@ -459,12 +458,12 @@ function snap(s, direction, grid) {
             break;
         case "down":
             if (isVertical) {
-                let dface = snapValue(Math.max(s.y1, s.y2), grid);
+                let dface = snapValueToGrid(Math.max(s.y1, s.y2), grid);
                 let delta = dface - Math.max(s.y1, s.y2)
                 s.y1 += delta
                 s.y2 += delta
             } else {
-                let dface = snapValue(Math.max(s.y1, s.y2) + (s.thickness / 2), grid);
+                let dface = snapValueToGrid(Math.max(s.y1, s.y2) + (s.thickness / 2), grid);
                 let delta = dface - Math.max(s.y1, s.y2)
                 s.y1 += delta - (s.thickness / 2)
                 s.y2 += delta - (s.thickness / 2)

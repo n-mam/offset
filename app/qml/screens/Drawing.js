@@ -131,7 +131,8 @@ function stair(ctx, s) {
     const sg = Shape.stairGeometry(s, pixelsPerFoot);
     if (!sg) return;
     // Draw outer stair body
-    wallRect(ctx, sg.base, s);
+    polygonFill(ctx, sg.base, s.color);
+    polygonOutline(ctx, sg.base, "#000000");
     // Draw treads
     ctx.strokeStyle = "#555";
     ctx.lineWidth = 1 / zoom;
@@ -143,18 +144,28 @@ function stair(ctx, s) {
     });
     // Draw landing
     if (sg.landing && sg.landing.length) {
-        wallRect(ctx, { corners: sg.landing }, s);
+        polygonFill(ctx, { corners: sg.landing }, s.color);
+        polygonOutline(ctx, { corners: sg.landing }, "#000000");
     }
 }
 
-function wallRect(ctx, g, s) {
-    // Fill wall
+function polygonPath(ctx, corners) {
+    ctx.beginPath()
+    ctx.moveTo(corners[0].x, corners[0].y)
+    for (let i = 1; i < corners.length; i++)
+        ctx.lineTo(corners[i].x, corners[i].y)
+    ctx.closePath()
+}
+
+function polygonFill(ctx, g, color) {
     polygonPath(ctx, g.corners);
-    ctx.fillStyle = s.color || colors.wallFill;
+    ctx.fillStyle = color;
     ctx.fill();
-    // Outline wall
+}
+
+function polygonOutline(ctx, g, color) {
     polygonPath(ctx, g.corners);
-    ctx.strokeStyle = colors.wallOutline;
+    ctx.strokeStyle = color;
     ctx.lineWidth = 1 / zoom;
     ctx.stroke();
 }
@@ -198,26 +209,6 @@ function lengthLabel(ctx, s) {
     ctx.textBaseline = "middle"
     ctx.fillText(label, p.x, p.y)
     ctx.restore()
-}
-
-function window(ctx, g, s, preview) {
-    ctx.save();
-    polygonPath(ctx, g.corners);
-    ctx.fillStyle = preview ? "rgba(0,255,136,0.2)" : 
-        (s.color || "rgba(174,174,174,0.5)")
-    ctx.fill();
-    polygonPath(ctx, g.corners);
-    ctx.lineWidth = 1 / zoom;
-    ctx.strokeStyle = "#000000";
-    ctx.stroke();
-    // centerline
-    ctx.beginPath();
-    ctx.moveTo(g.x1, g.y1);
-    ctx.lineTo(g.x2, g.y2);
-    ctx.lineWidth = 1 / zoom;
-    ctx.strokeStyle = "#000000";
-    ctx.stroke();
-    ctx.restore();
 }
 
 function door(ctx, s, preview) {
@@ -280,6 +271,21 @@ function door(ctx, s, preview) {
     ctx.arc(sx, sy, r, startAngle, endAngle);
     ctx.stroke();
     ctx.setLineDash([]);
+    ctx.restore();
+}
+
+function window(ctx, g, s, preview) {
+    ctx.save();
+    polygonFill(ctx, g, preview ? "rgba(0,255,136,0.2)" : 
+        (s.color || "rgba(174,174,174,0.5)"))
+    polygonOutline(ctx, g, "#000000")
+    // centerline
+    ctx.beginPath();
+    ctx.moveTo(g.x1, g.y1);
+    ctx.lineTo(g.x2, g.y2);
+    ctx.lineWidth = 1 / zoom;
+    ctx.strokeStyle = "#000000";
+    ctx.stroke();
     ctx.restore();
 }
 

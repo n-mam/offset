@@ -26,12 +26,17 @@ Popup {
     property string anchorPoint: "C"
     signal transformRequested(string direction, string mode)
 
+    onAboutToShow: {
+        colorRect.color = shape && shape.color ? shape.color : "#ffffff"
+        colorLabel.text = (shape !== undefined) ? shape.color : ""  
+    }
+
     ColorDialog {
         id: colorDialog
         title: "Select Color"
         onAccepted: {
             if (root.shape) {
-                root.shape.color = currentColor.text = selectedColor.toString()
+                root.shape.color = colorLabel.text = selectedColor.toString()
                 colorRect.color = selectedColor
                 canvas.requestPaint()
             }
@@ -147,7 +152,6 @@ Popup {
                 radius: 3
                 border.color: "#888"
                 border.width: 1
-                color: shape && shape.color ? shape.color : "#ffffff"
                 MouseArea {
                     anchors.fill: parent
                     onClicked: {
@@ -158,10 +162,9 @@ Popup {
                 }
             }
             Label { 
-                id: currentColor
+                id: colorLabel
                 Layout.preferredWidth: 
-                root.labelWidth 
-                text: (shape !== undefined) ? shape.color : ""          
+                root.labelWidth        
             }
         }
 
@@ -438,7 +441,7 @@ Popup {
                 Layout.preferredHeight:  40
                 text: shape ? feetToText(
                     Math.hypot(shape.x2 - shape.x1, shape.y2 - shape.y1)) : "0'0\""
-                onEditingFinished: Shape.changeLength(shape, textToFeet(text), root.anchorPoint)
+                onEditingFinished: Shape.setLength(shape, textToFeet(text), root.anchorPoint)
             }
         }
     }
