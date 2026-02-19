@@ -122,47 +122,41 @@ function previews(ctx) {
         ctx.restore()
     } else if (shape.type === "dimension") {
         Draw.dimension(ctx, shape)
+    } else if(shape.type === "stair") {
+        Draw.stair(ctx, shape)
+    }
+}
+
+function stair(ctx, s) {
+    const sg = Shape.stairGeometry(s, pixelsPerFoot);
+    if (!sg) return;
+    // Draw outer stair body
+    wallRect(ctx, sg.base, s);
+    // Draw treads
+    ctx.strokeStyle = "#555";
+    ctx.lineWidth = 1 / zoom;
+    sg.steps.forEach(step => {
+        ctx.beginPath();
+        ctx.moveTo(step.x1, step.y1);
+        ctx.lineTo(step.x2, step.y2);
+        ctx.stroke();
+    });
+    // Draw landing
+    if (sg.landing && sg.landing.length) {
+        wallRect(ctx, { corners: sg.landing }, s);
     }
 }
 
 function wallRect(ctx, g, s) {
-    polygonPath(ctx, g.corners)
-    ctx.fillStyle = s.color || colors.wallFill
-    ctx.fill()
-    //hatch
-    ctx.save()
-    polygonPath(ctx, g.corners)
-    ctx.clip()
-    const spacing = 6 / zoom
-    const wallAngle = Math.atan2(g.ty, g.tx)
-    const hatchAngle = wallAngle + Math.PI / 4
-    // bounding box (you already computed these)
-    const xs = g.corners.map(c => c.x)
-    const ys = g.corners.map(c => c.y)
-    const minX = Math.min.apply(null, xs)
-    const maxX = Math.max.apply(null, xs)
-    const minY = Math.min.apply(null, ys)
-    const maxY = Math.max.apply(null, ys)
-    // center of the wall area
-    const cx = (minX + maxX) * 0.5
-    const cy = (minY + maxY) * 0.5
-    ctx.translate(cx, cy)
-    ctx.rotate(hatchAngle)
-    ctx.strokeStyle = colors.hatchStroke
-    ctx.lineWidth = 1 / zoom
-    // long enough to cover any rotation
-    const L = Math.max(maxX - minX, maxY - minY) * 2
-    for (let y = -L; y <= L; y += spacing) {
-        ctx.beginPath()
-        ctx.moveTo(-L, y)
-        ctx.lineTo(L, y)
-        ctx.stroke()
-    }
-    ctx.restore()
-    polygonPath(ctx, g.corners)
-    ctx.strokeStyle = colors.wallOutline
-    ctx.lineWidth = 1 / zoom
-    ctx.stroke()
+    // Fill wall
+    polygonPath(ctx, g.corners);
+    ctx.fillStyle = s.color || colors.wallFill;
+    ctx.fill();
+    // Outline wall
+    polygonPath(ctx, g.corners);
+    ctx.strokeStyle = colors.wallOutline;
+    ctx.lineWidth = 1 / zoom;
+    ctx.stroke();
 }
 
 function lengthLabel(ctx, s) {

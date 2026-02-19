@@ -8,16 +8,9 @@ function geometry(s, pixelsPerFoot) {
     let x1, y1, x2, y2, thicknessFeet
     switch (s.type) {
         case "wall":
-        case "window":
-            x1 = s.x1; y1 = s.y1
-            x2 = s.x2; y2 = s.y2
-            thicknessFeet = s.thickness
-            break
         case "door":
-            x1 = s.x1; y1 = s.y1
-            x2 = s.x2; y2 = s.y2
-            thicknessFeet = s.thickness
-            break
+        case "stair":
+        case "window":
         case "dimension":
             x1 = s.x1; y1 = s.y1
             x2 = s.x2; y2 = s.y2
@@ -59,6 +52,55 @@ function geometry(s, pixelsPerFoot) {
         ]
     }
 }
+
+function stairGeometry(s, pixelsPerFoot) {
+    const g = geometry(s, pixelsPerFoot);
+    if (!g) return null;
+    const stairRunFeet = g.len;
+    const stairWidthPx = s.thickness * pixelsPerFoot;
+    const treadDepthFeet = 0.875;       // 10.5 inches tread
+    const landingDepthFeet = 3.0;     // 3 ft landing
+    const treadCount = Math.floor(stairRunFeet / treadDepthFeet);
+    const treadDepthPx = treadDepthFeet * pixelsPerFoot;
+    const landingDepthPx = landingDepthFeet * pixelsPerFoot;
+    const steps = [];
+    for (let i = 1; i <= treadCount; i++) {
+        const dist = i * treadDepthPx;
+        const px = g.x1 + g.tx * dist;
+        const py = g.y1 + g.ty * dist;
+        steps.push({
+            x1: px + g.nx * (stairWidthPx / 2),
+            y1: py + g.ny * (stairWidthPx / 2),
+            x2: px - g.nx * (stairWidthPx / 2),
+            y2: py - g.ny * (stairWidthPx / 2)
+        });
+    }
+    // Landing rectangle
+    const lx1 = g.x2;
+    const ly1 = g.y2;
+    const lx2 = lx1 + g.tx * landingDepthPx;
+    const ly2 = ly1 + g.ty * landingDepthPx;
+    const landing = [{
+            x: lx1 + g.nx * (stairWidthPx / 2),
+            y: ly1 + g.ny * (stairWidthPx / 2)
+        }, {
+            x: lx2 + g.nx * (stairWidthPx / 2),
+            y: ly2 + g.ny * (stairWidthPx / 2)
+        }, {
+            x: lx2 - g.nx * (stairWidthPx / 2),
+            y: ly2 - g.ny * (stairWidthPx / 2)
+        }, {
+            x: lx1 - g.nx * (stairWidthPx / 2),
+            y: ly1 - g.ny * (stairWidthPx / 2)
+        }
+    ];
+    return {
+        base: g,
+        steps,
+        landing
+    };
+}
+
 
 function center(w) {
     return {
@@ -150,6 +192,7 @@ function make(type, startX, startY, endX, endY, thickness) {
     switch (type) {
         case "wall":
         case "door":
+        case "stair":
         case "window":
         case "dimension":
             return Object.assign({

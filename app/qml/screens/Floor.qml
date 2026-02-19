@@ -330,6 +330,8 @@ Item {
                     Draw.dimension(ctx, s)
                 } else if (s.type === "window") {
                     Draw.window(ctx, g, s, false)
+                } else if (s.type === "stair") {
+                    Draw.stair(ctx, s)
                 }
                 if (i === selected) {
                     annotateShape(ctx, g, s)

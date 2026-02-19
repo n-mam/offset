@@ -11,6 +11,7 @@ Item {
         { name: "wall", icon: "qrc:/wall.png" },
         { name: "door", icon: "qrc:/door.png" },
         { name: "window", icon: "qrc:/window.png" },
+        { name: "stair", icon: "qrc:/window.png" },
         { name: "dimension", icon: "qrc:/ruler.png" }
     ]
 
