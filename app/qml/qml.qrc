@@ -2,17 +2,17 @@
   <qresource prefix="/">
     <file>main.qml</file>
     <file>screens/Ftp.qml</file>
-    <file>screens/Shape.js</file>
     <file>screens/Trace.qml</file>
     <file>screens/Floor.qml</file>
     <file>screens/Camera.qml</file>
     <file>screens/Backup.qml</file>
-    <file>screens/Drawing.js</file>
+    <file>javascript/Shape.js</file>
     <file>screens/Compare.qml</file>
-    <file>screens/Geometry.js</file>
     <file>components/List.qml</file>
     <file>components/Login.qml</file>
+    <file>javascript/Drawing.js</file>
     <file>components/Player.qml</file>
+    <file>javascript/Geometry.js</file>
     <file>components/ButtonX.qml</file>
     <file>components/Element.qml</file>
     <file>components/Overview.qml</file>

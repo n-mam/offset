@@ -2,9 +2,9 @@ import QtQuick
 import QtQuick.Dialogs
 import Qt.labs.platform
 import "qrc:/components"
-import "qrc:/screens/Shape.js" as Shape
-import "qrc:/screens/Drawing.js" as Draw
-import "qrc:/screens/Geometry.js" as Geometry
+import "qrc:/javascript/Shape.js" as Shape
+import "qrc:/javascript/Drawing.js" as Draw
+import "qrc:/javascript/Geometry.js" as Geometry
 
 Item {
     id: root
@@ -567,7 +567,7 @@ Item {
                     canvas.requestPaint()
                 } else if (event.modifiers & Qt.ShiftModifier) {
                     Shape.makeVertical(s, "C")
-                }                
+                }
                 break
             case Qt.Key_F:
                 if (event.modifiers & Qt.ControlModifier) {

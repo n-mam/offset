@@ -3,8 +3,8 @@ import QtQuick.Layouts
 import QtQuick.Dialogs
 import QtQuick.Controls
 
-import "qrc:/screens/Shape.js" as Shape
-import "qrc:/screens/Drawing.js" as Draw
+import "qrc:/javascript/Shape.js" as Shape
+import "qrc:/javascript/Drawing.js" as Draw
 
 Popup {
     id: root
@@ -28,7 +28,7 @@ Popup {
 
     onAboutToShow: {
         colorRect.color = shape && shape.color ? shape.color : "#ffffff"
-        colorLabel.text = (shape !== undefined) ? shape.color : ""  
+        colorLabel.text = (shape !== undefined) ? shape.color : ""
     }
 
     ColorDialog {
@@ -161,10 +161,10 @@ Popup {
                     }
                 }
             }
-            Label { 
+            Label {
                 id: colorLabel
-                Layout.preferredWidth: 
-                root.labelWidth        
+                Layout.preferredWidth:
+                root.labelWidth
             }
         }
 
