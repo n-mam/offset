@@ -43,7 +43,7 @@ struct ftp : public protocol {
         EStateGEN
     };
 
-    enum Direction : uint8_t {
+    enum operation : uint8_t {
         none,
         list,
         upload,
@@ -71,90 +71,90 @@ struct ftp : public protocol {
         return m_data_channel->write_async(b, l);
     }
 
-    virtual void Transfer(Direction direction, const std::string& remote, TTransferCbk tcbk, TListenerOnResponse rcbk = {}, tls P = tls::no) {
+    void Transfer(operation op, const std::string& remote, TTransferCbk tcbk, TListenerOnResponse rcbk = {}, tls P = tls::no) {
         std::lock_guard<std::mutex> lg(m_qlock);
         if (remote.empty() || !tcbk) assert(false);
         bool bQWasEmpty = m_queue.empty();
-        SetDCProtLevel(P);
+        setDCProtLevel(P);
         std::string command;
-        if (direction == ftp::list) {
-            HasFeature("MLSD") ?
+        if (op == ftp::list) {
+            hasFeature("MLSD") ?
                 command = "MLSD" : command = "LIST";
-        } else if (direction == ftp::upload) {
+        } else if (op == ftp::upload) {
             command = "STOR";
-        } else if (direction == ftp::download) {
+        } else if (op == ftp::download) {
             command = "RETR";
         }
         m_queue.push_back({"TYPE", "I"});
         m_queue.push_back({"PASV"});
         m_queue.push_back({command.c_str(), remote, rcbk, tcbk});
         m_pending_transfers++;
-        CheckQueue(bQWasEmpty);
+        checkQueue(bQWasEmpty);
     }
 
-    virtual void GetCurrentDirectory(TListenerOnResponse cbk = {}) {
+    void getCurrentDirectory(TListenerOnResponse cbk = {}) {
         std::lock_guard<std::mutex> lg(m_qlock);
         bool bQWasEmpty = m_queue.empty();
         m_queue.push_back({"PWD", "", cbk, nullptr});
-        CheckQueue(bQWasEmpty);
+        checkQueue(bQWasEmpty);
     }
 
-    virtual void SetCurrentDirectory(const std::string& dir, TListenerOnResponse cbk = {}) {
+    void setCurrentDirectory(const std::string& dir, TListenerOnResponse cbk = {}) {
         std::lock_guard<std::mutex> lg(m_qlock);
         bool bQWasEmpty = m_queue.empty();
         m_queue.push_back({"CWD", dir, cbk, nullptr});
-        CheckQueue(bQWasEmpty);
+        checkQueue(bQWasEmpty);
     }
 
-    virtual void CreateDirectory(const std::string& dir, TListenerOnResponse cbk = {}) {
+    void createDirectory(const std::string& dir, TListenerOnResponse cbk = {}) {
         std::lock_guard<std::mutex> lg(m_qlock);
         bool bQWasEmpty = m_queue.empty();
         m_queue.push_back({"MKD", dir, cbk, nullptr});
-        CheckQueue(bQWasEmpty);
+        checkQueue(bQWasEmpty);
     }
 
-    virtual void RemoveDirectory(const std::string& dir, TListenerOnResponse cbk = {}) {
+    void removeDirectory(const std::string& dir, TListenerOnResponse cbk = {}) {
         std::lock_guard<std::mutex> lg(m_qlock);
         bool bQWasEmpty = m_queue.empty();
         m_queue.push_back({"RMD", dir, cbk, nullptr});
-        CheckQueue(bQWasEmpty);
+        checkQueue(bQWasEmpty);
     }
 
-    virtual void RemoveFile(const std::string& file, TListenerOnResponse cbk = {}) {
+    void removeFile(const std::string& file, TListenerOnResponse cbk = {}) {
         std::lock_guard<std::mutex> lg(m_qlock);
         bool bQWasEmpty = m_queue.empty();
         m_queue.push_back({"DELE", file, cbk, nullptr});
-        CheckQueue(bQWasEmpty);
+        checkQueue(bQWasEmpty);
     }
 
-    virtual void Rename(const std::string& from, const std::string& to, TListenerOnResponse cbk = {}) {
+    void rename(const std::string& from, const std::string& to, TListenerOnResponse cbk = {}) {
         std::lock_guard<std::mutex> lg(m_qlock);
         bool bQWasEmpty = m_queue.empty();
         m_queue.push_back({"RNFR", from, cbk, nullptr});
         m_queue.push_back({"RNTO", to, cbk, nullptr});
-        CheckQueue(bQWasEmpty);
+        checkQueue(bQWasEmpty);
     }
 
-    virtual void Quit(TListenerOnResponse cbk = {}) {
+    void quit(TListenerOnResponse cbk = {}) {
         std::lock_guard<std::mutex> lg(m_qlock);
         bool bQWasEmpty = m_queue.empty();
         m_queue.push_back({"QUIT", "", cbk, nullptr});
-        CheckQueue(bQWasEmpty);
+        checkQueue(bQWasEmpty);
     }
 
-    virtual bool HasFeature(const std::string& feature) {
+    bool hasFeature(const std::string& feature) {
         return m_feat.find(feature) != std::string::npos;
     }
 
-    virtual std::string SystemType(void) {
+    std::string systemType(void) {
         return m_syst;
     }
 
-    virtual int PendingTransfers(void) {
+    int pendingTransfers(void) {
         return m_pending_transfers;
     }
 
-    virtual void set_idle_callback(std::function<void ()> callback) {
+    void set_idle_callback(std::function<void ()> callback) {
         m_idle_callback = callback;
     }
 
@@ -185,7 +185,7 @@ struct ftp : public protocol {
     uint8_t m_triggerFlags;
     std::list<Command> m_queue;
     int m_pending_transfers = 0;
-    Direction m_currentDirection;
+    operation m_currentOperation;
     std::condition_variable m_cv;
     bool m_uploadChannelReady = false;
     spsocket m_data_channel = nullptr;
@@ -196,36 +196,36 @@ struct ftp : public protocol {
     Transition FSM[31] = {
         // Connection states
         { state::EStateInit , '1', state::EStateInit  , nullptr                                            },
-        { state::EStateInit , '2', state::EStateFTPS  , [this] () { CheckExplicitFTPS();                   }, NEXT    },
+        { state::EStateInit , '2', state::EStateFTPS  , [this] () { checkExplicitFTPS();                   }, NEXT    },
         { state::EStateInit , '4', state::EStateInit  , nullptr                                            },
         // AUTH TLS states
-        { state::EStateAUTH , '2', state::EStateTLS   , [this] () { DoCCHandshake();                       },     1   },
+        { state::EStateAUTH , '2', state::EStateTLS   , [this] () { doCCHandshake();                       },     1   },
         { state::EStateAUTH , '3', state::EStateADAT  , nullptr                                             ,     1   },
         { state::EStateAUTH , '4', state::EStateUSER  , [this] () { m_queue.push_front({"USER", m_user});  }, NEXT|1  },
         { state::EStateAUTH , '5', state::EStateUSER  , [this] () { m_queue.push_front({"USER", m_user});  }, NEXT|1  },
         // USER states
         { state::EStateUSER , '1', state::EStateUSER  , nullptr                                            },
-        { state::EStateUSER , '2', state::EStateUSER  , [this] () { ProcessLoginEvent(true);               },    NEXT|1  },
+        { state::EStateUSER , '2', state::EStateUSER  , [this] () { processLoginEvent(true);               },    NEXT|1  },
         { state::EStateUSER , '3', state::EStatePASS  , [this] () { m_queue.push_front({"PASS", m_password}); }, NEXT|1  },
         { state::EStateUSER , '4', state::EStateUSER  , nullptr                                            },
         { state::EStateUSER , '5', state::EStateUSER  , nullptr                                            },
         // PASS states
-        { state::EStatePASS , '1', state::EStateUSER  , [this] () { ProcessLoginEvent(false);              },         },
-        { state::EStatePASS , '2', state::EStateREADY , [this] () { ProcessLoginEvent(true);               }, NEXT|1  },
+        { state::EStatePASS , '1', state::EStateUSER  , [this] () { processLoginEvent(false);              },         },
+        { state::EStatePASS , '2', state::EStateREADY , [this] () { processLoginEvent(true);               }, NEXT|1  },
         { state::EStatePASS , '3', state::EStateACCT  , [this] () { m_queue.push_back({"ACCT"});           },         },
-        { state::EStatePASS , '4', state::EStateUSER  , [this] () { ProcessLoginEvent(false);              },         },
-        { state::EStatePASS , '5', state::EStateUSER  , [this] () { ProcessLoginEvent(false);              },         },
+        { state::EStatePASS , '4', state::EStateUSER  , [this] () { processLoginEvent(false);              },         },
+        { state::EStatePASS , '5', state::EStateUSER  , [this] () { processLoginEvent(false);              },         },
         // PASV states
         { state::EStatePASV , '1', state::EStateREADY , nullptr                                             , NEXT|2   },
-        { state::EStatePASV , '2', state::EStateDATA  , [this] () { ProcessPasvResponse();                 }, NEXT|1   },
+        { state::EStatePASV , '2', state::EStateDATA  , [this] () { processPasvResponse();                 }, NEXT|1   },
         { state::EStatePASV , '4', state::EStateREADY , nullptr                                             , NEXT|2   },
         { state::EStatePASV , '5', state::EStateREADY , nullptr                                             , NEXT|2   },
         // DATA command (LIST, RETR, STOR) states
-        { state::EStateDATA , '1', state::EState1YZ   , [this] () { ProcessDataCmdResponse('1');           }           },
-        { state::EState1YZ  , '2', state::EStateXYZ   , [this] () { ProcessDataCmdResponse('2');           }           },
-        { state::EState1YZ  , '4', state::EStateXYZ   , [this] () { ProcessDataCmdResponse('4');           }           },
-        { state::EStateDATA , '4', state::EStateXYZ   , [this] () { ProcessDataCmdResponse('4');           }           },
-        { state::EStateDATA , '5', state::EStateXYZ   , [this] () { ProcessDataCmdResponse('5');           }           },
+        { state::EStateDATA , '1', state::EState1YZ   , [this] () { processDataCmdResponse('1');           }           },
+        { state::EState1YZ  , '2', state::EStateXYZ   , [this] () { processDataCmdResponse('2');           }           },
+        { state::EState1YZ  , '4', state::EStateXYZ   , [this] () { processDataCmdResponse('4');           }           },
+        { state::EStateDATA , '4', state::EStateXYZ   , [this] () { processDataCmdResponse('4');           }           },
+        { state::EStateDATA , '5', state::EStateXYZ   , [this] () { processDataCmdResponse('5');           }           },
         { state::EStateGEN  , '1', state::EStateREADY , nullptr                                             , NEXT|1   },
         { state::EStateGEN  , '2', state::EStateREADY , nullptr                                             , NEXT|1   },
         { state::EStateGEN  , '3', state::EStateREADY , nullptr                                             , NEXT|1   },
@@ -256,7 +256,7 @@ struct ftp : public protocol {
                 }
                 auto next = (t.t_flags >> 4) & 0x0F;
                 if (next) {
-                    TriggerNextCommand();
+                    triggerNextCommand();
                 }
                 break;
             }
@@ -283,20 +283,20 @@ struct ftp : public protocol {
         return nullptr;
     }
 
-    virtual void SendCommand(const std::string& c, const std::string& arg = "") {
-        SetCurrentDirection(c);
+    void sendCommand(const std::string& c, const std::string& arg = "") {
+        setCurrentDirection(c);
         auto cmd = c + " " + arg + "\r\n";
         LOG << "Command  : " << cmd;
         auto target = m_target.lock();
         if (target) {
             target->write_async((uint8_t *)cmd.c_str(), cmd.size(), 0);
-            if (IsTransferCommand(cmd)) {
-                OpenDataChannel();
+            if (isTransferCommand(cmd)) {
+                openDataChannel();
             }
         }
     }
 
-    virtual void SetDCProtLevel(tls P) {
+    void setDCProtLevel(tls P) {
         auto tls = get_channel_tls();
         if (tls == tls::yes || tls == tls::implicit) {
             m_queue.push_back({"PBSZ", "0"});
@@ -310,16 +310,16 @@ struct ftp : public protocol {
         }
     }
 
-    virtual void TriggerNextCommand(void) {
+    void triggerNextCommand(void) {
         if (!m_queue.empty()) {
             auto& cmd = m_queue.front();
-            UpdateProtocolState(cmd.c_name);
+            updateProtocolState(cmd.c_name);
             setCallback<TListenerOnResponse>(cmd.c_rcbk);
-            SendCommand(cmd.c_name, cmd.c_args);
+            sendCommand(cmd.c_name, cmd.c_args);
         }
     }
 
-    virtual void UpdateProtocolState(const std::string& cmd) {
+    void updateProtocolState(const std::string& cmd) {
         if (cmd == "AUTH") {
             set_state(state::EStateAUTH);
         } else if (cmd == "USER") {
@@ -328,19 +328,19 @@ struct ftp : public protocol {
             set_state(state::EStatePASS);
         } else if (cmd == "PASV") {
             set_state(state::EStatePASV);
-        } else if (IsTransferCommand(cmd)) {
+        } else if (isTransferCommand(cmd)) {
             set_state(state::EStateDATA);
         } else {
             set_state(state::EStateGEN);
         }
     }
 
-    virtual void CheckExplicitFTPS(void) {
+    void checkExplicitFTPS(void) {
         auto tls = get_channel_tls();
         if (tls == tls::yes) {
             m_queue.push_front({"AUTH", "TLS",
                 {[this](const auto& res) {
-                    if (!IsPositiveCompletionReply(res[0]))
+                    if (!isPositiveCompletionReply(res[0]))
                         set_channel_tls(tls::no);
                 }}});
         } else {
@@ -348,39 +348,39 @@ struct ftp : public protocol {
         }
     }
 
-    void SetCurrentDirection(const std::string& cmd) {
+    void setCurrentDirection(const std::string& cmd) {
         if (cmd == "LIST" || cmd == "MLSD") {
-            m_currentDirection = ftp::download;
+            m_currentOperation = ftp::download;
         } else if (cmd == "RETR") {
-            m_currentDirection = ftp::download;
+            m_currentOperation = ftp::download;
         } else if (cmd == "STOR") {
-            m_currentDirection = ftp::upload;
+            m_currentOperation = ftp::upload;
         } else {
-            m_currentDirection = ftp::none;
+            m_currentOperation = ftp::none;
         }
     }
 
-    virtual void ProcessDataCmdResponse(char code) {
-        if (IsPositivePreliminaryReply(code)) {
-            TriggerDataTransfer(3);
-        } else if (IsPositiveCompletionReply(code)) {
+    void processDataCmdResponse(char code) {
+        if (isPositivePreliminaryReply(code)) {
+            triggerDataTransfer(3);
+        } else if (isPositiveCompletionReply(code)) {
             if (!m_data_channel) {
                 m_queue.pop_front();
                 set_state(state::EStateREADY);
-                TriggerNextCommand();
+                triggerNextCommand();
             }
         } else {
             if (m_data_channel) {
                 m_data_channel->stop_socket();
                 m_data_channel.reset();
             }
-            if (m_currentDirection == ftp::upload){
-                NotifyUploadChannelReady();
+            if (m_currentOperation == ftp::upload){
+                notifyUploadChannelReady();
             }
         }
     }
 
-    virtual void ProcessPasvResponse(void) {
+    void processPasvResponse(void) {
         auto& m = _messages.back();
         auto& pasv = m->get_payload_string();
         auto spec = pasv.substr(pasv.find('('));
@@ -407,45 +407,45 @@ struct ftp : public protocol {
         }
     }
 
-    virtual void OpenDataChannel() {
+    void openDataChannel() {
         m_data_channel = std::make_shared<socket_device>();
         get_last_target(shared_from_this())->add_event_listener(m_data_channel);
         m_data_channel->set_host_and_port(m_dc_host, m_dc_port);
-        AttachDataChannelObserver();
+        attachDataChannelObserver();
         m_triggerFlags = 0;
         m_data_channel->start_socket_client();
     }
 
-    virtual void AttachDataChannelObserver(void) {
+    void attachDataChannelObserver(void) {
         auto observer = std::make_shared<listener>();
         observer->setCallback<TListenerNotifyConnect>({
             [this](bool connected) {
-                connected ? OnDataChannelConnect() :
-                    OnDataChannelDisconnect();
+                connected ? onDataChannelConnect() :
+                    onDataChannelDisconnect();
             }});
         observer->setCallback<TListenerNotifyRead>({
             [this](const uint8_t *b, size_t n) {
                 if (!m_data_channel->is_stopped())
-                    OnDataChannelIoCompletion(b, n, ftp::download);
+                    onDataChannelIoCompletion(b, n, ftp::download);
             }});
         observer->setCallback<TListenerNotifyWrite>({
             [this](const uint8_t *b, size_t n) {
                 if (!m_data_channel->is_stopped())
-                    OnDataChannelIoCompletion(b, n, ftp::upload);
+                    onDataChannelIoCompletion(b, n, ftp::upload);
             }});
         observer->setCallback<TListenerNotifyError>({
             [this](uint64_t e){
-                OnDataChannelDisconnect();
+                onDataChannelDisconnect();
             }});
         m_data_channel->add_event_listener(observer);
     }
 
-    virtual void OnDataChannelConnect(void) {
-        TriggerDataTransfer(2);
+    void onDataChannelConnect(void) {
+        triggerDataTransfer(2);
     }
 
-    virtual void OnDataChannelIoCompletion(const uint8_t *b, size_t n, Direction direction) {
-        if (direction == m_currentDirection) {
+    void onDataChannelIoCompletion(const uint8_t *b, size_t n, operation direction) {
+        if (direction == m_currentOperation) {
             auto& transferCallback = m_queue.front().c_tcbk;
             if (transferCallback) {
                 auto continueTransfer = transferCallback((const char *)b, n);
@@ -454,27 +454,27 @@ struct ftp : public protocol {
                         (direction == ftp::download ? true : false);
                 }
                 if (direction == ftp::upload) {
-                    NotifyUploadChannelReady();
+                    notifyUploadChannelReady();
                 }
             }
         }
     }
 
-    virtual void OnDataChannelDisconnect(void) {
+    void onDataChannelDisconnect(void) {
         m_pending_transfers--;
         auto& transferCallback = m_queue.front().c_tcbk;
         if (transferCallback) {
             transferCallback(nullptr, 0);
         }
-        ProcessDataCmdResponse('0');
+        processDataCmdResponse('0');
         if (get_state() == state::EStateXYZ) {
             m_queue.pop_front();
             set_state(state::EStateREADY);
-            TriggerNextCommand();
+            triggerNextCommand();
         }
     }
 
-    virtual void TriggerDataTransfer(int source) {
+    void triggerDataTransfer(int source) {
         osl::set_bit(m_triggerFlags, source);
         if (!osl::is_bit_set(m_triggerFlags, 1) &&
             osl::is_bit_set(m_triggerFlags, 2) &&
@@ -483,11 +483,11 @@ struct ftp : public protocol {
                 auto cc = std::static_pointer_cast<socket_device>(m_target.lock());
                 m_data_channel->initialize_ssl(cc->get_ssl_object(),
                     [this](){
-                        if (m_currentDirection == ftp::upload)
+                        if (m_currentOperation == ftp::upload)
                             m_queue.front().c_tcbk((char *)0xABCDEF, 0);
                     });
             } else {
-                if (m_currentDirection == ftp::upload) {
+                if (m_currentOperation == ftp::upload) {
                     m_queue.front().c_tcbk((char *)0xABCDEF, 0);
                 }
             }
@@ -495,17 +495,17 @@ struct ftp : public protocol {
         }
     }
 
-    virtual void NotifyUploadChannelReady() {
+    void notifyUploadChannelReady() {
         std::lock_guard<std::mutex> lg(m_mux);
         m_uploadChannelReady = true;
         m_cv.notify_all();
     }
 
-    virtual void ProcessLoginEvent(bool success) {
+    void processLoginEvent(bool success) {
         if (!success) {
             m_queue.clear();
             LOG << "User login failed";
-            NotifyUploadChannelReady();
+            notifyUploadChannelReady();
             onLogin(false);
         } else {
             m_queue.push_front({
@@ -524,7 +524,7 @@ struct ftp : public protocol {
         }
     }
 
-    virtual bool IsTransferCommand(const std::string& command) {
+    bool isTransferCommand(const std::string& command) {
         std::string_view view(command.c_str(), 4);
         return (view == "RETR" ||
                 view == "STOR" ||
@@ -532,11 +532,11 @@ struct ftp : public protocol {
                 view == "LIST");
     }
 
-    virtual bool IsPositiveCompletionReply(char c) {
+    bool isPositiveCompletionReply(char c) {
         return (c == '2');
     }
 
-    virtual bool IsPositivePreliminaryReply(char c) {
+    bool isPositivePreliminaryReply(char c) {
         return (c == '1');
     }
 
@@ -554,11 +554,11 @@ struct ftp : public protocol {
         protocol::notify_connect();
         auto tls = get_channel_tls();
         if (tls == tls::implicit){
-            DoCCHandshake();
+            doCCHandshake();
         }
     }
 
-    virtual void DoCCHandshake() {
+    void doCCHandshake() {
         auto sock = get_target_socket_device();
         if (sock) {
             sock->initialize_ssl(
@@ -568,15 +568,15 @@ struct ftp : public protocol {
                     if (tls == tls::yes) {
                         m_queue.push_front({"USER", m_user});
                     }
-                    TriggerNextCommand();
+                    triggerNextCommand();
                 }
             );
         }
     }
 
-    virtual void CheckQueue(bool bQWasEmpty) {
+    void checkQueue(bool bQWasEmpty) {
         if (bQWasEmpty && get_state() == state::EStateREADY) {
-            TriggerNextCommand();
+            triggerNextCommand();
         }
     }
 };

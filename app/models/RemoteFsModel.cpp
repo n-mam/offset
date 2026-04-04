@@ -14,7 +14,7 @@ bool RemoteFsModel::Connect(QString host, QString port, QString user, QString pa
             QMetaObject::invokeMethod(this, [=, this](){
                 for (auto rit = m_directories_to_remove.rbegin();
                     rit != m_directories_to_remove.rend(); rit++)
-                m_ftp->RemoveDirectory(*rit);
+                m_ftp->removeDirectory(*rit);
                 if (!m_directories_to_remove.empty()) {
                     m_directories_to_remove.clear();
                     RefreshRemoteView();
@@ -118,7 +118,7 @@ void RemoteFsModel::WalkRemoteDirectory(const std::string& path, TFileElementLis
 }
 
 void RemoteFsModel::RemoveFile(QString path) {
-    m_ftp->RemoveFile(path.toStdString());
+    m_ftp->removeFile(path.toStdString());
 }
 
 void RemoteFsModel::RemoveDirectory(QString path) {
@@ -137,7 +137,7 @@ void RemoteFsModel::RemoveDirectory(QString path) {
                 }
             }
             if (fe_list.empty() || onlyFiles) {
-                m_ftp->RemoveDirectory(path.toStdString(),
+                m_ftp->removeDirectory(path.toStdString(),
                     {[](const std::string& res) { STATUS(1) << res; }});
                 RefreshRemoteView();
             } else {
@@ -147,13 +147,13 @@ void RemoteFsModel::RemoveDirectory(QString path) {
 }
 
 void RemoteFsModel::CreateDirectory(QString path) {
-    m_ftp->CreateDirectory(path.toStdString(),
+    m_ftp->createDirectory(path.toStdString(),
         {[](const std::string& res) { STATUS(1) << res; }});
     RefreshRemoteView();
 }
 
 void RemoteFsModel::Rename(QString from, QString to) {
-    m_ftp->Rename(from.toStdString(), to.toStdString(),
+    m_ftp->rename(from.toStdString(), to.toStdString(),
         {[](const std::string& res) {
             if (res[0] == '4' || res[0] == '5')
                 STATUS(1) << "Error: " << res;
@@ -162,7 +162,7 @@ void RemoteFsModel::Rename(QString from, QString to) {
 }
 
 void RemoteFsModel::Quit() {
-    m_ftp->Quit();
+    m_ftp->quit();
 }
 
 bool RemoteFsModel::getConnected(void) {
@@ -179,7 +179,7 @@ void RemoteFsModel::setConnected(bool isConnected) {
 }
 
 void RemoteFsModel::setCurrentDirectory(QString directory) {
-    m_ftp->SetCurrentDirectory(directory.toStdString());
+    m_ftp->setCurrentDirectory(directory.toStdString());
     m_ftp->Transfer(npl::ftp::list, directory.toStdString(),
         [=, list = std::string(), this] (const char *b, size_t n) mutable {
             if (!b) {
@@ -222,11 +222,11 @@ void RemoteFsModel::RefreshRemoteView(void) {
 
 void RemoteFsModel::ParseDirectoryList(const std::string& list, std::vector<FileElement>& fe_list, int *pfc, int *pdc) {
     DBG << list;
-    if (m_ftp->HasFeature("MLSD"))
+    if (m_ftp->hasFeature("MLSD"))
         ParseMLSDList(list, fe_list, pfc, pdc);
-    else if (m_ftp->SystemType().find("UNIX") != std::string::npos)
+    else if (m_ftp->systemType().find("UNIX") != std::string::npos)
         ParseLinuxList(list, fe_list, pfc, pdc);
-    else if (m_ftp->SystemType().find("Windows") != std::string::npos)
+    else if (m_ftp->systemType().find("Windows") != std::string::npos)
         ParseWindowsList(list, fe_list, pfc, pdc);
 }
 

@@ -17,7 +17,7 @@ Rectangle {
         height: 378
         width: parent.width
         currentIndex: startIndex
-        anchors.verticalCenter: parent.verticalCenter
+        //anchors.verticalCenter: parent.verticalCenter
         anchors.horizontalCenter: parent.horizontalCenter
         model: ListModel {
             ListElement {

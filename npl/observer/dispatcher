@@ -179,7 +179,6 @@ struct dispatcher : public subject {
     private:
 
     void event_loop(void) {
-
         while (!_stop) {
             int rc = 0;
             void *k = nullptr;

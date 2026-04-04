@@ -36,7 +36,7 @@ Rectangle {
             id: arrow
             width: parent.width * 0.05
             color: delegateRect.ListView.isCurrentItem ? "black" : "white"
-            text: (direction === 2) ? "-->" : "<--"
+            text: (operation === 2) ? "-->" : "<--"
             x: localText.x + localText.width + 10
             verticalAlignment: Text.AlignVCenter
             horizontalAlignment: Text.AlignHCenter

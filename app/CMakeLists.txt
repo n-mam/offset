@@ -81,6 +81,8 @@ if (WIN32)
    "/DEBUG /OPT:REF /OPT:ICF")
 endif (WIN32)
 
+#target_compile_definitions(offset PRIVATE QT_QML_DEBUG)
+
 #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DQT_QML_DEBUG")
 
 #SET_TARGET_PROPERTIES(

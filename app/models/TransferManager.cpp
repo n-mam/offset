@@ -16,7 +16,7 @@ QHash<int, QByteArray> TransferManager::roleNames() const {
     roles.insert(ELocal, "local");
     roles.insert(ERemote, "remote");
     roles.insert(EProgress, "progress");
-    roles.insert(EDirection, "direction");
+    roles.insert(EOperation, "operation");
     return roles;
 }
 
@@ -36,8 +36,8 @@ QVariant TransferManager::data(const QModelIndex& index, int role) const {
         case ERemote: {
             return QString::fromStdString(m_queue[row].m_remote);
         }
-        case EDirection: {
-            return (int)(m_queue[row].m_direction);
+        case EOperation: {
+            return (int)(m_queue[row].m_operation);
         }
         case EType: {
             return m_queue[row].m_type;
@@ -65,7 +65,7 @@ void TransferManager::AddToTransferQueue(const Transfer& transfer) {
 int TransferManager::GetSessionWithLeastQueueDepth(void) {
     int sid, minimum = INT_MAX;
     for (int i = 0; i < MAX_SESSIONS; i++) {
-        auto pending = m_sessions[i]->PendingTransfers();
+        auto pending = m_sessions[i]->pendingTransfers();
         if (pending < minimum) {
             sid = i;
             minimum = pending;
@@ -135,9 +135,9 @@ void TransferManager::ProcessTransfer(int row, int sid, bool oneoff) {
         t.m_state = Transfer::state::processing;
         m_stop.store(false, std::memory_order_relaxed);
         STATUS(1) << "Transfer in progress..";
-        if (t.m_direction == npl::ftp::download) {
+        if (t.m_operation == npl::ftp::download) {
             DownloadTransfer(t, t.m_sid);
-        } else if (t.m_direction == npl::ftp::upload) {
+        } else if (t.m_operation == npl::ftp::upload) {
             UploadTransfer(t, t.m_sid);
         }
     }
@@ -150,7 +150,7 @@ void TransferManager::DownloadTransfer(const Transfer& t, int sid) {
     std::filesystem::create_directories(path.parent_path());
     auto file = npl::make_file(t.m_local, true);
 
-    ftp->Transfer(t.m_direction, t.m_remote,
+    ftp->Transfer(t.m_operation, t.m_remote,
         [=, this, i = t.m_index, offset = 0ULL]
         (const char *b, size_t n) mutable {
             if (UserCancelled()) {
@@ -211,14 +211,14 @@ void TransferManager::UploadTransfer(const Transfer& t, int sid) {
     for (const auto& e : tokens) {
         if (!e.empty()) {
             directory += "/" + e;
-            ftp->CreateDirectory(directory);
+            ftp->createDirectory(directory);
         }
     }
 
     auto file = npl::make_file(t.m_local, false);
     uint8_t *buf = (uint8_t *) calloc(1, _1M);
 
-    ftp->Transfer(t.m_direction, t.m_remote,
+    ftp->Transfer(t.m_operation, t.m_remote,
         [=, this, i = t.m_index, offset = 0ULL]
         (const char *b, size_t l) mutable {
             if (UserCancelled()) {

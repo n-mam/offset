@@ -32,10 +32,9 @@ ApplicationWindow {
         anchors.margins: appSpacing
         ApplicationMenu {
             id: appMenu
-            width: 40
-            startIndex: 4
+            width: 36
+            startIndex:1
             height: parent.height
-            anchors.verticalCenter: parent.verticalCenter
             onMenuSelectionSignal: (index) => {
                 screenContainer.currentIndex = index
             }

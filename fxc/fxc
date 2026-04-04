@@ -65,7 +65,7 @@ auto getTargetForDestination(const std::wstring& destination, const std::wstring
             [&](const char *b, size_t n) {
                 return true;
             }, {}, protect);
-        ftp->Quit();
+        ftp->quit();
         target = ftp;
     }
     return target;

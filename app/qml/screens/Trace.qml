@@ -2,11 +2,16 @@ import QtQuick
 import QtQuick.Controls
 import "qrc:/components"
 
-Item {
+Rectangle {
+    radius: 3
+    border.width: 1
+    border.color: borderColor
+    color: "transparent"
     width: parent.width
     height: parent.height
     Column {
         anchors.fill: parent
+        anchors.margins: 5
         ListModel {
             id: traceModel
             ListElement {

@@ -48,14 +48,14 @@ Popup {
             Rectangle {
                 height: 40
                 anchors.margins: 10
-                width: parent.width * 0.60
+                width: parent.width * 0.75
                 anchors.top: userInput.bottom
                 color: Qt.lighter(Material.background)
                 anchors.horizontalCenter: parent.horizontalCenter
                 Button {
                     text: "OK"
                     height: parent.height
-                    width: 64
+                    width: 68
                     anchors.left: parent.left
                     onClicked: dismissed(userInput.text)
                     anchors.verticalCenter: parent.verticalCenter
@@ -64,7 +64,7 @@ Popup {
                     text: "Cancel"
                     height: parent.height
                     onClicked: dismissed("")
-                    width: 96
+                    width: 100
                     anchors.right: parent.right
                     anchors.verticalCenter: parent.verticalCenter
                 }

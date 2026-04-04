@@ -17,7 +17,7 @@ struct Transfer {
     };
     std::string m_local;
     std::string m_remote;
-    npl::ftp::Direction m_direction;
+    npl::ftp::operation m_operation;
     char m_type;
     uint64_t m_size = 0;
     int m_sid = 0;
@@ -40,7 +40,7 @@ class TransferManager : public QAbstractListModel {
         ELocal,
         ERemote,
         EProgress,
-        EDirection
+        EOperation
     };
 
     TransferManager();
