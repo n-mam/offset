@@ -86,6 +86,7 @@ Item {
 
     Rectangle {
         id: statusRect
+        z: 5
         height: 25
         anchors.left: parent.left
         anchors.right: parent.right

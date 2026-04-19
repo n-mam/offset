@@ -55,7 +55,8 @@ Rectangle {
 
         Rectangle {
             id: transferQueue
-            color: "transparent"
+            z: 5
+            color: Material.background
             anchors.leftMargin: 2
             anchors.rightMargin: 2
             anchors.left: parent.left
