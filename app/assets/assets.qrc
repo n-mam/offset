@@ -2,6 +2,7 @@
   <qresource prefix="/">
     <file>bin.png</file>
     <file>new.png</file>
+    <file>grid.png</file>
     <file>run.png</file>
     <file>app.ico</file>
     <file>fxc.png</file>

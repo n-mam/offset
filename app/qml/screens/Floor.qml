@@ -299,7 +299,7 @@ Item {
             ctx.translate(offsetX, offsetY)
             ctx.scale(zoom, zoom)
             // Draw objects
-            Draw.grid(ctx)
+            if (shapeSelector.showGrid) Draw.grid(ctx)
             // fill all walls once individually so each can have its own color
             shapes.forEach(s => {
                 if (s.type !== "wall") return

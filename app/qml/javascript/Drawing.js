@@ -13,22 +13,20 @@ function grid(ctx) {
         const endX   = Math.ceil(right / stepFeet) * stepFeet
         const startY = Math.floor(top / stepFeet) * stepFeet
         const endY   = Math.ceil(bottom / stepFeet) * stepFeet
+        ctx.beginPath()
         // Vertical lines
         for (let x = startX; x <= endX; x += stepFeet) {
             const cx = x * pixelsPerFoot
-            ctx.beginPath()
             ctx.moveTo(cx, top * pixelsPerFoot)
             ctx.lineTo(cx, bottom * pixelsPerFoot)
-            ctx.stroke()
         }
         // Horizontal lines
         for (let y = startY; y <= endY; y += stepFeet) {
             const cy = y * pixelsPerFoot
-            ctx.beginPath()
             ctx.moveTo(left * pixelsPerFoot, cy)
             ctx.lineTo(right * pixelsPerFoot, cy)
-            ctx.stroke()
         }
+        ctx.stroke()
         // Major labels
         if (stepFeet === 5) {
             ctx.fillStyle = "#ffffff"

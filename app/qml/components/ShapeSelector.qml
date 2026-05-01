@@ -4,7 +4,8 @@ import QtQuick.Layouts 1.15
 
 Item {
     id: root
-    property string currentTool: "wall"
+    property bool showGrid: true
+    property string currentTool: "idle"
 
     property var tools: [
         { name: "idle", icon: "qrc:/idle.png"},
@@ -41,6 +42,28 @@ Item {
                     anchors.centerIn: parent
                     fillMode: Image.PreserveAspectFit
                 }
+            }
+        }
+        ToolButton {
+            checkable: true
+            checked: showGrid
+            onClicked: {
+                showGrid = !showGrid;
+                canvas.requestPaint();
+            }
+            width: 30
+            height: 30
+            background: Rectangle {
+                anchors.fill: parent
+                radius: 6
+                color: showGrid ? "#4285F4" : "#5d5d5d"
+            }
+            contentItem: Image {
+                source: "qrc:/grid.png" 
+                width: 16
+                height: 16
+                anchors.centerIn: parent
+                fillMode: Image.PreserveAspectFit
             }
         }
     }
