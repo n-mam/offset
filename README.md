@@ -61,7 +61,17 @@ C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\CommonExtens
 
 Qt is now configured for building. Just run 'cmake --build . --parallel'
 Once everything is built, you must run 'cmake --install .'
-Qt will be installed into 'D:/QT-6.8.2/install'
+Qt will be installed into 'D:/QT-6.9.0/install'
+```
+
+```
+VTK[Qt] build
+SET QT_DIR=D:\QT-6.9.0\install\lib\cmake\Qt6
+SET Qt6_DIR=D:\QT-6.9.0\install\lib\cmake\Qt6
+export QT_DIR=/home/nmam/Qt/6.9.1/gcc_64/lib/cmake/Qt6
+cmake -GNinja -DVTK_BUILD_EXAMPLES=ON -DVTK_GROUP_ENABLE_Qt=YES -DCMAKE_BUILD_TYPE=Release ..
+cmake --build . --config Release
+NOTE: build(relese/debug) type of qt and vtk should match
 ```
 
 #### Build
@@ -70,12 +80,14 @@ Qt will be installed into 'D:/QT-6.8.2/install'
 git clone https://github.com/n-mam/offset.git
 cd offset && mkdir build && cd build
 SET Qt6_DIR=D:\QT-6.9.0\install\lib\cmake\Qt6
+set VTK_DIR=d:\vtk\build\lib\cmake\vtk-9.6
+export VTK_DIR=/home/nmam/code/vtk/build/lib/cmake/vtk-9.6
 cmake -DCMAKE_TOOLCHAIN_FILE=D:/vcpkg/scripts/buildsystems/vcpkg.cmake ..
 cmake -DCMAKE_TOOLCHAIN_FILE=~/vcpkg/scripts/buildsystems/vcpkg.cmake ..
 cmake --build . --config Release
 
 Run as admin (elevation needed only for the block level backup tool):
-SET PATH=D:\QT-6.9.0\install\bin;%PATH%
+SET PATH=D:\QT-6.9.0\install\bin;D:\vtk\build\bin;%PATH%
 SET CVL_MODELS_ROOT=E:\offset\cvl\MODELS\ (only for camera app)
 qml\Release\offset.exe
 ```

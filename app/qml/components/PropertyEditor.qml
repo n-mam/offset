@@ -22,7 +22,7 @@ Popup {
     property var shape
     property int shapeIndex: -1
     property int labelWidth: 85
-    property string snapGrid: "major"
+    property string snapGrid: "minor"
     property string anchorPoint: "C"
     signal transformRequested(string direction, string mode)
 
@@ -175,8 +175,6 @@ Popup {
                 ButtonGroup { id: snapModeGroup }
                 RadioButton {
                     id: majorRadio
-                    checked: true
-                    ButtonGroup.group: snapModeGroup
                     padding: 0
                     spacing: 0
                     topPadding: 0
@@ -184,6 +182,7 @@ Popup {
                     leftPadding: 0
                     rightPadding: 0
                     implicitHeight: 18
+                    ButtonGroup.group: snapModeGroup
                     implicitWidth: contentItem.implicitWidth
                     onCheckedChanged: if (checked) root.snapGrid = "major"
                     contentItem: Row {
@@ -218,7 +217,7 @@ Popup {
 
                 RadioButton {
                     id: minorRadio
-                    ButtonGroup.group: snapModeGroup
+                    checked: true
                     padding: 0
                     spacing: 0
                     topPadding: 0
@@ -226,6 +225,7 @@ Popup {
                     leftPadding: 0
                     rightPadding: 0
                     implicitHeight: 18
+                    ButtonGroup.group: snapModeGroup
                     implicitWidth: contentItem.implicitWidth
                     onCheckedChanged: if (checked) root.snapGrid = "minor"
                     contentItem: Row {
