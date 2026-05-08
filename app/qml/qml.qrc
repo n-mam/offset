@@ -12,6 +12,7 @@
     <file>components/Login.qml</file>
     <file>javascript/Drawing.js</file>
     <file>components/Player.qml</file>
+    <file>screens/Visualizer.qml</file>
     <file>javascript/Geometry.js</file>
     <file>components/ButtonX.qml</file>
     <file>components/Element.qml</file>

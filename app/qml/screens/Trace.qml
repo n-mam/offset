@@ -81,7 +81,6 @@ Rectangle {
                 anchors.verticalCenter: parent.verticalCenter
             }
         }
-
     }
     onVisibleChanged: {
         if (visible) {

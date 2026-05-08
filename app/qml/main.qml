@@ -55,6 +55,7 @@ ApplicationWindow {
                 Camera {}
                 Compare {}
                 Floor {}
+                Visualizer {}
                 Trace {}
             }
         }

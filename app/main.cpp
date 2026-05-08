@@ -2,10 +2,14 @@
 #include <QIcon>
 #include <QtGlobal>
 #include <QQmlContext>
+#include <QQuickWindow>
 #include <QGuiApplication>
+#include <QSGRendererInterface>
 #include <QQmlApplicationEngine>
+#include <QVTKRenderWindowAdapter.h>
 
 #include <Logger.h>
+#include <MyVtkItem.h>
 #include <AppConfig.h>
 #include <osl/singleton>
 #include <LocalFsModel.h>
@@ -25,6 +29,14 @@ void q_logger(QtMsgType, const QMessageLogContext&, const QString&);
 int main(int argc, char *argv[])
 {
     qputenv("QSG_RENDER_LOOP", "threaded");
+
+    #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+        QQuickWindow::setSceneGraphBackend(QSGRendererInterface::OpenGLRhi);
+    #else
+        QQuickWindow::setGraphicsApi(QSGRendererInterface::OpenGLRhi);
+    #endif
+    
+    QSurfaceFormat::setDefaultFormat(QVTKRenderWindowAdapter::defaultFormat());
 
     #if QT_VERSION >= QT_VERSION_CHECK(5, 6, 0)
     QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
@@ -59,6 +71,7 @@ int main(int argc, char *argv[])
 
     engine.rootContext()->setContextProperty("appConfig", new AppConfig());
 
+    qmlRegisterType<MyVtkItem>("Vtk", 1, 0, "MyVtkItem");
     qmlRegisterType<VideoRenderer>("CustomElements", 1, 0, "VideoRenderer");
     qmlRegisterType<CompareFileModel>("CustomElements", 1, 0, "CompareFileModel");
 

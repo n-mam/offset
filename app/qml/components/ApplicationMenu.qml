@@ -14,7 +14,7 @@ Rectangle {
         id: menuList
         clip: true
         spacing: 18
-        height: 378
+        height: 400
         width: parent.width
         currentIndex: startIndex
         //anchors.verticalCenter: parent.verticalCenter
@@ -34,6 +34,9 @@ Rectangle {
             }
             ListElement {
                 name: "house-plan.png"
+            }
+            ListElement {
+                name: "vtk.png"
             }
             ListElement {
                 name: "log.png"

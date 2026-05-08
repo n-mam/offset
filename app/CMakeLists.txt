@@ -4,6 +4,7 @@ set(CMAKE_AUTORCC ON)
 
 #SET(CMAKE_VERBOSE_MAKEFILE ON)
 
+find_package(VTK)
 find_package(CURL REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(OpenCV CONFIG REQUIRED)
@@ -18,13 +19,18 @@ qt6_add_resources(QT_RESOURCES
 
 add_executable(offset ${QT_RESOURCES})
 
+target_link_libraries(offset PRIVATE ${VTK_LIBRARIES})
+vtk_module_autoinit(TARGETS offset MODULES ${VTK_LIBRARIES} )
+
 target_sources(offset PRIVATE main.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/models/Logger.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/models/FsModel.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/models/MyVtkItem.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/models/AppConfig.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/models/BaseModel.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/models/LocalFsModel.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/models/FloorManager.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/models/QQuickVtkItem.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/models/RemoteFsModel.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/models/VideoRenderer.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/models/CompareManager.cpp
