@@ -86,7 +86,7 @@ struct MyVtkData : vtkObject
 vtkStandardNewMacro(MyVtkData);
 }
 
-QQuickVtkItem::vtkUserData MyVtkItem::initializeVTK(vtkRenderWindow *renderWindow)
+QQuickVTKItem::vtkUserData MyVtkItem::initializeVTK(vtkRenderWindow *renderWindow)
 {
     auto vtk = vtkNew<MyVtkData>();
 

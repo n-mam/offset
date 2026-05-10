@@ -1,9 +1,9 @@
 #ifndef MYVTKITEM_H
 #define MYVTKITEM_H
 
-#include "QQuickVtkItem.h"
+#include "QQuickVTKItem.h"
 
-class MyVtkItem : public QQuickVtkItem
+class MyVtkItem : public QQuickVTKItem
 {
 public:
     vtkUserData initializeVTK(vtkRenderWindow *renderWindow) override;
