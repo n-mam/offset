@@ -9,7 +9,7 @@
 #include <QVTKRenderWindowAdapter.h>
 
 #include <Logger.h>
-#include <MyVtkItem.h>
+#include <VtkQuickItem.h>
 #include <AppConfig.h>
 #include <osl/singleton>
 #include <LocalFsModel.h>
@@ -71,7 +71,7 @@ int main(int argc, char *argv[])
 
     engine.rootContext()->setContextProperty("appConfig", new AppConfig());
 
-    qmlRegisterType<MyVtkItem>("Vtk", 1, 0, "MyVtkItem");
+    qmlRegisterType<VtkQuickItem>("Vtk", 1, 0, "VtkQuickItem");
     qmlRegisterType<VideoRenderer>("CustomElements", 1, 0, "VideoRenderer");
     qmlRegisterType<CompareFileModel>("CustomElements", 1, 0, "CompareFileModel");
 

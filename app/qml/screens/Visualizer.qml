@@ -1,13 +1,12 @@
 import QtQuick
-import QtQuick.Controls
 import QtQuick.Window
+import QtQuick.Controls
 import Vtk 1.0 as Vtk
 
 Item {
     anchors.fill: parent
-    Vtk.MyVtkItem {
+    Vtk.VtkQuickItem {
         anchors.fill: parent
-        anchors.margins: 10
         opacity: 0.7
     }
 }

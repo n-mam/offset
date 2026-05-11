@@ -5,6 +5,7 @@ set(CMAKE_AUTORCC ON)
 #SET(CMAKE_VERBOSE_MAKEFILE ON)
 
 find_package(VTK)
+find_package(PCL REQUIRED)
 find_package(CURL REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(OpenCV CONFIG REQUIRED)
@@ -19,13 +20,12 @@ qt6_add_resources(QT_RESOURCES
 
 add_executable(offset ${QT_RESOURCES})
 
-target_link_libraries(offset PRIVATE ${VTK_LIBRARIES})
-vtk_module_autoinit(TARGETS offset MODULES ${VTK_LIBRARIES} )
+target_link_libraries(offset PRIVATE ${VTK_LIBRARIES} ${PCL_LIBRARIES})
+vtk_module_autoinit(TARGETS offset MODULES ${VTK_LIBRARIES})
 
 target_sources(offset PRIVATE main.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/models/Logger.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/models/FsModel.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/models/MyVtkItem.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/models/AppConfig.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/models/BaseModel.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/models/LocalFsModel.cpp
@@ -34,6 +34,7 @@ target_sources(offset PRIVATE main.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/models/VideoRenderer.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/models/CompareManager.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/models/TransferManager.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/models/vtk/VtkQuickItem.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/models/CompareFileModel.cpp
 )
 
@@ -44,7 +45,14 @@ endif(WIN32)
 
 set_property(TARGET offset PROPERTY CXX_STANDARD 23)
 
-target_include_directories(offset PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/models)
+add_definitions(${PCL_DEFINITIONS})
+
+target_include_directories(
+  offset
+  PRIVATE 
+  ${PCL_INCLUDE_DIRS}
+  ${CMAKE_CURRENT_SOURCE_DIR}/models
+  ${CMAKE_CURRENT_SOURCE_DIR}/models/vtk)
 
 target_link_libraries(
   offset
@@ -66,6 +74,7 @@ target_link_libraries(
   Crc32c::crc32c
   opencv_tracking
   OpenSSL::Crypto
+  ${PCL_LIBRARIES}
   tinyxml2::tinyxml2
   Qt6::QuickControls2
 )

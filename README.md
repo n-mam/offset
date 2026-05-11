@@ -40,16 +40,16 @@ Camera tool<br/>
 ```
 git clone https://github.com/microsoft/vcpkg.git
 cd vcpkg && bootstrap-vcpkg.bat
-vcpkg.exe install tinyxml2 libzip openssl curl crc32c rapidjson zlib opencv4[contrib,core,dnn,ffmpeg,highgui,jpeg,hdf] --recurse
+vcpkg.exe install tinyxml2 libzip openssl curl crc32c rapidjson zlib cJSON boost flann nanoflann opencv4[contrib,core,dnn,ffmpeg,highgui,jpeg,hdf] --recurse
 sudo apt-get install build-essential zip curl vim bison nasm meson pkg-config
-./vcpkg install tinyxml2 libzip openssl crc32c rapidjson zlib opencv4[contrib,core,dnn,ffmpeg,highgui,jpeg,hdf] --recurse
+./vcpkg install tinyxml2 libzip openssl crc32c rapidjson zlib cJSON boost flann nanoflann opencv4[contrib,core,dnn,ffmpeg,highgui,jpeg,hdf] --recurse
 use the resulting toolchain file in cmake configure step as highlited under the build section
 ```
 
 #### QT-6.9.0 source build
 ```
 make sure ninja and python3.9 are under PATH
-set PATH=D:\Python39;%PATH%
+SET PATH=D:\Python39;%PATH%
 where python
 D:\Python39\python.exe
 C:\Users\nmam\AppData\Local\Microsoft\WindowsApps\python.exe
@@ -74,14 +74,28 @@ cmake --build . --config Release
 NOTE: build(relese/debug) type of qt and vtk should match
 ```
 
+```
+PCL build
+SET Qt6_DIR=D:\QT-6.9.0\install\lib\cmake\Qt6
+SET VTK_DIR=d:\vtk\build\lib\cmake\vtk-9.6
+cmake -DCMAKE_INSTALL_PREFIX=D:/pcl/install -DBUILD_visualization=ON -DCMAKE_TOOLCHAIN_FILE=D:/vcpkg/scripts/buildsystems/vcpkg.cmake -DCMAKE_BUILD_TYPE=Release ..
+
+cmake -DCMAKE_INSTALL_PREFIX=/home/nmam/code/pcl/install -DBUILD_visualization=ON -DCMAKE_TOOLCHAIN_FILE=~/vcpkg/scripts/buildsystems/vcpkg.cmake -DCMAKE_BUILD_TYPE=Release ..
+
+cmake --build . --config Release --parallel 4
+```
+
 #### Build
 
 ```sh
 git clone https://github.com/n-mam/offset.git
 cd offset && mkdir build && cd build
 SET Qt6_DIR=D:\QT-6.9.0\install\lib\cmake\Qt6
-set VTK_DIR=d:\vtk\build\lib\cmake\vtk-9.6
+export Qt6_DIR=/home/nmam/Qt/6.9.1/gcc_64/lib/cmake/Qt6
+SET VTK_DIR=d:\vtk\build\lib\cmake\vtk-9.6
 export VTK_DIR=/home/nmam/code/vtk/build/lib/cmake/vtk-9.6
+SET PCL_DIR=D:/pcl/install/share/pcl-1.15
+export PCL_DIR=/home/nmam/code/pcl/install/share/pcl-1.15
 cmake -DCMAKE_TOOLCHAIN_FILE=D:/vcpkg/scripts/buildsystems/vcpkg.cmake ..
 cmake -DCMAKE_TOOLCHAIN_FILE=~/vcpkg/scripts/buildsystems/vcpkg.cmake ..
 cmake --build . --config Release
