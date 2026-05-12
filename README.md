@@ -40,9 +40,9 @@ Camera tool<br/>
 ```
 git clone https://github.com/microsoft/vcpkg.git
 cd vcpkg && bootstrap-vcpkg.bat
-vcpkg.exe install tinyxml2 libzip openssl curl crc32c rapidjson zlib cJSON boost flann nanoflann opencv4[contrib,core,dnn,ffmpeg,highgui,jpeg,hdf] --recurse
+vcpkg.exe install tinyxml2 libzip openssl curl crc32c rapidjson qhull zlib cJSON boost flann nanoflann opencv4[contrib,core,dnn,ffmpeg,highgui,jpeg,hdf] --recurse
 sudo apt-get install build-essential zip curl vim bison nasm meson pkg-config
-./vcpkg install tinyxml2 libzip openssl crc32c rapidjson zlib cJSON boost flann nanoflann opencv4[contrib,core,dnn,ffmpeg,highgui,jpeg,hdf] --recurse
+./vcpkg install tinyxml2 libzip openssl crc32c rapidjson qhull zlib cJSON boost flann nanoflann opencv4[contrib,core,dnn,ffmpeg,highgui,jpeg,hdf] --recurse
 use the resulting toolchain file in cmake configure step as highlited under the build section
 ```
 

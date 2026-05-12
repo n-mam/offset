@@ -46,7 +46,7 @@ Item {
         ToolButton {
             onClicked: {
                 console.log(visualizer)
-                visualizer.load_point_cloud("/home/nmam/cube.xyz")
+                visualizer.load_point_cloud("/home/nmam/home.xyz")
             }
             width: 30
             height: 30

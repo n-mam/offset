@@ -65,14 +65,21 @@ QQuickVTKItem::vtkUserData
 
 void VtkQuickItem::load_point_cloud(QString filePath) {
     dispatch_async(
-        [filePath](vtkRenderWindow *renderWindow, vtkUserData ud)
-        {
-            auto *ctx = VtkContext::SafeDownCast(ud);
-            if (!ctx || ctx->pipelines.empty()) return;
+        [filePath](
+            vtkRenderWindow* renderWindow, vtkUserData ud) {
+            auto* ctx =
+                VtkContext::SafeDownCast(ud);
+            if (!ctx) return;
             auto pointCloud =
-                std::dynamic_pointer_cast<PointCloudPipeline>(
-                    ctx->pipelines[0]);
-            pointCloud->loadXYZ(filePath.toStdString());
+                std::dynamic_pointer_cast<
+                    PointCloudPipeline>(
+                        ctx->pipelines[0]);
+            if (!pointCloud) return;
+            if (!pointCloud->loadXYZ(
+                    filePath.toStdString())) {
+                return;
+            }
+            pointCloud->syncToVTK();
             ctx->renderer->ResetCamera();
             renderWindow->Render();
         });
