@@ -10,8 +10,11 @@
 #include "QQuickVTKItem.h"
 
 struct VtkQuickItem : public QQuickVTKItem {
+    Q_OBJECT
+    QML_ELEMENT
     public:
     vtkUserData initializeVTK(vtkRenderWindow *renderWindow) override;
+    Q_INVOKABLE void load_point_cloud(QString filePath);
 };
 
 struct VtkContext : vtkObject {

@@ -14,7 +14,7 @@
 // Scene creation
 // ============================================================
 auto create_scene(vtkRenderWindow* renderWindow) {
-    auto ctx = vtkNew<VtkContext>();
+    auto ctx = vtkSmartPointer<VtkContext>::New();
     vtkNew<vtkNamedColors> colors;
     // --------------------------------------------------------
     // Core renderer setup
@@ -25,8 +25,7 @@ auto create_scene(vtkRenderWindow* renderWindow) {
     renderWindow->SetWindowName(
         "VTK Multi Pipeline Scene");
     renderWindow->AddRenderer(ctx->renderer);
-    ctx->renderer->SetBackground(
-        colors->GetColor3d("SteelBlue").GetData());
+    ctx->renderer->SetBackground(0,0,0);
     // --------------------------------------------------------
     // Interactor
     // --------------------------------------------------------
@@ -40,16 +39,15 @@ auto create_scene(vtkRenderWindow* renderWindow) {
     // --------------------------------------------------------
     auto pointCloud =
         std::make_shared<PointCloudPipeline>();
-    pointCloud->loadXYZ("/home/nmam/cube.xyz");
     pointCloud->addToRenderer(ctx->renderer);
     ctx->pipelines.push_back(pointCloud);
     // --------------------------------------------------------
     // Sphere pipeline
     // --------------------------------------------------------
-    auto spheres =
-        std::make_shared<SpherePipeline>(10);
-    spheres->addToRenderer(ctx->renderer);
-    ctx->pipelines.push_back(spheres);
+    // auto spheres =
+    //     std::make_shared<SpherePipeline>(10);
+    // spheres->addToRenderer(ctx->renderer);
+    // ctx->pipelines.push_back(spheres);
     // --------------------------------------------------------
     // Camera
     // --------------------------------------------------------
@@ -63,6 +61,21 @@ auto create_scene(vtkRenderWindow* renderWindow) {
 QQuickVTKItem::vtkUserData
     VtkQuickItem::initializeVTK(vtkRenderWindow *renderWindow) {
         return create_scene(renderWindow);
+}
+
+void VtkQuickItem::load_point_cloud(QString filePath) {
+    dispatch_async(
+        [filePath](vtkRenderWindow *renderWindow, vtkUserData ud)
+        {
+            auto *ctx = VtkContext::SafeDownCast(ud);
+            if (!ctx || ctx->pipelines.empty()) return;
+            auto pointCloud =
+                std::dynamic_pointer_cast<PointCloudPipeline>(
+                    ctx->pipelines[0]);
+            pointCloud->loadXYZ(filePath.toStdString());
+            ctx->renderer->ResetCamera();
+            renderWindow->Render();
+        });
 }
 
 vtkStandardNewMacro(VtkContext);

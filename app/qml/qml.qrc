@@ -19,6 +19,7 @@
     <file>components/Overview.qml</file>
     <file>components/FTPFooter.qml</file>
     <file>components/FxcFooter.qml</file>
+    <file>components/VtkToolBox.qml</file>
     <file>delegates/RowDelegate.qml</file>
     <file>components/CompareFile.qml</file>
     <file>screens/CameraSettings.qml</file>
