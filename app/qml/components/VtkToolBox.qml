@@ -45,20 +45,19 @@ Item {
         }
         ToolButton {
             onClicked: {
-                console.log(visualizer)
-                visualizer.load_point_cloud("/home/nmam/home.xyz")
+                visualizer.load_point_cloud("/home/nmam/Industrial_Amesbury2.xyz")
             }
             width: 30
             height: 30
             background: Rectangle {
-                anchors.fill: parent
                 radius: 6
-                color: showGrid ? "#4285F4" : "#5d5d5d"
+                color: "#4285F4"
+                anchors.fill: parent
             }
             contentItem: Image {
-                source: "qrc:/grid.png" 
                 width: 16
                 height: 16
+                source: "qrc:/grid.png" 
                 anchors.centerIn: parent
                 fillMode: Image.PreserveAspectFit
             }

@@ -144,12 +144,10 @@ void TransferManager::ProcessTransfer(int row, int sid, bool oneoff) {
 }
 
 void TransferManager::DownloadTransfer(const Transfer& t, int sid) {
-
     auto& ftp = m_sessions[sid];
     std::filesystem::path path = t.m_local;
     std::filesystem::create_directories(path.parent_path());
     auto file = npl::make_file(t.m_local, true);
-
     ftp->Transfer(t.m_operation, t.m_remote,
         [=, this, i = t.m_index, offset = 0ULL]
         (const char *b, size_t n) mutable {
@@ -162,7 +160,6 @@ void TransferManager::DownloadTransfer(const Transfer& t, int sid) {
                 }
                 return false;
             }
-
             if (b) {
                 file->write_async((uint8_t *)b, n, offset);
                 offset += n;
@@ -175,9 +172,7 @@ void TransferManager::DownloadTransfer(const Transfer& t, int sid) {
                     });
                 }
             }
-
             auto& tt = m_queue[i];
-
             if (tt.m_size) {
                 int p = b ? (((float)offset / tt.m_size) * 100) : 100;
                 if (p > tt.m_progress) {
@@ -187,7 +182,6 @@ void TransferManager::DownloadTransfer(const Transfer& t, int sid) {
                     });
                 }
             }
-
             return true;
         },
         {[=, this, i = t.m_index](const auto& res) {
@@ -202,22 +196,18 @@ void TransferManager::DownloadTransfer(const Transfer& t, int sid) {
 }
 
 void TransferManager::UploadTransfer(const Transfer& t, int sid) {
-
     std::string directory;
     auto& ftp = m_sessions[sid];
     std::filesystem::path path = t.m_remote;
     auto tokens = osl::split<std::string>(path.parent_path().string(), "/");
-
     for (const auto& e : tokens) {
         if (!e.empty()) {
             directory += "/" + e;
             ftp->createDirectory(directory);
         }
     }
-
     auto file = npl::make_file(t.m_local, false);
     uint8_t *buf = (uint8_t *) calloc(1, _1M);
-
     ftp->Transfer(t.m_operation, t.m_remote,
         [=, this, i = t.m_index, offset = 0ULL]
         (const char *b, size_t l) mutable {
@@ -230,9 +220,7 @@ void TransferManager::UploadTransfer(const Transfer& t, int sid) {
                 }
                 return false;
             }
-
             int32_t n = 0;
-
             if (b) {
                 n = file->read_sync(buf, _1M, offset);
                 if (n) {
@@ -249,9 +237,7 @@ void TransferManager::UploadTransfer(const Transfer& t, int sid) {
                     });
                 }
             }
-
             auto& tt = m_queue[i];
-
             if (tt.m_size) {
                 int p = b ? (((float)offset / tt.m_size) * 100) : 100;
                 if (p > tt.m_progress) {
@@ -261,7 +247,6 @@ void TransferManager::UploadTransfer(const Transfer& t, int sid) {
                     });
                 }
             }
-
             return (n > 0);
         },
         {[=, this, i = t.m_index](const auto& res) {

@@ -1,6 +1,7 @@
+import QtCore
 import QtQuick
+import QtQuick.Dialogs
 import QtQuick.Controls
-import Qt.labs.platform
 
 Item {
     id: fileFolderSelector
@@ -24,7 +25,7 @@ Item {
             verticalAlignment: TextInput.AlignVCenter
             anchors.verticalCenter: parent.verticalCenter
             width: parent.width - appSpacing - folderButton.width
-            text: isFolderSelector ? folderDialog.folder : fileDialog.file
+            text: isFolderSelector ? folderDialog.currentFolder : fileDialog.currentFolder
         }
         ButtonX {
             id: folderButton
@@ -39,7 +40,7 @@ Item {
 
     FileDialog {
         id: fileDialog
-        folder: StandardPaths.writableLocation(StandardPaths.DesktopLocation)
+        currentFolder: StandardPaths.writableLocation(StandardPaths.DesktopLocation)
         onAccepted: {
             var path = fileDialog.file.toString();
             path = path.replace(/^(file:\/{3})|(qrc:\/{2})|(http:\/{2})/,"")
@@ -52,7 +53,7 @@ Item {
     FolderDialog {
         id: folderDialog
         onAccepted: {
-            var path = folderDialog.folder.toString();
+            var path = folderDialog.currentFolder.toString();
             path = path.replace(/^(file:\/{3})|(qrc:\/{2})|(http:\/{2})/,"")
             destination.text = decodeURIComponent(path).replace(/\//g, "\\")
         }

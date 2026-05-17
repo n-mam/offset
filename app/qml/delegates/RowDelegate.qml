@@ -1,6 +1,6 @@
 import QtQuick
+import QtQuick.Dialogs
 import QtQuick.Controls
-import Qt.labs.platform
 import "qrc:/components"
 
 Rectangle {

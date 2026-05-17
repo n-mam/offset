@@ -190,6 +190,8 @@ inline void entry(std::vector<std::string> arguments) {
             arguments[3]);
     } else if (cmd == "http") {
 
+    } else if (cmd == "copy") {
+        test_file_copy(arguments[0], arguments[1]);
     } else {
         usage();
     }

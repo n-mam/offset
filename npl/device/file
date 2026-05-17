@@ -142,7 +142,11 @@ struct file_device : public subject {
     }
 
     bool is_open() {
-        return (is_sync_open() && is_async_open());
+        #ifdef _WIN32
+            return (is_sync_open() && is_async_open());
+        #else
+            return is_async_open();
+        #endif
     }
 
     bool is_sync_open() {
@@ -265,6 +269,13 @@ struct file_device : public subject {
             }
         }
         return nBytesWritten;
+    }
+    #else 
+    virtual int32_t read_sync(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override {
+        return read(_fd_async, (void *)b, l);
+    }
+    virtual int32_t write_sync(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override {
+        return -1;
     }
     #endif
 

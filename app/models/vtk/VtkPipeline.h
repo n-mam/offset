@@ -1,5 +1,3 @@
-#include <vector>
-
 #include <vtkActor.h>
 #include <vtkPoints.h>
 #include <vtkRenderer.h>
@@ -14,13 +12,12 @@
 #include <vtkPointGaussianMapper.h>
 #include <vtkMinimalStandardRandomSequence.h>
 
-#include <pcl/point_cloud.h>
-#include <pcl/point_types.h>
+#include <stream.voxel.filter.h>
 
-#include <fstream>
-#include <sstream>
 #include <vector>
 #include <memory>
+#include <fstream>
+#include <sstream>
 
 // Base pipeline
 struct VtkPipeline {
@@ -37,8 +34,7 @@ struct VtkPipeline {
 // Point cloud pipeline
 struct PointCloudPipeline : public VtkPipeline {
     public:
-    // Canonical point cloud state (PCL)
-    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud;
+    pcl_stream_voxel_filter pcl_svf;
     // Rendering state (VTK)
     vtkSmartPointer<vtkPoints> points;
     vtkSmartPointer<vtkPolyData> polyData;
@@ -46,10 +42,6 @@ struct PointCloudPipeline : public VtkPipeline {
     vtkSmartPointer<vtkPointGaussianMapper> mapper;
     // Construction
     PointCloudPipeline() {
-        // PCL state
-        cloud =
-            pcl::PointCloud<pcl::PointXYZ>::Ptr(
-                new pcl::PointCloud<pcl::PointXYZ>);
         // VTK geometry
         points = vtkSmartPointer<vtkPoints>::New();
         points->SetDataTypeToFloat();
@@ -73,61 +65,9 @@ struct PointCloudPipeline : public VtkPipeline {
         // Actor
         auto actor = vtkSmartPointer<vtkActor>::New();
         actor->SetMapper(mapper);
-        actor->GetProperty()->SetColor(
-            1.0, 1.0, 1.0);
+        actor->GetProperty()->SetColor(1.0, 1.0, 1.0);
         actor->GetProperty()->SetOpacity(1.0);
         actors.push_back(actor);
-    }
-    // Load XYZ into canonical PCL cloud
-    bool loadXYZ(const std::string& filePath) {
-        cloud->clear();
-        std::ifstream file(filePath);
-        if (!file.is_open()) {
-            std::cerr
-                << "Failed to open file: "
-                << filePath
-                << std::endl;
-            return false;
-        }
-        std::string line;
-        while (std::getline(file, line)) {
-            if (line.empty() || line[0] == '#')
-                continue;
-            std::stringstream ss(line);
-            pcl::PointXYZ pt;
-            if (ss >> pt.x >> pt.y >> pt.z) {
-                cloud->points.push_back(pt);
-            }
-        }
-        cloud->width =
-            static_cast<uint32_t>(cloud->points.size());
-        cloud->height = 1;
-        cloud->is_dense = true;
-        return true;
-    }
-    // Synchronize PCL -> VTK
-    void syncToVTK() {
-        // Reset old VTK state
-        points->Reset();
-        polyData->Reset();
-        // Reattach points after reset
-        polyData->SetPoints(points);
-        // Copy PCL points into VTK
-        points->SetNumberOfPoints(
-            static_cast<vtkIdType>(
-                cloud->points.size()));
-        for (vtkIdType i = 0;
-             i < static_cast<vtkIdType>(
-                    cloud->points.size());
-             ++i) {
-            const auto& p = cloud->points[i];
-            points->SetPoint(i, p.x, p.y, p.z);
-        }
-        // Notify VTK pipeline 
-        points->Modified();
-        polyData->Modified();
-        glyphFilter->Update();
-        polyData->ComputeBounds();
     }
 };
 

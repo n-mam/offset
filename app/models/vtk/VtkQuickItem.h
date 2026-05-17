@@ -1,6 +1,8 @@
 #ifndef VTKQUICKITEM_H
 #define VTKQUICKITEM_H
 
+#include <mutex>
+
 #include <vtkObject.h>
 #include <vtkRenderer.h>
 #include <vtkRenderWindow.h>
@@ -13,8 +15,11 @@ struct VtkQuickItem : public QQuickVTKItem {
     Q_OBJECT
     QML_ELEMENT
     public:
-    vtkUserData initializeVTK(vtkRenderWindow *renderWindow) override;
+    std::mutex mux;
+    QQuickVTKItem::vtkUserData _ctx;
     Q_INVOKABLE void load_point_cloud(QString filePath);
+    void syncToVTK(std::shared_ptr<PointCloudPipeline> pipeline);
+    vtkUserData initializeVTK(vtkRenderWindow *renderWindow) override;
 };
 
 struct VtkContext : vtkObject {

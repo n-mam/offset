@@ -1,6 +1,6 @@
+import QtCore
 import QtQuick
 import QtQuick.Dialogs
-import Qt.labs.platform
 import "qrc:/components"
 import "qrc:/javascript/Shape.js" as Shape
 import "qrc:/javascript/Drawing.js" as Draw
@@ -65,7 +65,7 @@ Item {
             : FileDialog.OpenFile
         nameFilters: [ "All Files (*)" ]
         onAccepted: handleFileDialogAccepted(this, fileDialogMode)
-        folder: StandardPaths.writableLocation(StandardPaths.DesktopLocation)
+        currentFolder: StandardPaths.writableLocation(StandardPaths.DesktopLocation)
     }
 
     property var drawing: ({
