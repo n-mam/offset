@@ -47,7 +47,8 @@ Item {
             onClicked: {
                 //visualizer.load_point_cloud("/home/nmam/Industrial_Amesbury2.xyz")
                 //visualizer.load_point_cloud("D:\\DATA\\Industrial_Amesbury2\\Industrial_Amesbury2.xyz")
-                visualizer.load_point_cloud("E:\\offset\\app\\models\\vtk\\home.xyz")
+                visualizer.load_point_cloud("/home/nmam/code/offset/app/models/vtk/home.xyz")
+               // visualizer.load_point_cloud("E:\\offset\\app\\models\\vtk\\home.xyz")
             }
             width: 30
             height: 30

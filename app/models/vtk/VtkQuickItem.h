@@ -15,8 +15,8 @@ struct VtkQuickItem : public QQuickVTKItem {
     Q_OBJECT
     QML_ELEMENT
     public:
-    std::thread _thread;
     std::mutex mux;
+    std::thread _thread;
     QQuickVTKItem::vtkUserData _ctx;
     ~VtkQuickItem();
     Q_INVOKABLE void load_point_cloud(QString filePath);
