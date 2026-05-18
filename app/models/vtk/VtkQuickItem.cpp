@@ -1,5 +1,3 @@
-#include <VtkQuickItem.h>
-
 #include <vtkNew.h>
 #include <vtkActor.h>
 #include <vtkPoints.h>
@@ -8,6 +6,7 @@
 #include <vtkRenderWindow.h>
 #include <vtkPolyDataMapper.h>
 
+#include <VtkQuickItem.h>
 #include <MouseInteractor.h>
 
 // ============================================================
@@ -101,9 +100,10 @@ void VtkQuickItem::load_point_cloud(QString filepath) {
         auto rd = npl::make_file(path);
         if (!rd) return;
         uint8_t *buf = (uint8_t *)calloc(_1M, 1);
-        ssize_t bytes;
+        ssize_t bytes, total_bytes = 0;
         size_t chunk_counter = 0;
-        while ((bytes = rd->read_sync(buf, _1M, 0)) > 0) {
+        while ((bytes = rd->read_sync(buf, _1M, total_bytes)) > 0) {
+            total_bytes += bytes;
             auto* ctx = VtkContext::SafeDownCast(_ctx);
             auto pipeline =
                 std::dynamic_pointer_cast<
@@ -113,14 +113,13 @@ void VtkQuickItem::load_point_cloud(QString filepath) {
                 std::lock_guard<std::mutex> lg(mux);
                 pipeline->pcl_svf.consume_point_cloud_chunk(buf, bytes);
             }
-            chunk_counter++;
             if (chunk_counter % 20 == 0) {
                 // QMetaObject::invoke queues the execution on the main thread event
                 // loop at a later point while dispatch_async() is a frame-synchronized
                 // renders-safe scheduling primitive which schedules the execution correctly
                 // inside Qt Quick’s scene graph lifecycle. both execute on the main UI
                 // thread but dispatch_async is executed at the correct time.
-                QMetaObject::invokeMethod(this, [this](){
+                auto ok = QMetaObject::invokeMethod(qApp, [this](){
                     update();
                     // need a hop back to the GUI thread first else we'd get
                     // Warning: Updates can only be scheduled from GUI thread
@@ -139,9 +138,12 @@ void VtkQuickItem::load_point_cloud(QString filepath) {
                         pipeline->points->Modified();
                         pipeline->polyData->Modified();
                         pipeline->polyData->ComputeBounds();
+                        ctx->renderer->ResetCamera();
+                        ctx->renderer->ResetCameraClippingRange();
                     });
                 }, Qt::QueuedConnection);
             }
+            chunk_counter++;
         }
         free(buf);
         return;

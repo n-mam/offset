@@ -41,20 +41,20 @@ struct PointCloudPipeline : public VtkPipeline {
     vtkSmartPointer<vtkPoints> points;
     vtkSmartPointer<vtkCellArray> verts;
     vtkSmartPointer<vtkPolyData> polyData;
-    vtkSmartPointer<vtkPointGaussianMapper> mapper;
+    vtkSmartPointer<vtkPolyDataMapper> mapper;
     PointCloudPipeline() {
         points = vtkSmartPointer<vtkPoints>::New();
         verts = vtkSmartPointer<vtkCellArray>::New();
         polyData = vtkSmartPointer<vtkPolyData>::New();
         polyData->SetPoints(points);
         polyData->SetVerts(verts);
-        mapper =
-            vtkSmartPointer<
-                vtkPointGaussianMapper>::New();
+        mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
         mapper->SetInputData(polyData);
-        mapper->SetScaleFactor(0.5);
         actor = vtkSmartPointer<vtkActor>::New();
         actor->SetMapper(mapper);
+        actor->GetProperty()->SetRepresentationToPoints();
+        actor->GetProperty()->SetPointSize(2);
+        actor->GetProperty()->SetColor(1, 1, 1);
         actors.push_back(actor);
     }
 };

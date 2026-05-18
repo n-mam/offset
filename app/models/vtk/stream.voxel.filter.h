@@ -46,7 +46,7 @@ struct pcl_stream_voxel_filter {
 
     // Canonical point cloud state (PCL)
     pcl::PointCloud<pcl::PointXYZ>::Ptr pcl_cloud;
-    const float voxel_size = 0.5f; // 1/2 m
+    const float voxel_size = 0.25f; // 1/4 m
     std::unordered_map<VoxelKey, VoxelData,
         VoxelKeyHasher> voxel_map;
 
@@ -60,7 +60,7 @@ struct pcl_stream_voxel_filter {
         while (start < chunk.size()) {
             size_t end = chunk.find('\n', start);
             // its okay dont bother
-            // skip incomplete trailing line.. 
+            // skip incomplete trailing line..
             if (end == std::string_view::npos) break;
             std::string_view line =
                 chunk.substr(start, end - start);
