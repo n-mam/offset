@@ -3,11 +3,13 @@
 #include <vtkRenderer.h>
 #include <vtkPolyData.h>
 #include <vtkProperty.h>
+#include <vtkPointData.h>
 #include <vtkPropPicker.h>
 #include <vtkNamedColors.h>
 #include <vtkSphereSource.h>
 #include <vtkObjectFactory.h>
 #include <vtkPolyDataMapper.h>
+#include <vtkUnsignedCharArray.h>
 #include <vtkVertexGlyphFilter.h>
 #include <vtkPointGaussianMapper.h>
 #include <vtkMinimalStandardRandomSequence.h>
@@ -35,38 +37,24 @@ struct VtkPipeline {
 struct PointCloudPipeline : public VtkPipeline {
     public:
     pcl_stream_voxel_filter pcl_svf;
-    // Rendering state (VTK)
+    vtkSmartPointer<vtkActor> actor;
     vtkSmartPointer<vtkPoints> points;
+    vtkSmartPointer<vtkCellArray> verts;
     vtkSmartPointer<vtkPolyData> polyData;
-    vtkSmartPointer<vtkVertexGlyphFilter> glyphFilter;
     vtkSmartPointer<vtkPointGaussianMapper> mapper;
-    // Construction
     PointCloudPipeline() {
-        // VTK geometry
         points = vtkSmartPointer<vtkPoints>::New();
-        points->SetDataTypeToFloat();
+        verts = vtkSmartPointer<vtkCellArray>::New();
         polyData = vtkSmartPointer<vtkPolyData>::New();
         polyData->SetPoints(points);
-        // Vertex generation for point rendering
-        glyphFilter =
-            vtkSmartPointer<vtkVertexGlyphFilter>::New();
-        glyphFilter->SetInputData(polyData);
-        // Mapper
-        mapper = vtkSmartPointer<vtkPointGaussianMapper>::New();
-        mapper->SetInputConnection(
-            glyphFilter->GetOutputPort());
-        mapper->SetScaleFactor(0.03);
-        mapper->SetSplatShaderCode(
-            "//VTK::Color::Impl\n"
-            "float d = dot(offsetVCVSOutput.xy, "
-            "offsetVCVSOutput.xy);\n"
-            "if (d > 1.0) discard;\n"
-        );
-        // Actor
-        auto actor = vtkSmartPointer<vtkActor>::New();
+        polyData->SetVerts(verts);
+        mapper =
+            vtkSmartPointer<
+                vtkPointGaussianMapper>::New();
+        mapper->SetInputData(polyData);
+        mapper->SetScaleFactor(0.5);
+        actor = vtkSmartPointer<vtkActor>::New();
         actor->SetMapper(mapper);
-        actor->GetProperty()->SetColor(1.0, 1.0, 1.0);
-        actor->GetProperty()->SetOpacity(1.0);
         actors.push_back(actor);
     }
 };

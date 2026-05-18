@@ -15,7 +15,6 @@
 // ============================================================
 auto create_scene(vtkRenderWindow* renderWindow) {
     auto ctx = vtkSmartPointer<VtkContext>::New();
-    vtkNew<vtkNamedColors> colors;
     // --------------------------------------------------------
     // Core renderer setup
     // --------------------------------------------------------
@@ -56,19 +55,51 @@ auto create_scene(vtkRenderWindow* renderWindow) {
 }
 
 void VtkQuickItem::syncToVTK(std::shared_ptr<PointCloudPipeline> pipeline) {
-    std::lock_guard<std::mutex> lg(mux);
     auto cloud = pipeline->pcl_svf.pcl_cloud;
-    // Copy changed PCL points into VTK
-    pipeline->points->SetNumberOfPoints(
+    auto points = pipeline->points;
+    auto verts = pipeline->verts;
+    const vtkIdType total_points =
         static_cast<vtkIdType>(
-            cloud->points.size()));
-    //loop through changed/added voxel data elements and update themto vtk 
-    // todo
+            cloud->points.size());
+    // grow vtk arrays only when needed
+    if (points->GetNumberOfPoints() != total_points) {
+        vtkIdType old_count =
+            points->GetNumberOfPoints();
+        points->SetNumberOfPoints(total_points);
+        // create verts ONLY for new points
+        for (vtkIdType i = old_count;
+             i < total_points;
+             ++i) {
+            verts->InsertNextCell(1);
+            verts->InsertCellPoint(i);
+        }
+    }
+    for (auto& [key, voxel] :
+         pipeline->pcl_svf.voxel_map) {
+        if (!voxel.changed)
+            continue;
+        const auto& p =
+            cloud->points[
+                voxel.point_index];
+        const vtkIdType idx =
+            static_cast<vtkIdType>(
+                voxel.point_index);
+        points->SetPoint(
+            idx,
+            p.x,
+            p.y,
+            p.z);
+        voxel.changed = false;
+    }
+    points->Modified();
+    verts->Modified();
+    pipeline->polyData->Modified();
 }
 
 void VtkQuickItem::load_point_cloud(QString filepath) {
-    std::thread([this, path = filepath.toStdString()](){
+    _thread = std::thread([this, path = filepath.toStdString()](){
         auto rd = npl::make_file(path);
+        if (!rd) return;
         uint8_t *buf = (uint8_t *)calloc(_1M, 1);
         ssize_t bytes;
         size_t chunk_counter = 0;
@@ -78,37 +109,43 @@ void VtkQuickItem::load_point_cloud(QString filepath) {
                 std::dynamic_pointer_cast<
                     PointCloudPipeline>(
                         ctx->pipelines[0]);
-            pipeline->pcl_svf.consume_point_cloud_chunk(buf, bytes);
-            syncToVTK(pipeline);
+            {
+                std::lock_guard<std::mutex> lg(mux);
+                pipeline->pcl_svf.consume_point_cloud_chunk(buf, bytes);
+            }
             chunk_counter++;
-            if (chunk_counter % 10 == 0) {
-                // QMetaObject::invoke queues the execution on the main thread event  
+            if (chunk_counter % 20 == 0) {
+                // QMetaObject::invoke queues the execution on the main thread event
                 // loop at a later point while dispatch_async() is a frame-synchronized
-                // renders-safe scheduling primitive which schedules the execution correctly 
-                // inside Qt Quick’s scene graph lifecycle. both execute on the main UI 
+                // renders-safe scheduling primitive which schedules the execution correctly
+                // inside Qt Quick’s scene graph lifecycle. both execute on the main UI
                 // thread but dispatch_async is executed at the correct time.
-                dispatch_async([this](vtkRenderWindow* renderWindow, vtkUserData ud) {
-                    std::lock_guard<std::mutex> lg(mux);
-                    auto* ctx = VtkContext::SafeDownCast(ud);
-                    if (!ctx) return;
-                    auto pipeline =
-                        std::dynamic_pointer_cast<
-                            PointCloudPipeline>(
-                                ctx->pipelines[0]);
-                    if (!pipeline) return;
-                    // Notify VTK pipeline 
-                    pipeline->points->Modified();
-                    pipeline->polyData->Modified();
-                    pipeline->glyphFilter->Update();
-                    pipeline->polyData->ComputeBounds();
-                    //pointCloud->syncToVTK();
-                    ctx->renderer->ResetCamera();
-                    ctx->renderWindow->Render();
-                });
+                QMetaObject::invokeMethod(this, [this](){
+                    update();
+                    // need a hop back to the GUI thread first else we'd get
+                    // Warning: Updates can only be scheduled from GUI thread
+                    // or from QQuickItem::updatePaintNode()
+                    dispatch_async([this](vtkRenderWindow* renderWindow, vtkUserData ud) {
+                        std::lock_guard<std::mutex> lg(mux);
+                        auto* ctx = VtkContext::SafeDownCast(ud);
+                        if (!ctx) return;
+                        auto pipeline =
+                            std::dynamic_pointer_cast<
+                                PointCloudPipeline>(
+                                    ctx->pipelines[0]);
+                        if (!pipeline) return;
+                        syncToVTK(pipeline);
+                        // Notify VTK pipeline
+                        pipeline->points->Modified();
+                        pipeline->polyData->Modified();
+                        pipeline->polyData->ComputeBounds();
+                    });
+                }, Qt::QueuedConnection);
             }
         }
+        free(buf);
         return;
-    }).detach();
+    });
 }
 
 // ============================================================
@@ -117,6 +154,10 @@ void VtkQuickItem::load_point_cloud(QString filepath) {
 QQuickVTKItem::vtkUserData
     VtkQuickItem::initializeVTK(vtkRenderWindow *renderWindow) {
         return _ctx = create_scene(renderWindow);
+}
+
+VtkQuickItem::~VtkQuickItem() {
+    _thread.join();
 }
 
 vtkStandardNewMacro(VtkContext);

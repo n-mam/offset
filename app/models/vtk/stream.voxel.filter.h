@@ -43,15 +43,15 @@ struct VoxelKeyHasher {
 };
 
 struct pcl_stream_voxel_filter {
-    
+
     // Canonical point cloud state (PCL)
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr pcl_cloud;
-    const float voxel_size = 0.05f; // 5 cm
-    std::unordered_map<VoxelKey, VoxelData, 
+    pcl::PointCloud<pcl::PointXYZ>::Ptr pcl_cloud;
+    const float voxel_size = 0.5f; // 1/2 m
+    std::unordered_map<VoxelKey, VoxelData,
         VoxelKeyHasher> voxel_map;
 
     pcl_stream_voxel_filter() {
-        pcl_cloud.reset(new pcl::PointCloud<pcl::PointXYZRGB>);        
+        pcl_cloud.reset(new pcl::PointCloud<pcl::PointXYZ>);
     }
 
     void consume_point_cloud_chunk(uint8_t *buf, ssize_t bytes) {
@@ -59,7 +59,8 @@ struct pcl_stream_voxel_filter {
         size_t start = 0;
         while (start < chunk.size()) {
             size_t end = chunk.find('\n', start);
-            // skip incomplete trailing line
+            // its okay dont bother
+            // skip incomplete trailing line.. 
             if (end == std::string_view::npos) break;
             std::string_view line =
                 chunk.substr(start, end - start);
@@ -67,7 +68,7 @@ struct pcl_stream_voxel_filter {
             float x, y, z;
             float r, g, b;
             if (sscanf(
-                std::string(line).c_str(),
+                line.data(),
                 "%f %f %f %f %f %f",
                 &x, &y, &z,
                 &r, &g, &b) != 6) {
@@ -87,18 +88,12 @@ struct pcl_stream_voxel_filter {
                 voxel.sx = x;
                 voxel.sy = y;
                 voxel.sz = z;
-                voxel.sr = r;
-                voxel.sg = g;
-                voxel.sb = b;
                 voxel.count = 1;
                 voxel.changed = true;
-                pcl::PointXYZRGB p;
+                pcl::PointXYZ p;
                 p.x = x;
                 p.y = y;
                 p.z = z;
-                p.r = static_cast<uint8_t>(r);
-                p.g = static_cast<uint8_t>(g);
-                p.b = static_cast<uint8_t>(b);
                 voxel.point_index =
                     static_cast<uint32_t>(
                         pcl_cloud->size());
@@ -110,21 +105,12 @@ struct pcl_stream_voxel_filter {
                 voxel.sx += x;
                 voxel.sy += y;
                 voxel.sz += z;
-                voxel.sr += r;
-                voxel.sg += g;
-                voxel.sb += b;
                 voxel.count++;
                 float inv = 1.0f / voxel.count;
                 auto& p = pcl_cloud->points[voxel.point_index];
                 p.x = voxel.sx * inv;
                 p.y = voxel.sy * inv;
                 p.z = voxel.sz * inv;
-                p.r = static_cast<uint8_t>(
-                        voxel.sr * inv);
-                p.g = static_cast<uint8_t>(
-                        voxel.sg * inv);
-                p.b = static_cast<uint8_t>(
-                        voxel.sb * inv);                    
             }
         }
     }

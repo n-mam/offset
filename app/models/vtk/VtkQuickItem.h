@@ -15,8 +15,10 @@ struct VtkQuickItem : public QQuickVTKItem {
     Q_OBJECT
     QML_ELEMENT
     public:
+    std::thread _thread;
     std::mutex mux;
     QQuickVTKItem::vtkUserData _ctx;
+    ~VtkQuickItem();
     Q_INVOKABLE void load_point_cloud(QString filePath);
     void syncToVTK(std::shared_ptr<PointCloudPipeline> pipeline);
     vtkUserData initializeVTK(vtkRenderWindow *renderWindow) override;
