@@ -11,6 +11,9 @@
 #include <VtkPipeline.h>
 #include "QQuickVTKItem.h"
 
+#include <QUrl>
+#include <QFileInfo>
+
 struct VtkQuickItem : public QQuickVTKItem {
     Q_OBJECT
     QML_ELEMENT
@@ -19,7 +22,7 @@ struct VtkQuickItem : public QQuickVTKItem {
     std::thread _thread;
     QQuickVTKItem::vtkUserData _ctx;
     ~VtkQuickItem();
-    Q_INVOKABLE void load_point_cloud(QString filePath);
+    Q_INVOKABLE void load_point_cloud(QUrl filePath);
     void syncToVTK(std::shared_ptr<PointCloudPipeline> pipeline);
     vtkUserData initializeVTK(vtkRenderWindow *renderWindow) override;
 };

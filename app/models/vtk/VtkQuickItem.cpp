@@ -95,13 +95,17 @@ void VtkQuickItem::syncToVTK(std::shared_ptr<PointCloudPipeline> pipeline) {
     pipeline->polyData->Modified();
 }
 
-void VtkQuickItem::load_point_cloud(QString filepath) {
+void VtkQuickItem::load_point_cloud(QUrl path) {
+    QFile file(path.toLocalFile());
+    QFileInfo fileInfo(file);
+    QString filepath = fileInfo.absoluteFilePath();
     _thread = std::thread([this, path = filepath.toStdString()](){
         auto rd = npl::make_file(path);
         if (!rd) return;
         auto buf = std::make_unique<uint8_t []>(_1M);
         ssize_t bytes, total_bytes = 0;
         size_t chunk_counter = 0;
+        bool skip_first_line = true;
         while ((bytes = rd->read_sync(buf.get(), _1M, total_bytes)) > 0) {
             total_bytes += bytes;
             auto* ctx = VtkContext::SafeDownCast(_ctx);
@@ -111,7 +115,8 @@ void VtkQuickItem::load_point_cloud(QString filepath) {
                         ctx->pipelines[0]);
             {
                 std::lock_guard<std::mutex> lg(mux);
-                pipeline->pcl_svf.consume_point_cloud_chunk(buf.get(), bytes);
+                pipeline->pcl_svf.consume_point_cloud_chunk(buf.get(), bytes, !skip_first_line);
+                skip_first_line = false;
             }
             if (chunk_counter % 20 == 0) {
                 // QMetaObject::invoke queues the execution on the main thread event
@@ -143,7 +148,7 @@ void VtkQuickItem::load_point_cloud(QString filepath) {
                     });
                 }, Qt::QueuedConnection);
             }
-            chunk_counter++;
+            std::cout << ++chunk_counter << std::endl;
         }
     });
 }

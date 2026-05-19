@@ -1,18 +1,16 @@
-import QtQuick 2.15
-import QtQuick.Controls 2.15
-import QtQuick.Layouts 1.15
+import QtCore
+import QtQuick
+import QtQuick.Dialogs
+import QtQuick.Layouts
+import QtQuick.Controls
 
 Item {
     id: root
     required property var visualizer
 
     property var tools: [
-        { name: "idle", icon: "qrc:/idle.png"},
-        { name: "wall", icon: "qrc:/wall.png" },
         { name: "door", icon: "qrc:/door.png" },
-        { name: "window", icon: "qrc:/window.png" },
-        { name: "stair", icon: "qrc:/stair.png" },
-        { name: "dimension", icon: "qrc:/ruler.png" }
+        { name: "open", icon: "qrc:/zoom.png"}
     ]
 
     ColumnLayout {
@@ -24,14 +22,13 @@ Item {
         Repeater {
             model: root.tools
             ToolButton {
-                checkable: true
-                checked: root.currentTool === modelData.name
-                onClicked: root.currentTool = modelData.name
                 width: 30
                 height: 30
+                checkable: false
+                onClicked: onToolClicked(modelData.name)
                 background: Rectangle {
-                    anchors.fill: parent
                     radius: 6
+                    anchors.fill: parent
                     color: checked ? "#4285F4" : "#5d5d5d"
                 }
                 contentItem: Image {
@@ -43,27 +40,22 @@ Item {
                 }
             }
         }
-        ToolButton {
-            onClicked: {
-                //visualizer.load_point_cloud("/home/nmam/Industrial_Amesbury2.xyz")
-                //visualizer.load_point_cloud("D:\\DATA\\Industrial_Amesbury2\\Industrial_Amesbury2.xyz")
-                visualizer.load_point_cloud("/home/nmam/code/offset/app/models/vtk/home.xyz")
-               // visualizer.load_point_cloud("E:\\offset\\app\\models\\vtk\\home.xyz")
-            }
-            width: 30
-            height: 30
-            background: Rectangle {
-                radius: 6
-                color: "#4285F4"
-                anchors.fill: parent
-            }
-            contentItem: Image {
-                width: 16
-                height: 16
-                source: "qrc:/grid.png"
-                anchors.centerIn: parent
-                fillMode: Image.PreserveAspectFit
-            }
+    }
+
+    function onToolClicked(tool) {
+        if (tool==="open") {
+            fileDialog.open()
+        }
+    }
+
+    FileDialog {
+        id: fileDialog
+        title: "Load File"
+        fileMode: FileDialog.OpenFile
+        nameFilters: [ "All Files (*)" ]
+        currentFolder: StandardPaths.writableLocation(StandardPaths.DesktopLocation)
+        onAccepted: {
+            visualizer.load_point_cloud(fileDialog.currentFile)
         }
     }
 
