@@ -33,7 +33,7 @@ ApplicationWindow {
         ApplicationMenu {
             id: appMenu
             width: 36
-            startIndex:1
+            startIndex: 5
             height: parent.height
             onMenuSelectionSignal: (index) => {
                 screenContainer.currentIndex = index
