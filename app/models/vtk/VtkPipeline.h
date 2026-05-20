@@ -35,26 +35,40 @@ struct VtkPipeline {
 
 // Point cloud pipeline
 struct PointCloudPipeline : public VtkPipeline {
+    
     public:
+    
     pcl_stream_voxel_filter pcl_svf;
     vtkSmartPointer<vtkActor> actor;
     vtkSmartPointer<vtkPoints> points;
     vtkSmartPointer<vtkCellArray> verts;
     vtkSmartPointer<vtkPolyData> polyData;
     vtkSmartPointer<vtkPolyDataMapper> mapper;
+    vtkSmartPointer<vtkUnsignedCharArray> colors; 
+    
     PointCloudPipeline() {
+        // Points and geometry
         points = vtkSmartPointer<vtkPoints>::New();
         verts = vtkSmartPointer<vtkCellArray>::New();
         polyData = vtkSmartPointer<vtkPolyData>::New();
         polyData->SetPoints(points);
         polyData->SetVerts(verts);
+        // Initialize colors array
+        colors = vtkSmartPointer<vtkUnsignedCharArray>::New();
+        colors->SetNumberOfComponents(3);  // R, G, B
+        colors->SetName("Colors");
+        polyData->GetPointData()->SetScalars(colors);
+        // Mapper 
         mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
         mapper->SetInputData(polyData);
+        mapper->SetScalarModeToUsePointData();  // use point colors
+        mapper->Update();
+        // Actor
         actor = vtkSmartPointer<vtkActor>::New();
         actor->SetMapper(mapper);
         actor->GetProperty()->SetRepresentationToPoints();
         actor->GetProperty()->SetPointSize(2);
-        actor->GetProperty()->SetColor(1, 1, 1);
+        // Add to actor list
         actors.push_back(actor);
     }
 };

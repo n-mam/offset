@@ -57,15 +57,14 @@ void VtkQuickItem::syncToVTK(std::shared_ptr<PointCloudPipeline> pipeline) {
     auto cloud = pipeline->pcl_svf.pcl_cloud;
     auto points = pipeline->points;
     auto verts = pipeline->verts;
-    const vtkIdType total_points =
-        static_cast<vtkIdType>(
-            cloud->points.size());
-    // grow vtk arrays only when needed
+    auto colors = pipeline->colors;
+    const vtkIdType total_points = static_cast<vtkIdType>(cloud->points.size());
+    // Grow vtk arrays only when needed
     if (points->GetNumberOfPoints() != total_points) {
-        vtkIdType old_count =
-            points->GetNumberOfPoints();
+        vtkIdType old_count = points->GetNumberOfPoints();
         points->SetNumberOfPoints(total_points);
-        // create verts ONLY for new points
+        colors->SetNumberOfTuples(total_points);
+        // Create verts ONLY for new points
         for (vtkIdType i = old_count; i < total_points; ++i) {
             verts->InsertNextCell(1);
             verts->InsertCellPoint(i);
@@ -73,19 +72,22 @@ void VtkQuickItem::syncToVTK(std::shared_ptr<PointCloudPipeline> pipeline) {
     }
     for (auto& [key, voxel] : pipeline->pcl_svf.voxel_map) {
         if (!voxel.changed) continue;
-        const auto& p =
-            cloud->points[voxel.point_index];
-        const vtkIdType idx =
-            static_cast<vtkIdType>(voxel.point_index);
-        points->SetPoint(
-            idx,
-            p.x,
-            p.y,
-            p.z);
+        const auto& p = cloud->points[voxel.point_index];
+        const vtkIdType idx = static_cast<vtkIdType>(voxel.point_index);
+        // Update point position
+        points->SetPoint(idx, p.x, p.y, p.z);
+        // Update color
+        unsigned char rgb[3] = {
+            static_cast<unsigned char>(voxel.sr),
+            static_cast<unsigned char>(voxel.sg),
+            static_cast<unsigned char>(voxel.sb)
+        };
+        colors->SetTypedTuple(idx, rgb);
         voxel.changed = false;
     }
     points->Modified();
     verts->Modified();
+    colors->Modified();
     pipeline->polyData->Modified();
 }
 

@@ -172,6 +172,15 @@ struct pcl_stream_voxel_filter {
                 voxel.sz = z;
                 voxel.count = 1;
                 voxel.changed = true;
+                if (has_rgb) {
+                    voxel.sr = r;
+                    voxel.sg = g;
+                    voxel.sb = b;
+                } else {
+                    voxel.sr = 255;
+                    voxel.sg = 255;
+                    voxel.sb = 255;
+                }
                 pcl::PointXYZ p;
                 p.x = x;
                 p.y = y;
@@ -188,6 +197,12 @@ struct pcl_stream_voxel_filter {
                 voxel.sy += y;
                 voxel.sz += z;
                 voxel.count++;
+                // Average RGB if new point has it
+                if (has_rgb) {
+                    voxel.sr = static_cast<uint8_t>((voxel.sr * (voxel.count - 1) + r) / voxel.count);
+                    voxel.sg = static_cast<uint8_t>((voxel.sg * (voxel.count - 1) + g) / voxel.count);
+                    voxel.sb = static_cast<uint8_t>((voxel.sb * (voxel.count - 1) + b) / voxel.count);
+                }
                 float inv = 1.0f / voxel.count;
                 auto& p = pcl_cloud->points[voxel.point_index];
                 p.x = voxel.sx * inv;
