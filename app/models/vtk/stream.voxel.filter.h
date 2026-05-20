@@ -44,14 +44,79 @@ struct VoxelKeyHasher {
 
 struct pcl_stream_voxel_filter {
 
-    // Canonical point cloud state (PCL)
+    bool recentered = false;
+    const float voxel_size = 1.0f;
+    double origin_x, origin_y, origin_z;
     pcl::PointCloud<pcl::PointXYZ>::Ptr pcl_cloud;
-    const float voxel_size = 0.50f; // 1/4 m
     std::unordered_map<VoxelKey, VoxelData,
         VoxelKeyHasher> voxel_map;
 
     pcl_stream_voxel_filter() {
+        voxel_map.reserve(1000000);
         pcl_cloud.reset(new pcl::PointCloud<pcl::PointXYZ>);
+    }
+
+    inline std::pair<bool, bool>
+    parse_xyz_rgb(const char* p, const char* end,
+        double& x, double& y, double& z, int& r, int& g, int& b) {
+
+        auto parse_double = [&](double& out) -> const char* {
+            bool neg = false;
+            if (*p == '-') { neg = true; ++p; }
+            double val = 0.0;
+            while (p < end && *p >= '0' && *p <= '9') {
+                val = val * 10.0 + (*p - '0');
+                ++p;
+            }
+            if (p < end && *p == '.') {
+                ++p;
+                double frac = 0.0, div = 1.0;
+                while (p < end && *p >= '0' && *p <= '9') {
+                    frac = frac * 10.0 + (*p - '0');
+                    div *= 10.0;
+                    ++p;
+                }
+                val += frac / div;
+            }
+            out = neg ? -val : val;
+            return p;
+        };
+        auto parse_int = [&](int& out) -> const char* {
+            int val = 0;
+            while (p < end && *p >= '0' && *p <= '9') {
+                val = val * 10 + (*p - '0');
+                ++p;
+            }
+            out = val;
+            return p;
+        };
+
+        // XYZ
+        p = parse_double(x);
+        if (p >= end || *p != ',') return {false, false};
+        ++p;
+        p = parse_double(y);
+        if (p >= end || *p != ',') return {false, false};
+        ++p;
+        p = parse_double(z);
+        
+        bool has_xyz = true;
+        bool has_rgb = false;
+
+        // RGB
+        if (p < end && *p == ',') {
+            ++p;
+            if (p >= end) return {has_xyz, false};
+            p = parse_int(r);
+            if (p >= end || *p != ',') return {has_xyz, false};
+            ++p;
+            p = parse_int(g);
+            if (p >= end || *p != ',') return {has_xyz, false};
+            ++p;
+            p = parse_int(b);
+            has_rgb = true;
+        }
+        return {has_xyz, has_rgb};
     }
 
     void consume_point_cloud_chunk(uint8_t *buf, ssize_t bytes) {
@@ -76,29 +141,21 @@ struct pcl_stream_voxel_filter {
             if (line.empty() || line.front() == '#') continue;
             double x, y, z;
             int r, g, b;
-            int consumed = 0;
-            bool has_rgb =
-                sscanf(
-                    line.data(),
-                    "%lf,%lf,%lf,%d,%d,%d%n",
-                    &x, &y, &z, &r, &g, &b,
-                    &consumed
-                ) == 6;
-            bool has_xyz =
-                has_rgb ||
-                sscanf(
-                    line.data(),
-                    "%lf,%lf,%lf%n",
-                    &x, &y, &z,
-                    &consumed
-                ) == 3;
-            if (!(has_xyz &&
-                consumed == static_cast<int>(line.size())))
-                continue;
-            // Apply recentering
-            x -= 806901;
-            y -= 3141046;
-            z -= 100;
+            auto [has_xyz, has_rgb] =
+                parse_xyz_rgb(line.data(),
+                            line.data() + line.size(),
+                            x, y, z, r, g, b);
+            if (!has_xyz) continue;
+            // re-center relative to first point
+            if (!recentered) {
+                origin_x = x;
+                origin_y = y;
+                origin_z = z;
+                recentered = true;
+            }
+            x -= origin_x;
+            y -= origin_y;
+            z -= origin_z;
             int vx = static_cast<int>(
                     std::floor(x / voxel_size));
             int vy = static_cast<int>(

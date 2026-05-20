@@ -66,23 +66,17 @@ void VtkQuickItem::syncToVTK(std::shared_ptr<PointCloudPipeline> pipeline) {
             points->GetNumberOfPoints();
         points->SetNumberOfPoints(total_points);
         // create verts ONLY for new points
-        for (vtkIdType i = old_count;
-             i < total_points;
-             ++i) {
+        for (vtkIdType i = old_count; i < total_points; ++i) {
             verts->InsertNextCell(1);
             verts->InsertCellPoint(i);
         }
     }
-    for (auto& [key, voxel] :
-         pipeline->pcl_svf.voxel_map) {
-        if (!voxel.changed)
-            continue;
+    for (auto& [key, voxel] : pipeline->pcl_svf.voxel_map) {
+        if (!voxel.changed) continue;
         const auto& p =
-            cloud->points[
-                voxel.point_index];
+            cloud->points[voxel.point_index];
         const vtkIdType idx =
-            static_cast<vtkIdType>(
-                voxel.point_index);
+            static_cast<vtkIdType>(voxel.point_index);
         points->SetPoint(
             idx,
             p.x,
@@ -102,10 +96,10 @@ void VtkQuickItem::load_point_cloud(QUrl path) {
     std::thread([this, path = filepath.toStdString()](){
         auto rd = npl::make_file(path);
         if (!rd) return;
-        auto buf = std::make_unique<uint8_t []>(_1M);
+        auto buf = std::make_unique<uint8_t []>(_2M);
         ssize_t bytes, total_bytes = 0;
         size_t chunk_counter = 0;
-        while ((bytes = rd->read_sync(buf.get(), _1M, total_bytes)) > 0) {
+        while ((bytes = rd->read_sync(buf.get(), _2M, total_bytes)) > 0) {
             total_bytes += bytes;
             auto* ctx = VtkContext::SafeDownCast(_ctx);
             auto pipeline =
