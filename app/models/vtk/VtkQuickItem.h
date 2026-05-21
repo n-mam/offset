@@ -20,6 +20,7 @@ struct VtkQuickItem : public QQuickVTKItem {
     public:
     std::mutex mux;
     std::thread _thread;
+    bool camera_initialized = false;
     QQuickVTKItem::vtkUserData _ctx;
     ~VtkQuickItem();
     Q_INVOKABLE void load_point_cloud(QUrl filePath);

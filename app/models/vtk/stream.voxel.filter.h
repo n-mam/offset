@@ -199,9 +199,9 @@ struct pcl_stream_voxel_filter {
                 voxel.count++;
                 // Average RGB if new point has it
                 if (has_rgb) {
-                    voxel.sr = static_cast<uint8_t>((voxel.sr * (voxel.count - 1) + r) / voxel.count);
-                    voxel.sg = static_cast<uint8_t>((voxel.sg * (voxel.count - 1) + g) / voxel.count);
-                    voxel.sb = static_cast<uint8_t>((voxel.sb * (voxel.count - 1) + b) / voxel.count);
+                    voxel.sr = (voxel.sr * (voxel.count - 1) + r) / voxel.count;
+                    voxel.sg = (voxel.sg * (voxel.count - 1) + g) / voxel.count;
+                    voxel.sb = (voxel.sb * (voxel.count - 1) + b) / voxel.count;
                 }
                 float inv = 1.0f / voxel.count;
                 auto& p = pcl_cloud->points[voxel.point_index];

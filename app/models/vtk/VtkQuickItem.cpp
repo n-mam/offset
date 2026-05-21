@@ -132,13 +132,13 @@ void VtkQuickItem::load_point_cloud(QUrl path) {
                                 PointCloudPipeline>(
                                     ctx->pipelines[0]);
                         if (!pipeline) return;
+                        // Notify VTK pipeline                        
                         syncToVTK(pipeline);
-                        // Notify VTK pipeline
-                        pipeline->points->Modified();
-                        pipeline->polyData->Modified();
-                        pipeline->polyData->ComputeBounds();
-                        ctx->renderer->ResetCamera();
-                        ctx->renderer->ResetCameraClippingRange();
+                        if (!camera_initialized) {
+                            ctx->renderer->ResetCamera();
+                            ctx->renderer->ResetCameraClippingRange();
+                            camera_initialized = true;
+                        }
                     });
                 }, Qt::QueuedConnection);
             }

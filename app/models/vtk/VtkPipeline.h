@@ -10,8 +10,6 @@
 #include <vtkObjectFactory.h>
 #include <vtkPolyDataMapper.h>
 #include <vtkUnsignedCharArray.h>
-#include <vtkVertexGlyphFilter.h>
-#include <vtkPointGaussianMapper.h>
 #include <vtkMinimalStandardRandomSequence.h>
 
 #include <stream.voxel.filter.h>
