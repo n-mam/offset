@@ -69,6 +69,17 @@ struct PointCloudPipeline : public VtkPipeline {
         // Add to actor list
         actors.push_back(actor);
     }
+    void reset() {
+        // CPU state
+        pcl_svf.voxel_map.clear();
+        pcl_svf.pcl_cloud->points.clear();
+        // VTK state
+        points->SetNumberOfPoints(0);
+        colors->SetNumberOfTuples(0);
+        verts->Initialize();
+        // Mark dirty once
+        polyData->Modified();
+    }
 };
 
 // Random sphere pipeline

@@ -6,18 +6,18 @@ Rectangle {
     // border.width: 1
     // border.color: borderColor
     color: Material.background
-
     property var startIndex: 0
     signal menuSelectionSignal(var index)
 
     ListView {
         id: menuList
         clip: true
-        spacing: 18
+        spacing: 8
         height: 400
         width: parent.width
         currentIndex: startIndex
-        //anchors.verticalCenter: parent.verticalCenter
+        anchors.topMargin: 16
+        anchors.top: parent.top
         anchors.horizontalCenter: parent.horizontalCenter
         model: ListModel {
             ListElement {

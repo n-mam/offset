@@ -9,7 +9,6 @@ Item {
     required property var visualizer
 
     property var tools: [
-        { name: "door", icon: "qrc:/door.png" },
         { name: "open", icon: "qrc:/zoom.png"}
     ]
 

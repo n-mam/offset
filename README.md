@@ -1,39 +1,13 @@
 [Download](https://github.com/n-mam/offset/releases/download/2.1/Offset-2.1.zip)
 
-#### The following 3 tools are currently implemented
+#### The following 5 tools are currently implemented
 
-Block level backup tool
-- Requires elevation. Please run as admin.<br/>
-- Creates volume level images using either VSS snapshots or from live volume.<br/>
-- Creates volume level images of already existing persistent VSS snapshots on the system.<br/>
-- Ability to exclude files (only for VSS backups) by deleting them from the source snapshot.<br/>
-- Support for MBR and GPT partitions. Volumes > 2TB are by default saved as VHDX with GPT partitioning.<br/>
-- Supported virtual disk formats :<br/>
-  - Dynamic vhd (d-vhd)<br/>
-  - Fixed vhd (f-vhd)<br/>
-  - Dynamic vhdx (d-vhdx)<br/>
-  - Raw volume image (raw)<br/>
-- Volume images can either be generated locally or streamed to an FTP server.<br/>
-- URI format for streaming to FTP:<br/>
-  - ftps://username:password@hostname:port/a/b/c<br/><br/>
-
-FTP(S) client<br/>
-- Supports plain and secure FTPS (using openssl async bio).<br/>
-- Ability to browse while transfers are in progress.<br/>
-- Directory listing support for Linux, Windows and MLSD.<br/>
-- FTPS supports TLS1.3<br/><br/>
-
-Camera tool<br/>
-- Face detection, Motion detection, Face recognition.<br/>
-- Uses default opencv built-in models and DNN based detectors.<br/>
-- Detection configurability on a per camera basis.<br/>
-- Ability to save detection results on a per camera basis.<br/>
-- The release has default(non-CUDA) opencv build for CPUs.<br/>
-- For NVIDIA GPU it is recommended to do a custom opencv CUDA/CUDNN variant build via vcpkg.<br/>
-- The code either ways supports both CUDA/CPU backend and target for DNN inference; in order.<br/>
-- Set CVL_MODELS_ROOT env variable to the local MODELS folder from repo for detections to work.<br/>
-- Define a new camera with face detection and specify a results folder. Run face detection for 5-10 secs and then stop. Then use the facerec "train" option to register the above face detection results with facerec. (via camera settings) <br/>
-- The system can be tested by defining a "Window capture" source in OBS studio against youtube running inside the browser. Then expose the webbrowser feed over RTSP(using OBS RSTP server plugin). This can then be captured via a cam configuration in offset using the obs rtsp url for running detections.<br/>
+- FTPS client<br/>
+- Camera tool<br/>
+- 2D Floor planner tool<br/>
+- Point cloud Visualizer<br/>
+- Block level backup tool<br/>
+- File Diff tool (LCS based)<br/>
 
 #### vcpkg dependencies
 
@@ -79,9 +53,7 @@ PCL build
 SET Qt6_DIR=D:\QT-6.9.0\install\lib\cmake\Qt6
 SET VTK_DIR=d:\vtk\build\lib\cmake\vtk-9.6
 cmake -DCMAKE_INSTALL_PREFIX=D:/pcl/install -DBUILD_visualization=ON -DCMAKE_TOOLCHAIN_FILE=D:/vcpkg/scripts/buildsystems/vcpkg.cmake -DCMAKE_BUILD_TYPE=Release ..
-
 cmake -DCMAKE_INSTALL_PREFIX=/home/nmam/code/pcl/install -DBUILD_visualization=ON -DCMAKE_TOOLCHAIN_FILE=~/vcpkg/scripts/buildsystems/vcpkg.cmake -DCMAKE_BUILD_TYPE=Release ..
-
 cmake --build . --config Release --parallel 4
 ```
 

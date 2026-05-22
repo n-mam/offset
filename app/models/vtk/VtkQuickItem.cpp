@@ -53,6 +53,22 @@ auto create_scene(vtkRenderWindow* renderWindow) {
     return ctx;
 }
 
+void VtkQuickItem::clear_scene() {
+    if (_thread.joinable()) {
+        stop = true;
+        _thread.join();
+        stop = false;
+    }
+    auto* ctx = VtkContext::SafeDownCast(_ctx);
+    auto pipeline =
+        std::dynamic_pointer_cast<
+            PointCloudPipeline>(ctx->pipelines[0]);
+    pipeline->reset();
+    camera_initialized = false;
+    ctx->renderer->ResetCameraClippingRange();
+    ctx->renderWindow->Render();
+}
+
 void VtkQuickItem::syncToVTK(std::shared_ptr<PointCloudPipeline> pipeline) {
     auto cloud = pipeline->pcl_svf.pcl_cloud;
     auto points = pipeline->points;
@@ -92,16 +108,21 @@ void VtkQuickItem::syncToVTK(std::shared_ptr<PointCloudPipeline> pipeline) {
 }
 
 void VtkQuickItem::load_point_cloud(QUrl path) {
-    QFile file(path.toLocalFile());
-    QFileInfo fileInfo(file);
-    QString filepath = fileInfo.absoluteFilePath();
-    std::thread([this, path = filepath.toStdString()](){
-        auto rd = npl::make_file(path);
+    const QFileInfo fileInfo(path.toLocalFile());
+    constexpr qint64 chunkSize = _2M;
+    const qint64 fileSize = fileInfo.size();
+    const qint64 totalChunks =
+        (fileSize + chunkSize - 1) / chunkSize;
+    auto filePath = fileInfo.absoluteFilePath().toStdString(); 
+    // clear previous load
+    clear_scene();
+    _thread = std::thread([this, totalChunks, filePath](){
+        auto rd = npl::make_file(filePath);
         if (!rd) return;
         auto buf = std::make_unique<uint8_t []>(_2M);
-        ssize_t bytes, total_bytes = 0;
-        size_t chunk_counter = 0;
-        while ((bytes = rd->read_sync(buf.get(), _2M, total_bytes)) > 0) {
+        ssize_t bytes, total_bytes = 0, chunks = 0;
+        while (!stop && (bytes = rd->read_sync(
+                buf.get(), _2M, total_bytes)) > 0) {
             total_bytes += bytes;
             auto* ctx = VtkContext::SafeDownCast(_ctx);
             auto pipeline =
@@ -112,7 +133,7 @@ void VtkQuickItem::load_point_cloud(QUrl path) {
                 std::lock_guard<std::mutex> lg(mux);
                 pipeline->pcl_svf.consume_point_cloud_chunk(buf.get(), bytes);
             }
-            if (chunk_counter % 20 == 0) {
+            if (chunks % 20 == 0) {
                 // QMetaObject::invoke queues the execution on the main thread event
                 // loop at a later point while dispatch_async() is a frame-synchronized
                 // renders-safe scheduling primitive which schedules the execution correctly
@@ -142,9 +163,13 @@ void VtkQuickItem::load_point_cloud(QUrl path) {
                     });
                 }, Qt::QueuedConnection);
             }
-            std::cout << ++chunk_counter << std::endl;
+            auto percent = (++chunks * 100)/totalChunks;
+            QMetaObject::invokeMethod(qApp, [this, percent](){
+                emit pointCloudProgress(percent);
+            });
+            
         }
-    }).detach();
+    });
 }
 
 // ============================================================
@@ -156,9 +181,9 @@ QQuickVTKItem::vtkUserData
 }
 
 VtkQuickItem::~VtkQuickItem() {
-    // if (_thread.joinable()) {
-    //     _thread.join();
-    // }
+    if (_thread.joinable()) {
+        _thread.join();
+    }
 }
 
 vtkStandardNewMacro(VtkContext);

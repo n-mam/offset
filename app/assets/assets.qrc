@@ -2,13 +2,13 @@
   <qresource prefix="/">
     <file>bin.png</file>
     <file>new.png</file>
-    <file>grid.png</file>
     <file>run.png</file>
     <file>app.ico</file>
     <file>fxc.png</file>
     <file>vtk.png</file>
     <file>ftp.png</file>
     <file>log.png</file>
+    <file>grid.png</file>
     <file>addq.png</file>
     <file>file.png</file>
     <file>exit.png</file>
