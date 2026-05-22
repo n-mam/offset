@@ -70,10 +70,10 @@ void VtkQuickItem::clear_scene() {
 }
 
 void VtkQuickItem::syncToVTK(std::shared_ptr<PointCloudPipeline> pipeline) {
-    auto cloud = pipeline->pcl_svf.pcl_cloud;
-    auto points = pipeline->points;
-    auto verts = pipeline->verts;
-    auto colors = pipeline->colors;
+    auto& verts = pipeline->verts;
+    auto& points = pipeline->points;
+    auto& colors = pipeline->colors;
+    auto& cloud = pipeline->pcl_svf.pcl_cloud;
     const vtkIdType total_points = static_cast<vtkIdType>(cloud->points.size());
     // Grow vtk arrays only when needed
     if (points->GetNumberOfPoints() != total_points) {
@@ -86,16 +86,17 @@ void VtkQuickItem::syncToVTK(std::shared_ptr<PointCloudPipeline> pipeline) {
             verts->InsertCellPoint(i);
         }
     }
-    for (auto& voxel : pipeline->pcl_svf.dirty_voxels) {
-        const auto& p = cloud->points[voxel->point_index];
-        const vtkIdType idx = static_cast<vtkIdType>(voxel->point_index);
+    for (auto& key : pipeline->pcl_svf.dirty_voxels) {
+        const auto& voxel = pipeline->pcl_svf.voxel_map[key];
+        const auto& p = cloud->points[voxel.point_index];
+        const vtkIdType idx = static_cast<vtkIdType>(voxel.point_index);
         // Update point position
         points->SetPoint(idx, p.x, p.y, p.z);
         // Update color
         unsigned char rgb[3] = {
-            static_cast<unsigned char>(voxel->sr),
-            static_cast<unsigned char>(voxel->sg),
-            static_cast<unsigned char>(voxel->sb)
+            static_cast<unsigned char>(voxel.sr),
+            static_cast<unsigned char>(voxel.sg),
+            static_cast<unsigned char>(voxel.sb)
         };
         colors->SetTypedTuple(idx, rgb);
     }
@@ -180,6 +181,7 @@ QQuickVTKItem::vtkUserData
 }
 
 VtkQuickItem::~VtkQuickItem() {
+    stop = true;
     if (_thread.joinable()) {
         _thread.join();
     }

@@ -5,6 +5,7 @@
 #include <cmath>
 #include <fstream>
 #include <iostream>
+#include <unordered_set>
 #include <unordered_map>
 
 #include <npl/npl>
@@ -26,10 +27,8 @@ struct VoxelData {
 
 struct VoxelKey {
     int x, y, z;
-    bool operator==(const VoxelKey& other) const {
-        return x == other.x &&
-               y == other.y &&
-               z == other.z;
+    bool operator==(const VoxelKey& k) const {
+        return x == k.x && y == k.y && z == k.z;
     }
 };
 
@@ -45,14 +44,13 @@ struct pcl_stream_voxel_filter {
 
     bool recentered = false;
     const float voxel_size = 1.0f;
-    std::vector<VoxelData *> dirty_voxels;
     double origin_x, origin_y, origin_z;
+    std::unordered_set<VoxelKey, VoxelKeyHasher> dirty_voxels;
     pcl::PointCloud<pcl::PointXYZ>::Ptr pcl_cloud;
-    std::unordered_map<VoxelKey, VoxelData,
-        VoxelKeyHasher> voxel_map;
+    std::unordered_map<VoxelKey, VoxelData, VoxelKeyHasher> voxel_map;
 
     pcl_stream_voxel_filter() {
-        voxel_map.reserve(300*1024*1024);
+        voxel_map.reserve(100*1024*1024);
         pcl_cloud.reset(new pcl::PointCloud<pcl::PointXYZ>);
     }
 
@@ -120,9 +118,9 @@ struct pcl_stream_voxel_filter {
     }
 
     void consume_point_cloud_chunk(uint8_t *buf, ssize_t bytes) {
-        std::string_view chunk((const char *)buf, bytes);
-        bool first_line_skipped = false;
         size_t start = 0;
+        bool first_line_skipped = false;
+        std::string_view chunk((const char *)buf, bytes);
         while (start < chunk.size()) {
             size_t end = chunk.find('\n', start);
             // skip incomplete trailing line. This is fine
@@ -189,7 +187,6 @@ struct pcl_stream_voxel_filter {
                         pcl_cloud->size());
                 pcl_cloud->push_back(p);
                 auto [it, success] = voxel_map.emplace(key, voxel);
-                dirty_voxels.push_back(&it->second);
             } else {
                 auto& voxel = it->second;
                 voxel.sx += x;
@@ -207,8 +204,8 @@ struct pcl_stream_voxel_filter {
                 p.x = voxel.sx * inv;
                 p.y = voxel.sy * inv;
                 p.z = voxel.sz * inv;
-                dirty_voxels.push_back(&voxel);
             }
+            dirty_voxels.insert(key);
         }
     }
 };
