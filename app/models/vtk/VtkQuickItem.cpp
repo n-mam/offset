@@ -86,21 +86,20 @@ void VtkQuickItem::syncToVTK(std::shared_ptr<PointCloudPipeline> pipeline) {
             verts->InsertCellPoint(i);
         }
     }
-    for (auto& [key, voxel] : pipeline->pcl_svf.voxel_map) {
-        if (!voxel.changed) continue;
-        const auto& p = cloud->points[voxel.point_index];
-        const vtkIdType idx = static_cast<vtkIdType>(voxel.point_index);
+    for (auto& voxel : pipeline->pcl_svf.dirty_voxels) {
+        const auto& p = cloud->points[voxel->point_index];
+        const vtkIdType idx = static_cast<vtkIdType>(voxel->point_index);
         // Update point position
         points->SetPoint(idx, p.x, p.y, p.z);
         // Update color
         unsigned char rgb[3] = {
-            static_cast<unsigned char>(voxel.sr),
-            static_cast<unsigned char>(voxel.sg),
-            static_cast<unsigned char>(voxel.sb)
+            static_cast<unsigned char>(voxel->sr),
+            static_cast<unsigned char>(voxel->sg),
+            static_cast<unsigned char>(voxel->sb)
         };
         colors->SetTypedTuple(idx, rgb);
-        voxel.changed = false;
     }
+    pipeline->pcl_svf.dirty_voxels.clear();
     points->Modified();
     verts->Modified();
     colors->Modified();

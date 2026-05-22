@@ -1,13 +1,14 @@
-[Download](https://github.com/n-mam/offset/releases/download/2.1/Offset-2.1.zip)
+[Download (Windows-x64)](https://github.com/n-mam/offset/releases/download/2.1/Offset-2.1.zip)
 
-#### The following 5 tools are currently implemented
+#### The following 6 tools are currently implemented
 
 - FTPS client<br/>
 - Camera tool<br/>
 - 2D Floor planner tool<br/>
-- Point cloud Visualizer<br/>
+- Point cloud visualizer<br/>
 - Block level backup tool<br/>
-- File Diff tool (LCS based)<br/>
+- File diff tool (LCS based)<br/>
+- MCU tool (companion app for mcu repo)<br/>
 
 #### vcpkg dependencies
 
@@ -20,7 +21,7 @@ sudo apt-get install build-essential zip curl vim bison nasm meson pkg-config
 use the resulting toolchain file in cmake configure step as highlited under the build section
 ```
 
-#### QT-6.9.0 source build
+#### Qt-6.9.0 build
 ```
 make sure ninja and python3.9 are under PATH
 SET PATH=D:\Python39;%PATH%
@@ -38,8 +39,8 @@ Once everything is built, you must run 'cmake --install .'
 Qt will be installed into 'D:/QT-6.9.0/install'
 ```
 
+#### VTK[Qt] build
 ```
-VTK[Qt] build
 SET QT_DIR=D:\QT-6.9.0\install\lib\cmake\Qt6
 SET Qt6_DIR=D:\QT-6.9.0\install\lib\cmake\Qt6
 export QT_DIR=/home/nmam/Qt/6.9.1/gcc_64/lib/cmake/Qt6
@@ -48,8 +49,8 @@ cmake --build . --config Release
 NOTE: build(relese/debug) type of qt and vtk should match
 ```
 
+#### PCL build
 ```
-PCL build
 SET Qt6_DIR=D:\QT-6.9.0\install\lib\cmake\Qt6
 SET VTK_DIR=d:\vtk\build\lib\cmake\vtk-9.6
 cmake -DCMAKE_INSTALL_PREFIX=D:/pcl/install -DBUILD_visualization=ON -DCMAKE_TOOLCHAIN_FILE=D:/vcpkg/scripts/buildsystems/vcpkg.cmake -DCMAKE_BUILD_TYPE=Release ..
@@ -57,8 +58,7 @@ cmake -DCMAKE_INSTALL_PREFIX=/home/nmam/code/pcl/install -DBUILD_visualization=O
 cmake --build . --config Release --parallel 4
 ```
 
-#### Build
-
+#### App build
 ```sh
 git clone https://github.com/n-mam/offset.git
 cd offset && mkdir build && cd build

@@ -22,7 +22,6 @@ struct VoxelData {
     double sb = 0;
     uint32_t count = 0;
     uint32_t point_index = 0;
-    bool changed = false;
 };
 
 struct VoxelKey {
@@ -46,13 +45,14 @@ struct pcl_stream_voxel_filter {
 
     bool recentered = false;
     const float voxel_size = 1.0f;
+    std::vector<VoxelData *> dirty_voxels;
     double origin_x, origin_y, origin_z;
     pcl::PointCloud<pcl::PointXYZ>::Ptr pcl_cloud;
     std::unordered_map<VoxelKey, VoxelData,
         VoxelKeyHasher> voxel_map;
 
     pcl_stream_voxel_filter() {
-        voxel_map.reserve(1000000);
+        voxel_map.reserve(300*1024*1024);
         pcl_cloud.reset(new pcl::PointCloud<pcl::PointXYZ>);
     }
 
@@ -171,7 +171,6 @@ struct pcl_stream_voxel_filter {
                 voxel.sy = y;
                 voxel.sz = z;
                 voxel.count = 1;
-                voxel.changed = true;
                 if (has_rgb) {
                     voxel.sr = r;
                     voxel.sg = g;
@@ -189,10 +188,10 @@ struct pcl_stream_voxel_filter {
                     static_cast<uint32_t>(
                         pcl_cloud->size());
                 pcl_cloud->push_back(p);
-                voxel_map[key] = voxel;
+                auto [it, success] = voxel_map.emplace(key, voxel);
+                dirty_voxels.push_back(&it->second);
             } else {
                 auto& voxel = it->second;
-                voxel.changed = true;
                 voxel.sx += x;
                 voxel.sy += y;
                 voxel.sz += z;
@@ -208,6 +207,7 @@ struct pcl_stream_voxel_filter {
                 p.x = voxel.sx * inv;
                 p.y = voxel.sy * inv;
                 p.z = voxel.sz * inv;
+                dirty_voxels.push_back(&voxel);
             }
         }
     }
