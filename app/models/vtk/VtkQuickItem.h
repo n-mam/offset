@@ -30,7 +30,7 @@ struct VtkQuickItem : public QQuickVTKItem {
     void syncToVTK(std::shared_ptr<PointCloudPipeline> pipeline);
     vtkUserData initializeVTK(vtkRenderWindow *renderWindow) override;
     signals:
-    void pointCloudProgress(int progress);
+    void pointCloudUpdated(int, uint64_t, uint64_t);
 };
 
 struct VtkContext : vtkObject {

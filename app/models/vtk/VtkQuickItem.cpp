@@ -9,14 +9,9 @@
 #include <VtkQuickItem.h>
 #include <MouseInteractor.h>
 
-// ============================================================
-// Scene creation
-// ============================================================
 auto create_scene(vtkRenderWindow* renderWindow) {
     auto ctx = vtkSmartPointer<VtkContext>::New();
-    // --------------------------------------------------------
     // Core renderer setup
-    // --------------------------------------------------------
     ctx->renderer = vtkSmartPointer<vtkRenderer>::New();
     ctx->renderWindow = renderWindow;
     renderWindow->SetSize(800, 600);
@@ -24,24 +19,18 @@ auto create_scene(vtkRenderWindow* renderWindow) {
         "VTK Multi Pipeline Scene");
     renderWindow->AddRenderer(ctx->renderer);
     ctx->renderer->SetBackground(0,0,0);
-    // --------------------------------------------------------
     // Interactor
-    // --------------------------------------------------------
     ctx->interactor =
         renderWindow->GetInteractor();
     vtkNew<MouseInteractorHighLightActor> style;
     style->SetDefaultRenderer(ctx->renderer);
     ctx->interactor->SetInteractorStyle(style);
-    // --------------------------------------------------------
     // Point cloud pipeline
-    // --------------------------------------------------------
     auto pointCloud =
         std::make_shared<PointCloudPipeline>();
     pointCloud->addToRenderer(ctx->renderer);
     ctx->pipelines.push_back(pointCloud);
-    // --------------------------------------------------------
     // Sphere pipeline
-    // --------------------------------------------------------
     // auto spheres =
     //     std::make_shared<SpherePipeline>(10);
     // spheres->addToRenderer(ctx->renderer);
@@ -90,56 +79,54 @@ void VtkQuickItem::syncToVTK(std::shared_ptr<PointCloudPipeline> pipeline) {
         const auto& voxel = pipeline->pcl_svf.voxel_map[key];
         const auto& p = cloud->points[voxel.point_index];
         const vtkIdType idx = static_cast<vtkIdType>(voxel.point_index);
-        // Update point position
+        // update position
         points->SetPoint(idx, p.x, p.y, p.z);
-        // Update color
+        // update color
         unsigned char rgb[3] = {
             static_cast<unsigned char>(voxel.sr),
             static_cast<unsigned char>(voxel.sg),
             static_cast<unsigned char>(voxel.sb)
         };
         colors->SetTypedTuple(idx, rgb);
+        pipeline->pcl_svf.voxel_map[key].dirty = false;
     }
-    pipeline->pcl_svf.dirty_voxels.clear();
     points->Modified();
     verts->Modified();
     colors->Modified();
     pipeline->polyData->Modified();
+    pipeline->pcl_svf.dirty_voxels.clear();
 }
 
 void VtkQuickItem::load_point_cloud(QUrl path) {
-    const QFileInfo fileInfo(path.toLocalFile());
     constexpr qint64 chunkSize = _2M;
+    const QFileInfo fileInfo(path.toLocalFile());
     const qint64 fileSize = fileInfo.size();
-    const qint64 totalChunks =
-        (fileSize + chunkSize - 1) / chunkSize;
-    auto filePath = fileInfo.absoluteFilePath().toStdString(); 
-    // clear previous load
-    clear_scene();
-    _thread = std::thread([this, totalChunks, filePath](){
+    auto filePath = fileInfo.absoluteFilePath().toStdString();
+    clear_scene(); // clear existing cloud
+    _thread = std::thread([this, fileSize, filePath](){
         auto rd = npl::make_file(filePath);
         if (!rd) return;
+        uint64_t points = 0, voxels = 0;
         auto buf = std::make_unique<uint8_t []>(_2M);
         ssize_t bytes, total_bytes = 0, chunks = 0;
         while (!stop && (bytes = rd->read_sync(
                 buf.get(), _2M, total_bytes)) > 0) {
             total_bytes += bytes;
             auto* ctx = VtkContext::SafeDownCast(_ctx);
-            auto pipeline =
-                std::dynamic_pointer_cast<
-                    PointCloudPipeline>(
-                        ctx->pipelines[0]);
-            {
-                std::lock_guard<std::mutex> lg(mux);
-                pipeline->pcl_svf.consume_point_cloud_chunk(buf.get(), bytes);
-            }
+            auto pipeline = std::dynamic_pointer_cast<
+                    PointCloudPipeline>(ctx->pipelines[0]);
+            auto [p, v] = pipeline->pcl_svf.consume_cloud_chunk(
+                    buf.get(), bytes, mux);
+            points += p;
+            voxels += v;
+            double percent = (double(total_bytes) / double(fileSize)) * 100.0;
             if (chunks % 20 == 0) {
                 // QMetaObject::invoke queues the execution on the main thread event
                 // loop at a later point while dispatch_async() is a frame-synchronized
                 // renders-safe scheduling primitive which schedules the execution correctly
                 // inside Qt Quick’s scene graph lifecycle. both execute on the main UI
                 // thread but dispatch_async is executed at the correct time.
-                auto ok = QMetaObject::invokeMethod(qApp, [this](){
+                QMetaObject::invokeMethod(qApp, [this, percent, points, voxels](){
                     update();
                     // need a hop back to the GUI thread first else we'd get
                     // Warning: Updates can only be scheduled from GUI thread
@@ -153,7 +140,7 @@ void VtkQuickItem::load_point_cloud(QUrl path) {
                                 PointCloudPipeline>(
                                     ctx->pipelines[0]);
                         if (!pipeline) return;
-                        // Notify VTK pipeline                        
+                        // Notify VTK pipeline
                         syncToVTK(pipeline);
                         if (!camera_initialized) {
                             ctx->renderer->ResetCamera();
@@ -161,20 +148,14 @@ void VtkQuickItem::load_point_cloud(QUrl path) {
                             camera_initialized = true;
                         }
                     });
+                    emit pointCloudUpdated(percent, points, voxels);
                 }, Qt::QueuedConnection);
             }
-            auto percent = (++chunks * 100)/totalChunks;
-            QMetaObject::invokeMethod(qApp, [this, percent](){
-                emit pointCloudProgress(percent);
-            });
-            
         }
     });
 }
 
-// ============================================================
 // QQuickVTKItem entry point
-// ============================================================
 QQuickVTKItem::vtkUserData
     VtkQuickItem::initializeVTK(vtkRenderWindow *renderWindow) {
         return _ctx = create_scene(renderWindow);

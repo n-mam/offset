@@ -21,8 +21,15 @@ struct VoxelData {
     double sr = 0;
     double sg = 0;
     double sb = 0;
+    bool dirty = false;
     uint32_t count = 0;
     uint32_t point_index = 0;
+};
+
+struct ParsedPoint {
+    double x, y, z;
+    int r, g, b;
+    int vx, vy, vz;
 };
 
 struct VoxelKey {
@@ -45,12 +52,15 @@ struct pcl_stream_voxel_filter {
     bool recentered = false;
     const float voxel_size = 1.0f;
     double origin_x, origin_y, origin_z;
-    std::unordered_set<VoxelKey, VoxelKeyHasher> dirty_voxels;
+    std::vector<VoxelKey> dirty_voxels;
+    std::vector<ParsedPoint> parsed_points;
     pcl::PointCloud<pcl::PointXYZ>::Ptr pcl_cloud;
     std::unordered_map<VoxelKey, VoxelData, VoxelKeyHasher> voxel_map;
 
     pcl_stream_voxel_filter() {
-        voxel_map.reserve(100*1024*1024);
+        voxel_map.reserve(24*1024*1024);
+        dirty_voxels.reserve(16*1024*1024);
+        parsed_points.reserve(4*1024*1024);
         pcl_cloud.reset(new pcl::PointCloud<pcl::PointXYZ>);
     }
 
@@ -97,7 +107,7 @@ struct pcl_stream_voxel_filter {
         if (p >= end || *p != ',') return {false, false};
         ++p;
         p = parse_double(z);
-        
+
         bool has_xyz = true;
         bool has_rgb = false;
 
@@ -117,8 +127,10 @@ struct pcl_stream_voxel_filter {
         return {has_xyz, has_rgb};
     }
 
-    void consume_point_cloud_chunk(uint8_t *buf, ssize_t bytes) {
+    auto parse_cloud_chunk(uint8_t *buf, ssize_t bytes) {
+        parsed_points.clear();
         size_t start = 0;
+        uint64_t points = 0;
         bool first_line_skipped = false;
         std::string_view chunk((const char *)buf, bytes);
         while (start < chunk.size()) {
@@ -139,11 +151,13 @@ struct pcl_stream_voxel_filter {
             if (line.empty() || line.front() == '#') continue;
             double x, y, z;
             int r, g, b;
+            r = g = b = 255;
             auto [has_xyz, has_rgb] =
                 parse_xyz_rgb(line.data(),
                             line.data() + line.size(),
                             x, y, z, r, g, b);
             if (!has_xyz) continue;
+            ++points;
             // re-center relative to first point
             if (!recentered) {
                 origin_x = x;
@@ -160,53 +174,63 @@ struct pcl_stream_voxel_filter {
                     std::floor(y / voxel_size));
             int vz = static_cast<int>(
                     std::floor(z / voxel_size));
-            VoxelKey key{vx, vy, vz};
+            parsed_points.push_back({x, y, z, r, g, b, vx, vy, vz,});
+        }
+        return points;
+    }
+
+    auto consume_cloud_chunk(uint8_t *buf, ssize_t bytes, std::mutex& mux) {
+        uint64_t voxels = 0;
+        auto points = parse_cloud_chunk(buf, bytes);
+        std::lock_guard<std::mutex> lg(mux);
+        for (const auto& pp : parsed_points) {
+            VoxelKey key{pp.vx, pp.vy, pp.vz};
             auto it = voxel_map.find(key);
             // new voxel
             if (it == voxel_map.end()) {
+                ++voxels;
                 VoxelData voxel;
-                voxel.sx = x;
-                voxel.sy = y;
-                voxel.sz = z;
+                voxel.sx = pp.x;
+                voxel.sy = pp.y;
+                voxel.sz = pp.z;
                 voxel.count = 1;
-                if (has_rgb) {
-                    voxel.sr = r;
-                    voxel.sg = g;
-                    voxel.sb = b;
-                } else {
-                    voxel.sr = 255;
-                    voxel.sg = 255;
-                    voxel.sb = 255;
-                }
+                voxel.sr = pp.r;
+                voxel.sg = pp.g;
+                voxel.sb = pp.b;
                 pcl::PointXYZ p;
-                p.x = x;
-                p.y = y;
-                p.z = z;
-                voxel.point_index =
-                    static_cast<uint32_t>(
+                p.x = pp.x;
+                p.y = pp.y;
+                p.z = pp.z;
+                voxel.point_index = static_cast<uint32_t>(
                         pcl_cloud->size());
                 pcl_cloud->push_back(p);
                 auto [it, success] = voxel_map.emplace(key, voxel);
+                if (!it->second.dirty) {
+                    it->second.dirty = true;
+                    dirty_voxels.push_back(key);
+                }
             } else {
                 auto& voxel = it->second;
-                voxel.sx += x;
-                voxel.sy += y;
-                voxel.sz += z;
+                voxel.sx += pp.x;
+                voxel.sy += pp.y;
+                voxel.sz += pp.z;
                 voxel.count++;
-                // Average RGB if new point has it
-                if (has_rgb) {
-                    voxel.sr = (voxel.sr * (voxel.count - 1) + r) / voxel.count;
-                    voxel.sg = (voxel.sg * (voxel.count - 1) + g) / voxel.count;
-                    voxel.sb = (voxel.sb * (voxel.count - 1) + b) / voxel.count;
-                }
+                // average RGB
+                voxel.sr = (voxel.sr * (voxel.count - 1) + pp.r) / voxel.count;
+                voxel.sg = (voxel.sg * (voxel.count - 1) + pp.g) / voxel.count;
+                voxel.sb = (voxel.sb * (voxel.count - 1) + pp.b) / voxel.count;
                 float inv = 1.0f / voxel.count;
                 auto& p = pcl_cloud->points[voxel.point_index];
                 p.x = voxel.sx * inv;
                 p.y = voxel.sy * inv;
                 p.z = voxel.sz * inv;
+                if (!voxel.dirty) {
+                    voxel.dirty = true;
+                    dirty_voxels.push_back(key);
+                }
             }
-            dirty_voxels.insert(key);
         }
+        return std::make_pair(points, voxels);
     }
 };
 
