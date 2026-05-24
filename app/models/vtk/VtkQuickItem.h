@@ -2,6 +2,7 @@
 #define VTKQUICKITEM_H
 
 #include <mutex>
+#include <atomic>
 
 #include <vtkObject.h>
 #include <vtkRenderer.h>
@@ -19,12 +20,14 @@ struct VtkQuickItem : public QQuickVTKItem {
     QML_ELEMENT
     public:
     std::mutex mux;
-    bool stop = false;
     std::thread _thread;
-    bool camera_initialized;
+    std::atomic<bool> stop{false};
     QQuickVTKItem::vtkUserData _ctx;
+    std::atomic<bool> camera_initialized{false};
     ~VtkQuickItem();
-    Q_INVOKABLE void stop_load() { stop = true; }
+    Q_INVOKABLE void stop_load() {
+        stop.store(true, std::memory_order_relaxed);
+    }
     Q_INVOKABLE void load_point_cloud(QUrl filePath);
     void clear_scene();
     void syncToVTK(std::shared_ptr<PointCloudPipeline> pipeline);

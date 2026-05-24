@@ -216,9 +216,9 @@ struct pcl_stream_voxel_filter {
                 voxel.sz += pp.z;
                 voxel.count++;
                 // average RGB
-                voxel.sr = (voxel.sr * (voxel.count - 1) + pp.r) / voxel.count;
-                voxel.sg = (voxel.sg * (voxel.count - 1) + pp.g) / voxel.count;
-                voxel.sb = (voxel.sb * (voxel.count - 1) + pp.b) / voxel.count;
+                voxel.sr += pp.r;
+                voxel.sg += pp.g;
+                voxel.sb += pp.b;
                 float inv = 1.0f / voxel.count;
                 auto& p = pcl_cloud->points[voxel.point_index];
                 p.x = voxel.sx * inv;

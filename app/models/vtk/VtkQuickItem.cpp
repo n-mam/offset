@@ -44,9 +44,9 @@ auto create_scene(vtkRenderWindow* renderWindow) {
 
 void VtkQuickItem::clear_scene() {
     if (_thread.joinable()) {
-        stop = true;
+        stop.store(true, std::memory_order_relaxed);
         _thread.join();
-        stop = false;
+        stop.store(false, std::memory_order_relaxed);
     }
     auto* ctx = VtkContext::SafeDownCast(_ctx);
     auto pipeline =
@@ -82,10 +82,11 @@ void VtkQuickItem::syncToVTK(std::shared_ptr<PointCloudPipeline> pipeline) {
         // update position
         points->SetPoint(idx, p.x, p.y, p.z);
         // update color
+        double inv = 1.0 / voxel.count;
         unsigned char rgb[3] = {
-            static_cast<unsigned char>(voxel.sr),
-            static_cast<unsigned char>(voxel.sg),
-            static_cast<unsigned char>(voxel.sb)
+            static_cast<unsigned char>(voxel.sr * inv),
+            static_cast<unsigned char>(voxel.sg * inv),
+            static_cast<unsigned char>(voxel.sb * inv)
         };
         colors->SetTypedTuple(idx, rgb);
         pipeline->pcl_svf.voxel_map[key].dirty = false;
@@ -109,8 +110,8 @@ void VtkQuickItem::load_point_cloud(QUrl path) {
         uint64_t points = 0, voxels = 0;
         auto buf = std::make_unique<uint8_t []>(_2M);
         ssize_t bytes, total_bytes = 0, chunks = 0;
-        while (!stop && (bytes = rd->read_sync(
-                buf.get(), _2M, total_bytes)) > 0) {
+        while (!stop.load(std::memory_order_relaxed) && 
+            (bytes = rd->read_sync(buf.get(), _2M, total_bytes)) > 0) {
             total_bytes += bytes;
             auto* ctx = VtkContext::SafeDownCast(_ctx);
             auto pipeline = std::dynamic_pointer_cast<
@@ -142,10 +143,10 @@ void VtkQuickItem::load_point_cloud(QUrl path) {
                         if (!pipeline) return;
                         // Notify VTK pipeline
                         syncToVTK(pipeline);
-                        if (!camera_initialized) {
+                        if (!camera_initialized.load(std::memory_order_relaxed)) {
                             ctx->renderer->ResetCamera();
                             ctx->renderer->ResetCameraClippingRange();
-                            camera_initialized = true;
+                            camera_initialized.store(true, std::memory_order_relaxed);
                         }
                     });
                     emit pointCloudUpdated(percent, points, voxels);
@@ -162,7 +163,7 @@ QQuickVTKItem::vtkUserData
 }
 
 VtkQuickItem::~VtkQuickItem() {
-    stop = true;
+    stop.store(true, std::memory_order_relaxed);
     if (_thread.joinable()) {
         _thread.join();
     }

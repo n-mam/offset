@@ -73,14 +73,6 @@ Item {
             anchors.margins: 8
             spacing: 4
             Text {
-                text: debugOverlay.line1
-                color: "lime"
-                font.pixelSize: 12
-                font.family: "monospace"
-                width: parent.width
-                horizontalAlignment: Text.AlignRight
-            }
-            Text {
                 id: numberPoints
                 text: "Points: 0"
                 color: "white"

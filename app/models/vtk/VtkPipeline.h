@@ -47,6 +47,7 @@ struct PointCloudPipeline : public VtkPipeline {
     PointCloudPipeline() {
         // Points and geometry
         points = vtkSmartPointer<vtkPoints>::New();
+        points->SetDataTypeToFloat();
         verts = vtkSmartPointer<vtkCellArray>::New();
         polyData = vtkSmartPointer<vtkPolyData>::New();
         polyData->SetPoints(points);
