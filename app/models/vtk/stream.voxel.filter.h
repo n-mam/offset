@@ -168,12 +168,13 @@ struct pcl_stream_voxel_filter {
             x -= origin_x;
             y -= origin_y;
             z -= origin_z;
+            const double inv_voxel = 1.0 / voxel_size;
             int vx = static_cast<int>(
-                    std::floor(x / voxel_size));
+                    std::floor(x * inv_voxel));
             int vy = static_cast<int>(
-                    std::floor(y / voxel_size));
+                    std::floor(y * inv_voxel));
             int vz = static_cast<int>(
-                    std::floor(z / voxel_size));
+                    std::floor(z * inv_voxel));
             parsed_points.push_back({x, y, z, r, g, b, vx, vy, vz,});
         }
         return points;

@@ -1,16 +1,18 @@
 import QtQuick
 import QtQuick.Window
+import QtQuick.Layouts
 import QtQuick.Controls
 import Vtk 1.0 as Vtk
 import "qrc:/components"
 
 Item {
+    id: root
     Vtk.VtkQuickItem {
         id: vtkVisualizer
         opacity: 0.7
         anchors.fill: parent
         onPointCloudUpdated: function(percent, points, voxels) {
-            progress.visible = percent < 100
+            progress.visible = stopButton.visible = percent < 100
             progress.value = percent
             numberPoints.text = "Points: " + points
             numberVoxels.text = "Voxels: " + voxels
@@ -24,35 +26,53 @@ Item {
         anchors.right: parent.right
         anchors.verticalCenter: parent.verticalCenter
     }
-    Rectangle {
-        id: progress
-        height: 18
-        radius: 3
-        visible: false
-        color: "#404040"
+    RowLayout{
         anchors.topMargin: 20
         anchors.top: parent.top
-        width: parent.width * 0.4
         anchors.horizontalCenter: parent.horizontalCenter
-        property int value: 0
         Rectangle {
-            id: bar
-            height: parent.height
-            width: parent.width * (progress.value / 100)
-            radius: parent.radius
-            color: "#3daee9"
-            Behavior on width {
-                NumberAnimation {
-                    duration: 200
+            id: progress
+            height: 18
+            radius: 3
+            visible: false
+            color: "#404040"
+            property int value: 0
+            width: root.width * 0.4
+            Rectangle {
+                id: bar
+                height: parent.height
+                width: parent.width * (progress.value / 100)
+                radius: parent.radius
+                color: "#3daee9"
+                Behavior on width {
+                    NumberAnimation {
+                        duration: 200
+                    }
                 }
             }
+            Text {
+                id: percent
+                anchors.centerIn: parent
+                color: "white"
+                font.bold: true
+                text: progress.value + "%"
+            }
         }
-        Text {
-            id: percent
-            anchors.centerIn: parent
-            color: "white"
-            font.bold: true
-            text: progress.value + "%"
+        Rectangle {
+            id: stopButton
+            width: 18
+            height: 18
+            visible: false
+            color: "transparent"
+            Image {
+                anchors.fill: parent
+                source: "qrc:/stop1.png"
+                fillMode: Image.PreserveAspectFit
+            }
+            MouseArea {
+                anchors.fill: parent
+                onClicked: vtkVisualizer.stop_load()
+            }
         }
     }
     Rectangle {
@@ -96,5 +116,4 @@ Item {
             acceptedButtons: Qt.NoButton
         }
     }
-    // vtkVisualizer.stop_load()
 }

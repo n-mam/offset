@@ -22,7 +22,7 @@ auto create_scene(vtkRenderWindow* renderWindow) {
     // Interactor
     ctx->interactor =
         renderWindow->GetInteractor();
-    vtkNew<MouseInteractorHighLightActor> style;
+    vtkNew<PointPickerDistanceStyle> style;
     style->SetDefaultRenderer(ctx->renderer);
     ctx->interactor->SetInteractorStyle(style);
     // Point cloud pipeline
