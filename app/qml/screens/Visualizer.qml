@@ -17,6 +17,9 @@ Item {
             numberPoints.text = "Points: " + points
             numberVoxels.text = "Voxels: " + voxels
         }
+        onDistanceUpdated: function(d) {
+            distance.text = "Distance: " + d
+        }
     }
     VtkToolBox {
         id: vtkTools
@@ -104,6 +107,15 @@ Item {
             Text {
                 id: numberVoxels
                 text: "Voxels: 0"
+                color: "white"
+                font.pixelSize: 12
+                font.family: "monospace"
+                width: parent.width
+                horizontalAlignment: Text.AlignRight
+            }
+            Text {
+                id: distance
+                text: "Distance: 0"
                 color: "white"
                 font.pixelSize: 12
                 font.family: "monospace"

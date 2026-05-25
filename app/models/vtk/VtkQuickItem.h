@@ -15,6 +15,15 @@
 #include <QUrl>
 #include <QFileInfo>
 
+struct VtkContext : vtkObject {
+    static VtkContext* New();
+    vtkTypeMacro(VtkContext, vtkObject);
+    vtkSmartPointer<vtkRenderer> renderer;
+    vtkSmartPointer<vtkRenderWindow> renderWindow;
+    vtkSmartPointer<vtkRenderWindowInteractor> interactor;
+    std::vector<std::shared_ptr<VtkPipeline>> pipelines;
+};
+
 struct VtkQuickItem : public QQuickVTKItem {
     Q_OBJECT
     QML_ELEMENT
@@ -25,24 +34,15 @@ struct VtkQuickItem : public QQuickVTKItem {
     QQuickVTKItem::vtkUserData _ctx;
     std::atomic<bool> camera_initialized{false};
     ~VtkQuickItem();
-    Q_INVOKABLE void stop_load() {
-        stop.store(true, std::memory_order_relaxed);
-    }
+    Q_INVOKABLE void stop_load();
     Q_INVOKABLE void load_point_cloud(QUrl filePath);
     void clear_scene();
+    vtkSmartPointer<VtkContext> create_scene(vtkRenderWindow*);
     void syncToVTK(std::shared_ptr<PointCloudPipeline> pipeline);
     vtkUserData initializeVTK(vtkRenderWindow *renderWindow) override;
     signals:
+    void distanceUpdated(int);
     void pointCloudUpdated(int, uint64_t, uint64_t);
-};
-
-struct VtkContext : vtkObject {
-    static VtkContext* New();
-    vtkTypeMacro(VtkContext, vtkObject);
-    vtkSmartPointer<vtkRenderer> renderer;
-    vtkSmartPointer<vtkRenderWindow> renderWindow;
-    vtkSmartPointer<vtkRenderWindowInteractor> interactor;
-    std::vector<std::shared_ptr<VtkPipeline>> pipelines;
 };
 
 #endif // VTKQUICKITEM_H

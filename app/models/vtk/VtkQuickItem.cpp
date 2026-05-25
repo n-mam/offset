@@ -9,7 +9,8 @@
 #include <VtkQuickItem.h>
 #include <MouseInteractor.h>
 
-auto create_scene(vtkRenderWindow* renderWindow) {
+vtkSmartPointer<VtkContext> 
+    VtkQuickItem::create_scene(vtkRenderWindow* renderWindow) {
     auto ctx = vtkSmartPointer<VtkContext>::New();
     // Core renderer setup
     ctx->renderer = vtkSmartPointer<vtkRenderer>::New();
@@ -24,6 +25,9 @@ auto create_scene(vtkRenderWindow* renderWindow) {
         renderWindow->GetInteractor();
     vtkNew<PointPickerDistanceStyle> style;
     style->SetDefaultRenderer(ctx->renderer);
+    style->cbk = [this](int distance){
+        distanceUpdated(distance);
+    };
     ctx->interactor->SetInteractorStyle(style);
     // Point cloud pipeline
     auto pointCloud =
@@ -160,6 +164,10 @@ void VtkQuickItem::load_point_cloud(QUrl path) {
 QQuickVTKItem::vtkUserData
     VtkQuickItem::initializeVTK(vtkRenderWindow *renderWindow) {
         return _ctx = create_scene(renderWindow);
+}
+
+void VtkQuickItem::stop_load() {
+    stop.store(true, std::memory_order_relaxed);
 }
 
 VtkQuickItem::~VtkQuickItem() {
