@@ -9,6 +9,7 @@ Item {
     required property var visualizer
 
     property var tools: [
+        { name: "ror", icon: "qrc:/radius.png"},
         { name: "open", icon: "qrc:/zoom.png"}
     ]
 
@@ -42,8 +43,10 @@ Item {
     }
 
     function onToolClicked(tool) {
-        if (tool==="open") {
+        if (tool === "open") {
             fileDialog.open()
+        } else if (tool === 'ror') {
+            visualizer.radius_outlier_removal();
         }
     }
 

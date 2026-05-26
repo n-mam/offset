@@ -166,6 +166,24 @@ QQuickVTKItem::vtkUserData
         return _ctx = create_scene(renderWindow);
 }
 
+void VtkQuickItem::radius_outlier_removal() {
+    std::thread([this](){
+        auto* ctx = VtkContext::SafeDownCast(_ctx);
+        auto pipeline = std::dynamic_pointer_cast<
+                PointCloudPipeline>(ctx->pipelines[0]);
+        std::lock_guard<std::mutex> lg(mux);
+        pipeline->pcl_svf.radius_outlier_removal(5.0f, 6);
+        update();
+        dispatch_async([this](vtkRenderWindow* rw, vtkUserData ud) {
+            auto* ctx = VtkContext::SafeDownCast(ud);
+            auto pipeline = std::dynamic_pointer_cast<
+                    PointCloudPipeline>(ctx->pipelines[0]);
+            syncToVTK(pipeline);
+            std::cout << "done..." << std::endl;
+        });
+    }).detach();
+}
+
 void VtkQuickItem::stop_load() {
     stop.store(true, std::memory_order_relaxed);
 }

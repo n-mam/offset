@@ -21,6 +21,7 @@ struct VoxelData {
     double sr = 0;
     double sg = 0;
     double sb = 0;
+    bool alive = true;
     bool dirty = false;
     uint32_t count = 0;
     uint32_t point_index = 0;
@@ -232,6 +233,51 @@ struct pcl_stream_voxel_filter {
             }
         }
         return std::make_pair(points, voxels);
+    }
+
+    void radius_outlier_removal(float radius, int min_neighbors) {
+        const int r =
+            static_cast<int>(std::ceil(radius / voxel_size));
+        std::vector<VoxelKey> remove_list;
+        remove_list.reserve(voxel_map.size() / 10);
+        for (auto& [key, voxel] : voxel_map) {
+            std::cout << "looping..." << std::endl;
+            if (!voxel.alive) continue;
+            int neighbors = 0;
+            for (int dz = -r; dz <= r; ++dz) {
+                for (int dy = -r; dy <= r; ++dy) {
+                    for (int dx = -r; dx <= r; ++dx) {
+                        VoxelKey nk {
+                            key.x + dx,
+                            key.y + dy,
+                            key.z + dz
+                        };
+                        auto it = voxel_map.find(nk);
+                        if (it == voxel_map.end()) continue;
+                        if (!it->second.alive) continue;
+                        float dist2 =
+                            float(dx * dx +
+                                dy * dy +
+                                dz * dz) *
+                            voxel_size *
+                            voxel_size;
+                        if (dist2 <= radius * radius) {
+                            neighbors++;
+                        }
+                    }
+                }
+            }
+            // includes self
+            if (neighbors < min_neighbors) {
+                remove_list.push_back(key);
+            }
+        }
+        // mark removed
+        for (auto& key : remove_list) {
+            voxel_map[key].alive = false;
+            voxel_map[key].dirty = true;
+            dirty_voxels.push_back(key);
+        }
     }
 };
 

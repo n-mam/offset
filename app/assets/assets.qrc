@@ -13,18 +13,19 @@
     <file>file.png</file>
     <file>exit.png</file>
     <file>stop.png</file>
-    <file>stop1.png</file>
     <file>idle.png</file>
     <file>back.png</file>
     <file>play.png</file>
     <file>zoom.png</file>
     <file>wall.png</file>
     <file>door.png</file>
+    <file>stop1.png</file>
     <file>arrow.png</file>
     <file>queue.png</file>
     <file>pause.png</file>
     <file>ruler.png</file>
     <file>stair.png</file>
+    <file>radius.png</file>
     <file>rename.png</file>
     <file>folder.png</file>
     <file>upload.png</file>
