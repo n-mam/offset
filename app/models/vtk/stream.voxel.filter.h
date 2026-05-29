@@ -50,10 +50,11 @@ struct VoxelKeyHasher {
 
 struct pcl_stream_voxel_filter {
 
+    std::string leftover;
     bool recentered = false;
     const float voxel_size = 1.0f;
-    double origin_x, origin_y, origin_z;
     std::vector<VoxelKey> dirty_voxels;
+    double origin_x, origin_y, origin_z;
     std::vector<ParsedPoint> parsed_points;
     pcl::PointCloud<pcl::PointXYZ>::Ptr pcl_cloud;
     std::unordered_map<VoxelKey, VoxelData, VoxelKeyHasher> voxel_map;
@@ -130,36 +131,40 @@ struct pcl_stream_voxel_filter {
 
     auto parse_cloud_chunk(uint8_t *buf, ssize_t bytes) {
         parsed_points.clear();
-        size_t start = 0;
         uint64_t points = 0;
-        bool first_line_skipped = false;
-        std::string_view chunk((const char *)buf, bytes);
+        std::string_view chunk((const char*)buf, bytes);
+        // Prepend leftover from previous chunk
+        std::string combined;
+        if (!leftover.empty()) {
+            combined = leftover;
+            combined.append(chunk);
+            chunk = combined;
+            leftover.clear();
+        }
+        size_t start = 0;
         while (start < chunk.size()) {
             size_t end = chunk.find('\n', start);
-            // skip incomplete trailing line. This is fine
-            if (end == std::string_view::npos) break;
+            bool last_line = false;
+            if (end == std::string_view::npos) {
+                // last line is incomplete, save it for next chunk
+                leftover = std::string(chunk.substr(start));
+                break;
+            }
             std::string_view line = chunk.substr(start, end - start);
             start = end + 1;
             // handle CRLF
             if (!line.empty() && line.back() == '\r')
                 line.remove_suffix(1);
-            // unconditionally skip first line. This is fine
-            if (!first_line_skipped) {
-                first_line_skipped = true;
-                continue;
-            }
             // skip empty/comment lines
-            if (line.empty() || line.front() == '#') continue;
+            if (line.empty() || line.front() == '#')
+                continue;
             double x, y, z;
-            int r, g, b;
-            r = g = b = 255;
+            int r = 255, g = 255, b = 255;
             auto [has_xyz, has_rgb] =
-                parse_xyz_rgb(line.data(),
-                            line.data() + line.size(),
+                parse_xyz_rgb(line.data(), line.data() + line.size(),
                             x, y, z, r, g, b);
             if (!has_xyz) continue;
             ++points;
-            // re-center relative to first point
             if (!recentered) {
                 origin_x = x;
                 origin_y = y;
@@ -170,13 +175,10 @@ struct pcl_stream_voxel_filter {
             y -= origin_y;
             z -= origin_z;
             const double inv_voxel = 1.0 / voxel_size;
-            int vx = static_cast<int>(
-                    std::floor(x * inv_voxel));
-            int vy = static_cast<int>(
-                    std::floor(y * inv_voxel));
-            int vz = static_cast<int>(
-                    std::floor(z * inv_voxel));
-            parsed_points.push_back({x, y, z, r, g, b, vx, vy, vz,});
+            int vx = static_cast<int>(std::floor(x * inv_voxel));
+            int vy = static_cast<int>(std::floor(y * inv_voxel));
+            int vz = static_cast<int>(std::floor(z * inv_voxel));
+            parsed_points.push_back({x, y, z, r, g, b, vx, vy, vz});
         }
         return points;
     }
