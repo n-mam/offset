@@ -64,6 +64,7 @@ struct pcl_stream_voxel_filter {
         dirty_voxels.reserve(16*1024*1024);
         parsed_points.reserve(4*1024*1024);
         pcl_cloud.reset(new pcl::PointCloud<pcl::PointXYZ>);
+        pcl_cloud->points.reserve(100000); 
     }
 
     inline std::pair<bool, bool>

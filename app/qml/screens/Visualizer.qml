@@ -20,6 +20,9 @@ Item {
         onDistanceUpdated: function(d) {
             distance.text = "Distance: " + d
         }
+        function toggle_debug_overlay() {
+            debugOverlay.visible = !debugOverlay.visible
+        }
     }
     VtkToolBox {
         id: vtkTools
@@ -80,14 +83,14 @@ Item {
     }
     Rectangle {
         id: debugOverlay
+        z: 2000
+        radius: 6
         width: 240
         height: 110
-        radius: 6
         color: "#00000017"
-        anchors.right: parent.right
-        anchors.top: parent.top
         anchors.margins: 5
-        z: 2000
+        anchors.top: parent.top
+        anchors.right: parent.right
         property string line1: "FPS: 0"
         property string line2
         property string line3

@@ -57,7 +57,7 @@ void VtkQuickItem::clear_scene() {
         std::dynamic_pointer_cast<
             PointCloudPipeline>(ctx->pipelines[0]);
     pipeline->reset();
-    camera_initialized = false;
+    camera_initialized.store(false, std::memory_order_relaxed);
     ctx->renderer->ResetCameraClippingRange();
     ctx->renderWindow->Render();
 }
@@ -80,7 +80,7 @@ void VtkQuickItem::syncToVTK(std::shared_ptr<PointCloudPipeline> pipeline) {
         }
     }
     for (auto& key : pipeline->pcl_svf.dirty_voxels) {
-        const auto& voxel = pipeline->pcl_svf.voxel_map[key];
+        auto& voxel = pipeline->pcl_svf.voxel_map[key];
         const auto& p = cloud->points[voxel.point_index];
         const vtkIdType idx = static_cast<vtkIdType>(voxel.point_index);
         // update position
@@ -93,7 +93,7 @@ void VtkQuickItem::syncToVTK(std::shared_ptr<PointCloudPipeline> pipeline) {
             static_cast<unsigned char>(voxel.sb * inv)
         };
         colors->SetTypedTuple(idx, rgb);
-        pipeline->pcl_svf.voxel_map[key].dirty = false;
+        voxel.dirty = false;
     }
     points->Modified();
     verts->Modified();

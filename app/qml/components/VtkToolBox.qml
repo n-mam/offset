@@ -9,7 +9,7 @@ Item {
     required property var visualizer
 
     property var tools: [
-        { name: "ror", icon: "qrc:/radius.png"},
+        { name: "debug", icon: "qrc:/debug.png"},
         { name: "open", icon: "qrc:/zoom.png"}
     ]
 
@@ -45,8 +45,8 @@ Item {
     function onToolClicked(tool) {
         if (tool === "open") {
             fileDialog.open()
-        } else if (tool === 'ror') {
-            visualizer.radius_outlier_removal();
+        } else if (tool === 'debug') {
+            visualizer.toggle_debug_overlay();
         }
     }
 
