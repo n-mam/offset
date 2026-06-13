@@ -32,18 +32,19 @@ Item {
         anchors.right: parent.right
         anchors.verticalCenter: parent.verticalCenter
     }
-    RowLayout{
+    RowLayout {
+        width: root.width * 0.4
         anchors.topMargin: 20
         anchors.top: parent.top
         anchors.horizontalCenter: parent.horizontalCenter
         Rectangle {
             id: progress
             height: 18
+            width: parent.width * 0.90
             radius: 3
             visible: false
             color: "#404040"
             property int value: 0
-            width: root.width * 0.4
             Rectangle {
                 id: bar
                 height: parent.height
@@ -58,9 +59,9 @@ Item {
             }
             Text {
                 id: percent
-                anchors.centerIn: parent
                 color: "white"
                 font.bold: true
+                anchors.centerIn: parent
                 text: progress.value + "%"
             }
         }

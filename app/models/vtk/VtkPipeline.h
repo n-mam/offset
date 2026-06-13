@@ -21,20 +21,17 @@
 
 // Base pipeline
 struct VtkPipeline {
-    public:
+    std::vector<vtkSmartPointer<vtkActor>> actors;
     virtual ~VtkPipeline() = default;
-    virtual void addToRenderer(vtkRenderer* renderer) {
+    void addToRenderer(vtkRenderer* renderer) {
         for (auto& actor : actors) {
             renderer->AddActor(actor);
         }
     }
-    std::vector<vtkSmartPointer<vtkActor>> actors;
 };
 
 // Point cloud pipeline
 struct PointCloudPipeline : public VtkPipeline {
-
-    public:
 
     pcl_stream_voxel_filter pcl_svf;
     vtkSmartPointer<vtkActor> actor;
@@ -83,8 +80,8 @@ struct PointCloudPipeline : public VtkPipeline {
 };
 
 // Random sphere pipeline
-class SpherePipeline : public VtkPipeline {
-    public:
+struct SpherePipeline : public VtkPipeline {
+
     SpherePipeline(int numberOfSpheres = 10) {
         vtkNew<vtkNamedColors> colors;
         vtkNew<vtkMinimalStandardRandomSequence> randomSequence;

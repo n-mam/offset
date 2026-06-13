@@ -9,7 +9,7 @@
 #include <VtkQuickItem.h>
 #include <MouseInteractor.h>
 
-vtkSmartPointer<VtkContext> 
+vtkSmartPointer<VtkContext>
     VtkQuickItem::create_scene(vtkRenderWindow* renderWindow) {
     auto ctx = vtkSmartPointer<VtkContext>::New();
     // Core renderer setup
@@ -54,8 +54,8 @@ void VtkQuickItem::clear_scene() {
     }
     auto* ctx = VtkContext::SafeDownCast(_ctx);
     auto pipeline =
-        std::dynamic_pointer_cast<
-            PointCloudPipeline>(ctx->pipelines[0]);
+        std::static_pointer_cast
+            <PointCloudPipeline>(ctx->pipelines[0]);
     pipeline->reset();
     camera_initialized.store(false, std::memory_order_relaxed);
     ctx->renderer->ResetCameraClippingRange();
@@ -92,8 +92,8 @@ void VtkQuickItem::syncToVTK(std::shared_ptr<PointCloudPipeline> pipeline) {
             static_cast<unsigned char>(voxel.sg * inv),
             static_cast<unsigned char>(voxel.sb * inv)
         };
-        colors->SetTypedTuple(idx, rgb);
         voxel.dirty = false;
+        colors->SetTypedTuple(idx, rgb);
     }
     points->Modified();
     verts->Modified();
@@ -114,12 +114,12 @@ void VtkQuickItem::load_point_cloud(QUrl path) {
         uint64_t points = 0, voxels = 0;
         auto buf = std::make_unique<uint8_t []>(_2M);
         ssize_t bytes, total_bytes = 0, chunks = 0;
-        while (!stop.load(std::memory_order_relaxed) && 
+        while (!stop.load(std::memory_order_relaxed) &&
             (bytes = rd->read_sync(buf.get(), _2M, total_bytes)) > 0) {
             total_bytes += bytes;
             auto* ctx = VtkContext::SafeDownCast(_ctx);
-            auto pipeline = std::dynamic_pointer_cast<
-                    PointCloudPipeline>(ctx->pipelines[0]);
+            auto pipeline = std::static_pointer_cast
+                    <PointCloudPipeline>(ctx->pipelines[0]);
             auto [p, v] = pipeline->pcl_svf.consume_cloud_chunk(
                     buf.get(), bytes, mux);
             points += p;
@@ -141,9 +141,8 @@ void VtkQuickItem::load_point_cloud(QUrl path) {
                         auto* ctx = VtkContext::SafeDownCast(ud);
                         if (!ctx) return;
                         auto pipeline =
-                            std::dynamic_pointer_cast<
-                                PointCloudPipeline>(
-                                    ctx->pipelines[0]);
+                            std::static_pointer_cast
+                                <PointCloudPipeline>(ctx->pipelines[0]);
                         if (!pipeline) return;
                         // Notify VTK pipeline
                         syncToVTK(pipeline);
@@ -169,15 +168,15 @@ QQuickVTKItem::vtkUserData
 void VtkQuickItem::radius_outlier_removal() {
     std::thread([this](){
         auto* ctx = VtkContext::SafeDownCast(_ctx);
-        auto pipeline = std::dynamic_pointer_cast<
-                PointCloudPipeline>(ctx->pipelines[0]);
+        auto pipeline = std::static_pointer_cast
+                <PointCloudPipeline>(ctx->pipelines[0]);
         std::lock_guard<std::mutex> lg(mux);
         pipeline->pcl_svf.radius_outlier_removal(5.0f, 6);
         update();
         dispatch_async([this](vtkRenderWindow* rw, vtkUserData ud) {
             auto* ctx = VtkContext::SafeDownCast(ud);
-            auto pipeline = std::dynamic_pointer_cast<
-                    PointCloudPipeline>(ctx->pipelines[0]);
+            auto pipeline = std::static_pointer_cast
+                    <PointCloudPipeline>(ctx->pipelines[0]);
             syncToVTK(pipeline);
             std::cout << "done..." << std::endl;
         });
