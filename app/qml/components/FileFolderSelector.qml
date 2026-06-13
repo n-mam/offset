@@ -25,7 +25,7 @@ Item {
             verticalAlignment: TextInput.AlignVCenter
             anchors.verticalCenter: parent.verticalCenter
             width: parent.width - appSpacing - folderButton.width
-            text: isFolderSelector ? folderDialog.currentFolder : fileDialog.currentFolder
+            text: isFolderSelector ? folderDialog.currentFolder : fileDialog.selectedFile
         }
         ButtonX {
             id: folderButton
@@ -40,29 +40,34 @@ Item {
 
     FileDialog {
         id: fileDialog
+        title: "Load File"
+        fileMode: FileDialog.OpenFile
+        nameFilters: [ "All Files (*)" ]
         currentFolder: StandardPaths.writableLocation(StandardPaths.DesktopLocation)
         onAccepted: {
-            var path = fileDialog.file.toString();
-            path = path.replace(/^(file:\/{3})|(qrc:\/{2})|(http:\/{2})/,"")
-            var file = decodeURIComponent(path).replace(/\//g, "\\")
-            fileSelected(file)
-            destination.text = file
+            fileSelected(fileDialog.selectedFile)
+            destination.text = localPath(fileDialog.selectedFile)
         }
     }
 
     FolderDialog {
         id: folderDialog
         onAccepted: {
-            var path = folderDialog.currentFolder.toString();
-            path = path.replace(/^(file:\/{3})|(qrc:\/{2})|(http:\/{2})/,"")
-            destination.text = decodeURIComponent(path).replace(/\//g, "\\")
+            destination.text = localPath(folderDialog.currentFolder)
         }
     }
 
-    function setPath(path) {
-        destination.text = path
-    }
-    function getPath() {
-        return destination.text
-    }
+    function localPath(url) {
+        let path;
+        if (url.toLocalFile)
+            path = url.toLocalFile();
+        else {
+            path = url.toString();
+            if (Qt.platform.os === "windows")
+                path = path.replace(/^file:\/\/\//, "");
+            else
+                path = path.replace(/^file:\/\//, "");
+        }
+        return decodeURIComponent(path);
+    }   
 }

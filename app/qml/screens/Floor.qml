@@ -227,7 +227,7 @@ Item {
     }
 
     function handleFileDialogAccepted(dialog, mode) {
-        const path = dialog.currentFile
+        const path = dialog.selectedFile
         if (mode === "save") {
             lastSaveUrl = path
             floorManager.saveToFile(path, Shape.serializeProject(shapes, pixelsPerFoot))

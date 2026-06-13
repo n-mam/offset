@@ -67,11 +67,11 @@ StackScreen {
         FileDialog {
             id: importCameraCfgDialog
             title: "Please choose the camera config file"
+            fileMode: FileDialog.OpenFile
+            nameFilters: [ "All Files (*)" ]            
             onAccepted: {
-                var path = importCameraCfgDialog.selectedFiles.toString();
-                path = path.replace(/^(file:\/{3})|(qrc:\/{2})|(http:\/{2})/,"");
                 var camera_cfgs = appConfig.readCameraConfiguration(
-                    decodeURIComponent(path).replace(/\//g, "/"))
+                    localPath(importCameraCfgDialog.selectedFile))
                 var cfgs = JSON.parse(camera_cfgs);
                 for (var i in cfgs) {
                     createPlayerObject(cfgs[i])
@@ -81,6 +81,19 @@ StackScreen {
                 console.log("Canceled")
             }
         }
+    }
+    function localPath(url) {
+        let path;
+        if (url.toLocalFile)
+            path = url.toLocalFile();
+        else {
+            path = url.toString();
+            if (Qt.platform.os === "windows")
+                path = path.replace(/^file:\/\/\//, "");
+            else
+                path = path.replace(/^file:\/\//, "");
+        }
+        return decodeURIComponent(path);
     }
     function createPlayerObject(cfg) {
         var component = Qt.createComponent("qrc:/components/Player.qml")

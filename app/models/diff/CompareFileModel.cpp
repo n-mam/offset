@@ -8,6 +8,8 @@
 #include <osl/str>
 #include <osl/singleton>
 
+#include <QFileInfo>
+
 CompareFileModel::CompareFileModel() {
     _model.reserve(2048);
     auto cm = getInstance<CompareManager>();
@@ -89,17 +91,19 @@ QVariant CompareFileModel::data(const QModelIndex &index, int role) const {
     return {};
 }
 
-QString CompareFileModel::getDocument() {
-    return QString::fromStdString(m_document);
+QUrl CompareFileModel::getDocument() {
+    return m_document;
 }
 
-void CompareFileModel::setDocument(QString document) {
-    if (document != QString::fromStdString(m_document)) {
-        m_document = document.toStdString();
+void CompareFileModel::setDocument(QUrl document) {
+    if (document != m_document) {
+        m_document = document;
         beginResetModel();
         _model.clear();
-        if (!load_as_xml(m_document)) {
-            load_as_txt(m_document);
+        const QFileInfo fileInfo(m_document.toLocalFile());
+        auto filePath = fileInfo.absoluteFilePath().toStdString();        
+        if (!load_as_xml(filePath)) {
+            load_as_txt(filePath);
         }
         endResetModel();
         emit documentChanged(this);

@@ -57,7 +57,7 @@ Item {
         nameFilters: [ "All Files (*)" ]
         currentFolder: StandardPaths.writableLocation(StandardPaths.DesktopLocation)
         onAccepted: {
-            visualizer.load_point_cloud(fileDialog.currentFile)
+            visualizer.load_point_cloud(fileDialog.selectedFile)
         }
     }
 

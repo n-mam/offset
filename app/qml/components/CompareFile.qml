@@ -65,15 +65,11 @@ Item {
                 drag.accept (Qt.LinkAction);
             }
             onDropped: (drop) => {
-                var path = drop.urls[0].toString();
-                path = path.replace(/^(file:\/{3})|(qrc:\/{2})|(http:\/{2})/,"")
-                var file = decodeURIComponent(path).replace(/\//g, "\\")
+                var file = localPath(drop.urls[0])
                 onCompareFileUpdated(file)
                 fileSelector.setPath(file)
             }
-            onExited: {
-
-            }
+            onExited: {}
         }
     }
 
@@ -92,4 +88,18 @@ Item {
     function setCurrentIndex(idx) {
         textListView.currentIndex = idx
     }
+
+    function localPath(url) {
+        let path;
+        if (url.toLocalFile)
+            path = url.toLocalFile();
+        else {
+            path = url.toString();
+            if (Qt.platform.os === "windows")
+                path = path.replace(/^file:\/\/\//, "");
+            else
+                path = path.replace(/^file:\/\//, "");
+        }
+        return decodeURIComponent(path);
+    }       
 }

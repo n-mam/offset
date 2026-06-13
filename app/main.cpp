@@ -9,9 +9,9 @@
 #include <QVTKRenderWindowAdapter.h>
 
 #include <Logger.h>
-#include <VtkQuickItem.h>
 #include <AppConfig.h>
 #include <osl/singleton>
+#include <VtkQuickItem.h>
 #include <LocalFsModel.h>
 #include <FloorManager.h>
 #include <RemoteFsModel.h>

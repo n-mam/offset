@@ -98,10 +98,10 @@ struct subject : public std::enable_shared_from_this<subject> {
         mark_remove_self_as_listener();
     }
 
-    virtual void NotifyEvent(std::any e) {
+    virtual void notify_event(std::any e) {
         std::lock_guard<std::mutex> lg(m_lock);
         for (auto& observer : m_observers) {
-            observer->NotifyEvent(e);
+            observer->notify_event(e);
         }
     }
 

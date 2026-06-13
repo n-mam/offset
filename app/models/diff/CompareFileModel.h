@@ -7,6 +7,7 @@
 #include <zip.h>
 #include <tinyxml2.h>
 
+#include <QUrl>
 #include <QAbstractListModel>
 
 struct CompareFileModel : public QAbstractListModel {
@@ -74,10 +75,10 @@ struct CompareFileModel : public QAbstractListModel {
     int rowCount(const QModelIndex& parent = QModelIndex()) const override;
     QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
 
-    Q_PROPERTY(QString document READ getDocument WRITE setDocument NOTIFY documentChanged);
+    Q_PROPERTY(QUrl document READ getDocument WRITE setDocument NOTIFY documentChanged);
 
-    QString getDocument();
-    void setDocument(QString document);
+    QUrl getDocument();
+    void setDocument(QUrl document);
 
     signals:
 
@@ -89,8 +90,7 @@ struct CompareFileModel : public QAbstractListModel {
     bool load_as_txt(const std::string& file);
     void traverse_element(tinyxml2::XMLElement *element, uint32_t indent);
 
-    std::string m_document;
-
+    QUrl m_document;
     std::vector<Element> _model;
 };
 
