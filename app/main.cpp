@@ -21,6 +21,7 @@
 
 #ifdef _WIN32
 #include <DiskListModel.h>
+#define NOMINMAX
 #include <Windows.h>
 #endif
 

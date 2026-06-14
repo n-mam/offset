@@ -3,12 +3,15 @@
 
 #undef min
 #undef max
+#include <tuple>
 #include <string>
 #include <vector>
 #include <locale>
 #include <codecvt>
 #include <sstream>
 #include <algorithm>
+
+#include <curl/curl.h>
 
 namespace osl {
 
@@ -180,24 +183,62 @@ inline auto replace(const std::string& str, const std::string& from, const std::
 }
 
 inline auto parseUrl(const std::string& url) {
-    char port[32] = { '\0' };
-    char hostname[256] = { '\0' };
-    char username[128] = { '\0' };
-    char password[128] = { '\0' };
-    char protocol[32] = { '\0' };
-    char directory[256] = { '\0' };
 
-    // ftps://nmam:welcome123@127.0.0.1:21/a/b/c
-    sscanf(url.c_str(), "%32[^:]://%128[^:]:%128[^@]@%256[^:]:%32[^/]/%256[^\n]",
-        protocol, username, password, hostname, port, directory);
+    std::string port;
+    std::string protocol;
+    std::string username;
+    std::string password;
+    std::string hostname;
+    std::string directory;
+
+    CURLU* h = curl_url();
+
+    if (h)
+    {
+        if (curl_url_set(h, CURLUPART_URL, url.c_str(), 0) == CURLUE_OK)
+        {
+            char* value = nullptr;
+            if (curl_url_get(h, CURLUPART_SCHEME, &value, 0) == CURLUE_OK)
+            {
+                protocol = value;
+                curl_free(value);
+            }
+            if (curl_url_get(h, CURLUPART_USER, &value, 0) == CURLUE_OK)
+            {
+                username = value;
+                curl_free(value);
+            }
+            if (curl_url_get(h, CURLUPART_PASSWORD, &value, 0) == CURLUE_OK)
+            {
+                password = value;
+                curl_free(value);
+            }
+            if (curl_url_get(h, CURLUPART_HOST, &value, 0) == CURLUE_OK)
+            {
+                hostname = value;
+                curl_free(value);
+            }
+            if (curl_url_get(h, CURLUPART_PORT, &value, 0) == CURLUE_OK)
+            {
+                port = value;
+                curl_free(value);
+            }
+            if (curl_url_get(h, CURLUPART_PATH, &value, 0) == CURLUE_OK)
+            {
+                directory = value;
+                curl_free(value);
+            }
+        }
+        curl_url_cleanup(h);
+    }
 
     return std::make_tuple(
-        std::string(protocol),
-        std::string(username),
-        std::string(password),
-        std::string(hostname),
-        std::string(port),
-        std::string(directory));
+        protocol,
+        username,
+        password,
+        hostname,
+        port,
+        directory);
 }
 
 template <typename T>
@@ -218,7 +259,7 @@ inline auto sim_match(const T& a, const T& b) {
     int same = 0;
     int diff = 0;
     int skip = 0;
-    auto min = std::min(aa.size(), bb.size());
+    auto min = (std::min)(aa.size(), bb.size());
     for (auto i = 0; i < min; i++) {
         auto ca = std::tolower(aa[i]);
         auto cb = std::tolower(bb[i]);
@@ -228,7 +269,7 @@ inline auto sim_match(const T& a, const T& b) {
             diff++;
         }
     }
-    auto max = std::max(aa.size(), bb.size());
+    auto max = (std::max)(aa.size(), bb.size());
     diff += std::abs((int)aa.size() - (int)bb.size());
     //assert((same + diff) == max);
     return (int)(((double)same/(diff+same)) * 100);

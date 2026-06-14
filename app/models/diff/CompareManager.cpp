@@ -191,8 +191,8 @@ auto CompareManager::getLcsPosVector(const T& lcs, const T& ha, const T& hb) {
 template<typename T>
 auto CompareManager::getUniqueCommonPosVector(const T& A, const T& B) {
 
-    auto& large = A.size() > B.size() ? A : B;
-    auto& small = A.size() <= B.size() ? A : B;
+    const auto& longer = A.size() > B.size() ? A : B;
+    const auto& shorter = A.size() <= B.size() ? A : B;
 
     std::vector<std::unordered_map<size_t, int>> ua_maps(_rules.size());
     std::vector<std::unordered_map<size_t, int>> ub_maps(_rules.size());
@@ -224,16 +224,16 @@ auto CompareManager::getUniqueCommonPosVector(const T& A, const T& B) {
                 it++;
             }
         }
-        lp_maps[i].reserve(large.size());
-        for (auto pos = 0; pos < large.size(); pos++) {
-            lp_maps[i].insert({_rules[i](large[pos].e_text), pos});
+        lp_maps[i].reserve(longer.size());
+        for (auto pos = 0; pos < longer.size(); pos++) {
+            lp_maps[i].insert({_rules[i](longer[pos].e_text), pos});
         }
     }
 
     std::vector<_sym_pos> uc_pos;
-    uc_pos.reserve(small.size());
-    for (auto i = 0; i < small.size(); i++) {
-        auto& e = small[i];
+    uc_pos.reserve(shorter.size());
+    for (auto i = 0; i < shorter.size(); i++) {
+        auto& e = shorter[i];
         if (!e.e_text.size()) continue;
         // for the element e, loop throgh all rule results
         // to see if there is a match with any of the rules

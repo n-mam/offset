@@ -88,7 +88,8 @@ struct camera {
         cv::Mat f_in;
         while (!_stop) {
             cap >> f_in;
-            if (f_in.empty() || f_in.cols <= 0 || f_in.rows <= 0) continue;
+            if (f_in.empty() || f_in.cols <= 0 
+                || f_in.rows <= 0) continue;
             _count++;
             auto f_square = cvl::geometry::makeSquare(f_in);
             if ((_count % cc->_skipFrames) == 0) {
@@ -117,7 +118,8 @@ struct camera {
         while (!_stop) {
             auto frame = q_in.dequeue();
             if (frame.empty()) {
-                std::this_thread::sleep_for(std::chrono::milliseconds(50));
+                std::this_thread::sleep_for(
+                    std::chrono::milliseconds(50));
                 continue;
             }
             if (cc->_stages) {
@@ -140,9 +142,9 @@ inline auto entry(std::vector<std::string> arguments) {
     cam->start(nullptr);
     getchar();
 }
-
-using SPCamera = std::shared_ptr<camera>;
-using UPCamera = std::unique_ptr<camera>;
 }
+
+using spcamera = std::shared_ptr<cvl::camera>;
+using upcamera = std::unique_ptr<cvl::camera>;
 
 #endif

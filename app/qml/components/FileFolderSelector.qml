@@ -25,7 +25,7 @@ Item {
             verticalAlignment: TextInput.AlignVCenter
             anchors.verticalCenter: parent.verticalCenter
             width: parent.width - appSpacing - folderButton.width
-            text: isFolderSelector ? folderDialog.currentFolder : fileDialog.selectedFile
+            text: isFolderSelector ? folderDialog.selectedFolder : fileDialog.selectedFile
         }
         ButtonX {
             id: folderButton
@@ -52,8 +52,9 @@ Item {
 
     FolderDialog {
         id: folderDialog
+        currentFolder: StandardPaths.writableLocation(StandardPaths.DesktopLocation)
         onAccepted: {
-            destination.text = localPath(folderDialog.currentFolder)
+            destination.text = localPath(folderDialog.selectedFolder)
         }
     }
 
@@ -69,5 +70,9 @@ Item {
                 path = path.replace(/^file:\/\//, "");
         }
         return decodeURIComponent(path);
-    }   
+    }
+    
+    function getText() {
+        return destination.text;
+    }
 }

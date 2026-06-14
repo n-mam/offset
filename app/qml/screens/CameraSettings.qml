@@ -61,6 +61,19 @@ Item {
                         vr.source = sourceTextId.text
                     }
                 }
+                function localPath(url) {
+                    let path;
+                    if (url.toLocalFile)
+                        path = url.toLocalFile();
+                    else {
+                        path = url.toString();
+                    if (Qt.platform.os === "windows")
+                        path = path.replace(/^file:\/\/\//, "");
+                    else
+                        path = path.replace(/^file:\/\//, "");
+                    }
+                    return decodeURIComponent(path);
+                }
                 Button {
                     text: "..."
                     onClicked: fileDialog.open()
@@ -71,10 +84,8 @@ Item {
                     title: "Select a File"
                     nameFilters: ["All files (*)"]
                     onAccepted: {
-                        var path = selectedFile.toString();
-                        path = path.replace(/^(file:\/{3})|(qrc:\/{2})|(http:\/{2})/,"");
-                        vr.source = path
-                        vr.waitKeyTimeout = 65
+                        vr.source = localPath(selectedFile)
+                        vr.waitKeyTimeout = 0
                     }
                 }
             }

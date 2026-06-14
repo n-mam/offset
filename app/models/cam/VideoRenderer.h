@@ -121,7 +121,7 @@ class VideoRenderer : public QQuickItem {
 
     QTimer m_timer;
     QVariantMap m_cfg;
-    cvl::SPCamera m_camera;
+    spcamera m_camera;
     QSGTexture *m_texture = nullptr;
     QSGTexture *m_newTexture = nullptr;
     uint32_t m_buffer[BUFFER_SIZE] = {};

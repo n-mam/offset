@@ -88,10 +88,10 @@ StackScreen {
             path = url.toLocalFile();
         else {
             path = url.toString();
-            if (Qt.platform.os === "windows")
-                path = path.replace(/^file:\/\/\//, "");
-            else
-                path = path.replace(/^file:\/\//, "");
+        if (Qt.platform.os === "windows")
+            path = path.replace(/^file:\/\/\//, "");
+        else
+            path = path.replace(/^file:\/\//, "");
         }
         return decodeURIComponent(path);
     }

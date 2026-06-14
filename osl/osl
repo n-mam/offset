@@ -2,7 +2,7 @@
 #define OSL_HPP
 
 #ifdef _WIN32
-#include <windows.h>
+#include <Windows.h>
 #endif
 
 #include <ctime>
