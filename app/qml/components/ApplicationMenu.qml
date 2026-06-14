@@ -15,9 +15,9 @@ Rectangle {
         spacing: 8
         height: 400
         width: parent.width
-        currentIndex: startIndex
         anchors.topMargin: 16
         anchors.top: parent.top
+        currentIndex: startIndex
         anchors.horizontalCenter: parent.horizontalCenter
         model: ListModel {
             ListElement {
@@ -43,11 +43,11 @@ Rectangle {
             }
         }
         delegate: Item {
-            height: 42
+            height: 28
             width: menuList.width
             Image {
-                width: 24
-                height: 24
+                width: 22
+                height: 22
                 source: "qrc:/" + name
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.horizontalCenter: parent.horizontalCenter

@@ -39,43 +39,47 @@ Loader {
     Component {
         id: usageComponent
         Rectangle {
-            radius: 3
+            id: bar
             border.width: 1
             border.color: borderColor
-            color: Material.background
-            Rectangle {
-            id: used
-            radius: 3
-            x: parent.x
-            height: parent.height
-            anchors.left: parent.left
-            color: "#ADDEFC" //lightskyblue"
-            width: loader.width * (loader.used / (loader.used + loader.free))
-            Text {
-                text: loader.used > 1 ?
-                        loader.used.toFixed(1) + "g" :
-                        (loader.used * 1024).toFixed(1) + "m"
-                anchors.horizontalCenter: percent(loader.used, loader.free) < 10 ? undefined : used.horizontalCenter
-                anchors.left: percent(loader.used, loader.free) < 10 ? used.left : undefined
-                anchors.verticalCenter: used.verticalCenter
-            }
-            }
-            Rectangle {
-                id: remaining
-                radius: 3
-                color: "mintcream"
-                height: parent.height
-                x: used.x + used.width
-                anchors.right: parent.right
-                width: loader.width - used.width
-                Text {
-                    text: loader.free > 1 ?
-                            loader.free.toFixed(1) + "g":
-                            (loader.free * 1024).toFixed(1) + "m"
-                    anchors.horizontalCenter: percent(loader.free, loader.used) < 10 ? undefined : remaining.horizontalCenter
-                    anchors.right: percent(loader.free, loader.used) < 10 ? remaining.right : undefined
-                    anchors.verticalCenter: remaining.verticalCenter
+            color: "mintcream"
+            Item {
+                clip: true
+                anchors.fill: parent
+                anchors.margins: bar.border.width
+                Rectangle {
+                    id: used
+                    anchors.left: parent.left
+                    anchors.top: parent.top
+                    anchors.bottom: parent.bottom
+                    width:  {
+                        if (loader.used <= 0) return 0
+                        var w = parent.width * loader.used / (loader.used + loader.free)
+                        return Math.max(2, w)   // always show at least 2 px
+                    }
+                    color: "#ADDEFC"
                 }
+            }
+
+            Text {
+                id: usedText
+                text: loader.used > 1
+                    ? loader.used.toFixed(1) + "g"
+                    : (loader.used * 1024).toFixed(1) + "m"
+                anchors.left: parent.left
+                anchors.leftMargin: 8
+                anchors.verticalCenter: parent.verticalCenter
+                z: 1
+            }
+            Text {
+                id: freeText
+                text: loader.free > 1
+                    ? loader.free.toFixed(1) + "g"
+                    : (loader.free * 1024).toFixed(1) + "m"
+                anchors.right: parent.right
+                anchors.rightMargin: 8
+                anchors.verticalCenter: parent.verticalCenter
+                z: 1
             }
         }
     }

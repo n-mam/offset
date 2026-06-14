@@ -32,7 +32,7 @@ ApplicationWindow {
         anchors.margins: appSpacing
         ApplicationMenu {
             id: appMenu
-            width: 36
+            width: 28
             startIndex: 5
             height: parent.height
             onMenuSelectionSignal: (index) => {

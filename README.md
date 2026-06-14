@@ -64,9 +64,9 @@ git clone https://github.com/n-mam/offset.git
 cd offset && mkdir build && cd build
 SET Qt6_DIR=D:\QT-6.9.0\install\lib\cmake\Qt6
 export Qt6_DIR=/home/nmam/Qt/6.9.1/gcc_64/lib/cmake/Qt6
-SET VTK_DIR=d:\vtk\build\lib\cmake\vtk-9.6
+SET VTK_DIR=D:\vtk\build\lib\cmake\vtk-9.6
 export VTK_DIR=/home/nmam/code/vtk/build/lib/cmake/vtk-9.6
-SET PCL_DIR=D:/pcl/install/share/pcl-1.15
+set PCL_DIR=D:\pcl\install\cmake
 export PCL_DIR=/home/nmam/code/pcl/install/share/pcl-1.15
 cmake -DCMAKE_TOOLCHAIN_FILE=D:/vcpkg/scripts/buildsystems/vcpkg.cmake ..
 cmake -DCMAKE_TOOLCHAIN_FILE=~/vcpkg/scripts/buildsystems/vcpkg.cmake ..

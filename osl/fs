@@ -281,7 +281,7 @@ inline auto GetPartitionInformation(const std::wstring& disk) {
     return pie;
 }
 
-inline auto GetBlockDeviceLength(HANDLE hVolume) {
+inline auto get_block_device_length(HANDLE hVolume) {
     DWORD nReturned;
     GET_LENGTH_INFORMATION  gli = { 0 };
     if (!DeviceIoControl(
@@ -361,7 +361,7 @@ inline auto GetVolumeDiskExtents(const std::wstring& volume) {
 template<typename T>
 inline auto GetTotalAndFree(const T& volume) {
     auto h = osl::GetVolumeHandle(volume);
-    auto l = osl::GetBlockDeviceLength(h);
+    auto l = osl::get_block_device_length(h);
     auto nvdb = osl::GetNTFSVolumeData(h);
     CloseHandle(h);
     uint64_t size = nvdb.TotalClusters.QuadPart * nvdb.BytesPerCluster;
@@ -415,7 +415,7 @@ inline auto GetVolumeList(void) {
             paths += names[i] + L" ";
         }
         auto h = GetVolumeHandle(names[0]);
-        auto length = GetBlockDeviceLength(h);
+        auto length = get_block_device_length(h);
         auto nvdb = GetNTFSVolumeData(h);
         CloseHandle(h);
     }

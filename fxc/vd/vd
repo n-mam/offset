@@ -7,18 +7,17 @@
 
 namespace fxc {
 
-//create a raw image from source at ofset o and write to target
+//create a raw image from source at ofset 0 and write to target
 auto image_copy_from(npl::spfile source, npl::spsubject target, TProgressCallback cbk = nullptr) {
+
     if (!osl::AllowExtendedDasdIO(source->_fd_sync)) {
         LOG << "AllowExtendedDasdIO failed, error : " << GetLastError();
     }
-    auto length = osl::GetBlockDeviceLength(source->_fd_sync);
+    auto length = osl::get_block_device_length(source->_fd_sync);
     LOG << "Total length " << length;
-    bool ok = true;
+
     bool stop = false;
-    uint64_t bs = _2M;
-    DWORD dwBytesRead = 0;
-    DWORD dwBytesWritten = 0;
+    constexpr uint64_t bs = _2M;
     uint64_t totalBytesRead = 0;
     uint64_t totalBytesWritten = 0;
     LARGE_INTEGER r_offset, w_offset;
@@ -26,37 +25,59 @@ auto image_copy_from(npl::spfile source, npl::spsubject target, TProgressCallbac
     w_offset.QuadPart = 0;
     uint64_t pendingBytes = length, toRead = 0;
     auto buffer = std::make_unique<uint8_t []>(bs);
-    while (!stop && ok && pendingBytes) {
+
+    while (!stop && pendingBytes) {
+
         if (pendingBytes >= bs) {
             toRead = bs;
         } else {
-            toRead = (DWORD)(pendingBytes + ((pendingBytes % 512) ? (512 - (pendingBytes % 512)) : 0));
+            toRead = (DWORD)(pendingBytes + ((pendingBytes % 512) ? 
+                (512 - (pendingBytes % 512)) : 0));
         }
+
         memset(buffer.get(), 0, bs);
+
         // read the source device
-        dwBytesRead = source->read_sync(buffer.get(), toRead, r_offset.QuadPart);
-        ok = (dwBytesRead == toRead);
+        auto dwBytesRead = source->read_sync(
+            buffer.get(), toRead, r_offset.QuadPart);
+        
+        if (dwBytesRead != toRead) {
+            LOG << "dwBytesRead: " << dwBytesRead 
+                    << " not equal to toRead: " << toRead;
+            break;
+        }
+
         // write to the target disk
-        dwBytesWritten = target->write_sync(buffer.get(), dwBytesRead, w_offset.QuadPart);
-        ok = (dwBytesWritten == dwBytesRead);
+        auto dwBytesWritten = target->write_sync(
+            buffer.get(), dwBytesRead, w_offset.QuadPart);
+
+        if (dwBytesWritten != dwBytesRead) {
+            LOG << "dwBytesWritten: " << dwBytesWritten 
+                    << "not equal to dwBytesRead: " << dwBytesRead;
+            break;
+        }
+
+        pendingBytes -= dwBytesRead;
         totalBytesRead += dwBytesRead;
         totalBytesWritten += dwBytesWritten;
-        pendingBytes -= dwBytesRead;
+
         r_offset.QuadPart += bs;
         w_offset.QuadPart += bs;
+
         dwBytesRead = dwBytesWritten = 0;
+
         if (cbk) {
-            stop = cbk(L"", static_cast<int>(((double)totalBytesRead/(double)length) * 100));
+            stop = cbk(L"", static_cast<int>(
+                ((double)totalBytesRead/(double)length) * 100));
         }
     }
-    if (stop || !ok) {
-        LOG << "stop, ok : " << stop << ", " << ok;
-        return false;
-    }
+
     target->write_sync();
+
     LOG << "Read " << totalBytesRead << " bytes";
     LOG << "Wrote " << totalBytesWritten << " bytes";
-    return true;
+
+    return (pendingBytes == 0);
 }
 
 //create base parent vhd from a volume/snapshot block device
@@ -64,7 +85,7 @@ auto create_base_vhd(const std::wstring& volume, npl::spsubject target, TProgres
     auto source = npl::make_file(volume, false);
     assert(source);
     auto nvdb = osl::GetNTFSVolumeData(source->_fd_sync);
-    uint64_t length = osl::GetBlockDeviceLength(source->_fd_sync);
+    uint64_t length = osl::get_block_device_length(source->_fd_sync);
     LOG << "source volume length " << length;
     auto disk = std::make_shared<vhd>(length, _2M, format::dynamic, nullptr);
     auto bs = disk->getBlockSize();
@@ -254,7 +275,7 @@ auto create_child_vhd(const std::wstring& source, const std::wstring& parent,
 auto create_fixed_vhd(const std::wstring& device, npl::spsubject target, TProgressCallback cbk) {
     auto source = npl::make_file(device, false);
     assert(source);
-    uint64_t length = osl::GetBlockDeviceLength(source->_fd_sync);
+    uint64_t length = osl::get_block_device_length(source->_fd_sync);
     LOG << "source device length " << length;
     // create a new fixed vhd object and hook up the target with it
     auto disk = std::make_shared<vhd>(length, _2M, format::fixed, nullptr);
@@ -279,7 +300,7 @@ auto create_fixed_vhd(const std::wstring& device, npl::spsubject target, TProgre
 auto create_raw_image(const std::wstring& device, npl::spsubject target, TProgressCallback cbk) {
     auto source = npl::make_file(device, false);
     assert(source);
-    uint64_t length = osl::GetBlockDeviceLength(source->_fd_sync);
+    uint64_t length = osl::get_block_device_length(source->_fd_sync);
     LOG << "source device length " << length;
     auto rc = image_copy_from(source, target, cbk);
     if (!rc) {
@@ -295,7 +316,7 @@ void create_base_vhdx(const std::wstring& volume, npl::spsubject target, TProgre
     auto source = npl::make_file(volume, false);
     assert(source);
     auto nvdb = osl::GetNTFSVolumeData(source->_fd_sync);
-    uint64_t length = osl::GetBlockDeviceLength(source->_fd_sync);
+    uint64_t length = osl::get_block_device_length(source->_fd_sync);
     LOG << "source volume length " << length;
     auto disk = std::make_shared<vhdx>(length, _4M, format::dynamic, nullptr);
     auto bs = disk->getBlockSize();
