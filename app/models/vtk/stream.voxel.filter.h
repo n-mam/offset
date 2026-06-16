@@ -52,17 +52,15 @@ struct pcl_stream_voxel_filter {
 
     std::string leftover;
     bool recentered = false;
-    const float voxel_size = 1.0f;
+    const float voxel_size = 0.5f;
     std::vector<VoxelKey> dirty_voxels;
     double origin_x, origin_y, origin_z;
-    std::vector<ParsedPoint> parsed_points;
     pcl::PointCloud<pcl::PointXYZ>::Ptr pcl_cloud;
     std::unordered_map<VoxelKey, VoxelData, VoxelKeyHasher> voxel_map;
 
     pcl_stream_voxel_filter() {
         voxel_map.reserve(24*1024*1024);
         dirty_voxels.reserve(16*1024*1024);
-        parsed_points.reserve(4*1024*1024);
         pcl_cloud.reset(new pcl::PointCloud<pcl::PointXYZ>);
         pcl_cloud->points.reserve(100000); 
     }
@@ -130,7 +128,7 @@ struct pcl_stream_voxel_filter {
         return {has_xyz, has_rgb};
     }
 
-    auto parse_cloud_chunk(uint8_t *buf, ssize_t bytes) {
+    auto parse_cloud_chunk(uint8_t *buf, ssize_t bytes, std::vector<ParsedPoint>& parsed_points) {
         parsed_points.clear();
         uint64_t points = 0;
         std::string_view chunk((const char*)buf, bytes);
@@ -179,14 +177,14 @@ struct pcl_stream_voxel_filter {
             int vx = static_cast<int>(std::floor(x * inv_voxel));
             int vy = static_cast<int>(std::floor(y * inv_voxel));
             int vz = static_cast<int>(std::floor(z * inv_voxel));
-            parsed_points.push_back({x, y, z, r, g, b, vx, vy, vz});
+            parsed_points.emplace_back(x, y, z, r, g, b, vx, vy, vz);
         }
-        return points;
+        return;
     }
 
-    auto consume_cloud_chunk(uint8_t *buf, ssize_t bytes, std::mutex& mux) {
+    auto consume_cloud_chunk(uint8_t *buf, ssize_t bytes, std::vector<ParsedPoint>& parsed_points, std::mutex& mux) {
         uint64_t voxels = 0;
-        auto points = parse_cloud_chunk(buf, bytes);
+        parse_cloud_chunk(buf, bytes, parsed_points);
         std::lock_guard<std::mutex> lg(mux);
         for (const auto& pp : parsed_points) {
             VoxelKey key{pp.vx, pp.vy, pp.vz};
@@ -195,10 +193,10 @@ struct pcl_stream_voxel_filter {
             if (it == voxel_map.end()) {
                 ++voxels;
                 VoxelData voxel;
+                voxel.count = 1;
                 voxel.sx = pp.x;
                 voxel.sy = pp.y;
                 voxel.sz = pp.z;
-                voxel.count = 1;
                 voxel.sr = pp.r;
                 voxel.sg = pp.g;
                 voxel.sb = pp.b;
@@ -235,12 +233,12 @@ struct pcl_stream_voxel_filter {
                 }
             }
         }
-        return std::make_pair(points, voxels);
+        return voxels;
     }
 
     void radius_outlier_removal(float radius, int min_neighbors) {
-        const int r =
-            static_cast<int>(std::ceil(radius / voxel_size));
+        const int r = static_cast<int>(
+            std::ceil(radius / voxel_size));
         std::vector<VoxelKey> remove_list;
         remove_list.reserve(voxel_map.size() / 10);
         for (auto& [key, voxel] : voxel_map) {

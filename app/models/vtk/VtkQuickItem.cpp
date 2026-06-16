@@ -114,47 +114,49 @@ void VtkQuickItem::load_point_cloud(QUrl path) {
         uint64_t points = 0, voxels = 0;
         auto buf = std::make_unique<uint8_t []>(_2M);
         ssize_t bytes, total_bytes = 0, chunks = 0;
+        std::vector<ParsedPoint> parsed_points;
+        parsed_points.reserve(4*1024*1024);
         while (!stop.load(std::memory_order_relaxed) &&
             (bytes = rd->read_sync(buf.get(), _2M, total_bytes)) > 0) {
-            total_bytes += bytes;
-            auto* ctx = VtkContext::SafeDownCast(_ctx);
-            auto pipeline = std::static_pointer_cast
-                    <PointCloudPipeline>(ctx->pipelines[0]);
-            auto [p, v] = pipeline->pcl_svf.consume_cloud_chunk(
-                    buf.get(), bytes, mux);
-            points += p;
-            voxels += v;
-            double percent = (double(total_bytes) / double(fileSize)) * 100.0;
-            if (chunks % 20 == 0) {
-                // QMetaObject::invoke queues the execution on the main thread event
-                // loop at a later point while dispatch_async() is a frame-synchronized
-                // renders-safe scheduling primitive which schedules the execution correctly
-                // inside Qt Quick’s scene graph lifecycle. both execute on the main UI
-                // thread but dispatch_async is executed at the correct time.
-                QMetaObject::invokeMethod(qApp, [this, percent, points, voxels](){
-                    update();
-                    // need a hop back to the GUI thread first else we'd get
-                    // Warning: Updates can only be scheduled from GUI thread
-                    // or from QQuickItem::updatePaintNode()
-                    dispatch_async([this](vtkRenderWindow* renderWindow, vtkUserData ud) {
-                        std::lock_guard<std::mutex> lg(mux);
-                        auto* ctx = VtkContext::SafeDownCast(ud);
-                        if (!ctx) return;
-                        auto pipeline =
-                            std::static_pointer_cast
-                                <PointCloudPipeline>(ctx->pipelines[0]);
-                        if (!pipeline) return;
-                        // Notify VTK pipeline
-                        syncToVTK(pipeline);
-                        if (!camera_initialized.load(std::memory_order_relaxed)) {
-                            ctx->renderer->ResetCamera();
-                            ctx->renderer->ResetCameraClippingRange();
-                            camera_initialized.store(true, std::memory_order_relaxed);
-                        }
-                    });
-                    emit pointCloudUpdated(percent, points, voxels);
-                }, Qt::QueuedConnection);
-            }
+                total_bytes += bytes;
+                auto* ctx = VtkContext::SafeDownCast(_ctx);
+                auto pipeline = std::static_pointer_cast
+                        <PointCloudPipeline>(ctx->pipelines[0]);
+                auto v = pipeline->pcl_svf.consume_cloud_chunk(
+                        buf.get(), bytes, parsed_points, mux);
+                voxels += v;
+                points += parsed_points.size();
+                double percent = (double(total_bytes) / double(fileSize)) * 100.0;
+                if (chunks % 20 == 0) {
+                    // QMetaObject::invoke queues the execution on the main thread event
+                    // loop at a later point while dispatch_async() is a frame-synchronized
+                    // renders-safe scheduling primitive which schedules the execution correctly
+                    // inside Qt Quick’s scene graph lifecycle. both execute on the main UI
+                    // thread but dispatch_async is executed at the correct time.
+                    QMetaObject::invokeMethod(qApp, [this, percent, points, voxels](){
+                        update();
+                        // need a hop back to the GUI thread first else we'd get
+                        // Warning: Updates can only be scheduled from GUI thread
+                        // or from QQuickItem::updatePaintNode()
+                        dispatch_async([this](vtkRenderWindow* renderWindow, vtkUserData ud) {
+                            std::lock_guard<std::mutex> lg(mux);
+                            auto* ctx = VtkContext::SafeDownCast(ud);
+                            if (!ctx) return;
+                            auto pipeline =
+                                std::static_pointer_cast
+                                    <PointCloudPipeline>(ctx->pipelines[0]);
+                            if (!pipeline) return;
+                            // Notify VTK pipeline
+                            syncToVTK(pipeline);
+                            if (!camera_initialized.load(std::memory_order_relaxed)) {
+                                ctx->renderer->ResetCamera();
+                                ctx->renderer->ResetCameraClippingRange();
+                                camera_initialized.store(true, std::memory_order_relaxed);
+                            }
+                        });
+                        emit pointCloudUpdated(percent, points, voxels);
+                    }, Qt::QueuedConnection);
+                }
         }
     });
 }
