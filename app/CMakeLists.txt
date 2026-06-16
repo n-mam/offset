@@ -4,14 +4,14 @@ set(CMAKE_AUTORCC ON)
 
 #SET(CMAKE_VERBOSE_MAKEFILE ON)
 
-find_package(VTK)
 find_package(PCL REQUIRED)
 find_package(CURL REQUIRED)
 find_package(ZLIB REQUIRED)
+find_package(VTK CONFIG REQUIRED)
 find_package(OpenCV CONFIG REQUIRED)
 find_package(libzip CONFIG REQUIRED)
 find_package(tinyxml2 CONFIG REQUIRED)
-find_package(Qt6 REQUIRED COMPONENTS Quick QuickControls2 Gui)
+find_package(Qt6 REQUIRED COMPONENTS Core Quick QuickControls2 Gui Widgets OpenGLWidgets)
 
 qt6_add_resources(QT_RESOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/qml/qml.qrc
@@ -20,9 +20,16 @@ qt6_add_resources(QT_RESOURCES
 
 add_executable(offset ${QT_RESOURCES})
 
-target_link_libraries(offset PRIVATE ${VTK_LIBRARIES} ${PCL_LIBRARIES})
+set(VTK_MODULES_USED
+    VTK::CommonCore
+    VTK::FiltersCore
+    VTK::FiltersParallel
+    VTK::RenderingCore
+    VTK::RenderingOpenGL2
+    VTK::GUISupportQtQuick
+)
 
-vtk_module_autoinit(TARGETS offset MODULES ${VTK_LIBRARIES})
+vtk_module_autoinit(TARGETS offset MODULES ${VTK_MODULES_USED})
 
 target_sources(offset PRIVATE main.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/models/Logger.cpp
@@ -64,10 +71,8 @@ target_include_directories(
 target_link_libraries(
     offset
     PRIVATE
-    Qt6::Gui
     rapidjson
     opencv_ml
-    Qt6::Quick
     ZLIB::ZLIB
     opencv_dnn
     opencv_dpm
@@ -82,8 +87,19 @@ target_link_libraries(
     opencv_tracking
     OpenSSL::Crypto
     ${PCL_LIBRARIES}
+    VTK::CommonCore
+    VTK::FiltersCore
+    VTK::FiltersParallel
+    VTK::RenderingCore
+    VTK::RenderingOpenGL2
+    VTK::GUISupportQtQuick
     tinyxml2::tinyxml2
-    Qt6::QuickControls2
+    Qt6::Gui
+    Qt6::Core
+    Qt6::Quick
+    Qt6::Widgets
+    Qt6::OpenGLWidgets
+    Qt6::QuickControls2    
 )
 
 if(WIN32)

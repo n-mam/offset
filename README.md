@@ -1,4 +1,4 @@
-[Download (Windows-x64)](https://github.com/n-mam/offset/releases/download/2.1/Offset-2.1.zip)
+[Download (Windows-x64)](https://github.com/n-mam/offset/releases/download/2.3/Offset-2.3.zip)
 
 #### The following 6 tools are currently implemented
 
