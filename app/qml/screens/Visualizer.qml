@@ -16,6 +16,15 @@ Item {
             progress.value = percent
             numberPoints.text = "Points: " + points
             numberVoxels.text = "Voxels: " + voxels
+            // start timer when loading begins
+            if (percent === 0) {
+                debugOverlay.startTime = Date.now()
+                elapsedTimer.start()
+            }
+            // stop timer when loading finishes
+            if (percent >= 100) {
+                elapsedTimer.stop()
+            }            
         }
         onDistanceUpdated: function(d) {
             distance.text = "Distance: " + d
@@ -83,7 +92,7 @@ Item {
         }
     }
     Rectangle {
-        id: debugOverlay
+        id: debugOverlay        
         z: 2000
         radius: 6
         width: 240
@@ -95,10 +104,12 @@ Item {
         property string line1: "FPS: 0"
         property string line2
         property string line3
+        property double startTime: 0
+        property int elapsedMs: 0
         Column {
-            anchors.fill: parent
-            anchors.margins: 8
             spacing: 4
+            anchors.margins: 8
+            anchors.fill: parent
             Text {
                 id: numberPoints
                 text: "Points: 0"
@@ -118,6 +129,15 @@ Item {
                 horizontalAlignment: Text.AlignRight
             }
             Text {
+                id: elapsedTime
+                text: "Elapsed: 0"
+                color: "white"
+                font.pixelSize: 12
+                font.family: "monospace"
+                width: parent.width
+                horizontalAlignment: Text.AlignRight
+            }
+            Text {
                 id: distance
                 text: "Distance: 0"
                 color: "white"
@@ -125,7 +145,17 @@ Item {
                 font.family: "monospace"
                 width: parent.width
                 horizontalAlignment: Text.AlignRight
-            }
+            }            
+            Timer {
+                id: elapsedTimer
+                interval: 100
+                repeat: true
+                running: false
+                onTriggered: {
+                    debugOverlay.elapsedMs = Date.now() - debugOverlay.startTime
+                    elapsedTime.text = "Elapsed: " + (debugOverlay.elapsedMs / 1000).toFixed(1) + "s"
+                }
+            }            
         }
         MouseArea {
             anchors.fill: parent

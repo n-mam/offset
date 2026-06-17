@@ -9,6 +9,7 @@ Item {
     required property var visualizer
 
     property var tools: [
+        { name: "fit", icon: "qrc:/fit.png"},
         { name: "debug", icon: "qrc:/debug.png"},
         { name: "open", icon: "qrc:/zoom.png"}
     ]
@@ -47,6 +48,8 @@ Item {
             fileDialog.open()
         } else if (tool === 'debug') {
             visualizer.toggle_debug_overlay();
+        } else if (tool === "fit") {
+            visualizer.fit_to_cloud();
         }
     }
 

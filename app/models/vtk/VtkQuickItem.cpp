@@ -53,9 +53,8 @@ void VtkQuickItem::clear_scene() {
         stop.store(false, std::memory_order_relaxed);
     }
     auto* ctx = VtkContext::SafeDownCast(_ctx);
-    auto pipeline =
-        std::static_pointer_cast
-            <PointCloudPipeline>(ctx->pipelines[0]);
+    auto pipeline = std::static_pointer_cast
+        <PointCloudPipeline>(ctx->pipelines[0]);
     pipeline->reset();
     camera_initialized.store(false, std::memory_order_relaxed);
     ctx->renderer->ResetCameraClippingRange();
@@ -111,7 +110,7 @@ void VtkQuickItem::load_point_cloud(QUrl path) {
     _thread = std::thread([this, fileSize, filePath](){
         auto rd = npl::make_file(filePath);
         if (!rd) return;
-        uint64_t points = 0, voxels = 0;
+        uint64_t total_points = 0, total_voxels = 0;
         auto buf = std::make_unique<uint8_t []>(_2M);
         ssize_t bytes, total_bytes = 0, chunks = 0;
         std::vector<ParsedPoint> parsed_points;
@@ -123,9 +122,9 @@ void VtkQuickItem::load_point_cloud(QUrl path) {
                 auto pipeline = std::static_pointer_cast
                         <PointCloudPipeline>(ctx->pipelines[0]);
                 auto v = pipeline->pcl_svf.consume_cloud_chunk(
-                        buf.get(), bytes, parsed_points, mux);
-                voxels += v;
-                points += parsed_points.size();
+                    buf.get(), bytes, parsed_points, mux);
+                total_voxels += v;
+                total_points += parsed_points.size();
                 double percent = (double(total_bytes) / double(fileSize)) * 100.0;
                 if (chunks % 20 == 0) {
                     // QMetaObject::invoke queues the execution on the main thread event
@@ -133,7 +132,7 @@ void VtkQuickItem::load_point_cloud(QUrl path) {
                     // renders-safe scheduling primitive which schedules the execution correctly
                     // inside Qt Quick’s scene graph lifecycle. both execute on the main UI
                     // thread but dispatch_async is executed at the correct time.
-                    QMetaObject::invokeMethod(qApp, [this, percent, points, voxels](){
+                    QMetaObject::invokeMethod(qApp, [this, percent, total_points, total_voxels](){
                         update();
                         // need a hop back to the GUI thread first else we'd get
                         // Warning: Updates can only be scheduled from GUI thread
@@ -142,10 +141,8 @@ void VtkQuickItem::load_point_cloud(QUrl path) {
                             std::lock_guard<std::mutex> lg(mux);
                             auto* ctx = VtkContext::SafeDownCast(ud);
                             if (!ctx) return;
-                            auto pipeline =
-                                std::static_pointer_cast
-                                    <PointCloudPipeline>(ctx->pipelines[0]);
-                            if (!pipeline) return;
+                            auto pipeline = std::static_pointer_cast
+                                <PointCloudPipeline>(ctx->pipelines[0]);
                             // Notify VTK pipeline
                             syncToVTK(pipeline);
                             if (!camera_initialized.load(std::memory_order_relaxed)) {
@@ -154,10 +151,24 @@ void VtkQuickItem::load_point_cloud(QUrl path) {
                                 camera_initialized.store(true, std::memory_order_relaxed);
                             }
                         });
-                        emit pointCloudUpdated(percent, points, voxels);
+                        emit pointCloudUpdated(percent, total_points, total_voxels);
                     }, Qt::QueuedConnection);
                 }
         }
+    });
+}
+
+void VtkQuickItem::fit_to_cloud() {
+    update();
+    dispatch_async([this](vtkRenderWindow* rw, vtkUserData ud) {
+        auto* ctx = VtkContext::SafeDownCast(ud);
+        if (!ctx) return;
+        auto pipeline = std::static_pointer_cast
+            <PointCloudPipeline>(ctx->pipelines[0]);
+        if (pipeline->points->GetNumberOfPoints() == 0) return;
+        ctx->renderer->ResetCamera();
+        ctx->renderer->ResetCameraClippingRange();
+        rw->Render();
     });
 }
 
@@ -171,14 +182,14 @@ void VtkQuickItem::radius_outlier_removal() {
     std::thread([this](){
         auto* ctx = VtkContext::SafeDownCast(_ctx);
         auto pipeline = std::static_pointer_cast
-                <PointCloudPipeline>(ctx->pipelines[0]);
+            <PointCloudPipeline>(ctx->pipelines[0]);
         std::lock_guard<std::mutex> lg(mux);
         pipeline->pcl_svf.radius_outlier_removal(5.0f, 6);
         update();
         dispatch_async([this](vtkRenderWindow* rw, vtkUserData ud) {
             auto* ctx = VtkContext::SafeDownCast(ud);
             auto pipeline = std::static_pointer_cast
-                    <PointCloudPipeline>(ctx->pipelines[0]);
+                <PointCloudPipeline>(ctx->pipelines[0]);
             syncToVTK(pipeline);
             std::cout << "done..." << std::endl;
         });

@@ -21,8 +21,8 @@ struct VoxelData {
     double sr = 0;
     double sg = 0;
     double sb = 0;
+    bool dirty;
     bool alive = true;
-    bool dirty = false;
     uint32_t count = 0;
     uint32_t point_index = 0;
 };
@@ -128,7 +128,8 @@ struct pcl_stream_voxel_filter {
         return {has_xyz, has_rgb};
     }
 
-    auto parse_cloud_chunk(uint8_t *buf, ssize_t bytes, std::vector<ParsedPoint>& parsed_points) {
+    auto parse_cloud_chunk(uint8_t *buf, ssize_t bytes, 
+            std::vector<ParsedPoint>& parsed_points) {
         parsed_points.clear();
         uint64_t points = 0;
         std::string_view chunk((const char*)buf, bytes);
@@ -182,17 +183,18 @@ struct pcl_stream_voxel_filter {
         return;
     }
 
-    auto consume_cloud_chunk(uint8_t *buf, ssize_t bytes, std::vector<ParsedPoint>& parsed_points, std::mutex& mux) {
-        uint64_t voxels = 0;
+    auto consume_cloud_chunk(uint8_t *buf, ssize_t bytes, 
+            std::vector<ParsedPoint>& parsed_points, std::mutex& mux) {
+        uint64_t new_voxels = 0;
         parse_cloud_chunk(buf, bytes, parsed_points);
         std::lock_guard<std::mutex> lg(mux);
         for (const auto& pp : parsed_points) {
             VoxelKey key{pp.vx, pp.vy, pp.vz};
-            auto it = voxel_map.find(key);
-            // new voxel
-            if (it == voxel_map.end()) {
-                ++voxels;
-                VoxelData voxel;
+            auto [it, inserted] = voxel_map.try_emplace(key);
+            auto& voxel = it->second;
+            if (inserted) {
+                // new voxel
+                ++new_voxels;
                 voxel.count = 1;
                 voxel.sx = pp.x;
                 voxel.sy = pp.y;
@@ -204,25 +206,21 @@ struct pcl_stream_voxel_filter {
                 p.x = pp.x;
                 p.y = pp.y;
                 p.z = pp.z;
-                voxel.point_index = static_cast<uint32_t>(
-                        pcl_cloud->size());
+                voxel.point_index = static_cast
+                    <uint32_t>(pcl_cloud->size());
+                voxel.dirty = true;
                 pcl_cloud->push_back(p);
-                auto [it, success] = voxel_map.emplace(key, voxel);
-                if (!it->second.dirty) {
-                    it->second.dirty = true;
-                    dirty_voxels.push_back(key);
-                }
+                dirty_voxels.push_back(key);
             } else {
-                auto& voxel = it->second;
+                voxel.count++;
                 voxel.sx += pp.x;
                 voxel.sy += pp.y;
                 voxel.sz += pp.z;
-                voxel.count++;
                 // average RGB
                 voxel.sr += pp.r;
                 voxel.sg += pp.g;
                 voxel.sb += pp.b;
-                float inv = 1.0f / voxel.count;
+                double inv = 1.0 / voxel.count;
                 auto& p = pcl_cloud->points[voxel.point_index];
                 p.x = voxel.sx * inv;
                 p.y = voxel.sy * inv;
@@ -233,7 +231,7 @@ struct pcl_stream_voxel_filter {
                 }
             }
         }
-        return voxels;
+        return new_voxels;
     }
 
     void radius_outlier_removal(float radius, int min_neighbors) {
