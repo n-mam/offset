@@ -11,39 +11,39 @@
 
 vtkSmartPointer<VtkContext>
     VtkQuickItem::create_scene(vtkRenderWindow* renderWindow) {
-    auto ctx = vtkSmartPointer<VtkContext>::New();
-    // Core renderer setup
-    ctx->renderer = vtkSmartPointer<vtkRenderer>::New();
-    ctx->renderWindow = renderWindow;
-    renderWindow->SetSize(800, 600);
-    renderWindow->SetWindowName(
-        "VTK Multi Pipeline Scene");
-    renderWindow->AddRenderer(ctx->renderer);
-    ctx->renderer->SetBackground(0,0,0);
-    // Interactor
-    ctx->interactor =
-        renderWindow->GetInteractor();
-    vtkNew<PointPickerDistanceStyle> style;
-    style->SetDefaultRenderer(ctx->renderer);
-    style->cbk = [this](int distance){
-        distanceUpdated(distance);
-    };
-    ctx->interactor->SetInteractorStyle(style);
-    // Point cloud pipeline
-    auto pointCloud =
-        std::make_shared<PointCloudPipeline>();
-    pointCloud->addToRenderer(ctx->renderer);
-    ctx->pipelines.push_back(pointCloud);
-    // Sphere pipeline
-    // auto spheres =
-    //     std::make_shared<SpherePipeline>(10);
-    // spheres->addToRenderer(ctx->renderer);
-    // ctx->pipelines.push_back(spheres);
-    // --------------------------------------------------------
-    // Camera
-    // --------------------------------------------------------
-    ctx->renderer->ResetCamera();
-    return ctx;
+        auto ctx = vtkSmartPointer<VtkContext>::New();
+        // Core renderer setup
+        ctx->renderer = vtkSmartPointer<vtkRenderer>::New();
+        ctx->renderWindow = renderWindow;
+        renderWindow->SetSize(800, 600);
+        renderWindow->SetWindowName(
+            "VTK Multi Pipeline Scene");
+        renderWindow->AddRenderer(ctx->renderer);
+        ctx->renderer->SetBackground(0,0,0);
+        // Interactor
+        ctx->interactor =
+            renderWindow->GetInteractor();
+        vtkNew<PointPickerDistanceStyle> style;
+        style->SetDefaultRenderer(ctx->renderer);
+        style->cbk = [this](int distance){
+            distanceUpdated(distance);
+        };
+        ctx->interactor->SetInteractorStyle(style);
+        // Point cloud pipeline
+        auto pointCloud =
+            std::make_shared<PointCloudPipeline>();
+        pointCloud->addToRenderer(ctx->renderer);
+        ctx->pipelines.push_back(pointCloud);
+        // Sphere pipeline
+        // auto spheres =
+        //     std::make_shared<SpherePipeline>(10);
+        // spheres->addToRenderer(ctx->renderer);
+        // ctx->pipelines.push_back(spheres);
+        // --------------------------------------------------------
+        // Camera
+        // --------------------------------------------------------
+        ctx->renderer->ResetCamera();
+        return ctx;
 }
 
 void VtkQuickItem::clear_scene() {
@@ -170,6 +170,54 @@ void VtkQuickItem::fit_to_cloud() {
         ctx->renderer->ResetCameraClippingRange();
         rw->Render();
     });
+}
+
+void VtkQuickItem::recolor_pass() {
+    std::thread([this]() {
+        auto* ctx = VtkContext::SafeDownCast(_ctx);
+        if (!ctx || ctx->pipelines.empty()) return;
+        auto pipeline = std::static_pointer_cast
+            <PointCloudPipeline>(ctx->pipelines[0]);
+        auto& cloud  = pipeline->pcl_svf.pcl_cloud;
+        auto& colors = pipeline->colors;
+        const double min_z = pipeline->pcl_svf.min_z;
+        const double max_z = pipeline->pcl_svf.max_z;
+        const double denom = (max_z - min_z + 1e-9);
+        const vtkIdType n = static_cast<vtkIdType>(cloud->points.size());
+        // compute off-thread
+        std::vector<std::array<unsigned char, 3>> computed_colors;
+        computed_colors.resize(n);
+        for (vtkIdType i = 0; i < n; ++i) {
+            const auto& p = cloud->points[i];
+            double t = (p.z - min_z) / denom;
+            t = std::clamp(t, 0.0, 1.0);
+            unsigned char rgb[3] = {
+                static_cast<unsigned char>(255 * t),
+                static_cast<unsigned char>(255 * (1.0 - std::abs(t - 0.5) * 2)),
+                static_cast<unsigned char>(255 * (1.0 - t))
+            };
+            computed_colors[i] = {rgb[0], rgb[1], rgb[2]};
+        }
+        QMetaObject::invokeMethod(qApp, [this, computed_colors = std::move(computed_colors)](){
+            // push to render thread
+            dispatch_async([this, computed_colors = std::move(computed_colors)]
+                        (vtkRenderWindow* rw, vtkUserData ud) {
+                std::lock_guard<std::mutex> lg(mux);
+                auto* ctx = VtkContext::SafeDownCast(ud);
+                if (!ctx || ctx->pipelines.empty()) return;
+                auto pipe = std::static_pointer_cast
+                    <PointCloudPipeline>(ctx->pipelines[0]);
+                auto& colors = pipe->colors;
+                const vtkIdType n = static_cast<vtkIdType>(computed_colors.size());
+                for (vtkIdType i = 0; i < n; ++i) {
+                    colors->SetTypedTuple(i, computed_colors[i].data());
+                }
+                colors->Modified();
+                pipe->polyData->Modified();
+                rw->Render();
+            });
+        }, Qt::QueuedConnection);
+    }).detach();
 }
 
 // QQuickVTKItem entry point

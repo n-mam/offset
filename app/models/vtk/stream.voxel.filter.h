@@ -3,6 +3,7 @@
 
 #include <tuple>
 #include <cmath>
+#include <limits>
 #include <fstream>
 #include <iostream>
 #include <unordered_set>
@@ -52,6 +53,8 @@ struct pcl_stream_voxel_filter {
 
     std::string leftover;
     bool recentered = false;
+    double min_x, min_y, min_z;
+    double max_x, max_y, max_z;
     const float voxel_size = 0.5f;
     std::vector<VoxelKey> dirty_voxels;
     double origin_x, origin_y, origin_z;
@@ -59,10 +62,12 @@ struct pcl_stream_voxel_filter {
     std::unordered_map<VoxelKey, VoxelData, VoxelKeyHasher> voxel_map;
 
     pcl_stream_voxel_filter() {
-        voxel_map.reserve(24*1024*1024);
-        dirty_voxels.reserve(16*1024*1024);
+        voxel_map.reserve(3*1024*1024); // * 5 for 0.1 voxel size
+        dirty_voxels.reserve(500*1024); // based on 2MB chunks
         pcl_cloud.reset(new pcl::PointCloud<pcl::PointXYZ>);
-        pcl_cloud->points.reserve(100000); 
+        pcl_cloud->points.reserve(3*1024*1024); // * 5 for 0.1 voxel size
+        min_x = min_y = min_z = std::numeric_limits<double>::infinity();
+        max_x = max_y = max_z = -std::numeric_limits<double>::infinity();
     }
 
     inline std::pair<bool, bool>
@@ -174,6 +179,12 @@ struct pcl_stream_voxel_filter {
             x -= origin_x;
             y -= origin_y;
             z -= origin_z;
+            min_x = std::min(min_x, x);
+            min_y = std::min(min_y, y);
+            min_z = std::min(min_z, z);
+            max_x = std::max(max_x, x);
+            max_y = std::max(max_y, y);
+            max_z = std::max(max_z, z);            
             const double inv_voxel = 1.0 / voxel_size;
             int vx = static_cast<int>(std::floor(x * inv_voxel));
             int vy = static_cast<int>(std::floor(y * inv_voxel));
