@@ -52,12 +52,15 @@ struct PointCloudPipeline : public VtkPipeline {
         // Initialize colors array
         colors = vtkSmartPointer<vtkUnsignedCharArray>::New();
         colors->SetNumberOfComponents(3);  // R, G, B
-        colors->SetName("Colors");
-        polyData->GetPointData()->SetScalars(colors);
+        colors->SetName("original");
+        polyData->GetPointData()->AddArray(colors);
+        polyData->GetPointData()->SetActiveScalars("original");        
         // Mapper
         mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
         mapper->SetInputData(polyData);
-        mapper->SetScalarModeToUsePointData();  // use point colors
+        mapper->SetScalarModeToUsePointData();
+        mapper->SetColorModeToDefault();
+        mapper->ScalarVisibilityOn();
         // Actor
         actor = vtkSmartPointer<vtkActor>::New();
         actor->SetMapper(mapper);

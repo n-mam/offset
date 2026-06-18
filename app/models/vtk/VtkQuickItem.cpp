@@ -172,48 +172,61 @@ void VtkQuickItem::fit_to_cloud() {
     });
 }
 
-void VtkQuickItem::recolor_pass() {
-    std::thread([this]() {
+void VtkQuickItem::compute_color_map(const std::string& arrayName) {
+    auto* ctx = VtkContext::SafeDownCast(_ctx);
+    if (!ctx || ctx->pipelines.empty()) return;
+    auto pipeline = std::static_pointer_cast
+        <PointCloudPipeline>(ctx->pipelines[0]);
+    auto& cloud = pipeline->pcl_svf.pcl_cloud;
+    
+    const double min_z = pipeline->pcl_svf.min_z;
+    const double max_z = pipeline->pcl_svf.max_z;
+    const double denom = (max_z - min_z + 1e-9);
+    const vtkIdType n = static_cast
+        <vtkIdType>(cloud->points.size());
+    vtkNew<vtkUnsignedCharArray> colors;
+    colors->SetNumberOfComponents(3);
+    colors->SetNumberOfTuples(n);
+    colors->SetName(arrayName.c_str());
+    for (vtkIdType i = 0; i < n; ++i) {
+        const auto& p = cloud->points[i];
+        double t = (p.z - min_z) / denom;
+        t = std::clamp(t, 0.0, 1.0);
+        unsigned char rgb[3] = {
+            static_cast<unsigned char>(255 * t),
+            static_cast<unsigned char>(255 * (1.0 - std::abs(t - 0.5) * 2)),
+            static_cast<unsigned char>(255 * (1.0 - t))
+        };
+        colors->SetTypedTuple(i, rgb);
+    }
+
+    auto* pd = pipeline->polyData->GetPointData();
+    // replace if it already exists
+    pd->RemoveArray(arrayName.c_str());
+    pd->AddArray(colors);
+    pipeline->polyData->Modified();
+}
+
+void VtkQuickItem::apply_scalar(QString name) {
+    auto arrayName = name.toStdString();
+    std::thread([this, arrayName]{
         auto* ctx = VtkContext::SafeDownCast(_ctx);
         if (!ctx || ctx->pipelines.empty()) return;
-        auto pipeline = std::static_pointer_cast
+        auto pipe = std::static_pointer_cast
             <PointCloudPipeline>(ctx->pipelines[0]);
-        auto& cloud  = pipeline->pcl_svf.pcl_cloud;
-        auto& colors = pipeline->colors;
-        const double min_z = pipeline->pcl_svf.min_z;
-        const double max_z = pipeline->pcl_svf.max_z;
-        const double denom = (max_z - min_z + 1e-9);
-        const vtkIdType n = static_cast<vtkIdType>(cloud->points.size());
-        // compute off-thread
-        std::vector<std::array<unsigned char, 3>> computed_colors;
-        computed_colors.resize(n);
-        for (vtkIdType i = 0; i < n; ++i) {
-            const auto& p = cloud->points[i];
-            double t = (p.z - min_z) / denom;
-            t = std::clamp(t, 0.0, 1.0);
-            unsigned char rgb[3] = {
-                static_cast<unsigned char>(255 * t),
-                static_cast<unsigned char>(255 * (1.0 - std::abs(t - 0.5) * 2)),
-                static_cast<unsigned char>(255 * (1.0 - t))
-            };
-            computed_colors[i] = {rgb[0], rgb[1], rgb[2]};
+        auto* pd = pipe->polyData->GetPointData();
+        if (!pd->HasArray(arrayName.c_str())) {
+            compute_color_map(arrayName);
         }
-        QMetaObject::invokeMethod(qApp, [this, computed_colors = std::move(computed_colors)](){
-            // push to render thread
-            dispatch_async([this, computed_colors = std::move(computed_colors)]
-                        (vtkRenderWindow* rw, vtkUserData ud) {
+        QMetaObject::invokeMethod(qApp, [this, arrayName]() {
+            dispatch_async([this, arrayName](vtkRenderWindow* rw, vtkUserData ud) {
                 std::lock_guard<std::mutex> lg(mux);
                 auto* ctx = VtkContext::SafeDownCast(ud);
                 if (!ctx || ctx->pipelines.empty()) return;
                 auto pipe = std::static_pointer_cast
                     <PointCloudPipeline>(ctx->pipelines[0]);
-                auto& colors = pipe->colors;
-                const vtkIdType n = static_cast<vtkIdType>(computed_colors.size());
-                for (vtkIdType i = 0; i < n; ++i) {
-                    colors->SetTypedTuple(i, computed_colors[i].data());
-                }
-                colors->Modified();
-                pipe->polyData->Modified();
+                auto* pd = pipe->polyData->GetPointData();
+                pd->SetActiveScalars(arrayName.c_str());
                 rw->Render();
             });
         }, Qt::QueuedConnection);

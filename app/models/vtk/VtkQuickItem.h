@@ -35,11 +35,12 @@ struct VtkQuickItem : public QQuickVTKItem {
     std::atomic<bool> camera_initialized{false};
     ~VtkQuickItem();
     Q_INVOKABLE void stop_load();
-    Q_INVOKABLE void recolor_pass();
     Q_INVOKABLE void fit_to_cloud();
     Q_INVOKABLE void radius_outlier_removal();
+    Q_INVOKABLE void apply_scalar(QString name);
     Q_INVOKABLE void load_point_cloud(QUrl filePath);
     void clear_scene();
+    void compute_color_map(const std::string& arrayName);
     vtkSmartPointer<VtkContext> create_scene(vtkRenderWindow*);
     void syncToVTK(std::shared_ptr<PointCloudPipeline> pipeline);
     vtkUserData initializeVTK(vtkRenderWindow *renderWindow) override;
