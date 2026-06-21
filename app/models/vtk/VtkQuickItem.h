@@ -21,7 +21,8 @@ struct VtkContext : vtkObject {
     vtkSmartPointer<vtkRenderer> renderer;
     vtkSmartPointer<vtkRenderWindow> renderWindow;
     vtkSmartPointer<vtkRenderWindowInteractor> interactor;
-    std::vector<std::shared_ptr<VtkPipeline>> pipelines;
+    std::vector<std::shared_ptr<PointCloudPipeline>> pipelines;
+    std::shared_ptr<PointCloudPipeline> active_pipeline;
 };
 
 struct VtkQuickItem : public QQuickVTKItem {
@@ -40,10 +41,14 @@ struct VtkQuickItem : public QQuickVTKItem {
     Q_INVOKABLE void apply_scalar(QString name);
     Q_INVOKABLE void load_point_cloud(QUrl filePath);
     void clear_scene();
+    VtkContext *context();
+    std::shared_ptr<PointCloudPipeline> base_pipeline();
     void compute_color_map(const std::string& arrayName);
+    std::shared_ptr<PointCloudPipeline> active_pipeline();
     vtkSmartPointer<VtkContext> create_scene(vtkRenderWindow*);
     void syncToVTK(std::shared_ptr<PointCloudPipeline> pipeline);
     vtkUserData initializeVTK(vtkRenderWindow *renderWindow) override;
+    void set_active_pipeline(std::shared_ptr<PointCloudPipeline> pipeline);
     signals:
     void distanceUpdated(int);
     void pointCloudUpdated(int, uint64_t, uint64_t);

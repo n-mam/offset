@@ -19,27 +19,21 @@
 #include <fstream>
 #include <sstream>
 
-// Base pipeline
-struct VtkPipeline {
-    std::vector<vtkSmartPointer<vtkActor>> actors;
-    virtual ~VtkPipeline() = default;
-    void addToRenderer(vtkRenderer* renderer) {
-        for (auto& actor : actors) {
-            renderer->AddActor(actor);
-        }
-    }
-};
-
 // Point cloud pipeline
-struct PointCloudPipeline : public VtkPipeline {
+struct PointCloudPipeline {
 
-    pcl_stream_voxel_filter pcl_svf;
-    vtkSmartPointer<vtkActor> actor;
+    enum filter {
+        original = 0,
+        ground
+    };
+
+    stream_voxel_filter svf;
     vtkSmartPointer<vtkPoints> points;
     vtkSmartPointer<vtkCellArray> verts;
     vtkSmartPointer<vtkPolyData> polyData;
     vtkSmartPointer<vtkPolyDataMapper> mapper;
     vtkSmartPointer<vtkUnsignedCharArray> colors;
+    std::vector<vtkSmartPointer<vtkActor>> actors;
 
     PointCloudPipeline() {
         // Points and geometry
@@ -62,72 +56,29 @@ struct PointCloudPipeline : public VtkPipeline {
         mapper->SetColorModeToDefault();
         mapper->ScalarVisibilityOn();
         // Actor
-        actor = vtkSmartPointer<vtkActor>::New();
+        auto actor = vtkSmartPointer<vtkActor>::New();
         actor->SetMapper(mapper);
         actor->GetProperty()->SetRepresentationToPoints();
         actor->GetProperty()->SetPointSize(2);
         // Add to actor list
         actors.push_back(actor);
     }
+
+    void addToRenderer(vtkRenderer* renderer) {
+        for (auto& actor : actors) {
+            renderer->AddActor(actor);
+        }
+    }
+
     void reset() {
         // CPU state
-        pcl_svf.voxel_map.clear();
-        pcl_svf.pcl_cloud->points.clear();
+        svf.voxel_map.clear();
+        svf.cloud->points.clear();
         // VTK state
         points->SetNumberOfPoints(0);
         colors->SetNumberOfTuples(0);
         verts->Initialize();
         // Mark dirty once
         polyData->Modified();
-    }
-};
-
-// Random sphere pipeline
-struct SpherePipeline : public VtkPipeline {
-
-    SpherePipeline(int numberOfSpheres = 10) {
-        vtkNew<vtkNamedColors> colors;
-        vtkNew<vtkMinimalStandardRandomSequence> randomSequence;
-        randomSequence->SetSeed(8775070);
-        for (int i = 0; i < numberOfSpheres; ++i) {
-            vtkNew<vtkSphereSource> source;
-            double x =
-                randomSequence->GetRangeValue(-5.0, 5.0);
-            randomSequence->Next();
-            double y =
-                randomSequence->GetRangeValue(-5.0, 5.0);
-            randomSequence->Next();
-            double z =
-                randomSequence->GetRangeValue(-5.0, 5.0);
-            randomSequence->Next();
-            double radius =
-                randomSequence->GetRangeValue(0.5, 1.0);
-            randomSequence->Next();
-            source->SetCenter(x, y, z);
-            source->SetRadius(radius);
-            source->SetPhiResolution(11);
-            source->SetThetaResolution(21);
-            vtkNew<vtkPolyDataMapper> mapper;
-            mapper->SetInputConnection(
-                source->GetOutputPort());
-            vtkNew<vtkActor> actor;
-            actor->SetMapper(mapper);
-            double r =
-                randomSequence->GetRangeValue(0.4, 1.0);
-            randomSequence->Next();
-            double g =
-                randomSequence->GetRangeValue(0.4, 1.0);
-            randomSequence->Next();
-            double b =
-                randomSequence->GetRangeValue(0.4, 1.0);
-            randomSequence->Next();
-            actor->GetProperty()->SetDiffuseColor(r, g, b);
-            actor->GetProperty()->SetDiffuse(0.8);
-            actor->GetProperty()->SetSpecular(0.5);
-            actor->GetProperty()->SetSpecularColor(
-                colors->GetColor3d("White").GetData());
-            actor->GetProperty()->SetSpecularPower(30.0);
-            actors.push_back(actor);
-        }
     }
 };

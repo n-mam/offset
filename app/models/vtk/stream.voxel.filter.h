@@ -49,7 +49,7 @@ struct VoxelKeyHasher {
     }
 };
 
-struct pcl_stream_voxel_filter {
+struct stream_voxel_filter {
 
     std::string leftover;
     bool recentered = false;
@@ -58,14 +58,14 @@ struct pcl_stream_voxel_filter {
     const float voxel_size = 0.5f;
     std::vector<VoxelKey> dirty_voxels;
     double origin_x, origin_y, origin_z;
-    pcl::PointCloud<pcl::PointXYZ>::Ptr pcl_cloud;
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud;
     std::unordered_map<VoxelKey, VoxelData, VoxelKeyHasher> voxel_map;
 
-    pcl_stream_voxel_filter() {
+    stream_voxel_filter() {
         voxel_map.reserve(3*1024*1024); // * 5 for 0.1 voxel size
         dirty_voxels.reserve(500*1024); // based on 2MB chunks
-        pcl_cloud.reset(new pcl::PointCloud<pcl::PointXYZ>);
-        pcl_cloud->points.reserve(3*1024*1024); // * 5 for 0.1 voxel size
+        cloud.reset(new pcl::PointCloud<pcl::PointXYZ>);
+        cloud->points.reserve(3*1024*1024); // * 5 for 0.1 voxel size
         min_x = min_y = min_z = std::numeric_limits<double>::infinity();
         max_x = max_y = max_z = -std::numeric_limits<double>::infinity();
     }
@@ -218,9 +218,9 @@ struct pcl_stream_voxel_filter {
                 p.y = pp.y;
                 p.z = pp.z;
                 voxel.point_index = static_cast
-                    <uint32_t>(pcl_cloud->size());
+                    <uint32_t>(cloud->size());
                 voxel.dirty = true;
-                pcl_cloud->push_back(p);
+                cloud->push_back(p);
                 dirty_voxels.push_back(key);
             } else {
                 voxel.count++;
@@ -232,7 +232,7 @@ struct pcl_stream_voxel_filter {
                 voxel.sg += pp.g;
                 voxel.sb += pp.b;
                 double inv = 1.0 / voxel.count;
-                auto& p = pcl_cloud->points[voxel.point_index];
+                auto& p = cloud->points[voxel.point_index];
                 p.x = voxel.sx * inv;
                 p.y = voxel.sy * inv;
                 p.z = voxel.sz * inv;

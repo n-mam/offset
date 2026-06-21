@@ -30,18 +30,10 @@ vtkSmartPointer<VtkContext>
         };
         ctx->interactor->SetInteractorStyle(style);
         // Point cloud pipeline
-        auto pointCloud =
+        auto pipeline =
             std::make_shared<PointCloudPipeline>();
-        pointCloud->addToRenderer(ctx->renderer);
-        ctx->pipelines.push_back(pointCloud);
-        // Sphere pipeline
-        // auto spheres =
-        //     std::make_shared<SpherePipeline>(10);
-        // spheres->addToRenderer(ctx->renderer);
-        // ctx->pipelines.push_back(spheres);
-        // --------------------------------------------------------
-        // Camera
-        // --------------------------------------------------------
+        pipeline->addToRenderer(ctx->renderer);
+        ctx->pipelines.push_back(pipeline);
         ctx->renderer->ResetCamera();
         return ctx;
 }
@@ -52,20 +44,18 @@ void VtkQuickItem::clear_scene() {
         _thread.join();
         stop.store(false, std::memory_order_relaxed);
     }
-    auto* ctx = VtkContext::SafeDownCast(_ctx);
-    auto pipeline = std::static_pointer_cast
-        <PointCloudPipeline>(ctx->pipelines[0]);
-    pipeline->reset();
+    auto pipeline = active_pipeline();
+    if (pipeline) pipeline->reset();
     camera_initialized.store(false, std::memory_order_relaxed);
-    ctx->renderer->ResetCameraClippingRange();
-    ctx->renderWindow->Render();
+    context()->renderer->ResetCameraClippingRange();
+    context()->renderWindow->Render();
 }
 
 void VtkQuickItem::syncToVTK(std::shared_ptr<PointCloudPipeline> pipeline) {
     auto& verts = pipeline->verts;
     auto& points = pipeline->points;
     auto& colors = pipeline->colors;
-    auto& cloud = pipeline->pcl_svf.pcl_cloud;
+    auto& cloud = pipeline->svf.cloud;
     const vtkIdType total_points = static_cast<vtkIdType>(cloud->points.size());
     // Grow vtk arrays only when needed
     if (points->GetNumberOfPoints() != total_points) {
@@ -78,8 +68,8 @@ void VtkQuickItem::syncToVTK(std::shared_ptr<PointCloudPipeline> pipeline) {
             verts->InsertCellPoint(i);
         }
     }
-    for (auto& key : pipeline->pcl_svf.dirty_voxels) {
-        auto& voxel = pipeline->pcl_svf.voxel_map[key];
+    for (auto& key : pipeline->svf.dirty_voxels) {
+        auto& voxel = pipeline->svf.voxel_map[key];
         const auto& p = cloud->points[voxel.point_index];
         const vtkIdType idx = static_cast<vtkIdType>(voxel.point_index);
         // update position
@@ -98,7 +88,7 @@ void VtkQuickItem::syncToVTK(std::shared_ptr<PointCloudPipeline> pipeline) {
     verts->Modified();
     colors->Modified();
     pipeline->polyData->Modified();
-    pipeline->pcl_svf.dirty_voxels.clear();
+    pipeline->svf.dirty_voxels.clear();
 }
 
 void VtkQuickItem::load_point_cloud(QUrl path) {
@@ -115,13 +105,12 @@ void VtkQuickItem::load_point_cloud(QUrl path) {
         ssize_t bytes, total_bytes = 0, chunks = 0;
         std::vector<ParsedPoint> parsed_points;
         parsed_points.reserve(4*1024*1024);
+        set_active_pipeline(base_pipeline());
         while (!stop.load(std::memory_order_relaxed) &&
             (bytes = rd->read_sync(buf.get(), _2M, total_bytes)) > 0) {
                 total_bytes += bytes;
-                auto* ctx = VtkContext::SafeDownCast(_ctx);
-                auto pipeline = std::static_pointer_cast
-                    <PointCloudPipeline>(ctx->pipelines[0]);
-                auto v = pipeline->pcl_svf.consume_cloud_chunk(
+                auto pipeline = base_pipeline();
+                auto v = pipeline->svf.consume_cloud_chunk(
                     buf.get(), bytes, parsed_points, mux);
                 total_voxels += v;
                 total_points += parsed_points.size();
@@ -139,48 +128,38 @@ void VtkQuickItem::load_point_cloud(QUrl path) {
                         // or from QQuickItem::updatePaintNode()
                         dispatch_async([this](vtkRenderWindow* renderWindow, vtkUserData ud) {
                             std::lock_guard<std::mutex> lg(mux);
-                            auto* ctx = VtkContext::SafeDownCast(ud);
-                            if (!ctx) return;
-                            auto pipeline = std::static_pointer_cast
-                                <PointCloudPipeline>(ctx->pipelines[0]);
-                            // Notify VTK pipeline
-                            syncToVTK(pipeline);
+                            syncToVTK(base_pipeline());
                             if (!camera_initialized.load(std::memory_order_relaxed)) {
-                                ctx->renderer->ResetCamera();
-                                ctx->renderer->ResetCameraClippingRange();
+                                context()->renderer->ResetCamera();
+                                context()->renderer->ResetCameraClippingRange();
                                 camera_initialized.store(true, std::memory_order_relaxed);
                             }
                         });
                         emit pointCloudUpdated(percent, total_points, total_voxels);
                     }, Qt::QueuedConnection);
                 }
-        }
+            }
+            
     });
 }
 
 void VtkQuickItem::fit_to_cloud() {
     update();
     dispatch_async([this](vtkRenderWindow* rw, vtkUserData ud) {
-        auto* ctx = VtkContext::SafeDownCast(ud);
-        if (!ctx) return;
-        auto pipeline = std::static_pointer_cast
-            <PointCloudPipeline>(ctx->pipelines[0]);
+        auto pipeline = active_pipeline();
         if (pipeline->points->GetNumberOfPoints() == 0) return;
-        ctx->renderer->ResetCamera();
-        ctx->renderer->ResetCameraClippingRange();
+        context()->renderer->ResetCamera();
+        context()->renderer->ResetCameraClippingRange();
         rw->Render();
     });
 }
 
 void VtkQuickItem::compute_color_map(const std::string& arrayName) {
-    auto* ctx = VtkContext::SafeDownCast(_ctx);
-    if (!ctx || ctx->pipelines.empty()) return;
-    auto pipeline = std::static_pointer_cast
-        <PointCloudPipeline>(ctx->pipelines[0]);
-    auto& cloud = pipeline->pcl_svf.pcl_cloud;
-    
-    const double min_z = pipeline->pcl_svf.min_z;
-    const double max_z = pipeline->pcl_svf.max_z;
+    auto pipeline = active_pipeline();
+    auto& cloud = pipeline->svf.cloud;
+
+    const double min_z = pipeline->svf.min_z;
+    const double max_z = pipeline->svf.max_z;
     const double denom = (max_z - min_z + 1e-9);
     const vtkIdType n = static_cast
         <vtkIdType>(cloud->points.size());
@@ -210,22 +189,16 @@ void VtkQuickItem::compute_color_map(const std::string& arrayName) {
 void VtkQuickItem::apply_scalar(QString name) {
     auto arrayName = name.toStdString();
     std::thread([this, arrayName]{
-        auto* ctx = VtkContext::SafeDownCast(_ctx);
-        if (!ctx || ctx->pipelines.empty()) return;
-        auto pipe = std::static_pointer_cast
-            <PointCloudPipeline>(ctx->pipelines[0]);
-        auto* pd = pipe->polyData->GetPointData();
+        auto pipeline = active_pipeline();
+        auto* pd = pipeline->polyData->GetPointData();
         if (!pd->HasArray(arrayName.c_str())) {
             compute_color_map(arrayName);
         }
         QMetaObject::invokeMethod(qApp, [this, arrayName]() {
             dispatch_async([this, arrayName](vtkRenderWindow* rw, vtkUserData ud) {
                 std::lock_guard<std::mutex> lg(mux);
-                auto* ctx = VtkContext::SafeDownCast(ud);
-                if (!ctx || ctx->pipelines.empty()) return;
-                auto pipe = std::static_pointer_cast
-                    <PointCloudPipeline>(ctx->pipelines[0]);
-                auto* pd = pipe->polyData->GetPointData();
+                auto pipeline = active_pipeline();
+                auto* pd = pipeline->polyData->GetPointData();
                 pd->SetActiveScalars(arrayName.c_str());
                 rw->Render();
             });
@@ -242,18 +215,39 @@ QQuickVTKItem::vtkUserData
 void VtkQuickItem::ground_z_depth() {
     std::thread([this](){
         auto* ctx = VtkContext::SafeDownCast(_ctx);
-        auto pipeline = std::static_pointer_cast
-            <PointCloudPipeline>(ctx->pipelines[0]);
+        auto pipeline = ctx->pipelines[0];
         std::lock_guard<std::mutex> lg(mux);
-        pipeline->pcl_svf.ground_z_depth();
+        pipeline->svf.ground_z_depth();
         update();
         dispatch_async([this](vtkRenderWindow* rw, vtkUserData ud) {
             auto* ctx = VtkContext::SafeDownCast(ud);
-            auto pipeline = std::static_pointer_cast
-                <PointCloudPipeline>(ctx->pipelines[0]);
-            syncToVTK(pipeline);
+            syncToVTK(ctx->pipelines[0]);
         });
     }).detach();
+}
+
+VtkContext *
+    VtkQuickItem::context() {
+        return VtkContext::SafeDownCast(_ctx);
+}
+
+std::shared_ptr<PointCloudPipeline> 
+    VtkQuickItem::base_pipeline() {
+        auto* ctx = VtkContext::SafeDownCast(_ctx);
+        if (!ctx || ctx->pipelines.empty()) return nullptr;        
+        return ctx->pipelines[0];
+}
+
+std::shared_ptr<PointCloudPipeline> 
+    VtkQuickItem::active_pipeline() {
+        auto* ctx = VtkContext::SafeDownCast(_ctx);
+        if (!ctx || ctx->pipelines.empty()) return nullptr;        
+        return ctx->active_pipeline;
+}
+
+void VtkQuickItem::set_active_pipeline(
+        std::shared_ptr<PointCloudPipeline> pipeline) {
+    context()->active_pipeline = pipeline;
 }
 
 void VtkQuickItem::stop_load() {
