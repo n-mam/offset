@@ -245,48 +245,18 @@ struct pcl_stream_voxel_filter {
         return new_voxels;
     }
 
-    void radius_outlier_removal(float radius, int min_neighbors) {
-        const int r = static_cast<int>(
-            std::ceil(radius / voxel_size));
-        std::vector<VoxelKey> remove_list;
-        remove_list.reserve(voxel_map.size() / 10);
+    void ground_z_depth() {
+        dirty_voxels.clear();
         for (auto& [key, voxel] : voxel_map) {
-            std::cout << "looping..." << std::endl;
-            if (!voxel.alive) continue;
-            int neighbors = 0;
-            for (int dz = -r; dz <= r; ++dz) {
-                for (int dy = -r; dy <= r; ++dy) {
-                    for (int dx = -r; dx <= r; ++dx) {
-                        VoxelKey nk {
-                            key.x + dx,
-                            key.y + dy,
-                            key.z + dz
-                        };
-                        auto it = voxel_map.find(nk);
-                        if (it == voxel_map.end()) continue;
-                        if (!it->second.alive) continue;
-                        float dist2 =
-                            float(dx * dx +
-                                dy * dy +
-                                dz * dz) *
-                            voxel_size *
-                            voxel_size;
-                        if (dist2 <= radius * radius) {
-                            neighbors++;
-                        }
-                    }
+            if (voxel.count == 0) continue;
+            double avg_z = voxel.sz / voxel.count; 
+            if (avg_z > 1 || avg_z < -1) {
+                if (!voxel.dirty) {
+                    voxel.dirty = true;
+                    dirty_voxels.push_back(key);
                 }
+                voxel.alive = false;             
             }
-            // includes self
-            if (neighbors < min_neighbors) {
-                remove_list.push_back(key);
-            }
-        }
-        // mark removed
-        for (auto& key : remove_list) {
-            voxel_map[key].alive = false;
-            voxel_map[key].dirty = true;
-            dirty_voxels.push_back(key);
         }
     }
 };

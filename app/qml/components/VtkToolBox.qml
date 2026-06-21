@@ -11,6 +11,11 @@ Item {
 
     property var tools: [
         { 
+            name: "ground", 
+            icon: "qrc:/soil.png", 
+            sub: ["xyz", "z-depth"]
+        },        
+        { 
             name: "colors", 
             icon: "qrc:/colors.png", 
             sub: ["original", "z-heatmap"]
@@ -113,6 +118,8 @@ Item {
             visualizer.apply_scalar("z-heatmap")
         } else if (subtool === "original") {
             visualizer.apply_scalar("original")
+        } else if (subtool === "z-depth") {
+            visualizer.ground_z_depth();
         }
     }
 

@@ -120,7 +120,7 @@ void VtkQuickItem::load_point_cloud(QUrl path) {
                 total_bytes += bytes;
                 auto* ctx = VtkContext::SafeDownCast(_ctx);
                 auto pipeline = std::static_pointer_cast
-                        <PointCloudPipeline>(ctx->pipelines[0]);
+                    <PointCloudPipeline>(ctx->pipelines[0]);
                 auto v = pipeline->pcl_svf.consume_cloud_chunk(
                     buf.get(), bytes, parsed_points, mux);
                 total_voxels += v;
@@ -239,20 +239,19 @@ QQuickVTKItem::vtkUserData
         return _ctx = create_scene(renderWindow);
 }
 
-void VtkQuickItem::radius_outlier_removal() {
+void VtkQuickItem::ground_z_depth() {
     std::thread([this](){
         auto* ctx = VtkContext::SafeDownCast(_ctx);
         auto pipeline = std::static_pointer_cast
             <PointCloudPipeline>(ctx->pipelines[0]);
         std::lock_guard<std::mutex> lg(mux);
-        pipeline->pcl_svf.radius_outlier_removal(5.0f, 6);
+        pipeline->pcl_svf.ground_z_depth();
         update();
         dispatch_async([this](vtkRenderWindow* rw, vtkUserData ud) {
             auto* ctx = VtkContext::SafeDownCast(ud);
             auto pipeline = std::static_pointer_cast
                 <PointCloudPipeline>(ctx->pipelines[0]);
             syncToVTK(pipeline);
-            std::cout << "done..." << std::endl;
         });
     }).detach();
 }
