@@ -6,6 +6,9 @@
 #include <vtkRenderWindow.h>
 #include <vtkPolyDataMapper.h>
 
+#include <pcl/filters/extract_indices.h>
+#include <pcl/segmentation/progressive_morphological_filter.h>
+
 #include <VtkQuickItem.h>
 #include <MouseInteractor.h>
 
@@ -29,9 +32,8 @@ vtkSmartPointer<VtkContext>
             distanceUpdated(distance);
         };
         ctx->interactor->SetInteractorStyle(style);
-        // Point cloud pipeline
-        auto pipeline =
-            std::make_shared<PointCloudPipeline>();
+        // base pipeline
+        auto pipeline = std::make_shared<PointCloudPipeline>();
         pipeline->addToRenderer(ctx->renderer);
         ctx->pipelines.push_back(pipeline);
         ctx->renderer->ResetCamera();
@@ -105,13 +107,13 @@ void VtkQuickItem::load_point_cloud(QUrl path) {
         ssize_t bytes, total_bytes = 0, chunks = 0;
         std::vector<ParsedPoint> parsed_points;
         parsed_points.reserve(4*1024*1024);
-        set_active_pipeline(base_pipeline());
+        auto pipeline = base_pipeline();
         while (!stop.load(std::memory_order_relaxed) &&
             (bytes = rd->read_sync(buf.get(), _2M, total_bytes)) > 0) {
                 total_bytes += bytes;
-                auto pipeline = base_pipeline();
                 auto v = pipeline->svf.consume_cloud_chunk(
                     buf.get(), bytes, parsed_points, mux);
+                //++chunks;
                 total_voxels += v;
                 total_points += parsed_points.size();
                 double percent = (double(total_bytes) / double(fileSize)) * 100.0;
@@ -139,7 +141,14 @@ void VtkQuickItem::load_point_cloud(QUrl path) {
                     }, Qt::QueuedConnection);
                 }
             }
-            
+            QMetaObject::invokeMethod(qApp, [this]() {
+                dispatch_async([this](vtkRenderWindow* renderWindow, vtkUserData ud) {
+                    // runs after event loop cycles
+                    // make base as the active pipeline
+                    context()->active_pipeline = base_pipeline();
+                });
+            }, Qt::QueuedConnection);            
+      
     });
 }
 
@@ -147,7 +156,7 @@ void VtkQuickItem::fit_to_cloud() {
     update();
     dispatch_async([this](vtkRenderWindow* rw, vtkUserData ud) {
         auto pipeline = active_pipeline();
-        if (pipeline->points->GetNumberOfPoints() == 0) return;
+        if (pipeline && pipeline->is_empty()) return;
         context()->renderer->ResetCamera();
         context()->renderer->ResetCameraClippingRange();
         rw->Render();
@@ -187,9 +196,11 @@ void VtkQuickItem::compute_color_map(const std::string& arrayName) {
 }
 
 void VtkQuickItem::apply_scalar(QString name) {
+    if (active_pipeline() && active_pipeline()->is_empty()) return;
     auto arrayName = name.toStdString();
     std::thread([this, arrayName]{
         auto pipeline = active_pipeline();
+        if (pipeline && pipeline->is_empty()) return;
         auto* pd = pipeline->polyData->GetPointData();
         if (!pd->HasArray(arrayName.c_str())) {
             compute_color_map(arrayName);
@@ -206,23 +217,71 @@ void VtkQuickItem::apply_scalar(QString name) {
     }).detach();
 }
 
-// QQuickVTKItem entry point
-QQuickVTKItem::vtkUserData
-    VtkQuickItem::initializeVTK(vtkRenderWindow *renderWindow) {
-        return _ctx = create_scene(renderWindow);
-}
-
-void VtkQuickItem::ground_z_depth() {
-    std::thread([this](){
-        auto* ctx = VtkContext::SafeDownCast(_ctx);
-        auto pipeline = ctx->pipelines[0];
-        std::lock_guard<std::mutex> lg(mux);
-        pipeline->svf.ground_z_depth();
-        update();
-        dispatch_async([this](vtkRenderWindow* rw, vtkUserData ud) {
-            auto* ctx = VtkContext::SafeDownCast(ud);
-            syncToVTK(ctx->pipelines[0]);
-        });
+void VtkQuickItem::elevation_filter() {
+    if (active_pipeline() && 
+        active_pipeline()->is_empty()) return;
+    std::thread([this]() {
+        auto pipeline = active_pipeline();
+        if (!pipeline || pipeline->is_empty()) return;
+        using PointT = pcl::PointXYZ;
+        auto& input_cloud = pipeline->svf.cloud;
+        auto& voxels = pipeline->svf.voxel_map;
+        // run PMF (ground segmentation)
+        pcl::PointIndicesPtr ground(new pcl::PointIndices);
+        pcl::ProgressiveMorphologicalFilter<PointT> pmf;
+        pmf.setInputCloud(input_cloud);
+        pmf.setMaxWindowSize(15);     // smaller = faster
+        pmf.setSlope(1.0f);
+        pmf.setInitialDistance(0.4f);
+        pmf.setMaxDistance(2.5f);
+        pmf.extract(ground->indices);
+        if (ground->indices.empty()) return;
+        std::unordered_set<uint32_t> ground_set;
+        ground_set.reserve(ground->indices.size());
+        for (int idx : ground->indices)
+            ground_set.insert((uint32_t)idx);
+        auto filter = std::make_shared<PointCloudPipeline>();
+        vtkIdType newIndex = 0;
+        filter->svf.voxel_map.reserve(voxels.size() / 2);
+        filter->svf.cloud->points.reserve(ground->indices.size());
+        filter->svf.dirty_voxels.reserve(ground->indices.size());
+        for (size_t i = 0; i < input_cloud->size(); ++i) {
+            if (!ground_set.count((uint32_t)i)) continue;
+            const auto& p = input_cloud->points[i];
+            VoxelKey key{
+                (int)std::floor(p.x / pipeline->svf.voxel_size),
+                (int)std::floor(p.y / pipeline->svf.voxel_size),
+                (int)std::floor(p.z / pipeline->svf.voxel_size)
+            };
+            auto it = voxels.find(key);
+            if (it == voxels.end()) continue;
+            const auto& src_voxel = it->second;
+            auto [new_it, inserted] =
+                filter->svf.voxel_map.try_emplace(key);
+            auto& v = new_it->second;
+            v.count = src_voxel.count;
+            v.sx = p.x;
+            v.sy = p.y;
+            v.sz = p.z;
+            // color
+            v.sr = src_voxel.sr;
+            v.sg = src_voxel.sg;
+            v.sb = src_voxel.sb;
+            v.dirty = true;
+            v.point_index = newIndex++;
+            filter->svf.cloud->push_back(p);
+            filter->svf.dirty_voxels.push_back(key);
+        }
+        // swap pipeline
+        pipeline->removeFromRenderer(context()->renderer);
+        QMetaObject::invokeMethod(qApp, [this, filter]() {
+            update();
+            dispatch_async([this, filter](vtkRenderWindow* rw, vtkUserData ud) {
+                std::lock_guard<std::mutex> lg(mux);
+                syncToVTK(filter);
+                set_active_pipeline(filter);
+            });
+        }, Qt::QueuedConnection);
     }).detach();
 }
 
@@ -234,20 +293,35 @@ VtkContext *
 std::shared_ptr<PointCloudPipeline> 
     VtkQuickItem::base_pipeline() {
         auto* ctx = VtkContext::SafeDownCast(_ctx);
-        if (!ctx || ctx->pipelines.empty()) return nullptr;        
+        if (!ctx || ctx->pipelines.empty()) return nullptr;
         return ctx->pipelines[0];
 }
 
 std::shared_ptr<PointCloudPipeline> 
     VtkQuickItem::active_pipeline() {
         auto* ctx = VtkContext::SafeDownCast(_ctx);
-        if (!ctx || ctx->pipelines.empty()) return nullptr;        
+        if (!ctx || ctx->pipelines.empty()) return nullptr;
         return ctx->active_pipeline;
 }
 
 void VtkQuickItem::set_active_pipeline(
         std::shared_ptr<PointCloudPipeline> pipeline) {
-    context()->active_pipeline = pipeline;
+    if (!pipeline) return;
+    auto ctx = context();
+    ctx->active_pipeline = pipeline;
+    pipeline->addToRenderer(ctx->renderer);
+    ctx->pipelines.push_back(pipeline);
+    ctx->renderer->ResetCamera();
+}
+
+void VtkQuickItem::restore_base_pipeline() {
+    auto base = base_pipeline();
+    if (base->is_empty()) return;
+    auto active = active_pipeline();
+    if (active->is_empty()) return;
+    if (base == active) return;
+    active->removeFromRenderer(context()->renderer);
+    set_active_pipeline(base);
 }
 
 void VtkQuickItem::stop_load() {
@@ -259,6 +333,12 @@ VtkQuickItem::~VtkQuickItem() {
     if (_thread.joinable()) {
         _thread.join();
     }
+}
+
+// QQuickVTKItem entry point
+QQuickVTKItem::vtkUserData
+    VtkQuickItem::initializeVTK(vtkRenderWindow *renderWindow) {
+        return _ctx = create_scene(renderWindow);
 }
 
 vtkStandardNewMacro(VtkContext);

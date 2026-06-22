@@ -37,7 +37,8 @@ struct VtkQuickItem : public QQuickVTKItem {
     ~VtkQuickItem();
     Q_INVOKABLE void stop_load();
     Q_INVOKABLE void fit_to_cloud();
-    Q_INVOKABLE void ground_z_depth();
+    Q_INVOKABLE void elevation_filter();
+    Q_INVOKABLE void restore_base_pipeline();
     Q_INVOKABLE void apply_scalar(QString name);
     Q_INVOKABLE void load_point_cloud(QUrl filePath);
     void clear_scene();

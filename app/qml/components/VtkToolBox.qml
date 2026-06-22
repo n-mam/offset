@@ -11,9 +11,9 @@ Item {
 
     property var tools: [
         { 
-            name: "ground", 
-            icon: "qrc:/soil.png", 
-            sub: ["xyz", "z-depth"]
+            name: "filter", 
+            icon: "qrc:/filter.png", 
+            sub: ["xyz", "elevation"]
         },        
         { 
             name: "colors", 
@@ -108,6 +108,7 @@ Item {
             fileDialog.open()
         } else if (tool === 'debug') {
             visualizer.toggle_debug_overlay();
+            visualizer.restore_base_pipeline();
         } else if (tool === "fit") {
             visualizer.fit_to_cloud();
         }
@@ -118,8 +119,8 @@ Item {
             visualizer.apply_scalar("z-heatmap")
         } else if (subtool === "original") {
             visualizer.apply_scalar("original")
-        } else if (subtool === "z-depth") {
-            visualizer.ground_z_depth();
+        } else if (subtool === "elevation") {
+            visualizer.elevation_filter();
         }
     }
 

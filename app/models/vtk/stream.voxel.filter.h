@@ -244,21 +244,6 @@ struct stream_voxel_filter {
         }
         return new_voxels;
     }
-
-    void ground_z_depth() {
-        dirty_voxels.clear();
-        for (auto& [key, voxel] : voxel_map) {
-            if (voxel.count == 0) continue;
-            double avg_z = voxel.sz / voxel.count; 
-            if (avg_z > 1 || avg_z < -1) {
-                if (!voxel.dirty) {
-                    voxel.dirty = true;
-                    dirty_voxels.push_back(key);
-                }
-                voxel.alive = false;             
-            }
-        }
-    }
 };
 
 #endif

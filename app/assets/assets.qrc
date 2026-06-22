@@ -27,6 +27,7 @@
     <file>ruler.png</file>
     <file>stair.png</file>
     <file>radius.png</file>
+    <file>filter.png</file>    
     <file>rename.png</file>
     <file>folder.png</file>
     <file>upload.png</file>
@@ -40,7 +41,7 @@
     <file>refresh.png</file>
     <file>up-diff.png</file>
     <file>compare.png</file>
-    <file>soil.png</file>    
+    <file>terrain.png</file>    
     <file>download.png</file>
     <file>settings.png</file>
     <file>down-diff.png</file>

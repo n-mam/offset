@@ -23,8 +23,10 @@
 struct PointCloudPipeline {
 
     enum filter {
-        original = 0,
-        ground
+        none,
+        ground,
+        original,
+        elevation,
     };
 
     stream_voxel_filter svf;
@@ -36,20 +38,20 @@ struct PointCloudPipeline {
     std::vector<vtkSmartPointer<vtkActor>> actors;
 
     PointCloudPipeline() {
-        // Points and geometry
+        // points and geometry
         points = vtkSmartPointer<vtkPoints>::New();
         points->SetDataTypeToFloat();
         verts = vtkSmartPointer<vtkCellArray>::New();
         polyData = vtkSmartPointer<vtkPolyData>::New();
         polyData->SetPoints(points);
         polyData->SetVerts(verts);
-        // Initialize colors array
+        // initialize colors array
         colors = vtkSmartPointer<vtkUnsignedCharArray>::New();
         colors->SetNumberOfComponents(3);  // R, G, B
         colors->SetName("original");
         polyData->GetPointData()->AddArray(colors);
         polyData->GetPointData()->SetActiveScalars("original");        
-        // Mapper
+        // mapper
         mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
         mapper->SetInputData(polyData);
         mapper->SetScalarModeToUsePointData();
@@ -70,6 +72,20 @@ struct PointCloudPipeline {
         }
     }
 
+    void removeFromRenderer(vtkRenderer* renderer) {
+        if (renderer) {
+            for (auto& actor : actors) {
+                if (actor) {
+                    renderer->RemoveActor(actor);
+                }
+            }
+        }
+    }
+    
+    bool is_empty() {
+        return (points->GetNumberOfPoints() == 0);
+    }
+    
     void reset() {
         // CPU state
         svf.voxel_map.clear();
