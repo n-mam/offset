@@ -4,13 +4,9 @@
 #include <vtkPolyData.h>
 #include <vtkProperty.h>
 #include <vtkPointData.h>
-#include <vtkPropPicker.h>
 #include <vtkNamedColors.h>
-#include <vtkSphereSource.h>
-#include <vtkObjectFactory.h>
 #include <vtkPolyDataMapper.h>
 #include <vtkUnsignedCharArray.h>
-#include <vtkMinimalStandardRandomSequence.h>
 
 #include <stream.voxel.filter.h>
 
@@ -21,14 +17,12 @@
 
 // Point cloud pipeline
 struct PointCloudPipeline {
-
     enum filter {
         none,
-        ground,
-        original,
-        elevation,
+        base,
+        ground, //pmf
+        elevation, // z-heatmap
     };
-
     stream_voxel_filter svf;
     vtkSmartPointer<vtkPoints> points;
     vtkSmartPointer<vtkCellArray> verts;
@@ -66,13 +60,13 @@ struct PointCloudPipeline {
         actors.push_back(actor);
     }
 
-    void addToRenderer(vtkRenderer* renderer) {
+    void addActorsToRenderer(vtkRenderer* renderer) {
         for (auto& actor : actors) {
             renderer->AddActor(actor);
         }
     }
 
-    void removeFromRenderer(vtkRenderer* renderer) {
+    void removeActorsFromRenderer(vtkRenderer* renderer) {
         if (renderer) {
             for (auto& actor : actors) {
                 if (actor) {
@@ -98,3 +92,5 @@ struct PointCloudPipeline {
         polyData->Modified();
     }
 };
+
+using sppl = std::shared_ptr<PointCloudPipeline>;

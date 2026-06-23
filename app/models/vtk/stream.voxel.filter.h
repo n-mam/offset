@@ -23,7 +23,6 @@ struct VoxelData {
     double sg = 0;
     double sb = 0;
     bool dirty;
-    bool alive = true;
     uint32_t count = 0;
     uint32_t point_index = 0;
 };

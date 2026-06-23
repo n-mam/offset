@@ -11,11 +11,15 @@ Item {
 
     property var tools: [
         { 
+            name: "original", 
+            icon: "qrc:/cloud.png"
+        },          
+        { 
             name: "filter", 
             icon: "qrc:/filter.png", 
             sub: ["xyz", "elevation"]
         },        
-        { 
+        {
             name: "colors", 
             icon: "qrc:/colors.png", 
             sub: ["original", "z-heatmap"]
@@ -44,15 +48,16 @@ Item {
             Item {
                 width: 30
                 height: 30
+                property var tool: modelData 
                 ToolButton {
                     id: btn
                     anchors.fill: parent
                     onClicked: {
-                        if (modelData.sub) {
-                            activeSubmenu = (activeSubmenu === modelData.name) ? 
-                                "" : modelData.name
+                        if (tool.sub && tool.sub.length > 0) {
+                            activeSubmenu = (activeSubmenu === tool.name) ? 
+                                "" : tool.name
                         } else {
-                            onToolClicked(modelData.name)
+                            onToolClicked(tool.name)
                         }
                     }
                     background: Rectangle {
@@ -61,9 +66,9 @@ Item {
                         color: "#5d5d5d"
                     }
                     contentItem: Image {
-                        source: modelData.icon
                         width: 16
                         height: 16
+                        source: tool.icon
                         anchors.centerIn: parent
                         fillMode: Image.PreserveAspectFit
                     }
@@ -74,7 +79,7 @@ Item {
                     modal: false
                     focus: false
                     x: -width - 8
-                    visible: activeSubmenu === modelData.name
+                    visible: activeSubmenu === tool.name
                     background: Rectangle {
                         radius: 6
                         color: "#2b2b2b"
@@ -83,12 +88,13 @@ Item {
                         spacing: 6
                         padding: 6
                         Repeater {
-                            model: modelData.sub || []
+                            model: tool.sub || []
                             ToolButton {
-                                text: modelData
+                                property string subItem: modelData
+                                text: subItem
                                 width: 100
                                 onClicked: {
-                                    onSubToolClicked(modelData)
+                                    onSubToolClicked(tool.name, subItem)
                                     activeSubmenu = ""
                                 }
                                 background: Rectangle {
@@ -104,23 +110,24 @@ Item {
     }
 
     function onToolClicked(tool) {
-        if (tool === "open") {
+        if (tool === "original") {
+            visualizer.restore_base_pipeline();            
+        } else if (tool === "open") {
             fileDialog.open()
         } else if (tool === 'debug') {
             visualizer.toggle_debug_overlay();
-            visualizer.restore_base_pipeline();
         } else if (tool === "fit") {
             visualizer.fit_to_cloud();
         }
     }
 
-    function onSubToolClicked(subtool) {
-        if (subtool === "z-heatmap") {
+    function onSubToolClicked(tool, subtool) {
+        if (tool === "colors" && subtool === "z-heatmap") {
             visualizer.apply_scalar("z-heatmap")
-        } else if (subtool === "original") {
+        } else if (tool === "colors" && subtool === "original") {
             visualizer.apply_scalar("original")
-        } else if (subtool === "elevation") {
-            visualizer.elevation_filter();
+        } else if (tool === "filter" && subtool === "elevation") {
+            visualizer.elevation_filter()
         }
     }
 

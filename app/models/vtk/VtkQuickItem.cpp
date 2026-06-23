@@ -34,7 +34,7 @@ vtkSmartPointer<VtkContext>
         ctx->interactor->SetInteractorStyle(style);
         // base pipeline
         auto pipeline = std::make_shared<PointCloudPipeline>();
-        pipeline->addToRenderer(ctx->renderer);
+        pipeline->addActorsToRenderer(ctx->renderer);
         ctx->pipelines.push_back(pipeline);
         ctx->renderer->ResetCamera();
         return ctx;
@@ -53,7 +53,7 @@ void VtkQuickItem::clear_scene() {
     context()->renderWindow->Render();
 }
 
-void VtkQuickItem::syncToVTK(std::shared_ptr<PointCloudPipeline> pipeline) {
+void VtkQuickItem::syncToVTK(sppl pipeline) {
     auto& verts = pipeline->verts;
     auto& points = pipeline->points;
     auto& colors = pipeline->colors;
@@ -143,23 +143,13 @@ void VtkQuickItem::load_point_cloud(QUrl path) {
             }
             QMetaObject::invokeMethod(qApp, [this]() {
                 dispatch_async([this](vtkRenderWindow* renderWindow, vtkUserData ud) {
-                    // runs after event loop cycles
+                    // runs after render event loop cycles
                     // make base as the active pipeline
                     context()->active_pipeline = base_pipeline();
+                    cloud_loaded.store(true, std::memory_order_relaxed);                    
                 });
             }, Qt::QueuedConnection);            
       
-    });
-}
-
-void VtkQuickItem::fit_to_cloud() {
-    update();
-    dispatch_async([this](vtkRenderWindow* rw, vtkUserData ud) {
-        auto pipeline = active_pipeline();
-        if (pipeline && pipeline->is_empty()) return;
-        context()->renderer->ResetCamera();
-        context()->renderer->ResetCameraClippingRange();
-        rw->Render();
     });
 }
 
@@ -196,7 +186,7 @@ void VtkQuickItem::compute_color_map(const std::string& arrayName) {
 }
 
 void VtkQuickItem::apply_scalar(QString name) {
-    if (active_pipeline() && active_pipeline()->is_empty()) return;
+    if (!has_cloud()) return;
     auto arrayName = name.toStdString();
     std::thread([this, arrayName]{
         auto pipeline = active_pipeline();
@@ -218,8 +208,7 @@ void VtkQuickItem::apply_scalar(QString name) {
 }
 
 void VtkQuickItem::elevation_filter() {
-    if (active_pipeline() && 
-        active_pipeline()->is_empty()) return;
+    if (!has_cloud()) return;
     std::thread([this]() {
         auto pipeline = active_pipeline();
         if (!pipeline || pipeline->is_empty()) return;
@@ -238,8 +227,9 @@ void VtkQuickItem::elevation_filter() {
         if (ground->indices.empty()) return;
         std::unordered_set<uint32_t> ground_set;
         ground_set.reserve(ground->indices.size());
-        for (int idx : ground->indices)
+        for (int idx : ground->indices) {
             ground_set.insert((uint32_t)idx);
+        }
         auto filter = std::make_shared<PointCloudPipeline>();
         vtkIdType newIndex = 0;
         filter->svf.voxel_map.reserve(voxels.size() / 2);
@@ -273,7 +263,7 @@ void VtkQuickItem::elevation_filter() {
             filter->svf.dirty_voxels.push_back(key);
         }
         // swap pipeline
-        pipeline->removeFromRenderer(context()->renderer);
+        pipeline->removeActorsFromRenderer(context()->renderer);
         QMetaObject::invokeMethod(qApp, [this, filter]() {
             update();
             dispatch_async([this, filter](vtkRenderWindow* rw, vtkUserData ud) {
@@ -285,43 +275,59 @@ void VtkQuickItem::elevation_filter() {
     }).detach();
 }
 
+void VtkQuickItem::fit_to_cloud() {
+    update();
+    dispatch_async([this](vtkRenderWindow* rw, vtkUserData ud) {
+        auto pipeline = active_pipeline();
+        if (pipeline && pipeline->is_empty()) return;
+        context()->renderer->ResetCamera();
+        context()->renderer->ResetCameraClippingRange();
+        rw->Render();
+    });
+}
+
 VtkContext *
     VtkQuickItem::context() {
         return VtkContext::SafeDownCast(_ctx);
 }
 
-std::shared_ptr<PointCloudPipeline> 
-    VtkQuickItem::base_pipeline() {
-        auto* ctx = VtkContext::SafeDownCast(_ctx);
-        if (!ctx || ctx->pipelines.empty()) return nullptr;
-        return ctx->pipelines[0];
+sppl VtkQuickItem::base_pipeline() {
+    auto* ctx = VtkContext::SafeDownCast(_ctx);
+    if (!ctx || ctx->pipelines.empty()) return nullptr;
+    return ctx->pipelines[0];
 }
 
-std::shared_ptr<PointCloudPipeline> 
-    VtkQuickItem::active_pipeline() {
-        auto* ctx = VtkContext::SafeDownCast(_ctx);
-        if (!ctx || ctx->pipelines.empty()) return nullptr;
-        return ctx->active_pipeline;
+sppl VtkQuickItem::active_pipeline() {
+    auto* ctx = VtkContext::SafeDownCast(_ctx);
+    if (!ctx || ctx->pipelines.empty()) return nullptr;
+    return ctx->active_pipeline;
 }
 
-void VtkQuickItem::set_active_pipeline(
-        std::shared_ptr<PointCloudPipeline> pipeline) {
+void VtkQuickItem::set_active_pipeline(sppl pipeline) {
     if (!pipeline) return;
     auto ctx = context();
     ctx->active_pipeline = pipeline;
-    pipeline->addToRenderer(ctx->renderer);
+    pipeline->addActorsToRenderer(ctx->renderer);
     ctx->pipelines.push_back(pipeline);
     ctx->renderer->ResetCamera();
 }
 
 void VtkQuickItem::restore_base_pipeline() {
+    if (!has_cloud()) return;
     auto base = base_pipeline();
     if (base->is_empty()) return;
     auto active = active_pipeline();
     if (active->is_empty()) return;
     if (base == active) return;
-    active->removeFromRenderer(context()->renderer);
-    set_active_pipeline(base);
+    auto ctx = context();
+    active->removeActorsFromRenderer(ctx->renderer);
+    ctx->active_pipeline = base;
+    base->addActorsToRenderer(ctx->renderer);
+    ctx->renderer->ResetCamera();    
+}
+
+bool VtkQuickItem::has_cloud() {
+    return cloud_loaded.load(std::memory_order_relaxed);
 }
 
 void VtkQuickItem::stop_load() {

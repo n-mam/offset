@@ -17,39 +17,46 @@
 
 struct VtkContext : vtkObject {
     static VtkContext* New();
+    sppl active_pipeline;
+    std::vector<sppl> pipelines;
     vtkTypeMacro(VtkContext, vtkObject);
     vtkSmartPointer<vtkRenderer> renderer;
     vtkSmartPointer<vtkRenderWindow> renderWindow;
     vtkSmartPointer<vtkRenderWindowInteractor> interactor;
-    std::vector<std::shared_ptr<PointCloudPipeline>> pipelines;
-    std::shared_ptr<PointCloudPipeline> active_pipeline;
 };
 
 struct VtkQuickItem : public QQuickVTKItem {
+
     Q_OBJECT
     QML_ELEMENT
+
     public:
     std::mutex mux;
     std::thread _thread;
     std::atomic<bool> stop{false};
     QQuickVTKItem::vtkUserData _ctx;
+    std::atomic<bool> cloud_loaded{false};
     std::atomic<bool> camera_initialized{false};
     ~VtkQuickItem();
+
     Q_INVOKABLE void stop_load();
     Q_INVOKABLE void fit_to_cloud();
     Q_INVOKABLE void elevation_filter();
     Q_INVOKABLE void restore_base_pipeline();
     Q_INVOKABLE void apply_scalar(QString name);
     Q_INVOKABLE void load_point_cloud(QUrl filePath);
+
+    bool has_cloud();
     void clear_scene();
+    sppl base_pipeline();
     VtkContext *context();
-    std::shared_ptr<PointCloudPipeline> base_pipeline();
+    sppl active_pipeline();
+    void syncToVTK(sppl pipeline);
+    void set_active_pipeline(sppl pipeline);
     void compute_color_map(const std::string& arrayName);
-    std::shared_ptr<PointCloudPipeline> active_pipeline();
     vtkSmartPointer<VtkContext> create_scene(vtkRenderWindow*);
-    void syncToVTK(std::shared_ptr<PointCloudPipeline> pipeline);
     vtkUserData initializeVTK(vtkRenderWindow *renderWindow) override;
-    void set_active_pipeline(std::shared_ptr<PointCloudPipeline> pipeline);
+
     signals:
     void distanceUpdated(int);
     void pointCloudUpdated(int, uint64_t, uint64_t);
