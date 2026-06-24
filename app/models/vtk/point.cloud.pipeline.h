@@ -15,14 +15,19 @@
 #include <fstream>
 #include <sstream>
 
-struct PointCloudPipeline {
-    enum type {
-        none,
-        base,
-        ground, //pmf
-        elevation, // z-heatmap
-    };
+namespace vis {
+
+enum filter {
+    pmf,
+    none,
+    base,
+    ransac
+};
+
+struct pipeline {
+
     stream_voxel_filter svf;
+    filter _filter = filter::none;
     vtkSmartPointer<vtkPoints> points;
     vtkSmartPointer<vtkCellArray> verts;
     vtkSmartPointer<vtkPolyData> polyData;
@@ -30,7 +35,7 @@ struct PointCloudPipeline {
     vtkSmartPointer<vtkUnsignedCharArray> colors;
     std::vector<vtkSmartPointer<vtkActor>> actors;
 
-    PointCloudPipeline() {
+    pipeline(filter f) : _filter(f) {
         // points and geometry
         points = vtkSmartPointer<vtkPoints>::New();
         points->SetDataTypeToFloat();
@@ -94,4 +99,6 @@ struct PointCloudPipeline {
     }
 };
 
-using sppl = std::shared_ptr<PointCloudPipeline>;
+}
+
+using sppl = std::shared_ptr<vis::pipeline>;

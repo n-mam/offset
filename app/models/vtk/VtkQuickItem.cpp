@@ -36,7 +36,8 @@ vtkSmartPointer<VtkContext>
         };
         ctx->interactor->SetInteractorStyle(style);
         // base pipeline
-        auto pipeline = std::make_shared<PointCloudPipeline>();
+        auto pipeline = std::make_shared<vis::pipeline>
+            (vis::filter::base);
         pipeline->addActorsToRenderer(ctx->renderer);
         ctx->pipelines.push_back(pipeline);
         ctx->renderer->ResetCamera();
@@ -144,15 +145,17 @@ void VtkQuickItem::load_point_cloud(QUrl path) {
                     }, Qt::QueuedConnection);
                 }
             }
-            QMetaObject::invokeMethod(qApp, [this]() {
-                dispatch_async([this](vtkRenderWindow* renderWindow, vtkUserData ud) {
-                    // runs after render event loop cycles
-                    // make base as the active pipeline
-                    context()->active_pipeline = base_pipeline();
-                    cloud_loaded.store(true, std::memory_order_relaxed);                    
-                });
-            }, Qt::QueuedConnection);            
-      
+        QMetaObject::invokeMethod(qApp, [this, total_points, total_voxels]() {
+            dispatch_async([this](vtkRenderWindow* renderWindow, vtkUserData ud) {
+                // runs after render event loop cycles
+                // make base as the active pipeline
+                context()->active_pipeline = base_pipeline();
+                cloud_loaded.store(true, std::memory_order_relaxed);
+            });
+            if (stop.load(std::memory_order_relaxed)) {
+                emit pointCloudUpdated(100, total_points, total_voxels);
+            }
+        }, Qt::QueuedConnection);
     });
 }
 
@@ -212,6 +215,11 @@ void VtkQuickItem::apply_scalar(QString name) {
 
 void VtkQuickItem::elevation_filter_ransac() {
     if (!has_cloud()) return;
+    auto pipeline = get_pipeline(vis::filter::ransac);
+    if (pipeline) {
+        set_active_pipeline(pipeline);
+        return;
+    }
     std::thread([this]() {
         auto pipeline = active_pipeline();
         if (!pipeline || pipeline->is_empty()) return;
@@ -237,7 +245,8 @@ void VtkQuickItem::elevation_filter_ransac() {
             ground_set.insert((uint32_t)idx);
         }
         // Build filtered pipeline (GROUND only)
-        auto filter = std::make_shared<PointCloudPipeline>();
+        auto filter = std::make_shared<vis::pipeline>
+            (vis::filter::ransac);
         vtkIdType newIndex = 0;
         filter->svf.voxel_map.reserve(voxels.size() / 2);
         filter->svf.cloud->points.reserve(inliers->indices.size());
@@ -278,12 +287,16 @@ void VtkQuickItem::elevation_filter_ransac() {
                 set_active_pipeline(filter);
             });
         }, Qt::QueuedConnection);
-
     }).detach();
 }
 
 void VtkQuickItem::elevation_filter_pmf() {
     if (!has_cloud()) return;
+    auto pipeline = get_pipeline(vis::filter::pmf);
+    if (pipeline) {
+        set_active_pipeline(pipeline);
+        return;
+    }
     std::thread([this]() {
         auto pipeline = active_pipeline();
         if (!pipeline || pipeline->is_empty()) return;
@@ -307,7 +320,8 @@ void VtkQuickItem::elevation_filter_pmf() {
         for (int idx : ground->indices) {
             ground_set.insert((uint32_t)idx);
         }
-        auto filter = std::make_shared<PointCloudPipeline>();
+        auto filter = std::make_shared<vis::pipeline>
+            (vis::filter::pmf);
         vtkIdType newIndex = 0;
         filter->svf.voxel_map.reserve(voxels.size() / 2);
         filter->svf.cloud->points.reserve(ground->indices.size());
@@ -381,8 +395,9 @@ sppl VtkQuickItem::active_pipeline() {
 
 void VtkQuickItem::set_active_pipeline(sppl pipeline) {
     if (!pipeline) return;
-    auto ctx = context();
     auto active = active_pipeline();
+    if (active == pipeline) return;
+    auto ctx = context();
     active->removeActorsFromRenderer(ctx->renderer);
     ctx->active_pipeline = pipeline;
     pipeline->addActorsToRenderer(ctx->renderer);
@@ -408,6 +423,14 @@ void VtkQuickItem::restore_base_pipeline() {
     ctx->active_pipeline = base;
     base->addActorsToRenderer(ctx->renderer);
     ctx->renderer->ResetCamera();    
+}
+
+sppl VtkQuickItem::get_pipeline(vis::filter f) {
+    for (const auto& pipeline : context()->pipelines) {
+        if (pipeline->_filter == f) 
+            return pipeline;
+    }
+    return nullptr;
 }
 
 bool VtkQuickItem::has_cloud() {

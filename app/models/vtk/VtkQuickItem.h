@@ -53,6 +53,7 @@ struct VtkQuickItem : public QQuickVTKItem {
     VtkContext *context();
     sppl active_pipeline();
     void syncToVTK(sppl pipeline);
+    sppl get_pipeline(vis::filter f);
     void set_active_pipeline(sppl pipeline);
     void compute_color_map(const std::string& arrayName);
     vtkSmartPointer<VtkContext> create_scene(vtkRenderWindow*);
