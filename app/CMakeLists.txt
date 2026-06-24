@@ -1,24 +1,20 @@
-set(CMAKE_AUTOUIC ON)
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTORCC ON)
-
 #SET(CMAKE_VERBOSE_MAKEFILE ON)
-
-find_package(PCL REQUIRED)
 find_package(CURL REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(VTK CONFIG REQUIRED)
 find_package(OpenCV CONFIG REQUIRED)
-find_package(libzip CONFIG REQUIRED)
 find_package(tinyxml2 CONFIG REQUIRED)
+find_package(onnxruntime CONFIG REQUIRED)
 find_package(Qt6 REQUIRED COMPONENTS Core Quick QuickControls2 Gui Widgets OpenGLWidgets)
+find_package(PCL REQUIRED COMPONENTS io common search kdtree filters surface segmentation sample_consensus)
 
+qt_standard_project_setup()
 qt6_add_resources(QT_RESOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/qml/qml.qrc
     ${CMAKE_CURRENT_SOURCE_DIR}/assets/assets.qrc
 )
 
-add_executable(offset ${QT_RESOURCES})
+add_executable(offset main.cpp)
 
 set(VTK_MODULES_USED
     VTK::CommonCore
@@ -31,7 +27,7 @@ set(VTK_MODULES_USED
 
 vtk_module_autoinit(TARGETS offset MODULES ${VTK_MODULES_USED})
 
-target_sources(offset PRIVATE main.cpp
+target_sources(offset PRIVATE ${QT_RESOURCES}
     ${CMAKE_CURRENT_SOURCE_DIR}/models/Logger.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/models/AppConfig.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/models/BaseModel.cpp
@@ -53,11 +49,9 @@ endif(WIN32)
 
 set_property(TARGET offset PROPERTY CXX_STANDARD 23)
 
-add_definitions(${PCL_DEFINITIONS})
+target_compile_definitions(offset PRIVATE ${PCL_DEFINITIONS})
 
-target_include_directories(
-    offset
-    PRIVATE 
+target_include_directories(offset PRIVATE 
     ${PCL_INCLUDE_DIRS}
     ${CMAKE_CURRENT_SOURCE_DIR}/models
     ${CMAKE_CURRENT_SOURCE_DIR}/models/vtk
@@ -68,9 +62,7 @@ target_include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/models/floor
 )
 
-target_link_libraries(
-    offset
-    PRIVATE
+target_link_libraries(offset PRIVATE
     rapidjson
     opencv_ml
     ZLIB::ZLIB
@@ -99,25 +91,16 @@ target_link_libraries(
     Qt6::Quick
     Qt6::Widgets
     Qt6::OpenGLWidgets
-    Qt6::QuickControls2    
+    Qt6::QuickControls2
+    onnxruntime::onnxruntime
 )
 
 if(WIN32)
-    target_link_libraries(
-        offset PRIVATE
-        Ws2_32.lib
-        VssApi.lib
+    target_link_libraries(offset PRIVATE
+        ws2_32
+        vssapi
     )
-endif(WIN32)
-
-if (WIN32)
-    SET (CMAKE_CXX_FLAGS_RELEASE "/Zi /Od")
-    SET_TARGET_PROPERTIES(
-        offset PROPERTIES
-        LINK_FLAGS
-        "/DEBUG /OPT:REF /OPT:ICF"
-    )
-endif (WIN32)
+endif()
 
 #target_compile_definitions(offset PRIVATE QT_QML_DEBUG)
 

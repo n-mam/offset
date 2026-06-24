@@ -15,9 +15,9 @@
 ```
 git clone https://github.com/microsoft/vcpkg.git
 cd vcpkg && bootstrap-vcpkg.bat
-vcpkg.exe install tinyxml2 libzip openssl curl crc32c rapidjson pdal qhull zlib cJSON boost flann nanoflann opencv4[contrib,core,dnn,ffmpeg,highgui,jpeg,hdf] --recurse
+vcpkg.exe install tinyxml2 libzip openssl curl crc32c rapidjson pdal qhull zlib cJSON boost flann nanoflann opencv4[contrib,core,dnn,ffmpeg,highgui,jpeg,hdf,dshow,msmf,onnxruntime] --recurse
 sudo apt-get install build-essential zip curl vim bison nasm meson pkg-config
-./vcpkg install tinyxml2 libzip openssl crc32c rapidjson pdal qhull zlib cJSON boost flann nanoflann opencv4[contrib,core,dnn,ffmpeg,highgui,jpeg,hdf] --recurse
+./vcpkg install tinyxml2 libzip openssl crc32c rapidjson pdal qhull zlib cJSON boost flann nanoflann opencv4[contrib,core,dnn,ffmpeg,highgui,jpeg,hdf,dshow,msmf,onnxruntime] --recurse
 use the resulting toolchain file in cmake configure step as highlited under the build section
 ```
 
@@ -66,14 +66,14 @@ SET Qt6_DIR=D:\QT-6.9.0\install\lib\cmake\Qt6
 export Qt6_DIR=/home/nmam/Qt/6.9.1/gcc_64/lib/cmake/Qt6
 SET VTK_DIR=D:\vtk\build\lib\cmake\vtk-9.6
 export VTK_DIR=/home/nmam/code/vtk/build/lib/cmake/vtk-9.6
-set PCL_DIR=D:\pcl\install\cmake
+SET PCL_DIR=D:\pcl\install\cmake
 export PCL_DIR=/home/nmam/code/pcl/install/share/pcl-1.15
 cmake -DCMAKE_TOOLCHAIN_FILE=D:/vcpkg/scripts/buildsystems/vcpkg.cmake ..
 cmake -DCMAKE_TOOLCHAIN_FILE=~/vcpkg/scripts/buildsystems/vcpkg.cmake ..
-cmake --build . --config Release
+cmake --build . --config RelWithDebInfo
 
 Run as admin (elevation needed only for the block level backup tool):
-SET PATH=D:\QT-6.9.0\install\bin;D:\vtk\build\bin;%PATH%
+SET PATH=D:\QT-6.9.0\install\bin;D:\vtk\build\bin;D:\pcl\install\bin;%PATH%
 SET CVL_MODELS_ROOT=E:\offset\cvl\MODELS\ (only for camera app)
 qml\Release\offset.exe
 ```

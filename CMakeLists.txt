@@ -13,6 +13,7 @@ find_package(GTest CONFIG REQUIRED)
 find_package(Crc32c CONFIG REQUIRED)
 find_package(OpenCV CONFIG REQUIRED)
 find_package(RapidJSON CONFIG REQUIRED)
+find_package(onnxruntime CONFIG REQUIRED)
 find_package(Qt6 REQUIRED COMPONENTS Quick QuickControls2 Gui)
 
 include_directories(
@@ -57,6 +58,7 @@ target_link_libraries(
     GTest::gtest_main
     GTest::gmock
     GTest::gmock_main
+    onnxruntime::onnxruntime    
 )
 
 target_compile_definitions(Test PRIVATE ENABLE_GTEST)
@@ -64,12 +66,8 @@ target_compile_definitions(Test PRIVATE ENABLE_GTEST)
 add_test(AllTestsInMain Test)
 
 if (WIN32)
-    SET (CMAKE_CXX_FLAGS_RELEASE "/Zi /Od")
-    SET_TARGET_PROPERTIES(
-        Test PROPERTIES LINK_FLAGS
-        "/DEBUG /OPT:REF")
-endif (WIN32)
-
-if (WIN32)
-  target_link_libraries(Test PRIVATE Ws2_32.lib VssApi.lib)
-endif(WIN32)
+    target_link_libraries(Test PRIVATE 
+        ws2_32 
+        vssapi
+    )
+endif()
