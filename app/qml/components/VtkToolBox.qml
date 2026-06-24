@@ -17,7 +17,7 @@ Item {
         { 
             name: "filter", 
             icon: "qrc:/filter.png", 
-            sub: ["xyz", "elevation"]
+            sub: ["PMF", "RANSAC"]
         },        
         {
             name: "colors", 
@@ -126,8 +126,10 @@ Item {
             visualizer.apply_scalar("z-heatmap")
         } else if (tool === "colors" && subtool === "original") {
             visualizer.apply_scalar("original")
-        } else if (tool === "filter" && subtool === "elevation") {
-            visualizer.elevation_filter()
+        } else if (tool === "filter" && subtool === "PMF") {
+            visualizer.elevation_filter_pmf()
+        } else if (tool === "filter" && subtool === "RANSAC") {
+            visualizer.elevation_filter_ransac()
         }
     }
 

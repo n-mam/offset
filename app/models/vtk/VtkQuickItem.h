@@ -9,8 +9,8 @@
 #include <vtkRenderWindow.h>
 #include <vtkRenderWindowInteractor.h>
 
-#include <VtkPipeline.h>
 #include "QQuickVTKItem.h"
+#include <point.cloud.pipeline.h>
 
 #include <QUrl>
 #include <QFileInfo>
@@ -41,9 +41,10 @@ struct VtkQuickItem : public QQuickVTKItem {
 
     Q_INVOKABLE void stop_load();
     Q_INVOKABLE void fit_to_cloud();
-    Q_INVOKABLE void elevation_filter();
+    Q_INVOKABLE void elevation_filter_pmf();
     Q_INVOKABLE void restore_base_pipeline();
     Q_INVOKABLE void apply_scalar(QString name);
+    Q_INVOKABLE void elevation_filter_ransac();    
     Q_INVOKABLE void load_point_cloud(QUrl filePath);
 
     bool has_cloud();

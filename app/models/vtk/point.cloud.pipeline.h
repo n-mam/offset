@@ -15,9 +15,8 @@
 #include <fstream>
 #include <sstream>
 
-// Point cloud pipeline
 struct PointCloudPipeline {
-    enum filter {
+    enum type {
         none,
         base,
         ground, //pmf
@@ -61,8 +60,10 @@ struct PointCloudPipeline {
     }
 
     void addActorsToRenderer(vtkRenderer* renderer) {
-        for (auto& actor : actors) {
-            renderer->AddActor(actor);
+        if (renderer) {
+            for (auto& actor : actors) {
+                renderer->AddActor(actor);
+            }
         }
     }
 
@@ -75,11 +76,11 @@ struct PointCloudPipeline {
             }
         }
     }
-    
+
     bool is_empty() {
         return (points->GetNumberOfPoints() == 0);
     }
-    
+
     void reset() {
         // CPU state
         svf.voxel_map.clear();

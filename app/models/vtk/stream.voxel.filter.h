@@ -15,7 +15,7 @@
 #include <pcl/point_cloud.h>
 #include <pcl/io/pcd_io.h>
 
-struct VoxelData {
+struct voxel_data {
     double sx = 0;
     double sy = 0;
     double sz = 0;
@@ -27,21 +27,21 @@ struct VoxelData {
     uint32_t point_index = 0;
 };
 
-struct ParsedPoint {
+struct parsed_point {
     double x, y, z;
     int r, g, b;
     int vx, vy, vz;
 };
 
-struct VoxelKey {
+struct voxel_key {
     int x, y, z;
-    bool operator==(const VoxelKey& k) const {
+    bool operator==(const voxel_key& k) const {
         return x == k.x && y == k.y && z == k.z;
     }
 };
 
-struct VoxelKeyHasher {
-    std::size_t operator()(const VoxelKey& k) const {
+struct voxel_key_hasher {
+    std::size_t operator()(const voxel_key& k) const {
         return ((std::hash<int>()(k.x) ^
                 (std::hash<int>()(k.y) << 1)) >> 1) ^
                 (std::hash<int>()(k.z) << 1);
@@ -55,10 +55,10 @@ struct stream_voxel_filter {
     double min_x, min_y, min_z;
     double max_x, max_y, max_z;
     const float voxel_size = 0.5f;
-    std::vector<VoxelKey> dirty_voxels;
+    std::vector<voxel_key> dirty_voxels;
     double origin_x, origin_y, origin_z;
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud;
-    std::unordered_map<VoxelKey, VoxelData, VoxelKeyHasher> voxel_map;
+    std::unordered_map<voxel_key, voxel_data, voxel_key_hasher> voxel_map;
 
     stream_voxel_filter() {
         voxel_map.reserve(3*1024*1024); // * 5 for 0.1 voxel size
@@ -133,7 +133,7 @@ struct stream_voxel_filter {
     }
 
     auto parse_cloud_chunk(uint8_t *buf, ssize_t bytes, 
-            std::vector<ParsedPoint>& parsed_points) {
+            std::vector<parsed_point>& parsed_points) {
         parsed_points.clear();
         uint64_t points = 0;
         std::string_view chunk((const char*)buf, bytes);
@@ -194,12 +194,12 @@ struct stream_voxel_filter {
     }
 
     auto consume_cloud_chunk(uint8_t *buf, ssize_t bytes, 
-            std::vector<ParsedPoint>& parsed_points, std::mutex& mux) {
+            std::vector<parsed_point>& parsed_points, std::mutex& mux) {
         uint64_t new_voxels = 0;
         parse_cloud_chunk(buf, bytes, parsed_points);
         std::lock_guard<std::mutex> lg(mux);
         for (const auto& pp : parsed_points) {
-            VoxelKey key{pp.vx, pp.vy, pp.vz};
+            voxel_key key{pp.vx, pp.vy, pp.vz};
             auto [it, inserted] = voxel_map.try_emplace(key);
             auto& voxel = it->second;
             if (inserted) {

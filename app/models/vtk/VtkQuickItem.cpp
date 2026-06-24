@@ -6,11 +6,14 @@
 #include <vtkRenderWindow.h>
 #include <vtkPolyDataMapper.h>
 
+#include <pcl/PointIndices.h>
+#include <pcl/ModelCoefficients.h>
 #include <pcl/filters/extract_indices.h>
+#include <pcl/segmentation/sac_segmentation.h>
 #include <pcl/segmentation/progressive_morphological_filter.h>
 
 #include <VtkQuickItem.h>
-#include <MouseInteractor.h>
+#include <mouse.interactor.h>
 
 vtkSmartPointer<VtkContext>
     VtkQuickItem::create_scene(vtkRenderWindow* renderWindow) {
@@ -105,7 +108,7 @@ void VtkQuickItem::load_point_cloud(QUrl path) {
         uint64_t total_points = 0, total_voxels = 0;
         auto buf = std::make_unique<uint8_t []>(_2M);
         ssize_t bytes, total_bytes = 0, chunks = 0;
-        std::vector<ParsedPoint> parsed_points;
+        std::vector<parsed_point> parsed_points;
         parsed_points.reserve(4*1024*1024);
         auto pipeline = base_pipeline();
         while (!stop.load(std::memory_order_relaxed) &&
@@ -207,7 +210,79 @@ void VtkQuickItem::apply_scalar(QString name) {
     }).detach();
 }
 
-void VtkQuickItem::elevation_filter() {
+void VtkQuickItem::elevation_filter_ransac() {
+    if (!has_cloud()) return;
+    std::thread([this]() {
+        auto pipeline = active_pipeline();
+        if (!pipeline || pipeline->is_empty()) return;
+        using PointT = pcl::PointXYZ;
+        auto& input_cloud = pipeline->svf.cloud;
+        auto& voxels = pipeline->svf.voxel_map;
+        // RANSAC Plane Segmentation 
+        pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
+        pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
+        pcl::SACSegmentation<PointT> seg;
+        seg.setOptimizeCoefficients(true);
+        seg.setModelType(pcl::SACMODEL_PLANE);
+        seg.setMethodType(pcl::SAC_RANSAC);
+        seg.setMaxIterations(100);
+        seg.setDistanceThreshold(0.2f); // tune this
+        seg.setInputCloud(input_cloud);
+        seg.segment(*inliers, *coefficients);
+        if (inliers->indices.empty()) return;
+        // Convert indices → fast lookup
+        std::unordered_set<uint32_t> ground_set;
+        ground_set.reserve(inliers->indices.size());
+        for (int idx : inliers->indices) {
+            ground_set.insert((uint32_t)idx);
+        }
+        // Build filtered pipeline (GROUND only)
+        auto filter = std::make_shared<PointCloudPipeline>();
+        vtkIdType newIndex = 0;
+        filter->svf.voxel_map.reserve(voxels.size() / 2);
+        filter->svf.cloud->points.reserve(inliers->indices.size());
+        filter->svf.dirty_voxels.reserve(inliers->indices.size());
+        for (size_t i = 0; i < input_cloud->size(); ++i) {
+            if (!ground_set.count((uint32_t)i)) continue;
+            const auto& p = input_cloud->points[i];
+            voxel_key key{
+                (int)std::floor(p.x / pipeline->svf.voxel_size),
+                (int)std::floor(p.y / pipeline->svf.voxel_size),
+                (int)std::floor(p.z / pipeline->svf.voxel_size)
+            };
+            auto it = voxels.find(key);
+            if (it == voxels.end()) continue;
+            const auto& src_voxel = it->second;
+            auto [new_it, inserted] =
+                filter->svf.voxel_map.try_emplace(key);
+            auto& v = new_it->second;
+            v.count = src_voxel.count;
+            v.sx = p.x;
+            v.sy = p.y;
+            v.sz = p.z;
+            // preserve color
+            v.sr = src_voxel.sr;
+            v.sg = src_voxel.sg;
+            v.sb = src_voxel.sb;
+            v.dirty = true;
+            v.point_index = newIndex++;
+            filter->svf.cloud->push_back(p);
+            filter->svf.dirty_voxels.push_back(key);
+        }
+        // swap pipeline
+        QMetaObject::invokeMethod(qApp, [this, filter]() {
+            update();
+            dispatch_async([this, filter](vtkRenderWindow* rw, vtkUserData) {
+                std::lock_guard<std::mutex> lg(mux);
+                syncToVTK(filter);
+                set_active_pipeline(filter);
+            });
+        }, Qt::QueuedConnection);
+
+    }).detach();
+}
+
+void VtkQuickItem::elevation_filter_pmf() {
     if (!has_cloud()) return;
     std::thread([this]() {
         auto pipeline = active_pipeline();
@@ -219,10 +294,12 @@ void VtkQuickItem::elevation_filter() {
         pcl::PointIndicesPtr ground(new pcl::PointIndices);
         pcl::ProgressiveMorphologicalFilter<PointT> pmf;
         pmf.setInputCloud(input_cloud);
-        pmf.setMaxWindowSize(15);     // smaller = faster
-        pmf.setSlope(1.0f);
-        pmf.setInitialDistance(0.4f);
-        pmf.setMaxDistance(2.5f);
+        // pmf params
+        pmf.setMaxWindowSize(10);      // smaller = less aggressive
+        pmf.setSlope(0.5f);            // lower slope tolerance
+        pmf.setInitialDistance(0.2f);  // stricter start
+        pmf.setMaxDistance(1.0f);      // cap vertical growth
+        // ----
         pmf.extract(ground->indices);
         if (ground->indices.empty()) return;
         std::unordered_set<uint32_t> ground_set;
@@ -238,7 +315,7 @@ void VtkQuickItem::elevation_filter() {
         for (size_t i = 0; i < input_cloud->size(); ++i) {
             if (!ground_set.count((uint32_t)i)) continue;
             const auto& p = input_cloud->points[i];
-            VoxelKey key{
+            voxel_key key{
                 (int)std::floor(p.x / pipeline->svf.voxel_size),
                 (int)std::floor(p.y / pipeline->svf.voxel_size),
                 (int)std::floor(p.z / pipeline->svf.voxel_size)
@@ -263,7 +340,6 @@ void VtkQuickItem::elevation_filter() {
             filter->svf.dirty_voxels.push_back(key);
         }
         // swap pipeline
-        pipeline->removeActorsFromRenderer(context()->renderer);
         QMetaObject::invokeMethod(qApp, [this, filter]() {
             update();
             dispatch_async([this, filter](vtkRenderWindow* rw, vtkUserData ud) {
@@ -306,9 +382,17 @@ sppl VtkQuickItem::active_pipeline() {
 void VtkQuickItem::set_active_pipeline(sppl pipeline) {
     if (!pipeline) return;
     auto ctx = context();
+    auto active = active_pipeline();
+    active->removeActorsFromRenderer(ctx->renderer);
     ctx->active_pipeline = pipeline;
     pipeline->addActorsToRenderer(ctx->renderer);
-    ctx->pipelines.push_back(pipeline);
+    auto it = std::ranges::find_if(ctx->pipelines, 
+        [&](const sppl& p) {
+            return p == pipeline;
+        });
+    if (it == ctx->pipelines.end()) {
+        ctx->pipelines.push_back(pipeline);
+    }
     ctx->renderer->ResetCamera();
 }
 
