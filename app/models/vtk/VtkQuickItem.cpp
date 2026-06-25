@@ -196,7 +196,7 @@ void VtkQuickItem::apply_scalar(QString name) {
     auto arrayName = name.toStdString();
     std::thread([this, arrayName]{
         auto pipeline = active_pipeline();
-        if (pipeline && pipeline->is_empty()) return;
+        if (!pipeline || pipeline->is_empty()) return;
         auto* pd = pipeline->polyData->GetPointData();
         if (!pd->HasArray(arrayName.c_str())) {
             compute_color_map(arrayName);
@@ -213,163 +213,117 @@ void VtkQuickItem::apply_scalar(QString name) {
     }).detach();
 }
 
+sppl VtkQuickItem::build_filtered_pipeline(sppl source,
+        const std::vector<int>& indices, vis::filter filter_type) {
+    if (!source || indices.empty()) return nullptr;
+    auto result = std::make_shared<vis::pipeline>(filter_type);
+    auto& input_cloud = source->svf.cloud;
+    auto& voxels = source->svf.voxel_map;
+    result->svf.voxel_map.reserve(indices.size());
+    result->svf.cloud->points.reserve(indices.size());
+    result->svf.dirty_voxels.reserve(indices.size());
+    vtkIdType newIndex = 0;
+    for (int idx : indices) {
+        if (idx < 0 || static_cast<size_t>(idx) >= input_cloud->size())
+            continue;
+        const auto& p = input_cloud->points[idx];
+        voxel_key key{
+            static_cast<int>(std::floor(p.x / source->svf.voxel_size)),
+            static_cast<int>(std::floor(p.y / source->svf.voxel_size)),
+            static_cast<int>(std::floor(p.z / source->svf.voxel_size))
+        };
+        auto it = voxels.find(key);
+        if (it == voxels.end()) continue;
+        const auto& src_voxel = it->second;
+        auto [new_it, inserted] =
+            result->svf.voxel_map.try_emplace(key);
+        if (!inserted) continue;
+        auto& dst = new_it->second;
+        dst.sx = src_voxel.sx;
+        dst.sy = src_voxel.sy;
+        dst.sz = src_voxel.sz;
+        dst.sr = src_voxel.sr;
+        dst.sg = src_voxel.sg;
+        dst.sb = src_voxel.sb;
+        dst.dirty = true;
+        dst.count = src_voxel.count;
+        dst.point_index = newIndex++;
+        result->svf.cloud->push_back(p);
+        result->svf.dirty_voxels.push_back(key);
+    }
+    return result;
+}
+
 void VtkQuickItem::elevation_filter_ransac() {
     if (!has_cloud()) return;
-    auto pipeline = get_pipeline(vis::filter::ransac);
-    if (pipeline) {
-        set_active_pipeline(pipeline);
+    auto cached = get_pipeline(vis::filter::ransac);
+    if (cached) {
+        set_active_pipeline(cached);
         return;
     }
     std::thread([this]() {
-        auto pipeline = active_pipeline();
-        if (!pipeline || pipeline->is_empty()) return;
+        auto source = active_pipeline();
+        if (!source || source->is_empty()) return;
         using PointT = pcl::PointXYZ;
-        auto& input_cloud = pipeline->svf.cloud;
-        auto& voxels = pipeline->svf.voxel_map;
-        // RANSAC Plane Segmentation 
         pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
-        pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
+        pcl::ModelCoefficients::Ptr coefficients(
+            new pcl::ModelCoefficients);
         pcl::SACSegmentation<PointT> seg;
         seg.setOptimizeCoefficients(true);
         seg.setModelType(pcl::SACMODEL_PLANE);
         seg.setMethodType(pcl::SAC_RANSAC);
         seg.setMaxIterations(100);
-        seg.setDistanceThreshold(0.2f); // tune this
-        seg.setInputCloud(input_cloud);
+        seg.setDistanceThreshold(0.2f);
+        seg.setInputCloud(source->svf.cloud);
         seg.segment(*inliers, *coefficients);
         if (inliers->indices.empty()) return;
-        // Convert indices → fast lookup
-        std::unordered_set<uint32_t> ground_set;
-        ground_set.reserve(inliers->indices.size());
-        for (int idx : inliers->indices) {
-            ground_set.insert((uint32_t)idx);
-        }
-        // Build filtered pipeline (GROUND only)
-        auto filter = std::make_shared<vis::pipeline>
-            (vis::filter::ransac);
-        vtkIdType newIndex = 0;
-        filter->svf.voxel_map.reserve(voxels.size() / 2);
-        filter->svf.cloud->points.reserve(inliers->indices.size());
-        filter->svf.dirty_voxels.reserve(inliers->indices.size());
-        for (size_t i = 0; i < input_cloud->size(); ++i) {
-            if (!ground_set.count((uint32_t)i)) continue;
-            const auto& p = input_cloud->points[i];
-            voxel_key key{
-                (int)std::floor(p.x / pipeline->svf.voxel_size),
-                (int)std::floor(p.y / pipeline->svf.voxel_size),
-                (int)std::floor(p.z / pipeline->svf.voxel_size)
-            };
-            auto it = voxels.find(key);
-            if (it == voxels.end()) continue;
-            const auto& src_voxel = it->second;
-            auto [new_it, inserted] =
-                filter->svf.voxel_map.try_emplace(key);
-            auto& v = new_it->second;
-            v.count = src_voxel.count;
-            v.sx = p.x;
-            v.sy = p.y;
-            v.sz = p.z;
-            // preserve color
-            v.sr = src_voxel.sr;
-            v.sg = src_voxel.sg;
-            v.sb = src_voxel.sb;
-            v.dirty = true;
-            v.point_index = newIndex++;
-            filter->svf.cloud->push_back(p);
-            filter->svf.dirty_voxels.push_back(key);
-        }
-        // swap pipeline
-        QMetaObject::invokeMethod(qApp, [this, filter]() {
-            update();
-            dispatch_async([this, filter](vtkRenderWindow* rw, vtkUserData) {
-                std::lock_guard<std::mutex> lg(mux);
-                syncToVTK(filter);
-                set_active_pipeline(filter);
-            });
-        }, Qt::QueuedConnection);
+        auto filter = build_filtered_pipeline(
+            source, inliers->indices, vis::filter::ransac);
+        activate_pipeline_async(filter);
     }).detach();
 }
 
 void VtkQuickItem::elevation_filter_pmf() {
     if (!has_cloud()) return;
-    auto pipeline = get_pipeline(vis::filter::pmf);
-    if (pipeline) {
-        set_active_pipeline(pipeline);
+    auto cached = get_pipeline(vis::filter::pmf);
+    if (cached) {
+        set_active_pipeline(cached);
         return;
     }
     std::thread([this]() {
-        auto pipeline = active_pipeline();
-        if (!pipeline || pipeline->is_empty()) return;
+        auto source = active_pipeline();
+        if (!source || source->is_empty()) return;
         using PointT = pcl::PointXYZ;
-        auto& input_cloud = pipeline->svf.cloud;
-        auto& voxels = pipeline->svf.voxel_map;
-        // run PMF (ground segmentation)
-        pcl::PointIndicesPtr ground(new pcl::PointIndices);
+        pcl::PointIndices ground;
         pcl::ProgressiveMorphologicalFilter<PointT> pmf;
-        pmf.setInputCloud(input_cloud);
-        // pmf params
-        pmf.setMaxWindowSize(10);      // smaller = less aggressive
-        pmf.setSlope(0.5f);            // lower slope tolerance
-        pmf.setInitialDistance(0.2f);  // stricter start
-        pmf.setMaxDistance(1.0f);      // cap vertical growth
-        // ----
-        pmf.extract(ground->indices);
-        if (ground->indices.empty()) return;
-        std::unordered_set<uint32_t> ground_set;
-        ground_set.reserve(ground->indices.size());
-        for (int idx : ground->indices) {
-            ground_set.insert((uint32_t)idx);
-        }
-        auto filter = std::make_shared<vis::pipeline>
-            (vis::filter::pmf);
-        vtkIdType newIndex = 0;
-        filter->svf.voxel_map.reserve(voxels.size() / 2);
-        filter->svf.cloud->points.reserve(ground->indices.size());
-        filter->svf.dirty_voxels.reserve(ground->indices.size());
-        for (size_t i = 0; i < input_cloud->size(); ++i) {
-            if (!ground_set.count((uint32_t)i)) continue;
-            const auto& p = input_cloud->points[i];
-            voxel_key key{
-                (int)std::floor(p.x / pipeline->svf.voxel_size),
-                (int)std::floor(p.y / pipeline->svf.voxel_size),
-                (int)std::floor(p.z / pipeline->svf.voxel_size)
-            };
-            auto it = voxels.find(key);
-            if (it == voxels.end()) continue;
-            const auto& src_voxel = it->second;
-            auto [new_it, inserted] =
-                filter->svf.voxel_map.try_emplace(key);
-            auto& v = new_it->second;
-            v.count = src_voxel.count;
-            v.sx = p.x;
-            v.sy = p.y;
-            v.sz = p.z;
-            // color
-            v.sr = src_voxel.sr;
-            v.sg = src_voxel.sg;
-            v.sb = src_voxel.sb;
-            v.dirty = true;
-            v.point_index = newIndex++;
-            filter->svf.cloud->push_back(p);
-            filter->svf.dirty_voxels.push_back(key);
-        }
-        // swap pipeline
-        QMetaObject::invokeMethod(qApp, [this, filter]() {
-            update();
-            dispatch_async([this, filter](vtkRenderWindow* rw, vtkUserData ud) {
-                std::lock_guard<std::mutex> lg(mux);
-                syncToVTK(filter);
-                set_active_pipeline(filter);
-            });
-        }, Qt::QueuedConnection);
+        pmf.setInputCloud(source->svf.cloud);
+        pmf.setMaxWindowSize(10);
+        pmf.setSlope(0.5f);
+        pmf.setInitialDistance(0.2f);
+        pmf.setMaxDistance(1.0f);
+        pmf.extract(ground.indices);
+        if (ground.indices.empty()) return;
+        auto filter = build_filtered_pipeline(
+            source, ground.indices, vis::filter::pmf);
+        activate_pipeline_async(filter);
     }).detach();
+}
+
+void VtkQuickItem::activate_pipeline_async(sppl pipeline) {
+    if (!pipeline) return;
+    QMetaObject::invokeMethod(qApp, [this, pipeline]() {
+        update();
+        dispatch_async([this, pipeline] (vtkRenderWindow* rw, vtkUserData ud) {
+            std::lock_guard<std::mutex>lg(mux);
+            syncToVTK(pipeline);
+            set_active_pipeline(pipeline);
+        });
+    }, Qt::QueuedConnection);
 }
 
 void VtkQuickItem::fit_to_cloud() {
     update();
     dispatch_async([this](vtkRenderWindow* rw, vtkUserData ud) {
-        auto pipeline = active_pipeline();
-        if (pipeline && pipeline->is_empty()) return;
         context()->renderer->ResetCamera();
         context()->renderer->ResetCameraClippingRange();
         rw->Render();
@@ -396,6 +350,7 @@ sppl VtkQuickItem::active_pipeline() {
 void VtkQuickItem::set_active_pipeline(sppl pipeline) {
     if (!pipeline) return;
     auto active = active_pipeline();
+    if (!active) return;
     if (active == pipeline) return;
     auto ctx = context();
     active->removeActorsFromRenderer(ctx->renderer);
@@ -414,9 +369,9 @@ void VtkQuickItem::set_active_pipeline(sppl pipeline) {
 void VtkQuickItem::restore_base_pipeline() {
     if (!has_cloud()) return;
     auto base = base_pipeline();
-    if (base->is_empty()) return;
-    auto active = active_pipeline();
-    if (active->is_empty()) return;
+    auto active = active_pipeline();    
+    if (!base || base->is_empty()) return;
+    if (!active || active->is_empty()) return;
     if (base == active) return;
     auto ctx = context();
     active->removeActorsFromRenderer(ctx->renderer);

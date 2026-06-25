@@ -58,6 +58,11 @@ struct VtkQuickItem : public QQuickVTKItem {
     void compute_color_map(const std::string& arrayName);
     vtkSmartPointer<VtkContext> create_scene(vtkRenderWindow*);
     vtkUserData initializeVTK(vtkRenderWindow *renderWindow) override;
+    sppl build_filtered_pipeline(
+        sppl source,
+        const std::vector<int>& indices,
+        vis::filter filter_type);
+    void activate_pipeline_async(sppl pipeline);
 
     signals:
     void distanceUpdated(int);
