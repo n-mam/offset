@@ -54,7 +54,7 @@ struct stream_voxel_filter {
     bool recentered = false;
     double min_x, min_y, min_z;
     double max_x, max_y, max_z;
-    const float voxel_size = 0.5f;
+    const float voxel_size = 0.5f; //0.0001f;
     std::vector<voxel_key> dirty_voxels;
     double origin_x, origin_y, origin_z;
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud;
@@ -183,7 +183,7 @@ struct stream_voxel_filter {
             min_z = std::min(min_z, z);
             max_x = std::max(max_x, x);
             max_y = std::max(max_y, y);
-            max_z = std::max(max_z, z);            
+            max_z = std::max(max_z, z);
             const double inv_voxel = 1.0 / voxel_size;
             int vx = static_cast<int>(std::floor(x * inv_voxel));
             int vy = static_cast<int>(std::floor(y * inv_voxel));

@@ -62,7 +62,8 @@ void VtkQuickItem::syncToVTK(sppl pipeline) {
     auto& points = pipeline->points;
     auto& colors = pipeline->colors;
     auto& cloud = pipeline->svf.cloud;
-    const vtkIdType total_points = static_cast<vtkIdType>(cloud->points.size());
+    const vtkIdType total_points = 
+        static_cast<vtkIdType>(cloud->points.size());
     // Grow vtk arrays only when needed
     if (points->GetNumberOfPoints() != total_points) {
         vtkIdType old_count = points->GetNumberOfPoints();

@@ -13,7 +13,6 @@ find_package(GTest CONFIG REQUIRED)
 find_package(Crc32c CONFIG REQUIRED)
 find_package(OpenCV CONFIG REQUIRED)
 find_package(RapidJSON CONFIG REQUIRED)
-find_package(onnxruntime CONFIG REQUIRED)
 find_package(Qt6 REQUIRED COMPONENTS Quick QuickControls2 Gui)
 
 include_directories(
@@ -58,7 +57,6 @@ target_link_libraries(
     GTest::gtest_main
     GTest::gmock
     GTest::gmock_main
-    onnxruntime::onnxruntime    
 )
 
 target_compile_definitions(Test PRIVATE ENABLE_GTEST)

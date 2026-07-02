@@ -10,22 +10,22 @@
 #include <vtkInteractorStyleTrackballCamera.h>
 
 #include <cmath>
+#include <array>
 #include <vector>
 #include <iostream>
 #include <functional>
 
-using TVtkItemcallback = std::function<void (int)> ;
+using DistanceCallback = std::function<void (double)> ;
 
 struct PointPickerDistanceStyle : public vtkInteractorStyleTrackballCamera {
 
     public:
-    TVtkItemcallback cbk;
+    DistanceCallback cbk;
     static PointPickerDistanceStyle* New();
     vtkTypeMacro(PointPickerDistanceStyle, vtkInteractorStyleTrackballCamera);
 
     PointPickerDistanceStyle() {
         Picker = vtkSmartPointer<vtkPointPicker>::New();
-        LastPickedPointId = -1;
     }
 
     void OnLeftButtonDown() override {
@@ -66,7 +66,6 @@ struct PointPickerDistanceStyle : public vtkInteractorStyleTrackballCamera {
         std::array<double, 3> pos;
     };
 
-    vtkIdType LastPickedPointId;
     std::vector<PointInfo> PickedPoints;
     vtkSmartPointer<vtkPointPicker> Picker;
 

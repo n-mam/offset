@@ -3,8 +3,8 @@ find_package(CURL REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(VTK CONFIG REQUIRED)
 find_package(OpenCV CONFIG REQUIRED)
+find_package(Eigen3 CONFIG REQUIRED)
 find_package(tinyxml2 CONFIG REQUIRED)
-find_package(onnxruntime CONFIG REQUIRED)
 find_package(Qt6 REQUIRED COMPONENTS Core Quick QuickControls2 Gui Widgets OpenGLWidgets)
 find_package(PCL REQUIRED COMPONENTS io common search kdtree filters surface segmentation sample_consensus)
 
@@ -72,6 +72,7 @@ target_link_libraries(offset PRIVATE
     opencv_face
     opencv_core
     OpenSSL::SSL
+    Eigen3::Eigen
     opencv_aruco
     opencv_bgsegm
     CURL::libcurl
@@ -92,7 +93,6 @@ target_link_libraries(offset PRIVATE
     Qt6::Widgets
     Qt6::OpenGLWidgets
     Qt6::QuickControls2
-    onnxruntime::onnxruntime
 )
 
 if(WIN32)

@@ -15,9 +15,9 @@
 ```
 git clone https://github.com/microsoft/vcpkg.git
 cd vcpkg && bootstrap-vcpkg.bat
-vcpkg.exe install tinyxml2 libzip openssl curl crc32c rapidjson pdal qhull zlib cJSON boost flann nanoflann opencv4[contrib,core,dnn,ffmpeg,highgui,jpeg,hdf,dshow,msmf,onnxruntime] --recurse
+vcpkg.exe install tinyxml2 libzip openssl curl crc32c rapidjson pdal qhull zlib cJSON boost flann nanoflann opencv4[contrib,core,dnn,ffmpeg,highgui,jpeg,hdf,dshow,msmf] --recurse
 sudo apt-get install build-essential zip curl vim bison nasm meson pkg-config
-./vcpkg install tinyxml2 libzip openssl crc32c rapidjson pdal qhull zlib cJSON boost flann nanoflann opencv4[contrib,core,dnn,ffmpeg,highgui,jpeg,hdf,dshow,msmf,onnxruntime] --recurse
+./vcpkg install tinyxml2 libzip openssl crc32c rapidjson pdal qhull zlib cJSON boost flann nanoflann opencv4[contrib,core,dnn,ffmpeg,highgui,jpeg,hdf,dshow,msmf] --recurse
 use the resulting toolchain file in cmake configure step as highlited under the build section
 ```
 
