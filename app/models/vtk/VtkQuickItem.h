@@ -9,6 +9,8 @@
 #include <vtkRenderWindow.h>
 #include <vtkRenderWindowInteractor.h>
 
+#include <sim.imu.h>
+#include <orientation.h>
 #include "QQuickVTKItem.h"
 #include <point.cloud.pipeline.h>
 
@@ -31,22 +33,30 @@ struct VtkQuickItem : public QQuickVTKItem {
     QML_ELEMENT
 
     public:
+    ~VtkQuickItem();
+
     std::mutex mux;
     std::thread _thread;
     std::atomic<bool> stop{false};
     QQuickVTKItem::vtkUserData _ctx;
     std::atomic<bool> cloud_loaded{false};
     std::atomic<bool> camera_initialized{false};
-    ~VtkQuickItem();
 
-    Q_INVOKABLE void stop_load();
+    std::unique_ptr<imu> _imu;
+    orientation _orientation;
+    std::thread _imu_thread;
+    std::atomic<bool> _imu_running{false};
+    
+    Q_INVOKABLE void stop_imu();
+    Q_INVOKABLE void start_imu();
+    Q_INVOKABLE void stop_load();    
     Q_INVOKABLE void fit_to_cloud();
     Q_INVOKABLE void elevation_filter_pmf();
     Q_INVOKABLE void restore_base_pipeline();
     Q_INVOKABLE void apply_scalar(QString name);
     Q_INVOKABLE void elevation_filter_ransac();    
     Q_INVOKABLE void load_point_cloud(QUrl filePath);
-
+    
     bool has_cloud();
     void clear_scene();
     sppl base_pipeline();
@@ -55,6 +65,7 @@ struct VtkQuickItem : public QQuickVTKItem {
     void syncToVTK(sppl pipeline);
     sppl get_pipeline(vis::filter f);
     void set_active_pipeline(sppl pipeline);
+    void applyQuaternion(const quatternion& q);
     void compute_color_map(const std::string& arrayName);
     vtkSmartPointer<VtkContext> create_scene(vtkRenderWindow*);
     vtkUserData initializeVTK(vtkRenderWindow *renderWindow) override;

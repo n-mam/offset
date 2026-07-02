@@ -116,6 +116,7 @@ Item {
             fileDialog.open()
         } else if (tool === 'debug') {
             visualizer.toggle_debug_overlay();
+            visualizer.start_imu();
         } else if (tool === "fit") {
             visualizer.fit_to_cloud();
         }

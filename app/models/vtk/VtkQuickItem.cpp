@@ -3,6 +3,8 @@
 #include <vtkPoints.h>
 #include <vtkRenderer.h>
 #include <vtkPolyData.h>
+#include <vtkMatrix4x4.h>
+#include <vtkTransform.h>
 #include <vtkRenderWindow.h>
 #include <vtkPolyDataMapper.h>
 
@@ -395,6 +397,63 @@ bool VtkQuickItem::has_cloud() {
 
 void VtkQuickItem::stop_load() {
     stop.store(true, std::memory_order_relaxed);
+}
+
+void VtkQuickItem::applyQuaternion(const quatternion& q) {
+    auto pipeline = active_pipeline();
+    if (!pipeline || pipeline->actors.empty()) return;
+    auto actor = pipeline->actors.front();
+    const double xx = q.x * q.x;
+    const double yy = q.y * q.y;
+    const double zz = q.z * q.z;
+    const double xy = q.x * q.y;
+    const double xz = q.x * q.z;
+    const double yz = q.y * q.z;
+    const double wx = q.w * q.x;
+    const double wy = q.w * q.y;
+    const double wz = q.w * q.z;
+    vtkNew<vtkMatrix4x4> m;
+    m->Identity();
+    m->SetElement(0,0,1 - 2*(yy + zz));
+    m->SetElement(0,1,2*(xy - wz));
+    m->SetElement(0,2,2*(xz + wy));
+    m->SetElement(1,0,2*(xy + wz));
+    m->SetElement(1,1,1 - 2*(xx + zz));
+    m->SetElement(1,2,2*(yz - wx));
+    m->SetElement(2,0,2*(xz - wy));
+    m->SetElement(2,1,2*(yz + wx));
+    m->SetElement(2,2,1 - 2*(xx + yy));
+    vtkNew<vtkTransform> t;
+    t->SetMatrix(m);
+    actor->SetUserTransform(t);
+}
+
+void VtkQuickItem::start_imu() {
+    _imu_running.store(true, std::memory_order_relaxed);
+    _imu = std::make_unique<sim_imu>(30);
+    _imu_thread = std::thread([this]() {
+        while (_imu_running.load(std::memory_order_relaxed)) {
+            imu_sample s;
+            if (!_imu->poll(s)) continue;
+            _orientation.update(s);
+            auto q = _orientation.get_quaternion();
+            QMetaObject::invokeMethod(qApp, [this, q]() {
+                update();
+                dispatch_async([this, q](vtkRenderWindow* rw, vtkUserData) {
+                    std::lock_guard<std::mutex> lg(mux);
+                    applyQuaternion(q);
+                    rw->Render();
+                });
+            }, Qt::QueuedConnection);
+            std::this_thread::sleep_for(std::chrono::milliseconds(16));
+        }
+    });
+}
+
+void VtkQuickItem::stop_imu() {
+    _imu_running.store(false, std::memory_order_relaxed);
+    if (_imu_thread.joinable())
+        _imu_thread.join();
 }
 
 VtkQuickItem::~VtkQuickItem() {

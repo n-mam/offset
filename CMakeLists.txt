@@ -21,6 +21,7 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/npl
     ${CMAKE_SOURCE_DIR}/fxc
     ${CMAKE_SOURCE_DIR}/cvl
+    ${CMAKE_SOURCE_DIR}/imu
 )
 
 if(MSVC)
