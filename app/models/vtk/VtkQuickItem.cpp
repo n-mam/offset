@@ -399,6 +399,48 @@ void VtkQuickItem::stop_load() {
     stop.store(true, std::memory_order_relaxed);
 }
 
+void VtkQuickItem::start_imu() {
+    _serialThread = new QThread(this);
+    _serial = new SerialPortManager("COM7");
+    _serial->moveToThread(_serialThread);
+    connect(_serialThread, &QThread::started,
+        _serial, &SerialPortManager::start);
+    _serial->set_read_callback(
+        [this](const QByteArray& line){
+            onReadSerialLine(line);
+        });
+    connect(_serialThread, &QThread::finished,
+        _serial, &QObject::deleteLater);
+    _serialThread->start();
+}
+
+void VtkQuickItem::onReadSerialLine(const QByteArray& line) {
+    imu_sample s;
+    QByteArray clean = line.trimmed();
+    auto fields = clean.split(',');
+    if (fields.size() != 7) return;
+    bool ok;
+    QByteArray tsStr = fields[0].trimmed();
+    tsStr = tsStr.replace("\r", "").replace("\n", "");
+    s.ts_ms = tsStr.toULongLong(&ok);
+    if (!ok) return;
+    s.ax = fields[1].toDouble(&ok); if (!ok) return;
+    s.ay = fields[2].toDouble(&ok); if (!ok) return;
+    s.az = fields[3].toDouble(&ok); if (!ok) return;
+    s.gx = fields[4].toDouble(&ok); if (!ok) return;
+    s.gy = fields[5].toDouble(&ok); if (!ok) return;
+    s.gz = fields[6].toDouble(&ok); if (!ok) return;  
+    _orientation.update(s);
+    QMetaObject::invokeMethod(qApp, [this]() {
+        update();
+        dispatch_async([this](vtkRenderWindow* rw, vtkUserData) {
+            std::lock_guard<std::mutex> lg(mux);
+            applyQuaternion(_orientation.get_quaternion());
+            rw->Render();
+        });        
+    }, Qt::QueuedConnection);    
+}
+
 void VtkQuickItem::applyQuaternion(const quatternion& q) {
     auto pipeline = active_pipeline();
     if (!pipeline || pipeline->actors.empty()) return;
@@ -428,35 +470,19 @@ void VtkQuickItem::applyQuaternion(const quatternion& q) {
     actor->SetUserTransform(t);
 }
 
-void VtkQuickItem::start_imu() {
-    _imu_running.store(true, std::memory_order_relaxed);
-    _imu = std::make_unique<sim_imu>(30);
-    _imu_thread = std::thread([this]() {
-        while (_imu_running.load(std::memory_order_relaxed)) {
-            imu_sample s;
-            if (!_imu->poll(s)) continue;
-            _orientation.update(s);
-            auto q = _orientation.get_quaternion();
-            QMetaObject::invokeMethod(qApp, [this, q]() {
-                update();
-                dispatch_async([this, q](vtkRenderWindow* rw, vtkUserData) {
-                    std::lock_guard<std::mutex> lg(mux);
-                    applyQuaternion(q);
-                    rw->Render();
-                });
-            }, Qt::QueuedConnection);
-            std::this_thread::sleep_for(std::chrono::milliseconds(16));
-        }
-    });
-}
-
 void VtkQuickItem::stop_imu() {
-    _imu_running.store(false, std::memory_order_relaxed);
-    if (_imu_thread.joinable())
-        _imu_thread.join();
+    if (!_serialThread) return;
+    QMetaObject::invokeMethod(_serial,
+        &SerialPortManager::stop, Qt::BlockingQueuedConnection);
+    _serialThread->quit();
+    _serialThread->wait();
+    delete _serialThread;
+    _serial = nullptr;
+    _serialThread = nullptr;
 }
 
 VtkQuickItem::~VtkQuickItem() {
+    stop_imu();
     stop.store(true, std::memory_order_relaxed);
     if (_thread.joinable()) {
         _thread.join();

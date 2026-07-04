@@ -5,7 +5,7 @@ find_package(VTK CONFIG REQUIRED)
 find_package(OpenCV CONFIG REQUIRED)
 find_package(Eigen3 CONFIG REQUIRED)
 find_package(tinyxml2 CONFIG REQUIRED)
-find_package(Qt6 REQUIRED COMPONENTS Core Quick QuickControls2 Gui Widgets OpenGLWidgets)
+find_package(Qt6 REQUIRED COMPONENTS Core Quick QuickControls2 Gui Widgets OpenGLWidgets SerialPort)
 find_package(PCL REQUIRED COMPONENTS io common search kdtree filters surface segmentation sample_consensus)
 
 qt_standard_project_setup()
@@ -32,11 +32,12 @@ target_sources(offset PRIVATE ${QT_RESOURCES}
     ${CMAKE_CURRENT_SOURCE_DIR}/models/AppConfig.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/models/BaseModel.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/models/ftp/FsModel.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/models/floor/FloorManager.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/models/ftp/LocalFsModel.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/models/vtk/VtkQuickItem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/models/ftp/RemoteFsModel.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/models/cam/VideoRenderer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/models/SerialPortManager.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/models/floor/FloorManager.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/models/diff/CompareManager.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/models/ftp/TransferManager.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/models/diff/CompareFileModel.cpp
@@ -91,6 +92,7 @@ target_link_libraries(offset PRIVATE
     Qt6::Core
     Qt6::Quick
     Qt6::Widgets
+    Qt6::SerialPort
     Qt6::OpenGLWidgets
     Qt6::QuickControls2
 )
