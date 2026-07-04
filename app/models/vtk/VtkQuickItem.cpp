@@ -415,7 +415,7 @@ void VtkQuickItem::start_imu() {
 }
 
 void VtkQuickItem::onReadSerialLine(const QByteArray& line) {
-    imu_sample s;
+    imu::sample s;
     QByteArray clean = line.trimmed();
     auto fields = clean.split(',');
     if (fields.size() != 7) return;
@@ -441,7 +441,7 @@ void VtkQuickItem::onReadSerialLine(const QByteArray& line) {
     }, Qt::QueuedConnection);    
 }
 
-void VtkQuickItem::applyQuaternion(const quatternion& q) {
+void VtkQuickItem::applyQuaternion(const imu::quaternion& q) {
     auto pipeline = active_pipeline();
     if (!pipeline || pipeline->actors.empty()) return;
     auto actor = pipeline->actors.front();

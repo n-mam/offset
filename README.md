@@ -73,7 +73,7 @@ cmake -DCMAKE_TOOLCHAIN_FILE=~/vcpkg/scripts/buildsystems/vcpkg.cmake ..
 cmake --build . --config RelWithDebInfo
 
 Run as admin (elevation needed only for the block level backup tool):
-SET PATH=D:\QT-6.9.0\install\bin;D:\vtk\build\bin;D:\pcl\install\bin;%PATH%
+SET PATH=D:\QT-6.9.0\install\bin;D:\vtk\build\bin;D:\pcl\install\bin;D:\vcpkg\installed\x64-windows\bin;%PATH%
 SET CVL_MODELS_ROOT=E:\offset\cvl\MODELS\ (only for camera app)
 qml\Release\offset.exe
 ```

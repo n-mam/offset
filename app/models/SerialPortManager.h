@@ -15,21 +15,21 @@ struct SerialPortManager : public QObject {
     Q_OBJECT
 
     public:
-    
+
     SerialPortManager(const QString& portName, QObject* parent = nullptr);
     void set_read_callback(ReadCallback cbk);
-    
+
     public slots:
-    
+
     void start();
     void stop();
 
     signals:
-    
+
     void lineReceived(const QByteArray& line);
 
     private slots:
-    
+
     void onReadyRead();
 
     private:

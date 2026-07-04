@@ -9,7 +9,7 @@
 #include <vtkRenderWindow.h>
 #include <vtkRenderWindowInteractor.h>
 
-#include <orientation.h>
+#include <imu.h>
 #include "QQuickVTKItem.h"
 #include <SerialPortManager.h>
 #include <point.cloud.pipeline.h>
@@ -43,7 +43,7 @@ struct VtkQuickItem : public QQuickVTKItem {
     std::atomic<bool> cloud_loaded{false};
     std::atomic<bool> camera_initialized{false};
 
-    orientation _orientation;
+    imu::orientation _orientation;
     QThread* _serialThread = nullptr;
     SerialPortManager *_serial = nullptr;
 
@@ -65,7 +65,7 @@ struct VtkQuickItem : public QQuickVTKItem {
     void syncToVTK(sppl pipeline);
     sppl get_pipeline(vis::filter f);
     void set_active_pipeline(sppl pipeline);
-    void applyQuaternion(const quatternion& q);
+    void applyQuaternion(const imu::quaternion& q);
     void onReadSerialLine(const QByteArray& line);
 
     void compute_color_map(const std::string& arrayName);

@@ -2,20 +2,26 @@
 #define ORIENTATION_H
 
 #include <cmath>
+#include <cstdint>
 #include <numbers>
 
-struct imu_sample {
+namespace imu {
+
+struct sample {
     uint64_t ts_ms;
     double ax, ay, az;
     double gx, gy, gz;
+    double mx, my, mz;
 };
 
-struct quatternion {
+struct quaternion {
+
     double w = 1.0;
     double x = 0.0;
     double y = 0.0;
     double z = 0.0;
-    quatternion operator *(const quatternion& q) const {
+
+    quaternion operator *(const quaternion& q) const {
         return {
             w*q.w - x*q.x - y*q.y - z*q.z,
             w*q.x + x*q.w + y*q.z - z*q.y,
@@ -23,6 +29,7 @@ struct quatternion {
             w*q.z + x*q.y - y*q.x + z*q.w
         };
     }
+
     void normalize() {
         double n = std::sqrt
             (w*w + x*x + y*y + z*z);
@@ -42,14 +49,15 @@ struct orientation {
 
     orientation() { reset(); }
     
-    const quatternion& get_quaternion() const { return q_; }
+    const quaternion& get_quaternion() const { return q_; }
     
     void reset() {
         q_ = {1.0, 0.0, 0.0, 0.0};
         has_prev_ = false;
         prev_ts_ms_ = 0;
     }
-    void update(imu_sample& sample) {
+
+    void update(const sample& sample) {
         if (!has_prev_) {
             prev_ts_ms_ = sample.ts_ms;
             has_prev_ = true;
@@ -59,29 +67,28 @@ struct orientation {
         prev_ts_ms_ = sample.ts_ms;
         if (dt <= 0.0) return;
         constexpr double DEG2RAD = std::numbers::pi / 180.0;
-        sample.gx *= DEG2RAD;
-        sample.gy *= DEG2RAD;
-        sample.gz *= DEG2RAD;        
+        double gx = sample.gx * DEG2RAD;
+        double gy = sample.gy * DEG2RAD;
+        double gz = sample.gz * DEG2RAD;        
         // Rotation vector
-        double rx = sample.gx * dt;
-        double ry = sample.gy * dt;
-        double rz = sample.gz * dt;
+        double rx = gx * dt;
+        double ry = gy * dt;
+        double rz = gz * dt;
         // Magnitude
-        double angle = 
-            std::sqrt(rx*rx + ry*ry + rz*rz);
+        double angle = std::sqrt(rx*rx + ry*ry + rz*rz);
         if (angle < 1e-12) return;
         // Unit axis
         double ax = rx / angle;
         double ay = ry / angle;
         double az = rz / angle;
-        // Incremental quatternion
-        auto dq = axisAngleToQuaternion
-            (ax, ay, az, angle);
+        // Incremental quaternion
+        auto dq = axisAngleToQuaternion(ax, ay, az, angle);
         // Integrate
         q_ = q_ * dq;
         q_.normalize();
     }
-    quatternion axisAngleToQuaternion(
+
+    quaternion axisAngleToQuaternion(
         double ax, double ay, double az, double angle) {
         double half = angle * 0.5;
         double s = std::sin(half);
@@ -92,9 +99,12 @@ struct orientation {
             az * s
         };
     }
-    quatternion q_;
+
+    quaternion q_;
     bool has_prev_ = false;
     uint64_t prev_ts_ms_ = 0;
 };
+
+} //namespace imu
 
 #endif
