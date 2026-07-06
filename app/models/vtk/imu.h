@@ -14,6 +14,8 @@ struct sample {
     double mx, my, mz;
 };
 
+struct vec3 { double x, y, z; };
+
 struct quaternion {
 
     double w = 1.0;
@@ -84,16 +86,20 @@ struct orientation {
         double ay = s.ay;
         double az = s.az;
         double norm = std::sqrt(ax * ax + ay * ay + az * az);
-        if (norm < 1e-6) return;
-        ax /= norm;
-        ay /= norm;
-        az /= norm;
+        if (norm < 1e-3) return;
+        if (std::abs(norm - 1.0) > 0.15) return;
+        double inv = 1.0 / norm;
+        ax *= inv; 
+        ay *= inv; 
+        az *= inv;
         // Predicted gravity in body frame from current attitude estimate
         // q_ transforms body -> world, therefore
         // gravity(body) = inv(q_) * gravity(world) * q_
-        double gx = 2.0 * (q_.x * q_.z - q_.w * q_.y);
-        double gy = 2.0 * (q_.w * q_.x + q_.y * q_.z);
-        double gz = q_.w * q_.w - q_.x * q_.x - q_.y * q_.y + q_.z * q_.z;
+        vec3 g_w = {0, 0, 1};
+        vec3 g_b = transformWorldToBody(q_, g_w);
+        double gx = g_b.x;
+        double gy = g_b.y;
+        double gz = g_b.z;
         // Mahony proportional error
         double ex = ay * gz - az * gy;
         double ey = az * gx - ax * gz;
@@ -107,19 +113,39 @@ struct orientation {
         double rx = wx * dt;
         double ry = wy * dt;
         double rz = wz * dt;
+        quaternion dq;
         // Exponential map: rotation vector -> incremental quaternion
         double theta = std::sqrt(rx * rx + ry * ry + rz * rz);
-        if (theta < 1e-12) return;
-        double ux = rx / theta;
-        double uy = ry / theta;
-        double uz = rz / theta;
-        auto dq = axisAngleToQuaternion(ux, uy, uz, theta);
+        if (theta < 1e-6) {
+            // first order approximation 
+            // using taylor expansion
+            dq.w = 1.0;
+            dq.x = 0.5 * rx;
+            dq.y = 0.5 * ry;
+            dq.z = 0.5 * rz;            
+        } else {
+            inv = 1.0 / theta;
+            double ux = rx * inv;
+            double uy = ry * inv;
+            double uz = rz * inv;
+            dq = axisAngleToQuaternion(ux, uy, uz, theta);            
+        }
         // Update orientation estimate
         // body-frame incremental rotation
         q_ = q_ * dq;
         q_.normalize();
         // next would be adding the gyro bias estimator (Ki)
         // followed by the accelerometer low-pass filter.
+    }
+
+    static vec3 transformWorldToBody(const quaternion& q, const vec3& v) {
+        // Transform a vector from the world frame into the
+        // body frame.q represents the body->world orientation.
+        // Computes q⁻¹ * v * q.
+        quaternion vq{0, v.x, v.y, v.z};
+        quaternion q_conjugate{q.w, -q.x, -q.y, -q.z};
+        quaternion rq = q_conjugate * vq * q;
+        return {rq.x, rq.y, rq.z};
     }
 
     static quaternion axisAngleToQuaternion(
