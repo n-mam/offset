@@ -38,10 +38,11 @@ struct quaternion {
             x = y = z = 0.0;
             return;
         }
-        w /= n;
-        x /= n;
-        y /= n;
-        z /= n;
+        double inv = 1.0 / n;
+        w *= inv;
+        x *= inv;
+        y *= inv;
+        z *= inv;
     }
 };
 
@@ -52,85 +53,84 @@ struct orientation {
     const quaternion& get_quaternion() const { return q_; }
     
     void reset() {
-        // initial "no rotation" identity quaternion
-        // This is a body -> world transformer both 
-        // of which are align initially
+        // Identity body->world rotation.
+        // Initially, the body and world frames are aligned.
         q_ = {1.0, 0.0, 0.0, 0.0};
         has_prev_ = false;
         prev_ts_ms_ = 0;
     }
-
     // Mahony's proportional observer
-    // current q_
+    // using current q_
     // predict gravity
-    // compute error
-    // correct gyro
-    // single quaternion integration
-    void update(const sample& sample) {
+    // Rotation error = measured × predicted (g)
+    // correct the gyro using this error
+    // update estimate
+    void update(const sample& s) {
         if (!has_prev_) {
-            prev_ts_ms_ = sample.ts_ms;
+            prev_ts_ms_ = s.ts_ms;
             has_prev_ = true;
             return;
         }
-        double dt = (sample.ts_ms - prev_ts_ms_) * 0.001;
-        prev_ts_ms_ = sample.ts_ms;
-        if (dt <= 0.0) return;
+        if (s.ts_ms <= prev_ts_ms_) return;        
+        double dt = (s.ts_ms - prev_ts_ms_) * 0.001;
+        prev_ts_ms_ = s.ts_ms;
         constexpr double DEG2RAD = std::numbers::pi / 180.0;
-        // Gyroscope (rad/s)
-        double gx = sample.gx * DEG2RAD;
-        double gy = sample.gy * DEG2RAD;
-        double gz = sample.gz * DEG2RAD;
+        // Gyroscope 
+        double wx = s.gx * DEG2RAD;
+        double wy = s.gy * DEG2RAD;
+        double wz = s.gz * DEG2RAD;
         // Accelerometer
-        double a_x = sample.ax;
-        double a_y = sample.ay;
-        double a_z = sample.az;
-        double norm = std::sqrt(a_x * a_x + a_y * a_y + a_z * a_z);
+        double ax = s.ax;
+        double ay = s.ay;
+        double az = s.az;
+        double norm = std::sqrt(ax * ax + ay * ay + az * az);
         if (norm < 1e-6) return;
-        a_x /= norm;
-        a_y /= norm;
-        a_z /= norm;
+        ax /= norm;
+        ay /= norm;
+        az /= norm;
         // Predicted gravity in body frame from current attitude estimate
-        // q_ transforms body -> world
-        // Therefore gravity(body) = inv(q_) * gravity(world) * q_
-        double g_x = 2.0 * (q_.x * q_.z - q_.w * q_.y);
-        double g_y = 2.0 * (q_.w * q_.x + q_.y * q_.z);
-        double g_z = q_.w * q_.w - q_.x * q_.x - q_.y * q_.y + q_.z * q_.z;
+        // q_ transforms body -> world, therefore
+        // gravity(body) = inv(q_) * gravity(world) * q_
+        double gx = 2.0 * (q_.x * q_.z - q_.w * q_.y);
+        double gy = 2.0 * (q_.w * q_.x + q_.y * q_.z);
+        double gz = q_.w * q_.w - q_.x * q_.x - q_.y * q_.y + q_.z * q_.z;
         // Mahony proportional error
-        double ex = a_y * g_z - a_z * g_y;
-        double ey = a_z * g_x - a_x * g_z;
-        double ez = a_x * g_y - a_y * g_x;
+        double ex = ay * gz - az * gy;
+        double ey = az * gx - ax * gz;
+        double ez = ax * gy - ay * gx;
         // Correction
         constexpr double kp = 0.05;
-        gx += kp * ex;
-        gy += kp * ey;
-        gz += kp * ez;
-        // Integrate corrected angular velocity (ONE integration only)
-        double rx = gx * dt;
-        double ry = gy * dt;
-        double rz = gz * dt;
-        double angle = std::sqrt(rx * rx + ry * ry + rz * rz);
-        if (angle > 1e-12) {
-            double ax = rx / angle;
-            double ay = ry / angle;
-            double az = rz / angle;
-            auto dq = axisAngleToQuaternion(ax, ay, az, angle);
-            // body-frame incremental rotation
-            q_ = q_ * dq;
-            q_.normalize();
-        }
+        wx += kp * ex;
+        wy += kp * ey;
+        wz += kp * ez;
+        // Rotation vector (angular velocity integrated over dt)
+        double rx = wx * dt;
+        double ry = wy * dt;
+        double rz = wz * dt;
+        // Exponential map: rotation vector -> incremental quaternion
+        double theta = std::sqrt(rx * rx + ry * ry + rz * rz);
+        if (theta < 1e-12) return;
+        double ux = rx / theta;
+        double uy = ry / theta;
+        double uz = rz / theta;
+        auto dq = axisAngleToQuaternion(ux, uy, uz, theta);
+        // Update orientation estimate
+        // body-frame incremental rotation
+        q_ = q_ * dq;
+        q_.normalize();
         // next would be adding the gyro bias estimator (Ki)
         // followed by the accelerometer low-pass filter.
     }
 
-    quaternion axisAngleToQuaternion(
-        double ax, double ay, double az, double angle) {
-        double half = angle * 0.5;
+    static quaternion axisAngleToQuaternion(
+        double ux, double uy, double uz, double theta) {
+        double half = theta * 0.5;
         double s = std::sin(half);
         return {
             std::cos(half),
-            ax * s,
-            ay * s,
-            az * s
+            ux * s,
+            uy * s,
+            uz * s
         };
     }
 
