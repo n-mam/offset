@@ -3,6 +3,7 @@
 #include <vtkPoints.h>
 #include <vtkRenderer.h>
 #include <vtkPolyData.h>
+#include <vtkAxesActor.h>
 #include <vtkMatrix4x4.h>
 #include <vtkTransform.h>
 #include <vtkRenderWindow.h>
@@ -57,6 +58,12 @@ void VtkQuickItem::clear_scene() {
     camera_initialized.store(false, std::memory_order_relaxed);
     context()->renderer->ResetCameraClippingRange();
     context()->renderWindow->Render();
+    vtkNew<vtkAxesActor> axes;
+    axes->SetTotalLength(50.0, 50.0, 50.0); 
+    axes->SetShaftTypeToCylinder();
+    axes->SetCylinderRadius(0.005);
+    axes->SetConeRadius(0.2);
+    context()->renderer->AddActor(axes);
 }
 
 void VtkQuickItem::syncToVTK(sppl pipeline) {

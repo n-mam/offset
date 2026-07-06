@@ -51,9 +51,9 @@ struct quaternion {
 struct orientation {
 
     orientation() { reset(); }
-    
+
     const quaternion& get_quaternion() const { return q_; }
-    
+
     void reset() {
         // Identity body->world rotation.
         // Initially, the body and world frames are aligned.
@@ -89,14 +89,14 @@ struct orientation {
         if (norm < 1e-3) return;
         if (std::abs(norm - 1.0) > 0.15) return;
         double inv = 1.0 / norm;
-        ax *= inv; 
-        ay *= inv; 
+        ax *= inv;
+        ay *= inv;
         az *= inv;
         // Predicted gravity in body frame from current attitude estimate
         // q_ transforms body -> world, therefore
         // gravity(body) = inv(q_) * gravity(world) * q_
         vec3 g_w = {0, 0, 1};
-        vec3 g_b = transformWorldToBody(q_, g_w);
+        vec3 g_b = transform_world_to_body(q_, g_w);
         double gx = g_b.x;
         double gy = g_b.y;
         double gz = g_b.z;
@@ -122,25 +122,25 @@ struct orientation {
             dq.w = 1.0;
             dq.x = 0.5 * rx;
             dq.y = 0.5 * ry;
-            dq.z = 0.5 * rz;            
+            dq.z = 0.5 * rz;
         } else {
             inv = 1.0 / theta;
             double ux = rx * inv;
             double uy = ry * inv;
             double uz = rz * inv;
-            dq = axisAngleToQuaternion(ux, uy, uz, theta);            
+            dq = axisAngleToQuaternion(ux, uy, uz, theta);
         }
         // Update orientation estimate
         // body-frame incremental rotation
         q_ = q_ * dq;
         q_.normalize();
-        // next would be adding the gyro bias estimator (Ki)
-        // followed by the accelerometer low-pass filter.
+        // gyro bias estimator (Ki) and accelerometer
+        // low-pass filter are doen in firmware
     }
 
-    static vec3 transformWorldToBody(const quaternion& q, const vec3& v) {
+    static vec3 transform_world_to_body(const quaternion& q, const vec3& v) {
         // Transform a vector from the world frame into the
-        // body frame.q represents the body->world orientation.
+        // body frame. q represents the body->world orientation.
         // Computes q⁻¹ * v * q.
         quaternion vq{0, v.x, v.y, v.z};
         quaternion q_conjugate{q.w, -q.x, -q.y, -q.z};
@@ -148,6 +148,16 @@ struct orientation {
         return {rq.x, rq.y, rq.z};
     }
 
+    static vec3 transform_body_to_world(const quaternion& q, const vec3& v) {
+        // Transform a vector from the body frame into the
+        // world frame. q represents the body->world orientation.
+        // Computes q * v * q⁻¹.
+        quaternion vq{0, v.x, v.y, v.z};
+        quaternion q_conjugate{q.w, -q.x, -q.y, -q.z};
+        quaternion rq = q * vq * q_conjugate;
+        return {rq.x, rq.y, rq.z};
+    }
+    
     static quaternion axisAngleToQuaternion(
         double ux, double uy, double uz, double theta) {
         double half = theta * 0.5;
