@@ -58,7 +58,10 @@ void VtkQuickItem::clear_scene() {
     camera_initialized.store(false, std::memory_order_relaxed);
     context()->renderer->ResetCameraClippingRange();
     context()->renderWindow->Render();
+    vtkNew<vtkTransform> transform;
+    transform->Translate(0.0, 0.0, 0.0);
     vtkNew<vtkAxesActor> axes;
+    axes->SetUserTransform(transform);
     axes->SetTotalLength(50.0, 50.0, 50.0); 
     axes->SetShaftTypeToCylinder();
     axes->SetCylinderRadius(0.005);
@@ -406,9 +409,29 @@ void VtkQuickItem::stop_load() {
     stop.store(true, std::memory_order_relaxed);
 }
 
-void VtkQuickItem::start_imu() {
+void VtkQuickItem::start_imu_visualization(QString source) {
+    if (!has_cloud()) return;
+    auto active = active_pipeline();
+    if (!active || active->is_empty()) return;    
+    QString portName;
+    source = source.trimmed();
+    // If the source is only digits
+    // treat it as a COM port number
+    bool ok = false;
+    int portNum = source.toInt(&ok);
+    if (ok) {
+        portName = QString("COM%1").arg(portNum);
+    } else if (source.startsWith("COM", Qt::CaseInsensitive)) {
+        // If it already starts with 
+        // "COM", normalize the case
+        portName = source.toUpper();
+    } else {
+        // Otherwise assume it's something else (UDP, etc.)
+        qWarning() << "Unsupported source:" << source;
+        return;
+    }
+    _serial = new SerialPortManager(portName);
     _serialThread = new QThread(this);
-    _serial = new SerialPortManager("COM7");
     _serial->moveToThread(_serialThread);
     connect(_serialThread, &QThread::started,
         _serial, &SerialPortManager::start);
@@ -477,7 +500,7 @@ void VtkQuickItem::applyQuaternion(const imu::quaternion& q) {
     actor->SetUserTransform(t);
 }
 
-void VtkQuickItem::stop_imu() {
+void VtkQuickItem::stop_imu_visualization() {
     if (!_serialThread) return;
     QMetaObject::invokeMethod(_serial,
         &SerialPortManager::stop, Qt::BlockingQueuedConnection);
@@ -489,7 +512,7 @@ void VtkQuickItem::stop_imu() {
 }
 
 VtkQuickItem::~VtkQuickItem() {
-    stop_imu();
+    stop_imu_visualization();
     stop.store(true, std::memory_order_relaxed);
     if (_thread.joinable()) {
         _thread.join();

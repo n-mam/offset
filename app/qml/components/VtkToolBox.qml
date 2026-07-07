@@ -5,10 +5,18 @@ import QtQuick.Layouts
 import QtQuick.Controls
 
 Item {
+
     id: root
     required property var visualizer
+    property string activePanel: ""
     property string activeSubmenu: ""
 
+    implicitWidth: column.implicitWidth + column.anchors.margins * 2
+    implicitHeight: column.implicitHeight + column.anchors.margins * 2
+
+    x: parent ? parent.width - root.implicitWidth - 8 : 0
+    y: parent ? (parent.height - root.implicitHeight)/2 : 0
+    
     property var tools: [
         { 
             name: "original", 
@@ -27,6 +35,11 @@ Item {
         { 
             name: "fit", 
             icon: "qrc:/fit.png" 
+        },
+        {
+            name: "sim",
+            icon: "qrc:/sim.png",
+            panel: true
         },
         { 
             name: "debug", 
@@ -53,12 +66,22 @@ Item {
                     id: btn
                     anchors.fill: parent
                     onClicked: {
-                        if (tool.sub && tool.sub.length > 0) {
-                            activeSubmenu = (activeSubmenu === tool.name) ? 
+                        if (tool.panel) {
+                            activePanel = (activePanel === tool.name) ?
                                 "" : tool.name
-                        } else {
-                            onToolClicked(tool.name)
+                            activeSubmenu = ""
+                            return
                         }
+                        if (tool.sub && tool.sub.length > 0) {
+                            activeSubmenu =
+                                activeSubmenu === tool.name ?
+                                    "" : tool.name
+                            activePanel = ""
+                            return
+                        }
+                        activePanel = ""
+                        activeSubmenu = ""
+                        onToolClicked(tool.name)
                     }
                     background: Rectangle {
                         radius: 6
@@ -109,6 +132,90 @@ Item {
         }
     }
 
+    Rectangle {
+        id: settingsPanel
+
+        radius: 8
+        clip: true
+        color: "#2b2b2b"
+
+        anchors.right: column.left
+        anchors.rightMargin: 12
+        anchors.verticalCenter: column.verticalCenter
+
+        implicitWidth: loader.item ? loader.item.implicitWidth : 0
+        implicitHeight: loader.item ? loader.item.implicitHeight : 0
+
+        width: activePanel === "" ? 0 : implicitWidth
+        height: implicitHeight
+
+        Behavior on width {
+            NumberAnimation {
+                duration: 250
+                easing.type: Easing.InOutQuad
+            }
+        }
+
+        Loader {
+            id: loader
+            anchors.fill: parent
+            anchors.margins: 3
+            sourceComponent: activePanel === "sim" ? simPanel : null
+        }
+    }
+
+    Component {
+        id: simPanel
+        Rectangle {
+            radius: 8 
+            border.width: 1
+            anchors.fill: parent
+            border.color: borderColor
+            implicitWidth: 220
+            implicitHeight: 120            
+            color: Qt.lighter(Material.background)
+            ColumnLayout {
+                spacing: 5
+                anchors.margins: 5
+                anchors.fill: parent
+                layoutDirection: Qt.LeftToRight
+                Label {
+                    text: "Data Source"
+                    font.bold: true
+                    Layout.alignment: Qt.AlignHCenter
+                }
+                RowLayout {
+                    Layout.alignment: Qt.AlignHCenter
+                    spacing: 2
+                    TextField {
+                        id: source
+                        Layout.preferredWidth: 150
+                        Layout.preferredHeight: 36
+                        placeholderText: "stream"
+                    }
+                }
+                RowLayout {
+                    Layout.alignment: Qt.AlignHCenter
+                    spacing: 2
+                    Button {
+                        text: "Stop"
+                        onClicked: {
+                            visualizer.stop_imu_visualization();                            
+                            activePanel = ""
+                        }
+                    }
+                    Button {
+                        text: "Start"
+                        onClicked: {
+                            visualizer.start_imu_visualization(source.text);
+                            activePanel = ""
+                        }
+                    }                    
+                }
+            }
+        }
+    }
+
     function onToolClicked(tool) {
         if (tool === "original") {
             visualizer.restore_base_pipeline();            
@@ -116,7 +223,6 @@ Item {
             fileDialog.open()
         } else if (tool === 'debug') {
             visualizer.toggle_debug_overlay();
-            visualizer.start_imu();
         } else if (tool === "fit") {
             visualizer.fit_to_cloud();
         }
@@ -144,10 +250,4 @@ Item {
             visualizer.load_point_cloud(fileDialog.selectedFile)
         }
     }
-
-    implicitWidth: column.implicitWidth + column.anchors.margins * 2
-    implicitHeight: column.implicitHeight + column.anchors.margins * 2
-
-    x: parent ? parent.width - root.implicitWidth - 8 : 0
-    y: parent ? (parent.height - root.implicitHeight)/2 : 0
 }
