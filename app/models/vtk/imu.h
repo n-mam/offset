@@ -97,7 +97,17 @@ struct orientation {
         bool acc_valid = a.normalize() &&
             (std::abs(a.n - 1.0) <= 0.15);
         // magnetometer
-        vec3 m = {s.mx, s.my, s.mz};
+        // axis re-map depends on how we have mounted the discreete chips
+        // Magnetometer (HMC) is mounted 90° CCW relative to the MPU6050.
+        // HMC y is 90 deg ccw to MPU y 
+        // HMC x is 90 deg ccw to MPU x 
+        // Here I am using MPU as the primary ref frame and so mag values are changed accordingly
+        // Rotate the magnetometer measurements into the MPU6050 reference frame.        
+        double tx = s.mx;
+        double ty = s.my;
+        // s.mx = -ty; s.my = tx;
+        // vec3 m = {s.mx, s.my, s.mz};
+        vec3 m = {-ty, tx, s.mz};
         bool mag_valid = m.normalize();
         // acc proportional error a(measured) x g(body)
         double e_ax, e_ay, e_az;
@@ -135,7 +145,7 @@ struct orientation {
         }
         // correction
         constexpr double kp_acc = 0.05;
-        constexpr double kp_mag = 0.03;
+        constexpr double kp_mag = 0.55;
         wx += kp_acc * e_ax + kp_mag * e_mx;
         wy += kp_acc * e_ay + kp_mag * e_my;
         wz += kp_acc * e_az + kp_mag * e_mz;

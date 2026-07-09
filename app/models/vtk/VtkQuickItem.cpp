@@ -43,7 +43,6 @@ vtkSmartPointer<VtkContext>
             (vis::filter::base);
         pipeline->addActorsToRenderer(ctx->renderer);
         ctx->pipelines.push_back(pipeline);
-        ctx->renderer->ResetCamera();
         return ctx;
 }
 
@@ -448,7 +447,7 @@ void VtkQuickItem::onReadSerialLine(const QByteArray& line) {
     imu::sample s;
     QByteArray clean = line.trimmed();
     auto fields = clean.split(',');
-    if (fields.size() != 7) return;
+    if (fields.size() != 10) return;
     bool ok;
     QByteArray tsStr = fields[0].trimmed();
     tsStr = tsStr.replace("\r", "").replace("\n", "");
@@ -459,7 +458,10 @@ void VtkQuickItem::onReadSerialLine(const QByteArray& line) {
     s.az = fields[3].toDouble(&ok); if (!ok) return;
     s.gx = fields[4].toDouble(&ok); if (!ok) return;
     s.gy = fields[5].toDouble(&ok); if (!ok) return;
-    s.gz = fields[6].toDouble(&ok); if (!ok) return;  
+    s.gz = fields[6].toDouble(&ok); if (!ok) return;
+    s.mx = fields[7].toDouble(&ok); if (!ok) return;
+    s.my = fields[8].toDouble(&ok); if (!ok) return;
+    s.mz = fields[9].toDouble(&ok); if (!ok) return;  
     _orientation.update(s);
     QMetaObject::invokeMethod(qApp, [this]() {
         update();
