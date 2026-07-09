@@ -6,6 +6,7 @@
 - Camera tool<br/>
 - 2D Floor planner tool<br/>
 - Point cloud visualizer<br/>
+- Mahony 9DOF non-linear filter visualization<br/>
 - Block level backup tool<br/>
 - File diff tool (LCS based)<br/>
 - MCU tool (companion app for mcu repo)<br/>
