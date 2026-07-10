@@ -32,10 +32,6 @@ Item {
             icon: "qrc:/colors.png", 
             sub: ["original", "z-heatmap"]
         },
-        { 
-            name: "fit", 
-            icon: "qrc:/fit.png" 
-        },
         {
             name: "sim",
             icon: "qrc:/sim.png",
@@ -44,6 +40,10 @@ Item {
         { 
             name: "debug", 
             icon: "qrc:/debug.png" 
+        },
+        { 
+            name: "fit", 
+            icon: "qrc:/fit.png" 
         },
         { 
             name: "open", 

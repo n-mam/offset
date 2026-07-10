@@ -68,7 +68,6 @@ struct orientation {
     void reset() {
         // Identity body->world rotation.
         // Initially, the body and world frames are aligned.
-        m_ref = {0,0,0};
         prev_ts_ms_ = 0;
         has_prev_ = false;
         q_ = {1.0, 0.0, 0.0, 0.0};
@@ -104,9 +103,9 @@ struct orientation {
             e_ax = a.y * gb.z - a.z * gb.y;
             e_ay = a.z * gb.x - a.x * gb.z;
             e_az = a.x * gb.y - a.y * gb.x;
-        }            
+        }
         // magnetometer
-        // axis re-map depends on how we have mounted the discreete chips
+        // axis re-map depends on how we have mounted the discrete chips
         // Magnetometer (HMC) is mounted 90° CCW relative to the MPU6050.
         // HMC y is 90 deg ccw to MPU y 
         // HMC x is 90 deg ccw to MPU x 
@@ -121,34 +120,31 @@ struct orientation {
         // mag proportional error m(measured) x m(reference)
         double e_mx = 0.0, e_my = 0.0, e_mz = 0.0;
         if (mag_valid) {
-            if (!has_mag_ref_) {
-                --sample_hold_count;
-                if (sample_hold_count == 0) {
-                    // measured magnetic field rotated into world frame
-                    vec3 mw = transform_body_to_world(q_, m);
-                    // horizontal field magnitude
-                    double bx = std::sqrt(mw.x * mw.x + mw.y * mw.y);
-                    // avoid singularity
-                    if (bx > 1e-6) {
-                        // reference magnetic field in world frame
-                        m_ref = {bx, 0.0, mw.z};
-                        m_ref.normalize();
-                        has_mag_ref_ = true;
-                    }
-                }
-            } else {
+            // measured magnetic field rotated into world frame
+            vec3 mw = transform_body_to_world(q_, m);
+            // horizontal field magnitude
+            double bx = std::sqrt(mw.x * mw.x + mw.y * mw.y);
+            // avoid singularity
+            if (bx > 1e-6) {
+                // reference magnetic field in world frame
+                vec3 m_ref = {bx, 0.0, mw.z};
+                m_ref.normalize();
                 // transform the fixed world mag ref into predicted reference
                 // magnetic field in body frame using the current orientation
                 vec3 m_pred = transform_world_to_body(q_, m_ref);
                 // only take the component of the error about the body Z axis (yaw).
                 // This is the z-component of the full cross product, but we deliberately
-                // discard e_mx, e_my so mag can never correct roll/pitch.                
+                // discard e_mx, e_my so mag can never correct roll/pitch.
+                // Roll and pitch are already strongly observable from gravity.
+                // Magnetometers are noisy and easily disturbed by nearby metal, motors, current-carrying wires, etc.
+                // The vertical component of Earth's magnetic field is weak and varies significantly with location.
+                // Using the magnetometer to correct tilt can inject magnetic disturbances into your attitude estimate.
                 e_mz = m.x * m_pred.y - m.y * m_pred.x;
             }
         }
         // correction
-        constexpr double kp_acc = 0.05;
-        constexpr double kp_mag = 0.05;
+        constexpr double kp_acc = 2.0;
+        constexpr double kp_mag = 0.2;
         wx += kp_acc * e_ax + kp_mag * e_mx;
         wy += kp_acc * e_ay + kp_mag * e_my;
         wz += kp_acc * e_az + kp_mag * e_mz;
@@ -171,8 +167,8 @@ struct orientation {
         // body-frame incremental rotation
         q_ = q_ * dq;
         q_.normalize();
-        // gyro bias estimator (Ki) and accelerometer
-        // low-pass filter are doen in firmware
+        // gyro bias estimator(Ki) and accelerometer
+        // low-pass filter are done in the firmware
     }
 
     static vec3 transform_world_to_body(const quaternion& q, const vec3& v) {
@@ -207,12 +203,9 @@ struct orientation {
         };
     }
 
-    vec3 m_ref;
     quaternion q_;
     bool has_prev_ = false;
     uint64_t prev_ts_ms_ = 0;
-    bool has_mag_ref_ = false;
-    uint32_t sample_hold_count = 250;
 };
 
 } //namespace imu
