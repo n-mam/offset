@@ -92,25 +92,25 @@ struct orientation {
         vec3 a = {s.ax, s.ay, s.az};
         bool acc_valid = a.normalize() &&
             (std::abs(a.n - 1.0) <= 0.15);
-        // acc proportional error a(measured) x g(body)
-        double e_ax = 0.0, e_ay = 0.0, e_az = 0.0;
+        double e_ax = 0.0, e_ay = 0.0;
         if (acc_valid) {
             // predicted gravity in body frame from the current attitude 
             // estimate. since q_ transforms body -> world, therefore
             // g(body) = inv(q_) * g(world) * q_
             vec3 gw = {0, 0, 1};
             vec3 gb = transform_world_to_body(q_, gw);
+            // acc proportional error 
+            // a(measured) x g(body)
+            // discard the z term. gravity 
+            // does not contribute to yaw 
             e_ax = a.y * gb.z - a.z * gb.y;
             e_ay = a.z * gb.x - a.x * gb.z;
-            e_az = a.x * gb.y - a.y * gb.x;
         }
         // magnetometer
-        // axis re-map depends on how we have mounted the discrete chips
-        // Magnetometer (HMC) is mounted 90° CCW relative to the MPU6050.
         // HMC y is 90 deg ccw to MPU y 
         // HMC x is 90 deg ccw to MPU x 
-        // Here I am using MPU as the primary ref frame and so mag values are changed accordingly
-        // Rotate the magnetometer measurements into the MPU6050 reference frame.        
+        // Here I am using MPU as the primary ref frame
+        // and so mag values are changed accordingly       
         double tx = s.mx;
         double ty = s.my;
         // s.mx = -ty; s.my = tx;
@@ -118,7 +118,7 @@ struct orientation {
         vec3 m = {-ty, tx, s.mz};
         bool mag_valid = m.normalize();
         // mag proportional error m(measured) x m(reference)
-        double e_mx = 0.0, e_my = 0.0, e_mz = 0.0;
+        double e_mz = 0.0;
         if (mag_valid) {
             // measured magnetic field rotated into world frame
             vec3 mw = transform_body_to_world(q_, m);
@@ -134,8 +134,8 @@ struct orientation {
                 vec3 m_pred = transform_world_to_body(q_, m_ref);
                 // only take the component of the error about the body Z axis (yaw).
                 // This is the z-component of the full cross product, but we deliberately
-                // discard e_mx, e_my so mag can never correct roll/pitch.
-                // Roll and pitch are already strongly observable from gravity.
+                // discard e_mx, e_my so mag can never correct roll/pitch. Just like earlier 
+                // acc does not correct the yaw (e_az). Roll and pitch are already strongly observable from gravity.
                 // Magnetometers are noisy and easily disturbed by nearby metal, motors, current-carrying wires, etc.
                 // The vertical component of Earth's magnetic field is weak and varies significantly with location.
                 // Using the magnetometer to correct tilt can inject magnetic disturbances into your attitude estimate.
@@ -143,11 +143,16 @@ struct orientation {
             }
         }
         // correction
-        constexpr double kp_acc = 2.0;
+        constexpr double kp_acc = 1.0;
         constexpr double kp_mag = 0.2;
-        wx += kp_acc * e_ax + kp_mag * e_mx;
-        wy += kp_acc * e_ay + kp_mag * e_my;
-        wz += kp_acc * e_az + kp_mag * e_mz;
+        constexpr double ki_acc = 0.01;
+        constexpr double ki_mag = 0.002;
+        gyro_bias_.x += ki_acc * e_ax * dt;
+        gyro_bias_.y += ki_acc * e_ay * dt;
+        gyro_bias_.z += ki_mag * e_mz * dt;
+        wx += kp_acc * e_ax + gyro_bias_.x;
+        wy += kp_acc * e_ay + gyro_bias_.y;
+        wz += kp_mag * e_mz + gyro_bias_.z;
         // rotation vector (angular velocity integrated over dt)
         quaternion dq;
         vec3 rv = {wx*dt, wy*dt, wz*dt};
@@ -206,6 +211,7 @@ struct orientation {
     quaternion q_;
     bool has_prev_ = false;
     uint64_t prev_ts_ms_ = 0;
+    vec3 gyro_bias_ = {0, 0, 0};
 };
 
 } //namespace imu
