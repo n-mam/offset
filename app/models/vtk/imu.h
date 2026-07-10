@@ -68,23 +68,20 @@ struct orientation {
     void reset() {
         // Identity body->world rotation.
         // Initially, the body and world frames are aligned.
-        q_ = {1.0, 0.0, 0.0, 0.0};
-        has_prev_ = false;
+        m_ref = {0,0,0};
         prev_ts_ms_ = 0;
+        has_prev_ = false;
+        q_ = {1.0, 0.0, 0.0, 0.0};
     }
+
     // Mahony's proportional observer
-    // using current q_
-    // predict gravity
-    // Rotation error = measured × predicted (g)
-    // correct the gyro using this error
-    // update estimate
     void update(const sample& s) {
         if (!has_prev_) {
             prev_ts_ms_ = s.ts_ms;
             has_prev_ = true;
             return;
         }
-        if (s.ts_ms <= prev_ts_ms_) return;        
+        if (s.ts_ms <= prev_ts_ms_) return;
         double dt = (s.ts_ms - prev_ts_ms_) * 0.001;
         prev_ts_ms_ = s.ts_ms;
         constexpr double DEG2RAD = std::numbers::pi / 180.0;
@@ -96,6 +93,18 @@ struct orientation {
         vec3 a = {s.ax, s.ay, s.az};
         bool acc_valid = a.normalize() &&
             (std::abs(a.n - 1.0) <= 0.15);
+        // acc proportional error a(measured) x g(body)
+        double e_ax = 0.0, e_ay = 0.0, e_az = 0.0;
+        if (acc_valid) {
+            // predicted gravity in body frame from the current attitude 
+            // estimate. since q_ transforms body -> world, therefore
+            // g(body) = inv(q_) * g(world) * q_
+            vec3 gw = {0, 0, 1};
+            vec3 gb = transform_world_to_body(q_, gw);
+            e_ax = a.y * gb.z - a.z * gb.y;
+            e_ay = a.z * gb.x - a.x * gb.z;
+            e_az = a.x * gb.y - a.y * gb.x;
+        }            
         // magnetometer
         // axis re-map depends on how we have mounted the discreete chips
         // Magnetometer (HMC) is mounted 90° CCW relative to the MPU6050.
@@ -109,43 +118,37 @@ struct orientation {
         // vec3 m = {s.mx, s.my, s.mz};
         vec3 m = {-ty, tx, s.mz};
         bool mag_valid = m.normalize();
-        // acc proportional error a(measured) x g(body)
-        double e_ax, e_ay, e_az;
-        e_ax = e_ay = e_az = 0.0;
-        if (acc_valid) {
-            // predicted gravity in body frame from the current attitude 
-            // estimate. since q_ transforms body -> world, therefore
-            // g(body) = inv(q_) * g(world) * q_
-            vec3 gw = {0, 0, 1};
-            vec3 gb = transform_world_to_body(q_, gw);            
-            e_ax = a.y * gb.z - a.z * gb.y;
-            e_ay = a.z * gb.x - a.x * gb.z;
-            e_az = a.x * gb.y - a.y * gb.x;            
-        }
         // mag proportional error m(measured) x m(reference)
-        double e_mx, e_my, e_mz;
-        e_mx = e_my = e_mz = 0.0;
+        double e_mx = 0.0, e_my = 0.0, e_mz = 0.0;
         if (mag_valid) {
-            // measured magnetic field rotated into world frame
-            vec3 mw = transform_body_to_world(q_, m);
-            // horizontal field magnitude
-            double bx = std::sqrt(mw.x * mw.x + mw.y * mw.y);
-            // avoid singularity
-            if (bx > 1e-6) {
-                // reference magnetic field in world frame
-                vec3 m_ref = {bx, 0.0, mw.z};
-                if (m_ref.normalize()) {
-                    // predicted reference magnetic field in body frame
-                    vec3 m_pred = transform_world_to_body(q_, m_ref);
-                    e_mx = m.y * m_pred.z - m.z * m_pred.y;
-                    e_my = m.z * m_pred.x - m.x * m_pred.z;
-                    e_mz = m.x * m_pred.y - m.y * m_pred.x;
+            if (!has_mag_ref_) {
+                --sample_hold_count;
+                if (sample_hold_count == 0) {
+                    // measured magnetic field rotated into world frame
+                    vec3 mw = transform_body_to_world(q_, m);
+                    // horizontal field magnitude
+                    double bx = std::sqrt(mw.x * mw.x + mw.y * mw.y);
+                    // avoid singularity
+                    if (bx > 1e-6) {
+                        // reference magnetic field in world frame
+                        m_ref = {bx, 0.0, mw.z};
+                        m_ref.normalize();
+                        has_mag_ref_ = true;
+                    }
                 }
+            } else {
+                // transform the fixed world mag ref into predicted reference
+                // magnetic field in body frame using the current orientation
+                vec3 m_pred = transform_world_to_body(q_, m_ref);
+                // only take the component of the error about the body Z axis (yaw).
+                // This is the z-component of the full cross product, but we deliberately
+                // discard e_mx, e_my so mag can never correct roll/pitch.                
+                e_mz = m.x * m_pred.y - m.y * m_pred.x;
             }
         }
         // correction
         constexpr double kp_acc = 0.05;
-        constexpr double kp_mag = 0.55;
+        constexpr double kp_mag = 0.05;
         wx += kp_acc * e_ax + kp_mag * e_mx;
         wy += kp_acc * e_ay + kp_mag * e_my;
         wz += kp_acc * e_az + kp_mag * e_mz;
@@ -204,9 +207,12 @@ struct orientation {
         };
     }
 
+    vec3 m_ref;
     quaternion q_;
     bool has_prev_ = false;
     uint64_t prev_ts_ms_ = 0;
+    bool has_mag_ref_ = false;
+    uint32_t sample_hold_count = 250;
 };
 
 } //namespace imu
