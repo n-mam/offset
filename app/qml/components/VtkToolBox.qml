@@ -171,8 +171,8 @@ Item {
             border.width: 1
             anchors.fill: parent
             border.color: borderColor
-            implicitWidth: 220
-            implicitHeight: 120            
+            implicitWidth: 300
+            implicitHeight: 220
             color: Qt.lighter(Material.background)
             ColumnLayout {
                 spacing: 5
@@ -200,7 +200,7 @@ Item {
                     Button {
                         text: "Stop"
                         onClicked: {
-                            visualizer.stop_imu_visualization();                            
+                            visualizer.stop_imu_visualization();
                             activePanel = ""
                         }
                     }
@@ -210,7 +210,31 @@ Item {
                             visualizer.start_imu_visualization(source.text);
                             activePanel = ""
                         }
-                    }                    
+                    }                 
+                }
+                RowLayout {
+                    Layout.alignment: Qt.AlignHCenter
+                    spacing: 2
+                    TextField {
+                        id: kpAccField
+                        placeholderText: "kp_acc"
+                        Layout.preferredWidth: 85
+                        Layout.preferredHeight: 36
+                    }
+                    TextField {
+                        id: kpMagField
+                        placeholderText: "kp_mag"
+                        Layout.preferredWidth: 85
+                        Layout.preferredHeight: 36
+                    }
+                    CheckBox {
+                        id: debugCheckBox
+                        text: "Log"
+                        onCheckedChanged: {
+                            //todo for gains
+                            visualizer.control_imu_visualization(checked)
+                        }
+                    }
                 }
             }
         }
@@ -218,7 +242,7 @@ Item {
 
     function onToolClicked(tool) {
         if (tool === "original") {
-            visualizer.restore_base_pipeline();            
+            visualizer.restore_base_pipeline();
         } else if (tool === "open") {
             fileDialog.open()
         } else if (tool === 'debug') {

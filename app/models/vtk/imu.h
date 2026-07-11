@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cstdint>
 #include <numbers>
+#include <iostream>
 
 namespace imu {
 
@@ -72,9 +73,15 @@ struct orientation {
         has_prev_ = false;
         q_ = {1.0, 0.0, 0.0, 0.0};
     }
-
+    
     // Mahony's proportional observer
     void update(const sample& s) {
+        if (log_) {
+            std::cout << "s: " 
+                << s.gx << "," << s.gy << "," << s.gz << ","
+                    << s.ax << "," << s.ay << "," << s.az << ","
+                        << s.mx << "," << s.my << "," << s.mz << std::endl;
+        }
         if (!has_prev_) {
             prev_ts_ms_ = s.ts_ms;
             has_prev_ = true;
@@ -142,38 +149,42 @@ struct orientation {
                 e_mz = m.x * m_pred.y - m.y * m_pred.x;
             }
         }
-        // correction
+        // PI constants
         constexpr double kp_acc = 1.0;
         constexpr double kp_mag = 0.2;
         constexpr double ki_acc = 0.01;
         constexpr double ki_mag = 0.002;
+        // gyro bias integral term
         gyro_bias_.x += ki_acc * e_ax * dt;
         gyro_bias_.y += ki_acc * e_ay * dt;
         gyro_bias_.z += ki_mag * e_mz * dt;
+        // correction
         wx += kp_acc * e_ax + gyro_bias_.x;
         wy += kp_acc * e_ay + gyro_bias_.y;
         wz += kp_mag * e_mz + gyro_bias_.z;
+        if (log_) {
+            std::cout << "e: ax,ay,mz: " << e_ax << "," 
+                << e_ay << "," << e_mz << std::endl;
+        }
         // rotation vector (angular velocity integrated over dt)
         quaternion dq;
         vec3 rv = {wx*dt, wy*dt, wz*dt};
-        if (!rv.normalize()) {
+        if (rv.normalize()) {
+            // exponential map
+            // rotation vector -> incremental quaternion
+            dq = axisAngleToQuaternion(rv.x, rv.y, rv.z, rv.n);
+        } else {
             // first-order Taylor approximation of the quaternion
             // exponential for small rotation angles (theta->0)
             dq.w = 1.0;
             dq.x = 0.5 * rv.x;
             dq.y = 0.5 * rv.y;
             dq.z = 0.5 * rv.z;
-        } else {
-            // exponential map
-            // rotation vector -> incremental quaternion
-            dq = axisAngleToQuaternion(rv.x, rv.y, rv.z, rv.n);
         }
         // update orientation estimate
         // body-frame incremental rotation
         q_ = q_ * dq;
         q_.normalize();
-        // gyro bias estimator(Ki) and accelerometer
-        // low-pass filter are done in the firmware
     }
 
     static vec3 transform_world_to_body(const quaternion& q, const vec3& v) {
@@ -208,7 +219,12 @@ struct orientation {
         };
     }
 
+    void control_imu(bool log) {
+        log_.store(log, std::memory_order_relaxed);
+    }
+
     quaternion q_;
+    std::atomic<bool> log_{false};
     bool has_prev_ = false;
     uint64_t prev_ts_ms_ = 0;
     vec3 gyro_bias_ = {0, 0, 0};

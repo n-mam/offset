@@ -408,6 +408,10 @@ void VtkQuickItem::stop_load() {
     stop.store(true, std::memory_order_relaxed);
 }
 
+void VtkQuickItem::control_imu_visualization(bool log) {
+    _orientation.control_imu(log);
+}
+
 void VtkQuickItem::start_imu_visualization(QString source) {
     if (!has_cloud()) return;
     auto active = active_pipeline();

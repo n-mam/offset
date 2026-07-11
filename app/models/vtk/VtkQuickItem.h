@@ -53,6 +53,7 @@ struct VtkQuickItem : public QQuickVTKItem {
     Q_INVOKABLE void restore_base_pipeline();
     Q_INVOKABLE void stop_imu_visualization();
     Q_INVOKABLE void apply_scalar(QString name);
+    Q_INVOKABLE void control_imu_visualization(bool);
     Q_INVOKABLE void elevation_filter_ransac();    
     Q_INVOKABLE void load_point_cloud(QUrl filePath);
     Q_INVOKABLE void start_imu_visualization(QString);
