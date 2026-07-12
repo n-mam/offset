@@ -69,6 +69,21 @@ struct stream_voxel_filter {
         max_x = max_y = max_z = -std::numeric_limits<double>::infinity();
     }
 
+    void reset() {
+        leftover.clear();
+        recentered = false;
+        min_x = min_y = min_z =
+            std::numeric_limits<double>::infinity();
+        max_x = max_y = max_z =
+            -std::numeric_limits<double>::infinity();
+        origin_x = origin_y = origin_z = 0.0;
+        voxel_map.clear();
+        dirty_voxels.clear();
+        cloud->clear();
+        // optional: release old capacity if clouds vary wildly
+        // cloud->points.shrink_to_fit();
+    }
+
     inline std::pair<bool, bool>
     parse_xyz_rgb(const char* p, const char* end,
         double& x, double& y, double& z, int& r, int& g, int& b) {
@@ -132,7 +147,7 @@ struct stream_voxel_filter {
         return {has_xyz, has_rgb};
     }
 
-    auto parse_cloud_chunk(uint8_t *buf, ssize_t bytes, 
+    auto parse_cloud_chunk(uint8_t *buf, ssize_t bytes,
             std::vector<parsed_point>& parsed_points) {
         parsed_points.clear();
         uint64_t points = 0;
@@ -193,7 +208,7 @@ struct stream_voxel_filter {
         return;
     }
 
-    auto consume_cloud_chunk(uint8_t *buf, ssize_t bytes, 
+    auto consume_cloud_chunk(uint8_t *buf, ssize_t bytes,
             std::vector<parsed_point>& parsed_points, std::mutex& mux) {
         uint64_t new_voxels = 0;
         parse_cloud_chunk(buf, bytes, parsed_points);

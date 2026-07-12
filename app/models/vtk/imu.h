@@ -73,11 +73,11 @@ struct orientation {
         has_prev_ = false;
         q_ = {1.0, 0.0, 0.0, 0.0};
     }
-    
+
     // Mahony's proportional observer
     void update(const sample& s) {
         if (log_) {
-            std::cout << "s: " 
+            std::cout << "s: "
                 << s.gx << "," << s.gy << "," << s.gz << ","
                     << s.ax << "," << s.ay << "," << s.az << ","
                         << s.mx << "," << s.my << "," << s.mz << std::endl;
@@ -101,23 +101,23 @@ struct orientation {
             (std::abs(a.n - 1.0) <= 0.15);
         double e_ax = 0.0, e_ay = 0.0;
         if (acc_valid) {
-            // predicted gravity in body frame from the current attitude 
+            // predicted gravity in body frame from the current attitude
             // estimate. since q_ transforms body -> world, therefore
             // g(body) = inv(q_) * g(world) * q_
             vec3 gw = {0, 0, 1};
             vec3 gb = transform_world_to_body(q_, gw);
-            // acc proportional error 
+            // acc proportional error
             // a(measured) x g(body)
-            // discard the z term. gravity 
-            // does not contribute to yaw 
+            // discard the z term. gravity
+            // does not contribute to yaw
             e_ax = a.y * gb.z - a.z * gb.y;
             e_ay = a.z * gb.x - a.x * gb.z;
         }
         // magnetometer
-        // HMC y is 90 deg ccw to MPU y 
-        // HMC x is 90 deg ccw to MPU x 
+        // HMC y is 90 deg ccw to MPU y
+        // HMC x is 90 deg ccw to MPU x
         // Here I am using MPU as the primary ref frame
-        // and so mag values are changed accordingly       
+        // and so mag values are changed accordingly
         double tx = s.mx;
         double ty = s.my;
         // s.mx = -ty; s.my = tx;
@@ -141,7 +141,7 @@ struct orientation {
                 vec3 m_pred = transform_world_to_body(q_, m_ref);
                 // only take the component of the error about the body Z axis (yaw).
                 // This is the z-component of the full cross product, but we deliberately
-                // discard e_mx, e_my so mag can never correct roll/pitch. Just like earlier 
+                // discard e_mx, e_my so mag can never correct roll/pitch. Just like earlier
                 // acc does not correct the yaw (e_az). Roll and pitch are already strongly observable from gravity.
                 // Magnetometers are noisy and easily disturbed by nearby metal, motors, current-carrying wires, etc.
                 // The vertical component of Earth's magnetic field is weak and varies significantly with location.
@@ -150,8 +150,8 @@ struct orientation {
             }
         }
         // PI constants
-        constexpr double kp_acc = 1.0;
-        constexpr double kp_mag = 0.2;
+        constexpr double kp_acc = 3.0;
+        constexpr double kp_mag = 0.8;
         constexpr double ki_acc = 0.01;
         constexpr double ki_mag = 0.002;
         // gyro bias integral term
@@ -163,7 +163,7 @@ struct orientation {
         wy += kp_acc * e_ay + gyro_bias_.y;
         wz += kp_mag * e_mz + gyro_bias_.z;
         if (log_) {
-            std::cout << "e: ax,ay,mz: " << e_ax << "," 
+            std::cout << "e: ax,ay,mz: " << e_ax << ","
                 << e_ay << "," << e_mz << std::endl;
         }
         // rotation vector (angular velocity integrated over dt)
@@ -206,7 +206,7 @@ struct orientation {
         quaternion rq = q * vq * q_conjugate;
         return {rq.x, rq.y, rq.z};
     }
-    
+
     static quaternion axisAngleToQuaternion(
         double ux, double uy, double uz, double theta) {
         double half = theta * 0.5;

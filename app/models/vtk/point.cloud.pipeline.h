@@ -4,6 +4,8 @@
 #include <vtkPolyData.h>
 #include <vtkProperty.h>
 #include <vtkPointData.h>
+#include <vtkTransform.h>
+#include <vtkAxesActor.h>
 #include <vtkNamedColors.h>
 #include <vtkPolyDataMapper.h>
 #include <vtkUnsignedCharArray.h>
@@ -28,6 +30,7 @@ struct pipeline {
 
     stream_voxel_filter svf;
     filter _filter = filter::none;
+    vtkSmartPointer<vtkAxesActor> axes;
     vtkSmartPointer<vtkPoints> points;
     vtkSmartPointer<vtkCellArray> verts;
     vtkSmartPointer<vtkPolyData> polyData;
@@ -48,7 +51,7 @@ struct pipeline {
         colors->SetNumberOfComponents(3);  // R, G, B
         colors->SetName("original");
         polyData->GetPointData()->AddArray(colors);
-        polyData->GetPointData()->SetActiveScalars("original");        
+        polyData->GetPointData()->SetActiveScalars("original");
         // mapper
         mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
         mapper->SetInputData(polyData);
@@ -62,22 +65,31 @@ struct pipeline {
         actor->GetProperty()->SetPointSize(2);
         // Add to actor list
         actors.push_back(actor);
+        //axis helper
+        vtkNew<vtkTransform> transform;
+        transform->Translate(0.0, 0.0, 0.0);
+        axes = vtkSmartPointer<vtkAxesActor>::New();
+        axes->SetUserTransform(transform);
+        axes->SetTotalLength(50.0, 50.0, 50.0);
+        axes->SetShaftTypeToCylinder();
+        axes->SetCylinderRadius(0.005);
+        axes->SetConeRadius(0.2);
     }
 
     void addActorsToRenderer(vtkRenderer* renderer) {
-        if (renderer) {
-            for (auto& actor : actors) {
-                renderer->AddActor(actor);
-            }
+        if (!renderer) return;
+        renderer->AddActor(axes);
+        for (auto& actor : actors) {
+            renderer->AddActor(actor);
         }
     }
 
     void removeActorsFromRenderer(vtkRenderer* renderer) {
-        if (renderer) {
-            for (auto& actor : actors) {
-                if (actor) {
-                    renderer->RemoveActor(actor);
-                }
+        if (!renderer) return;
+        renderer->RemoveActor(axes);
+        for (auto& actor : actors) {
+            if (actor) {
+                renderer->RemoveActor(actor);
             }
         }
     }
@@ -88,14 +100,21 @@ struct pipeline {
 
     void reset() {
         // CPU state
+        svf.reset();
         svf.voxel_map.clear();
-        svf.cloud->points.clear();
+        svf.dirty_voxels.clear();
+        svf.cloud->clear();
         // VTK state
         points->SetNumberOfPoints(0);
         colors->SetNumberOfTuples(0);
         verts->Initialize();
         // Mark dirty once
+        polyData->GetPointData()
+            ->SetActiveScalars("original");
+        points->Modified();
+        verts->Modified();
         polyData->Modified();
+        polyData->ComputeBounds();
     }
 };
 

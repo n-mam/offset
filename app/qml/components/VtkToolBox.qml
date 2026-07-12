@@ -16,20 +16,20 @@ Item {
 
     x: parent ? parent.width - root.implicitWidth - 8 : 0
     y: parent ? (parent.height - root.implicitHeight)/2 : 0
-    
+
     property var tools: [
-        { 
-            name: "original", 
-            icon: "qrc:/cloud.png"
-        },          
-        { 
-            name: "filter", 
-            icon: "qrc:/filter.png", 
-            sub: ["PMF", "RANSAC"]
-        },        
         {
-            name: "colors", 
-            icon: "qrc:/colors.png", 
+            name: "original",
+            icon: "qrc:/cloud.png"
+        },
+        {
+            name: "filter",
+            icon: "qrc:/filter.png",
+            sub: ["PMF", "RANSAC"]
+        },
+        {
+            name: "colors",
+            icon: "qrc:/colors.png",
             sub: ["original", "z-heatmap"]
         },
         {
@@ -37,17 +37,17 @@ Item {
             icon: "qrc:/sim.png",
             panel: true
         },
-        { 
-            name: "debug", 
-            icon: "qrc:/debug.png" 
+        {
+            name: "debug",
+            icon: "qrc:/debug.png"
         },
-        { 
-            name: "fit", 
-            icon: "qrc:/fit.png" 
+        {
+            name: "fit",
+            icon: "qrc:/fit.png"
         },
-        { 
-            name: "open", 
-            icon: "qrc:/zoom.png" 
+        {
+            name: "open",
+            icon: "qrc:/zoom.png"
         }
     ]
 
@@ -61,7 +61,7 @@ Item {
             Item {
                 width: 30
                 height: 30
-                property var tool: modelData 
+                property var tool: modelData
                 ToolButton {
                     id: btn
                     anchors.fill: parent
@@ -167,11 +167,11 @@ Item {
     Component {
         id: simPanel
         Rectangle {
-            radius: 8 
+            radius: 8
             border.width: 1
             anchors.fill: parent
             border.color: borderColor
-            implicitWidth: 300
+            implicitWidth: 280
             implicitHeight: 220
             color: Qt.lighter(Material.background)
             ColumnLayout {
@@ -180,7 +180,7 @@ Item {
                 anchors.fill: parent
                 layoutDirection: Qt.LeftToRight
                 Label {
-                    text: "Data Source"
+                    text: "IMU Source Data"
                     font.bold: true
                     Layout.alignment: Qt.AlignHCenter
                 }
@@ -192,6 +192,13 @@ Item {
                         Layout.preferredWidth: 150
                         Layout.preferredHeight: 36
                         placeholderText: "stream"
+                    }
+                    CheckBox {
+                        id: debugCheckBox
+                        text: "Log"
+                        onCheckedChanged: {
+                            visualizer.control_imu_visualization(checked)
+                        }
                     }
                 }
                 RowLayout {
@@ -210,7 +217,7 @@ Item {
                             visualizer.start_imu_visualization(source.text);
                             activePanel = ""
                         }
-                    }                 
+                    }
                 }
                 RowLayout {
                     Layout.alignment: Qt.AlignHCenter
@@ -226,14 +233,6 @@ Item {
                         placeholderText: "kp_mag"
                         Layout.preferredWidth: 85
                         Layout.preferredHeight: 36
-                    }
-                    CheckBox {
-                        id: debugCheckBox
-                        text: "Log"
-                        onCheckedChanged: {
-                            //todo for gains
-                            visualizer.control_imu_visualization(checked)
-                        }
                     }
                 }
             }

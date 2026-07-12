@@ -3,9 +3,7 @@
 #include <vtkPoints.h>
 #include <vtkRenderer.h>
 #include <vtkPolyData.h>
-#include <vtkAxesActor.h>
 #include <vtkMatrix4x4.h>
-#include <vtkTransform.h>
 #include <vtkRenderWindow.h>
 #include <vtkPolyDataMapper.h>
 
@@ -50,22 +48,29 @@ void VtkQuickItem::clear_scene() {
     if (_thread.joinable()) {
         stop.store(true, std::memory_order_relaxed);
         _thread.join();
-        stop.store(false, std::memory_order_relaxed);
     }
-    auto pipeline = active_pipeline();
-    if (pipeline) pipeline->reset();
+    auto* ctx = context();
+    if (!ctx || ctx->pipelines.empty()) return;
+    // remove all pipeline actors from renderer
+    for (auto& pipeline : ctx->pipelines) {
+        pipeline->removeActorsFromRenderer(ctx->renderer);
+    }
+    // keep the base pipeline and reset its data
+    auto base = ctx->pipelines.front();
+    base->reset();
+    // purge all derived pipelines
+    ctx->pipelines.clear();
+    ctx->pipelines.push_back(base);
+    // restore base as active pipeline
+    ctx->active_pipeline = base;
+    // restore renderer state
+    base->addActorsToRenderer(ctx->renderer);
+    stop.store(false, std::memory_order_relaxed);
+    cloud_loaded.store(false, std::memory_order_relaxed);
     camera_initialized.store(false, std::memory_order_relaxed);
-    context()->renderer->ResetCameraClippingRange();
-    context()->renderWindow->Render();
-    vtkNew<vtkTransform> transform;
-    transform->Translate(0.0, 0.0, 0.0);
-    vtkNew<vtkAxesActor> axes;
-    axes->SetUserTransform(transform);
-    axes->SetTotalLength(50.0, 50.0, 50.0); 
-    axes->SetShaftTypeToCylinder();
-    axes->SetCylinderRadius(0.005);
-    axes->SetConeRadius(0.2);
-    context()->renderer->AddActor(axes);
+    ctx->renderer->ResetCamera();
+    ctx->renderer->ResetCameraClippingRange();
+    ctx->renderWindow->Render();
 }
 
 void VtkQuickItem::syncToVTK(sppl pipeline) {
@@ -73,7 +78,7 @@ void VtkQuickItem::syncToVTK(sppl pipeline) {
     auto& points = pipeline->points;
     auto& colors = pipeline->colors;
     auto& cloud = pipeline->svf.cloud;
-    const vtkIdType total_points = 
+    const vtkIdType total_points =
         static_cast<vtkIdType>(cloud->points.size());
     // Grow vtk arrays only when needed
     if (points->GetNumberOfPoints() != total_points) {
@@ -368,7 +373,7 @@ void VtkQuickItem::set_active_pipeline(sppl pipeline) {
     active->removeActorsFromRenderer(ctx->renderer);
     ctx->active_pipeline = pipeline;
     pipeline->addActorsToRenderer(ctx->renderer);
-    auto it = std::ranges::find_if(ctx->pipelines, 
+    auto it = std::ranges::find_if(ctx->pipelines,
         [&](const sppl& p) {
             return p == pipeline;
         });
@@ -381,7 +386,7 @@ void VtkQuickItem::set_active_pipeline(sppl pipeline) {
 void VtkQuickItem::restore_base_pipeline() {
     if (!has_cloud()) return;
     auto base = base_pipeline();
-    auto active = active_pipeline();    
+    auto active = active_pipeline();
     if (!base || base->is_empty()) return;
     if (!active || active->is_empty()) return;
     if (base == active) return;
@@ -389,12 +394,12 @@ void VtkQuickItem::restore_base_pipeline() {
     active->removeActorsFromRenderer(ctx->renderer);
     ctx->active_pipeline = base;
     base->addActorsToRenderer(ctx->renderer);
-    ctx->renderer->ResetCamera();    
+    ctx->renderer->ResetCamera();
 }
 
 sppl VtkQuickItem::get_pipeline(vis::filter f) {
     for (const auto& pipeline : context()->pipelines) {
-        if (pipeline->_filter == f) 
+        if (pipeline->_filter == f)
             return pipeline;
     }
     return nullptr;
@@ -415,7 +420,7 @@ void VtkQuickItem::control_imu_visualization(bool log) {
 void VtkQuickItem::start_imu_visualization(QString source) {
     if (!has_cloud()) return;
     auto active = active_pipeline();
-    if (!active || active->is_empty()) return;    
+    if (!active || active->is_empty()) return;
     QString portName;
     source = source.trimmed();
     // If the source is only digits
@@ -425,7 +430,7 @@ void VtkQuickItem::start_imu_visualization(QString source) {
     if (ok) {
         portName = QString("COM%1").arg(portNum);
     } else if (source.startsWith("COM", Qt::CaseInsensitive)) {
-        // If it already starts with 
+        // If it already starts with
         // "COM", normalize the case
         portName = source.toUpper();
     } else {
@@ -465,7 +470,7 @@ void VtkQuickItem::onReadSerialLine(const QByteArray& line) {
     s.gz = fields[6].toDouble(&ok); if (!ok) return;
     s.mx = fields[7].toDouble(&ok); if (!ok) return;
     s.my = fields[8].toDouble(&ok); if (!ok) return;
-    s.mz = fields[9].toDouble(&ok); if (!ok) return;  
+    s.mz = fields[9].toDouble(&ok); if (!ok) return;
     _orientation.update(s);
     QMetaObject::invokeMethod(qApp, [this]() {
         update();
@@ -473,8 +478,8 @@ void VtkQuickItem::onReadSerialLine(const QByteArray& line) {
             std::lock_guard<std::mutex> lg(mux);
             applyQuaternion(_orientation.get_quaternion());
             rw->Render();
-        });        
-    }, Qt::QueuedConnection);    
+        });
+    }, Qt::QueuedConnection);
 }
 
 void VtkQuickItem::applyQuaternion(const imu::quaternion& q) {
