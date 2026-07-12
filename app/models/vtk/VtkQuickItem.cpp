@@ -413,8 +413,16 @@ void VtkQuickItem::stop_load() {
     stop.store(true, std::memory_order_relaxed);
 }
 
-void VtkQuickItem::control_imu_visualization(bool log) {
-    _orientation.control_imu(log);
+void VtkQuickItem::control_imu_visualization(const QString& key, const QVariant& value) {
+    imu::ImuParam param;
+    if (value.typeId() == QMetaType::Bool) {
+        param = value.toBool();
+    } else if (value.canConvert<double>()) {
+        param = value.toDouble();
+    } else {
+        return;
+    }
+    _orientation.control_imu(key.toStdString(), param);
 }
 
 void VtkQuickItem::start_imu_visualization(QString source) {

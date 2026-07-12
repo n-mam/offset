@@ -169,70 +169,110 @@ Item {
         Rectangle {
             radius: 8
             border.width: 1
-            anchors.fill: parent
             border.color: borderColor
-            implicitWidth: 280
-            implicitHeight: 220
             color: Qt.lighter(Material.background)
+            implicitWidth: 280
+            implicitHeight: layout.implicitHeight + 20
+
             ColumnLayout {
-                spacing: 5
-                anchors.margins: 5
+                id: layout
                 anchors.fill: parent
-                layoutDirection: Qt.LeftToRight
+                anchors.margins: 10
+                spacing: 10
                 Label {
+                    Layout.alignment: Qt.AlignHCenter
                     text: "IMU Source Data"
                     font.bold: true
-                    Layout.alignment: Qt.AlignHCenter
                 }
                 RowLayout {
-                    Layout.alignment: Qt.AlignHCenter
-                    spacing: 2
+                    Layout.fillWidth: true
+                    spacing: 8
                     TextField {
                         id: source
-                        Layout.preferredWidth: 150
+                        Layout.fillWidth: true
                         Layout.preferredHeight: 36
                         placeholderText: "stream"
+                        focus: true
+                        onAccepted: {
+                            visualizer.start_imu_visualization(text)
+                            activePanel = ""
+                        }
                     }
                     CheckBox {
                         id: debugCheckBox
                         text: "Log"
-                        onCheckedChanged: {
-                            visualizer.control_imu_visualization(checked)
+                        onCheckedChanged:
+                            visualizer.control_imu_visualization("log", checked)
+                    }
+                }
+                GridLayout {
+                    Layout.fillWidth: true
+                    columns: 3
+                    columnSpacing: 8
+                    rowSpacing: 0
+                    Label {
+                        text: "kp_a"
+                        Layout.preferredWidth: 38
+                        horizontalAlignment: Text.AlignRight
+                    }
+                    Slider {
+                        id: pacc
+                        to: 5.0
+                        from: 0.0
+                        live: true
+                        value: 2.0
+                        stepSize: 0.1
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 24
+                        onValueChanged: {
+                            visualizer.control_imu_visualization("kp_acc", value)
                         }
+                    }
+                    Label {
+                        Layout.preferredWidth: 36
+                        text: pacc.value.toFixed(1)
+                        font.family: "monospace"
+                    }
+                    Label {
+                        text: "kp_m"
+                        Layout.preferredWidth: 38
+                        horizontalAlignment: Text.AlignRight
+                    }
+                    Slider {
+                        id: pmag
+                        to: 5.0
+                        from: 0.0
+                        live: true
+                        value: 0.8
+                        stepSize: 0.1
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 24
+                        onValueChanged: {
+                            visualizer.control_imu_visualization("kp_mag", value)
+                        }
+                    }
+                    Label {
+                        Layout.preferredWidth: 36
+                        text: pmag.value.toFixed(1)
+                        font.family: "monospace"
                     }
                 }
                 RowLayout {
                     Layout.alignment: Qt.AlignHCenter
-                    spacing: 2
-                    Button {
-                        text: "Stop"
-                        onClicked: {
-                            visualizer.stop_imu_visualization();
-                            activePanel = ""
-                        }
-                    }
+                    spacing: 8
                     Button {
                         text: "Start"
                         onClicked: {
-                            visualizer.start_imu_visualization(source.text);
+                            visualizer.start_imu_visualization(source.text)
                             activePanel = ""
                         }
                     }
-                }
-                RowLayout {
-                    Layout.alignment: Qt.AlignHCenter
-                    spacing: 2
-                    TextField {
-                        id: kpAccField
-                        placeholderText: "kp_acc"
-                        Layout.preferredWidth: 85
-                        Layout.preferredHeight: 36
-                    }
-                    TextField {
-                        id: kpMagField
-                        placeholderText: "kp_mag"
-                        Layout.preferredWidth: 85
-                        Layout.preferredHeight: 36
+                    Button {
+                        text: "Stop"
+                        onClicked: {
+                            visualizer.stop_imu_visualization()
+                            activePanel = ""
+                        }
                     }
                 }
             }

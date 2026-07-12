@@ -10,7 +10,7 @@
 #include <vtkRenderWindowInteractor.h>
 
 #include <imu.h>
-#include "QQuickVTKItem.h"
+#include <QQuickVTKItem.h>
 #include <SerialPortManager.h>
 #include <point.cloud.pipeline.h>
 
@@ -47,16 +47,16 @@ struct VtkQuickItem : public QQuickVTKItem {
     QThread* _serialThread = nullptr;
     SerialPortManager *_serial = nullptr;
 
+    Q_INVOKABLE void stop_load();
     Q_INVOKABLE void fit_to_cloud();
-    Q_INVOKABLE void stop_load();    
     Q_INVOKABLE void elevation_filter_pmf();
     Q_INVOKABLE void restore_base_pipeline();
     Q_INVOKABLE void stop_imu_visualization();
+    Q_INVOKABLE void elevation_filter_ransac();
     Q_INVOKABLE void apply_scalar(QString name);
-    Q_INVOKABLE void control_imu_visualization(bool);
-    Q_INVOKABLE void elevation_filter_ransac();    
     Q_INVOKABLE void load_point_cloud(QUrl filePath);
     Q_INVOKABLE void start_imu_visualization(QString);
+    Q_INVOKABLE void control_imu_visualization(const QString& key, const QVariant& value);
 
     bool has_cloud();
     void clear_scene();

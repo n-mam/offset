@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cstdint>
 #include <numbers>
+#include <variant>
 #include <iostream>
 
 namespace imu {
@@ -60,6 +61,8 @@ struct quaternion {
     }
 };
 
+using ImuParam = std::variant<bool, double>;
+
 struct orientation {
 
     orientation() { reset(); }
@@ -76,7 +79,7 @@ struct orientation {
 
     // Mahony's proportional observer
     void update(const sample& s) {
-        if (log_) {
+        if (log_.load(std::memory_order_relaxed)) {
             std::cout << "s: "
                 << s.gx << "," << s.gy << "," << s.gz << ","
                     << s.ax << "," << s.ay << "," << s.az << ","
@@ -149,9 +152,6 @@ struct orientation {
                 e_mz = m.x * m_pred.y - m.y * m_pred.x;
             }
         }
-        // PI constants
-        constexpr double kp_acc = 3.0;
-        constexpr double kp_mag = 0.8;
         constexpr double ki_acc = 0.01;
         constexpr double ki_mag = 0.002;
         // gyro bias integral term
@@ -159,12 +159,14 @@ struct orientation {
         gyro_bias_.y += ki_acc * e_ay * dt;
         gyro_bias_.z += ki_mag * e_mz * dt;
         // correction
-        wx += kp_acc * e_ax + gyro_bias_.x;
-        wy += kp_acc * e_ay + gyro_bias_.y;
-        wz += kp_mag * e_mz + gyro_bias_.z;
-        if (log_) {
-            std::cout << "e: ax,ay,mz: " << e_ax << ","
-                << e_ay << "," << e_mz << std::endl;
+        wx += kp_acc.load(std::memory_order_relaxed) * e_ax + gyro_bias_.x;
+        wy += kp_acc.load(std::memory_order_relaxed) * e_ay + gyro_bias_.y;
+        wz += kp_mag.load(std::memory_order_relaxed) * e_mz + gyro_bias_.z;
+        if (log_.load(std::memory_order_relaxed)) {
+            std::cout << "e: ax,ay,mz,kp_a,kp_mag: " << e_ax << ","
+                << e_ay << "," << e_mz << ","
+                    << kp_acc.load(std::memory_order_relaxed) << ","
+                         << kp_mag.load(std::memory_order_relaxed) << std::endl;
         }
         // rotation vector (angular velocity integrated over dt)
         quaternion dq;
@@ -219,15 +221,23 @@ struct orientation {
         };
     }
 
-    void control_imu(bool log) {
-        log_.store(log, std::memory_order_relaxed);
+    void control_imu(const std::string& key, const ImuParam& value) {
+        if (key == "log") {
+            log_.store(std::get<bool>(value), std::memory_order_relaxed);
+        } else if (key == "kp_acc") {
+            kp_acc.store(std::get<double>(value), std::memory_order_relaxed);
+        } else if (key == "kp_mag") {
+            kp_mag.store(std::get<double>(value), std::memory_order_relaxed);
+        }
     }
 
     quaternion q_;
-    std::atomic<bool> log_{false};
     bool has_prev_ = false;
     uint64_t prev_ts_ms_ = 0;
     vec3 gyro_bias_ = {0, 0, 0};
+    std::atomic_bool log_{false};
+    std::atomic<double> kp_acc{2.0};
+    std::atomic<double> kp_mag{0.8};
 };
 
 } //namespace imu
