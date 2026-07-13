@@ -61,8 +61,6 @@ struct quaternion {
     }
 };
 
-using ImuParam = std::variant<bool, double>;
-
 struct orientation {
 
     orientation() { reset(); }
@@ -70,17 +68,21 @@ struct orientation {
     const quaternion& get_quaternion() const { return q_; }
 
     void reset() {
-        // Identity body->world rotation.
-        // Initially, the body and world frames are aligned.
         prev_ts_ms_ = 0;
         has_prev_ = false;
+        // Identity body->world rotation
+        // Initially the body and world frames are
+        // aligned i.e no rotation. This defines neither
+        // the world frame nor the body frame. Irrespective
+        // of what those farme look like the transformation to
+        // and from them are identity at this point in time
         q_ = {1.0, 0.0, 0.0, 0.0};
     }
 
     // Mahony's proportional observer
     void update(const sample& s) {
         if (log_.load(std::memory_order_relaxed)) {
-            std::cout << "s: "
+            std::cout << "s : "
                 << s.gx << "," << s.gy << "," << s.gz << ","
                     << s.ax << "," << s.ay << "," << s.az << ","
                         << s.mx << "," << s.my << "," << s.mz << std::endl;
@@ -102,7 +104,7 @@ struct orientation {
         vec3 a = {s.ax, s.ay, s.az};
         bool acc_valid = a.normalize() &&
             (std::abs(a.n - 1.0) <= 0.15);
-        double e_ax = 0.0, e_ay = 0.0;
+        double e_ax = 0.0, e_ay = 0.0, e_az = 0.0;
         if (acc_valid) {
             // predicted gravity in body frame from the current attitude
             // estimate. since q_ transforms body -> world, therefore
@@ -111,10 +113,11 @@ struct orientation {
             vec3 gb = transform_world_to_body(q_, gw);
             // acc proportional error
             // a(measured) x g(body)
-            // discard the z term. gravity
+            // discard the z term; gravity
             // does not contribute to yaw
             e_ax = a.y * gb.z - a.z * gb.y;
             e_ay = a.z * gb.x - a.x * gb.z;
+            e_az = a.x * gb.y - a.y * gb.x;
         }
         // magnetometer
         // HMC y is 90 deg ccw to MPU y
@@ -128,8 +131,8 @@ struct orientation {
         vec3 m = {-ty, tx, s.mz};
         bool mag_valid = m.normalize();
         // mag proportional error m(measured) x m(reference)
-        double e_mz = 0.0;
-        if (mag_valid) {
+        double e_mx = 0.0, e_my = 0.0, e_mz = 0.0;
+        if (acc_valid && mag_valid) {
             // measured magnetic field rotated into world frame
             vec3 mw = transform_body_to_world(q_, m);
             // horizontal field magnitude
@@ -149,24 +152,32 @@ struct orientation {
                 // Magnetometers are noisy and easily disturbed by nearby metal, motors, current-carrying wires, etc.
                 // The vertical component of Earth's magnetic field is weak and varies significantly with location.
                 // Using the magnetometer to correct tilt can inject magnetic disturbances into your attitude estimate.
+                e_mx = m.y * m_pred.z - m.z * m_pred.y;
+                e_my = m.z * m_pred.x - m.x * m_pred.z;
                 e_mz = m.x * m_pred.y - m.y * m_pred.x;
             }
         }
-        constexpr double ki_acc = 0.01;
-        constexpr double ki_mag = 0.002;
+        // load controller gains once per update
+        const double kp_acc = _kp_acc.load(std::memory_order_relaxed);
+        const double ki_acc = _ki_acc.load(std::memory_order_relaxed);
+        const double kp_mag = _kp_mag.load(std::memory_order_relaxed);
+        const double ki_mag = _ki_mag.load(std::memory_order_relaxed);
         // gyro bias integral term
-        gyro_bias_.x += ki_acc * e_ax * dt;
-        gyro_bias_.y += ki_acc * e_ay * dt;
-        gyro_bias_.z += ki_mag * e_mz * dt;
-        // correction
-        wx += kp_acc.load(std::memory_order_relaxed) * e_ax + gyro_bias_.x;
-        wy += kp_acc.load(std::memory_order_relaxed) * e_ay + gyro_bias_.y;
-        wz += kp_mag.load(std::memory_order_relaxed) * e_mz + gyro_bias_.z;
+        gyro_bias_.x += (ki_acc * e_ax + ki_mag * e_mx) * dt;
+        gyro_bias_.y += (ki_acc * e_ay + ki_mag * e_my) * dt;
+        gyro_bias_.z += (ki_acc * e_az + ki_mag * e_mz) * dt;
+        // correction: proportional and integral
+        wx += kp_acc * e_ax + kp_mag * e_mx + gyro_bias_.x;
+        wy += kp_acc * e_ay + kp_mag * e_my + gyro_bias_.y;
+        wz += kp_acc * e_az + kp_mag * e_mz + gyro_bias_.z;
         if (log_.load(std::memory_order_relaxed)) {
-            std::cout << "e: ax,ay,mz,kp_a,kp_mag: " << e_ax << ","
-                << e_ay << "," << e_mz << ","
-                    << kp_acc.load(std::memory_order_relaxed) << ","
-                         << kp_mag.load(std::memory_order_relaxed) << std::endl;
+            std::cout << "e : "
+                << "acc(" << e_ax << "," << e_ay << "," << e_az << ") "
+                    << "mag(" << e_mx << "," << e_my << "," << e_mz << ") "
+                        << "kp_acc=" << kp_acc << " " << "ki_acc=" << ki_acc << " "
+                            << "kp_mag=" << kp_mag << " " << "ki_mag=" << ki_mag << " "
+                                << "bias(" << gyro_bias_.x << "," << gyro_bias_.y << ","
+                                    << gyro_bias_.z << ")" << std::endl;
         }
         // rotation vector (angular velocity integrated over dt)
         quaternion dq;
@@ -221,13 +232,18 @@ struct orientation {
         };
     }
 
-    void control_imu(const std::string& key, const ImuParam& value) {
+    void control_imu(const std::string& key,
+            const std::variant<bool, double>& value) {
         if (key == "log") {
             log_.store(std::get<bool>(value), std::memory_order_relaxed);
         } else if (key == "kp_acc") {
-            kp_acc.store(std::get<double>(value), std::memory_order_relaxed);
+            _kp_acc.store(std::get<double>(value), std::memory_order_relaxed);
+        } else if (key == "ki_acc") {
+            _ki_acc.store(std::get<double>(value), std::memory_order_relaxed);
         } else if (key == "kp_mag") {
-            kp_mag.store(std::get<double>(value), std::memory_order_relaxed);
+            _kp_mag.store(std::get<double>(value), std::memory_order_relaxed);
+        } else if (key == "ki_mag") {
+            _ki_mag.store(std::get<double>(value), std::memory_order_relaxed);
         }
     }
 
@@ -236,8 +252,10 @@ struct orientation {
     uint64_t prev_ts_ms_ = 0;
     vec3 gyro_bias_ = {0, 0, 0};
     std::atomic_bool log_{false};
-    std::atomic<double> kp_acc{2.0};
-    std::atomic<double> kp_mag{0.8};
+    std::atomic<double> _kp_acc{2.0};
+    std::atomic<double> _ki_acc{0.01};
+    std::atomic<double> _kp_mag{2.0};
+    std::atomic<double> _ki_mag{0.01};
 };
 
 } //namespace imu

@@ -211,12 +211,12 @@ Item {
                     columnSpacing: 8
                     rowSpacing: 0
                     Label {
-                        text: "kp_a"
+                        text: "kp_acc"
                         Layout.preferredWidth: 38
                         horizontalAlignment: Text.AlignRight
                     }
                     Slider {
-                        id: pacc
+                        id: kp_acc
                         to: 5.0
                         from: 0.0
                         live: true
@@ -230,20 +230,43 @@ Item {
                     }
                     Label {
                         Layout.preferredWidth: 36
-                        text: pacc.value.toFixed(1)
+                        text: kp_acc.value.toFixed(1)
                         font.family: "monospace"
                     }
                     Label {
-                        text: "kp_m"
+                        text: "ki_acc"
                         Layout.preferredWidth: 38
                         horizontalAlignment: Text.AlignRight
                     }
                     Slider {
-                        id: pmag
+                        id: ki_acc
+                        to: 0.1
+                        from: 0.0
+                        live: true
+                        value: 0.01
+                        stepSize: 0.001
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 24
+                        onValueChanged: {
+                            visualizer.control_imu_visualization("ki_acc", value)
+                        }
+                    }
+                    Label {
+                        Layout.preferredWidth: 36
+                        text: ki_acc.value.toFixed(3)
+                        font.family: "monospace"
+                    }
+                    Label {
+                        text: "kp_mag"
+                        Layout.preferredWidth: 38
+                        horizontalAlignment: Text.AlignRight
+                    }
+                    Slider {
+                        id: kp_mag
                         to: 5.0
                         from: 0.0
                         live: true
-                        value: 0.8
+                        value: 2.0
                         stepSize: 0.1
                         Layout.fillWidth: true
                         Layout.preferredHeight: 24
@@ -253,7 +276,30 @@ Item {
                     }
                     Label {
                         Layout.preferredWidth: 36
-                        text: pmag.value.toFixed(1)
+                        text: kp_mag.value.toFixed(1)
+                        font.family: "monospace"
+                    }
+                    Label {
+                        text: "ki_mag"
+                        Layout.preferredWidth: 38
+                        horizontalAlignment: Text.AlignRight
+                    }
+                    Slider {
+                        id: ki_mag
+                        to: 0.1
+                        from: 0.0
+                        live: true
+                        value: 0.01
+                        stepSize: 0.001
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 24
+                        onValueChanged: {
+                            visualizer.control_imu_visualization("ki_mag", value)
+                        }
+                    }
+                    Label {
+                        Layout.preferredWidth: 36
+                        text: ki_mag.value.toFixed(3)
                         font.family: "monospace"
                     }
                 }

@@ -414,7 +414,7 @@ void VtkQuickItem::stop_load() {
 }
 
 void VtkQuickItem::control_imu_visualization(const QString& key, const QVariant& value) {
-    imu::ImuParam param;
+    std::variant<bool, double> param;
     if (value.typeId() == QMetaType::Bool) {
         param = value.toBool();
     } else if (value.canConvert<double>()) {
