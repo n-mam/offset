@@ -70,12 +70,14 @@ struct orientation {
     void reset() {
         prev_ts_ms_ = 0;
         has_prev_ = false;
-        // Identity body->world rotation
-        // Initially the body and world frames are
-        // aligned i.e no rotation. This defines neither
-        // the world frame nor the body frame. Irrespective
-        // of what those farme look like the transformation to
-        // and from them are identity at this point in time
+        // Identity body->world rotation. Initially the body and
+        // world frames are aligned. This implies that the actual
+        // world frame is the initial body frame; and that has no
+        // relation to where the true magnetic north lies. Every
+        // rotation from the "current" body frame using q_ rotates the
+        // vector into this "initial" body frame(aka world frame) and
+        // every rotation from the world frame (i.e. the initial body
+        // frame) using q_ rotates the vector into the "current" body frame
         q_ = {1.0, 0.0, 0.0, 0.0};
     }
 
@@ -133,25 +135,30 @@ struct orientation {
         // mag proportional error m(measured) x m(reference)
         double e_mx = 0.0, e_my = 0.0, e_mz = 0.0;
         if (acc_valid && mag_valid) {
-            // measured magnetic field rotated into world frame
+            // measured magnetic field rotated into world
+            // frame using the current quaternion which
+            // presumably is off by yaw error
             vec3 mw = transform_body_to_world(q_, m);
-            // horizontal field magnitude
+            // horizontal x-y plane field magnitude
             double bx = std::sqrt(mw.x * mw.x + mw.y * mw.y);
             // avoid singularity
             if (bx > 1e-6) {
-                // reference magnetic field in world frame
+                // construct reference magnetic field in the world frame.
+                // this is NOT EQUAL to mw. It retains mw's magnitude
+                // but discards the mw's yaw. "mw's yaw" is mw's proper
+                // yaw + the induced yaw error due to rotating it with bad q_
                 vec3 m_ref = {bx, 0.0, mw.z};
                 m_ref.normalize();
                 // transform the fixed world mag ref into predicted reference
                 // magnetic field in body frame using the current orientation
                 vec3 m_pred = transform_world_to_body(q_, m_ref);
-                // only take the component of the error about the body Z axis (yaw).
-                // This is the z-component of the full cross product, but we deliberately
-                // discard e_mx, e_my so mag can never correct roll/pitch. Just like earlier
-                // acc does not correct the yaw (e_az). Roll and pitch are already strongly observable from gravity.
-                // Magnetometers are noisy and easily disturbed by nearby metal, motors, current-carrying wires, etc.
-                // The vertical component of Earth's magnetic field is weak and varies significantly with location.
-                // Using the magnetometer to correct tilt can inject magnetic disturbances into your attitude estimate.
+                // Here, instead of transforming m_ref(world) to m_pred(body) we
+                // could have also directly cross multiplied mw(world) with m_ref(world).
+                // That would also have produced a perfectly valid rotation error vector.
+                // But that error vector would have been in the world frame and we need to
+                // apply corrections to angular velocities in the body frame. If we were to
+                // use that method instead then the resulting world error vector would have
+                // to be rotated back to body frame using _q. Both are mathematically equivalent.
                 e_mx = m.y * m_pred.z - m.z * m_pred.y;
                 e_my = m.z * m_pred.x - m.x * m_pred.z;
                 e_mz = m.x * m_pred.y - m.y * m_pred.x;
