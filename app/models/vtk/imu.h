@@ -70,10 +70,10 @@ struct orientation {
     void reset() {
         prev_ts_ms_ = 0;
         has_prev_ = false;
-        // Identity body->world rotation. Initially the body and
-        // world frames are aligned. This implies that the actual
-        // world frame is the initial body frame; and that has no
-        // relation to where the true magnetic north lies. Every
+        // Identity body->world rotation. The filter defines the
+        // initial body frame as its world frame. Subsequent attitude
+        // estimates are expressed relative to this initial frame. and that
+        // has no relation to where the true magnetic north lies. Every
         // rotation from the "current" body frame using q_ rotates the
         // vector into this "initial" body frame(aka world frame) and
         // every rotation from the world frame (i.e. the initial body
@@ -115,8 +115,6 @@ struct orientation {
             vec3 gb = transform_world_to_body(q_, gw);
             // acc proportional error
             // a(measured) x g(body)
-            // discard the z term; gravity
-            // does not contribute to yaw
             e_ax = a.y * gb.z - a.z * gb.y;
             e_ay = a.z * gb.x - a.x * gb.z;
             e_az = a.x * gb.y - a.y * gb.x;
@@ -135,9 +133,11 @@ struct orientation {
         // mag proportional error m(measured) x m(reference)
         double e_mx = 0.0, e_my = 0.0, e_mz = 0.0;
         if (acc_valid && mag_valid) {
-            // measured magnetic field rotated into world
-            // frame using the current quaternion which
-            // presumably is off by yaw error
+            // mw is not expressed in the true Earth/world frame.
+            // It is expressed in the world frame implied by the
+            // current attitude estimate. If the attitude estimate
+            // is incorrect, mw will violate the expected magnetic
+            // field geometry in that estimated frame.
             vec3 mw = transform_body_to_world(q_, m);
             // horizontal x-y plane field magnitude
             double bx = std::sqrt(mw.x * mw.x + mw.y * mw.y);
@@ -145,8 +145,10 @@ struct orientation {
             if (bx > 1e-6) {
                 // construct reference magnetic field in the world frame.
                 // this is NOT EQUAL to mw. It retains mw's magnitude
-                // but discards the mw's yaw. "mw's yaw" is mw's proper
-                // yaw + the induced yaw error due to rotating it with bad q_
+                // but discards the mw's azimuth. "mw's azimuth" is mw's proper
+                // azimuth + the azimuth error due to rotating it with bad q_
+                // The projection removes the horizontal azimuth regardless
+                // of its source.
                 vec3 m_ref = {bx, 0.0, mw.z};
                 m_ref.normalize();
                 // transform the fixed world mag ref into predicted reference

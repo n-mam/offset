@@ -61,7 +61,7 @@ struct VtkQuickItem : public QQuickVTKItem {
     bool has_cloud();
     void clear_scene();
     sppl base_pipeline();
-    VtkContext *context();
+    VtkContext * context();
     sppl active_pipeline();
     void syncToVTK(sppl pipeline);
     sppl get_pipeline(vis::filter f);
@@ -69,12 +69,10 @@ struct VtkQuickItem : public QQuickVTKItem {
     void applyQuaternion(const imu::quaternion& q);
     void onReadSerialLine(const QByteArray& line);
 
+    auto create_scene(vtkRenderWindow *);
     void compute_color_map(const std::string& arrayName);
-    vtkSmartPointer<VtkContext> create_scene(vtkRenderWindow*);
     vtkUserData initializeVTK(vtkRenderWindow *renderWindow) override;
-    sppl build_filtered_pipeline(
-        sppl source,
-        const std::vector<int>& indices,
+    sppl build_filtered_pipeline(sppl source, const std::vector<int>& indices,
         vis::filter filter_type);
     void activate_pipeline_async(sppl pipeline);
 

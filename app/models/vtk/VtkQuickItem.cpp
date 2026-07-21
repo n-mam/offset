@@ -16,32 +16,31 @@
 #include <VtkQuickItem.h>
 #include <mouse.interactor.h>
 
-vtkSmartPointer<VtkContext>
-    VtkQuickItem::create_scene(vtkRenderWindow* renderWindow) {
-        auto ctx = vtkSmartPointer<VtkContext>::New();
-        // Core renderer setup
-        ctx->renderer = vtkSmartPointer<vtkRenderer>::New();
-        ctx->renderWindow = renderWindow;
-        renderWindow->SetSize(800, 600);
-        renderWindow->SetWindowName(
-            "VTK Multi Pipeline Scene");
-        renderWindow->AddRenderer(ctx->renderer);
-        ctx->renderer->SetBackground(0,0,0);
-        // Interactor
-        ctx->interactor =
-            renderWindow->GetInteractor();
-        vtkNew<PointPickerDistanceStyle> style;
-        style->SetDefaultRenderer(ctx->renderer);
-        style->cbk = [this](int distance){
-            distanceUpdated(distance);
-        };
-        ctx->interactor->SetInteractorStyle(style);
-        // base pipeline
-        auto pipeline = std::make_shared<vis::pipeline>
-            (vis::filter::base);
-        pipeline->addActorsToRenderer(ctx->renderer);
-        ctx->pipelines.push_back(pipeline);
-        return ctx;
+auto VtkQuickItem::create_scene(vtkRenderWindow* renderWindow) {
+    auto ctx = vtkSmartPointer<VtkContext>::New();
+    // Core renderer setup
+    ctx->renderer = vtkSmartPointer<vtkRenderer>::New();
+    ctx->renderWindow = renderWindow;
+    renderWindow->SetSize(800, 600);
+    renderWindow->SetWindowName(
+        "VTK Multi Pipeline Scene");
+    renderWindow->AddRenderer(ctx->renderer);
+    ctx->renderer->SetBackground(0,0,0);
+    // Interactor
+    ctx->interactor =
+        renderWindow->GetInteractor();
+    vtkNew<PointPickerDistanceStyle> style;
+    style->SetDefaultRenderer(ctx->renderer);
+    style->cbk = [this](int distance){
+        distanceUpdated(distance);
+    };
+    ctx->interactor->SetInteractorStyle(style);
+    // base pipeline
+    auto pipeline = std::make_shared<vis::pipeline>
+        (vis::filter::base);
+    pipeline->addActorsToRenderer(ctx->renderer);
+    ctx->pipelines.push_back(pipeline);
+    return ctx;
 }
 
 void VtkQuickItem::clear_scene() {
