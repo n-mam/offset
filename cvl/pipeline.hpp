@@ -32,7 +32,7 @@ struct pipeline {
         }
     }
 
-    inline auto filterRightAngleContours(const cv::Mat& frame) {
+    auto filterRightAngleContours(const cv::Mat& frame) {
         std::vector<cv::Vec4i> hierarchy;
         std::vector<std::vector<cv::Point>> contours, filtered_contours;
         cv::findContours(frame, contours, hierarchy, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE);
@@ -59,7 +59,7 @@ struct pipeline {
         return filtered_contours;
     }
 
-    inline auto detectMotion(cv::Mat& frame, spcc cc) {
+    auto detectMotion(cv::Mat& frame, spcc cc) {
         auto bbs = _backgroundSubtractor->Detect(frame, cc);
         for (const auto& bb : bbs) {
             cv::rectangle(frame, bb, cv::Scalar(0, 255, 0), 1);
@@ -70,7 +70,7 @@ struct pipeline {
         return bbs;
     }
 
-    inline auto detectLength(cv::Mat& frame) {
+    auto detectLength(cv::Mat& frame) {
         auto cmpp =  cvl::Detector::detectArucoMarker(frame);
         auto thresh = cvl::geometry::getBlurGreyThresholdFrame(frame);
         auto filtered_contours = filterRightAngleContours(thresh);
@@ -84,25 +84,22 @@ struct pipeline {
         cv::drawContours(frame, filtered_contours, -1, cv::Scalar(0, 255, 0), 2);
     }
 
-    inline auto detectFaces(cv::Mat& frame, spcc cc) {
+    auto detectFaces(cv::Mat& frame, spcc cc) {
         return _faceDetector->Detect(frame, cc);
     }
 
-    inline auto detectObjects(cv::Mat& frame, spcc cc) {
+    auto detectObjects(cv::Mat& frame, spcc cc) {
         return _objectDetector->Detect(frame, cc);
     }
 
-    inline auto faceRecognition(cv::Mat& frame, spcc cc) {
+    auto faceRecognition(cv::Mat& frame, spcc cc) {
         return _faceRecognizer->predict(frame, cc);
     }
 
-    inline auto execute(cv::Mat& frame, spcc cc) {
-
+    auto execute(cv::Mat& frame, spcc cc) {
         if (frame.empty()) return;
-
         Detections detections;
         int stages = cc->_stages;
-
         if (cc->_flags & 2) {
             _tracker->updateTrackingContexts(frame, cc);
         }
@@ -123,7 +120,6 @@ struct pipeline {
         }
 
         cvl::Detector::FilterDetections(detections, frame);
-
         _save_path = cc->_resultsFolder;
         _save = (bool)cc->_resultsFolder.length();
 

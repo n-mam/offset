@@ -9,7 +9,6 @@
 #include <iostream>
 
 #ifdef _WIN32
-#include <BaseTsd.h>
 typedef SSIZE_T ssize_t;
 #endif
 
@@ -49,19 +48,14 @@ constexpr inline auto context_type_string(
     switch (t) {
         case context::read:
             return "notify_read";
-            break;
         case context::write:
             return "notify_write";
-            break;
         case context::accept:
             return "notify_accept";
-            break;
         case context::connect:
             return "notify_connect";
-            break;
         case context::disconnect:
             return "notify_disconnect";
-            break;
         default:
             return "invalid";
     }
@@ -111,14 +105,14 @@ struct dispatcher : public subject {
         #endif
     }
 
-    inline auto has_control_initialized() {
+    auto has_control_initialized() {
         // accept completion on server should generally be queued
         // before connect completion of client. However, we check
         // both. this->is_connected happens in the server's notify_accept
         return (_client->is_connected() && this->is_connected());
     }
 
-    inline auto initialize_control(void) {
+    auto initialize_control(void) {
         // connected client read callback
         TListenerNotifyRead cbk_server_accepted_client_read = {
             [=, this, m = std::string()](const uint8_t *b, size_t n) mutable {
@@ -189,8 +183,7 @@ struct dispatcher : public subject {
             rc = GetQueuedCompletionStatus(_port, &n, (PULONG_PTR)&k, &ol, INFINITE);
             if (!rc) {
                 error = GetLastError();
-                DBG << "GQCS failed : " << error << " "
-                        << ((subject *)k)->name();
+                DBG << "GQCS failed : " << error << " " << ((subject *)k)->name();
             }
             if (n == 0 && k == 0 && ol == 0) break;
             #elif linux
@@ -240,7 +233,7 @@ struct dispatcher : public subject {
             }
             process_listeners_marked_for_removal();
         }
-        DBG << "dispatcher thread returning, observers: " << m_observers.size();
+        DBG << "dispatcher thread returning. observers: " << m_observers.size();
     }
 
     void process_event_context(void *key, context *ctx, int rc = 1, uint64_t error = 0) {
@@ -297,8 +290,8 @@ struct dispatcher : public subject {
                 socklen_t len = sizeof(err);
                 auto ctx = (context *)calloc(1, sizeof(context));
                 getsockopt(dev->_fd_async, SOL_SOCKET, SO_ERROR, &err, &len);
-                ctx->type = (err == 0) ? context::connect :
-                    context::disconnect;
+                ctx->type = (err == 0) ?
+                    context::connect : context::disconnect;
                 ctx->k = dev.get();
                 contexts.push_back(ctx);
             }

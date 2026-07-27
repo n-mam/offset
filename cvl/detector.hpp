@@ -40,11 +40,11 @@ struct DetectionResult {
 
     DetectionResult(){ _ts = -1; }
 
-    inline auto empty() {
+    auto empty() {
         return (_ts == -1);
     }
 
-    inline auto clone() {
+    auto clone() {
         DetectionResult out = *this;
         out._mat = this->_mat.clone();
         return std::move(out);
@@ -84,7 +84,7 @@ struct Detector {
 
     // auxiliary detections and filters
 
-    inline static auto detectArucoMarker(cv::Mat& frame) {
+    static auto detectArucoMarker(cv::Mat& frame) {
         double cmpp = 0;
         std::vector<int> markerIds;
         std::vector<std::vector<cv::Point2f>> allMarkerCorners;
@@ -103,7 +103,7 @@ struct Detector {
         return cmpp;
     }
 
-    inline static auto FilterDetections(Detections& detections, cv::Mat& m) {
+    static auto FilterDetections(Detections& detections, cv::Mat& m) {
         for (auto&& it = detections.begin(); it != detections.end(); ) {
             auto& roi = *it;
             bool remove = (roi.x < 0 || roi.x + roi.width > m.cols
