@@ -2,14 +2,10 @@
 #define SUBJECT_HPP
 
 #include <any>
-#include <set>
 #include <mutex>
-#include <vector>
 #include <memory>
 #include <string>
 #include <assert.h>
-#include <iostream>
-#include <algorithm>
 #include <unordered_set>
 
 #include <osl/log>
@@ -63,11 +59,6 @@ struct subject : public std::enable_shared_from_this<subject> {
 
     void mark_remove_all_listeners(void) {
         m_removeAllListeners = true;
-    }
-
-    void remove_all_event_listeners(void) {
-        m_observers.clear();
-        m_removeAllListeners = false;
     }
 
     void mark_remove_self_as_listener(void) {
@@ -187,6 +178,11 @@ struct subject : public std::enable_shared_from_this<subject> {
 
     virtual void add_device_to_event_port(spsubject subject) {}
 
+    void remove_all_event_listeners(void) {
+        m_observers.clear();
+        m_removeAllListeners = false;
+    }
+
     auto remove_event_listener_internal(const spsubject& observer) {
         auto it = m_observers.find(observer);
         assert(it != m_observers.end());
@@ -199,20 +195,20 @@ struct subject : public std::enable_shared_from_this<subject> {
     }
 
     void process_listeners_marked_for_removal(void) {
-        if (this->m_removeAllListeners) {
-            this->remove_all_event_listeners();
-            return;
-        }
-        for (auto it = m_observers.begin(); it != m_observers.end(); ) {
-            if ((*it)->is_marked_remove_self_as_listener()) {
-                it = this->remove_event_listener_internal(*it);
-            } else {
-                it++;
+        if (m_removeAllListeners) {
+            remove_all_event_listeners();
+        } else {
+            // check individual observers of this subject and see
+            // if they have been marked to be removed as a listener
+            for (auto it = m_observers.begin(); it != m_observers.end(); ) {
+                if ((*it)->is_marked_remove_self_as_listener()) {
+                    it = this->remove_event_listener_internal(*it);
+                } else {
+                    ++it;
+                }
             }
         }
     }
-
-    std::string m_name;
 
     protected:
 
@@ -229,7 +225,7 @@ struct subject : public std::enable_shared_from_this<subject> {
 
     std::mutex m_lock;
     wpsubject m_target;
-
+    std::string m_name;
     bool m_stopped = false;
     bool m_connected = false;
     state m_state = state::connecting;

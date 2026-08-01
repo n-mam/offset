@@ -72,7 +72,7 @@ struct orientation {
         has_prev_ = false;
         // Identity body->world rotation. The filter defines the
         // initial body frame as its world frame. Subsequent attitude
-        // estimates are expressed relative to this initial frame. and that
+        // estimates are expressed relative to this initial frame; and that
         // has no relation to where the true magnetic north lies. Every
         // rotation from the "current" body frame using q_ rotates the
         // vector into this "initial" body frame(aka world frame) and

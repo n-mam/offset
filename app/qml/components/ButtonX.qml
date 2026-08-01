@@ -16,7 +16,7 @@ Item {
         radius: 3
         anchors.fill: parent
         border.color: borderColor
-        color: Material.background
+        color: buttonRoot.image.length ? Material.background : "steelblue"
         border.width: buttonRoot.text.length ? 1 : 0
 
         Image {
@@ -43,8 +43,14 @@ Item {
             hoverEnabled: true
             anchors.fill: parent
             cursorShape: Qt.PointingHandCursor
-            onEntered: button.color = "steelblue"
-            onExited: button.color = Material.background
+            onEntered: {
+                button.color = Qt.lighter(buttonRoot.image.length ?
+                        Material.background : "steelblue", 1.2)
+            }
+            onExited: {
+                button.color = buttonRoot.image.length ?
+                    Material.background : "steelblue"
+            }
             onClicked: buttonXClicked()
         }
     }

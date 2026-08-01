@@ -154,10 +154,7 @@ struct dispatcher : public subject {
         #endif
         #ifdef _WIN32
         auto port = CreateIoCompletionPort(
-                device->_fd_async,
-                _port,
-                (ULONG_PTR)device.get(),
-                0);
+            device->_fd_async, _port, (ULONG_PTR)device.get(), 0);
         assert(port);
         #endif
     }
@@ -200,21 +197,21 @@ struct dispatcher : public subject {
             Event e {ee.events};
             #elif __has_include(<sys/event.h>)
             struct kevent ke;
-            rc = kevent(_port, NULL, 0, &ke,	1, nullptr);
+            rc = kevent(_port, NULL, 0, &ke, 1, nullptr);
             if (_stop) break;
+            k = ke.udata;
             if (rc < 0) {
                 error = errno;
                 DBG << "kevent failed : " << strerror(error) << " "
-                        << ((subject *)k)->name();
+                        << (k ? ((subject *)k)->name() : "");
                 break;
             }
-            k = ke.udata;
             Event e {ke.filter, ke.flags};
             #endif
 
             if (k == nullptr) break;
-
             std::unique_lock<std::mutex> ul(m_lock);
+
             for (auto o : m_observers) {
                 if (k == (void *)o.get()) {
                     #ifdef _WIN32

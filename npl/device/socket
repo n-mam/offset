@@ -72,7 +72,7 @@ struct socket_device : public file_device {
                     update_write_bio();
                 }
             }
-            file_device::mark_stopped(true);
+            subject::mark_stopped(true);
             shutdown((SOCKET)_fd_async, 1); //sd_send
             if (stopWrite) {
                 shutdown((SOCKET)_fd_async, 0); //sd_recv
@@ -100,12 +100,9 @@ struct socket_device : public file_device {
         inet_pton(AF_INET, m_host.c_str(), &sa.sin_addr);
         sa.sin_port = htons(m_port);
         static void *pfn_ConnectEx = osl::get_extention_pfn(WSAID_CONNECTEX, _fd_async);
-        bool fRet = ((LPFN_CONNECTEX)pfn_ConnectEx)(
-                (SOCKET)_fd_async,
-                (SOCKADDR*) &sa,
-                sizeof(sa),
-                NULL, 0, NULL,
-                (LPOVERLAPPED)ctx);
+        auto fRet = ((LPFN_CONNECTEX)pfn_ConnectEx)(
+            (SOCKET)_fd_async, (SOCKADDR*) &sa,
+            sizeof(sa), NULL, 0, NULL, (LPOVERLAPPED)ctx);
         if (fRet) {
             setsockopt((SOCKET)_fd_async, SOL_SOCKET, SO_UPDATE_CONNECT_CONTEXT, NULL, 0 );
             notify_connect();
@@ -466,16 +463,18 @@ using spsocket = std::shared_ptr<socket_device>;
 
 inline auto make_client(const std::string& host, int port, spsubject d) {
     auto client = std::make_shared<socket_device>();
-    auto rc = client->set_host_and_port(host, port);
-    if (!rc) decltype(client){};
+    if (!client->set_host_and_port(host, port)) {
+        return decltype(client){};
+    }
     d->add_event_listener(client);
     return client;
 }
 
 inline auto make_server(const std::string& host, int port, TListenerNotifyAccept cbk_accept, spsubject d) {
     auto server = std::make_shared<socket_device>();
-    auto rc = server->set_host_and_port(host, port);
-    if (!rc) return decltype(server){};
+    if (!server->set_host_and_port(host, port)) {
+        return decltype(server){};
+    }
     auto svr_lsnr = std::make_shared<listener>();
     svr_lsnr->setCallback<TListenerNotifyAccept>(cbk_accept);
     d->add_event_listener(server)->add_event_listener(svr_lsnr);
