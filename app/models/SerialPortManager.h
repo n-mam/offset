@@ -8,7 +8,7 @@
 
 #include <functional>
 
-using ReadCallback = std::function<void (const QByteArray&)>;
+using read_callback_t = std::function<void (const QByteArray&)>;
 
 struct SerialPortManager : public QObject {
 
@@ -17,7 +17,7 @@ struct SerialPortManager : public QObject {
     public:
 
     SerialPortManager(const QString& portName, QObject* parent = nullptr);
-    void set_read_callback(ReadCallback cbk);
+    void set_read_callback(read_callback_t cbk);
 
     public slots:
 
@@ -31,12 +31,13 @@ struct SerialPortManager : public QObject {
     private slots:
 
     void onReadyRead();
+    void onErrorOccurred(QSerialPort::SerialPortError);
 
     private:
 
     QString _portName;
     QByteArray _buffer;
-    ReadCallback _readCallback;
+    read_callback_t _readCallback;
     QSerialPort* _port = nullptr;
 };
 

@@ -8,6 +8,7 @@
 #include <vtkRenderer.h>
 #include <vtkRenderWindow.h>
 #include <vtkRenderWindowInteractor.h>
+#include <vtkMatrixToLinearTransform.h>
 
 #include <imu.h>
 #include <QQuickVTKItem.h>
@@ -44,8 +45,11 @@ struct VtkQuickItem : public QQuickVTKItem {
     std::atomic<bool> camera_initialized{false};
 
     imu::orientation _orientation;
+    vtkActor* m_lastActor = nullptr;
     QThread* _serialThread = nullptr;
     SerialPortManager *_serial = nullptr;
+    vtkSmartPointer<vtkMatrix4x4> m_rotationMatrix;
+    vtkSmartPointer<vtkMatrixToLinearTransform> m_transform;
 
     Q_INVOKABLE void stop_load();
     Q_INVOKABLE void fit_to_cloud();
@@ -58,10 +62,10 @@ struct VtkQuickItem : public QQuickVTKItem {
     Q_INVOKABLE void start_imu_visualization(QString);
     Q_INVOKABLE void control_imu_visualization(const QString& key, const QVariant& value);
 
+    auto context();
     bool has_cloud();
     void clear_scene();
     sppl base_pipeline();
-    VtkContext * context();
     sppl active_pipeline();
     void syncToVTK(sppl pipeline);
     sppl get_pipeline(vis::filter f);
@@ -72,8 +76,7 @@ struct VtkQuickItem : public QQuickVTKItem {
     auto create_scene(vtkRenderWindow *);
     void compute_color_map(const std::string& arrayName);
     vtkUserData initializeVTK(vtkRenderWindow *renderWindow) override;
-    sppl build_filtered_pipeline(sppl source, const std::vector<int>& indices,
-        vis::filter filter_type);
+    sppl build_filtered_pipeline(sppl source, const std::vector<int>& indices, vis::filter filter_type);
     void activate_pipeline_async(sppl pipeline);
 
     signals:

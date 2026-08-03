@@ -1,15 +1,10 @@
 #include <vtkNew.h>
-#include <vtkActor.h>
-#include <vtkPoints.h>
 #include <vtkRenderer.h>
-#include <vtkPolyData.h>
 #include <vtkMatrix4x4.h>
 #include <vtkRenderWindow.h>
-#include <vtkPolyDataMapper.h>
 
 #include <pcl/PointIndices.h>
 #include <pcl/ModelCoefficients.h>
-#include <pcl/filters/extract_indices.h>
 #include <pcl/segmentation/sac_segmentation.h>
 #include <pcl/segmentation/progressive_morphological_filter.h>
 
@@ -18,17 +13,15 @@
 
 auto VtkQuickItem::create_scene(vtkRenderWindow* renderWindow) {
     auto ctx = vtkSmartPointer<VtkContext>::New();
-    // Core renderer setup
+    // renderer setup
     ctx->renderer = vtkSmartPointer<vtkRenderer>::New();
     ctx->renderWindow = renderWindow;
     renderWindow->SetSize(800, 600);
-    renderWindow->SetWindowName(
-        "VTK Multi Pipeline Scene");
+    renderWindow->SetWindowName("vtx scene");
     renderWindow->AddRenderer(ctx->renderer);
     ctx->renderer->SetBackground(0,0,0);
-    // Interactor
-    ctx->interactor =
-        renderWindow->GetInteractor();
+    // interactor
+    ctx->interactor = renderWindow->GetInteractor();
     vtkNew<PointPickerDistanceStyle> style;
     style->SetDefaultRenderer(ctx->renderer);
     style->cbk = [this](int distance){
@@ -36,11 +29,111 @@ auto VtkQuickItem::create_scene(vtkRenderWindow* renderWindow) {
     };
     ctx->interactor->SetInteractorStyle(style);
     // base pipeline
-    auto pipeline = std::make_shared<vis::pipeline>
-        (vis::filter::base);
+    auto pipeline = std::make_shared
+        <vis::pipeline>(vis::filter::base);
     pipeline->addActorsToRenderer(ctx->renderer);
     ctx->pipelines.push_back(pipeline);
     return ctx;
+}
+
+// QQuickVTKItem entry point
+QQuickVTKItem::vtkUserData
+    VtkQuickItem::initializeVTK(vtkRenderWindow *renderWindow) {
+        return _ctx = create_scene(renderWindow);
+}
+
+VtkQuickItem::~VtkQuickItem() {
+    stop_imu_visualization();
+    stop.store(true, std::memory_order_relaxed);
+    if (_thread.joinable()) {
+        _thread.join();
+    }
+}
+
+auto VtkQuickItem::context() {
+    return VtkContext::SafeDownCast(_ctx);
+}
+
+sppl VtkQuickItem::base_pipeline() {
+    auto* ctx = context();
+    if (!ctx || ctx->pipelines.empty()) return nullptr;
+    return ctx->pipelines[0];
+}
+
+sppl VtkQuickItem::active_pipeline() {
+    auto* ctx = context();
+    if (!ctx || ctx->pipelines.empty()) return nullptr;
+    return ctx->active_pipeline;
+}
+
+bool VtkQuickItem::has_cloud() {
+    return cloud_loaded.load(std::memory_order_relaxed);
+}
+
+void VtkQuickItem::stop_load() {
+    stop.store(true, std::memory_order_relaxed);
+}
+
+sppl VtkQuickItem::get_pipeline(vis::filter f) {
+    for (const auto& pipeline : context()->pipelines) {
+        if (pipeline->_filter == f)
+            return pipeline;
+    }
+    return nullptr;
+}
+
+void VtkQuickItem::fit_to_cloud() {
+    update();
+    dispatch_async([this](vtkRenderWindow* rw, vtkUserData ud) {
+        context()->renderer->ResetCamera();
+        context()->renderer->ResetCameraClippingRange();
+        rw->Render();
+    });
+}
+
+void VtkQuickItem::activate_pipeline_async(sppl pipeline) {
+    if (!pipeline) return;
+    QMetaObject::invokeMethod(qApp, [this, pipeline]() {
+        update();
+        dispatch_async([this, pipeline] (vtkRenderWindow* rw, vtkUserData ud) {
+            std::lock_guard<std::mutex>lg(mux);
+            syncToVTK(pipeline);
+            set_active_pipeline(pipeline);
+        });
+    }, Qt::QueuedConnection);
+}
+
+void VtkQuickItem::set_active_pipeline(sppl pipeline) {
+    if (!pipeline) return;
+    auto active = active_pipeline();
+    if (!active) return;
+    if (active == pipeline) return;
+    auto ctx = context();
+    active->removeActorsFromRenderer(ctx->renderer);
+    ctx->active_pipeline = pipeline;
+    pipeline->addActorsToRenderer(ctx->renderer);
+    auto it = std::ranges::find_if(ctx->pipelines,
+        [&](const sppl& p) {
+            return p == pipeline;
+        });
+    if (it == ctx->pipelines.end()) {
+        ctx->pipelines.push_back(pipeline);
+    }
+    ctx->renderer->ResetCamera();
+}
+
+void VtkQuickItem::restore_base_pipeline() {
+    if (!has_cloud()) return;
+    auto base = base_pipeline();
+    auto active = active_pipeline();
+    if (!base || base->is_empty()) return;
+    if (!active || active->is_empty()) return;
+    if (base == active) return;
+    auto ctx = context();
+    active->removeActorsFromRenderer(ctx->renderer);
+    ctx->active_pipeline = base;
+    base->addActorsToRenderer(ctx->renderer);
+    ctx->renderer->ResetCamera();
 }
 
 void VtkQuickItem::clear_scene() {
@@ -178,7 +271,6 @@ void VtkQuickItem::load_point_cloud(QUrl path) {
 void VtkQuickItem::compute_color_map(const std::string& arrayName) {
     auto pipeline = active_pipeline();
     auto& cloud = pipeline->svf.cloud;
-
     const double min_z = pipeline->svf.min_z;
     const double max_z = pipeline->svf.max_z;
     const double denom = (max_z - min_z + 1e-9);
@@ -199,7 +291,6 @@ void VtkQuickItem::compute_color_map(const std::string& arrayName) {
         };
         colors->SetTypedTuple(i, rgb);
     }
-
     auto* pd = pipeline->polyData->GetPointData();
     // replace if it already exists
     pd->RemoveArray(arrayName.c_str());
@@ -210,7 +301,7 @@ void VtkQuickItem::compute_color_map(const std::string& arrayName) {
 void VtkQuickItem::apply_scalar(QString name) {
     if (!has_cloud()) return;
     auto arrayName = name.toStdString();
-    std::thread([this, arrayName]{
+    std::thread([this, arrayName] {
         auto pipeline = active_pipeline();
         if (!pipeline || pipeline->is_empty()) return;
         auto* pd = pipeline->polyData->GetPointData();
@@ -243,7 +334,7 @@ sppl VtkQuickItem::build_filtered_pipeline(sppl source,
         if (idx < 0 || static_cast<size_t>(idx) >= input_cloud->size())
             continue;
         const auto& p = input_cloud->points[idx];
-        voxel_key key{
+        voxel_key key {
             static_cast<int>(std::floor(p.x / source->svf.voxel_size)),
             static_cast<int>(std::floor(p.y / source->svf.voxel_size)),
             static_cast<int>(std::floor(p.z / source->svf.voxel_size))
@@ -325,109 +416,11 @@ void VtkQuickItem::elevation_filter_pmf() {
     }).detach();
 }
 
-void VtkQuickItem::activate_pipeline_async(sppl pipeline) {
-    if (!pipeline) return;
-    QMetaObject::invokeMethod(qApp, [this, pipeline]() {
-        update();
-        dispatch_async([this, pipeline] (vtkRenderWindow* rw, vtkUserData ud) {
-            std::lock_guard<std::mutex>lg(mux);
-            syncToVTK(pipeline);
-            set_active_pipeline(pipeline);
-        });
-    }, Qt::QueuedConnection);
-}
-
-void VtkQuickItem::fit_to_cloud() {
-    update();
-    dispatch_async([this](vtkRenderWindow* rw, vtkUserData ud) {
-        context()->renderer->ResetCamera();
-        context()->renderer->ResetCameraClippingRange();
-        rw->Render();
-    });
-}
-
-VtkContext *
-    VtkQuickItem::context() {
-        return VtkContext::SafeDownCast(_ctx);
-}
-
-sppl VtkQuickItem::base_pipeline() {
-    auto* ctx = VtkContext::SafeDownCast(_ctx);
-    if (!ctx || ctx->pipelines.empty()) return nullptr;
-    return ctx->pipelines[0];
-}
-
-sppl VtkQuickItem::active_pipeline() {
-    auto* ctx = VtkContext::SafeDownCast(_ctx);
-    if (!ctx || ctx->pipelines.empty()) return nullptr;
-    return ctx->active_pipeline;
-}
-
-void VtkQuickItem::set_active_pipeline(sppl pipeline) {
-    if (!pipeline) return;
-    auto active = active_pipeline();
-    if (!active) return;
-    if (active == pipeline) return;
-    auto ctx = context();
-    active->removeActorsFromRenderer(ctx->renderer);
-    ctx->active_pipeline = pipeline;
-    pipeline->addActorsToRenderer(ctx->renderer);
-    auto it = std::ranges::find_if(ctx->pipelines,
-        [&](const sppl& p) {
-            return p == pipeline;
-        });
-    if (it == ctx->pipelines.end()) {
-        ctx->pipelines.push_back(pipeline);
-    }
-    ctx->renderer->ResetCamera();
-}
-
-void VtkQuickItem::restore_base_pipeline() {
-    if (!has_cloud()) return;
-    auto base = base_pipeline();
-    auto active = active_pipeline();
-    if (!base || base->is_empty()) return;
-    if (!active || active->is_empty()) return;
-    if (base == active) return;
-    auto ctx = context();
-    active->removeActorsFromRenderer(ctx->renderer);
-    ctx->active_pipeline = base;
-    base->addActorsToRenderer(ctx->renderer);
-    ctx->renderer->ResetCamera();
-}
-
-sppl VtkQuickItem::get_pipeline(vis::filter f) {
-    for (const auto& pipeline : context()->pipelines) {
-        if (pipeline->_filter == f)
-            return pipeline;
-    }
-    return nullptr;
-}
-
-bool VtkQuickItem::has_cloud() {
-    return cloud_loaded.load(std::memory_order_relaxed);
-}
-
-void VtkQuickItem::stop_load() {
-    stop.store(true, std::memory_order_relaxed);
-}
-
-void VtkQuickItem::control_imu_visualization(const QString& key, const QVariant& value) {
-    std::variant<bool, double> param;
-    if (value.typeId() == QMetaType::Bool) {
-        param = value.toBool();
-    } else if (value.canConvert<double>()) {
-        param = value.toDouble();
-    } else {
-        return;
-    }
-    _orientation.control_imu(key.toStdString(), param);
-}
-
+// imu visualization
 void VtkQuickItem::start_imu_visualization(QString source) {
     if (!has_cloud()) return;
-    auto active = active_pipeline();
-    if (!active || active->is_empty()) return;
+    auto pipeline = active_pipeline();
+    if (!pipeline || pipeline->is_empty()) return;
     QString portName;
     source = source.trimmed();
     // If the source is only digits
@@ -459,14 +452,26 @@ void VtkQuickItem::start_imu_visualization(QString source) {
     _serialThread->start();
 }
 
+void VtkQuickItem::control_imu_visualization(const QString& key, const QVariant& value) {
+    std::variant<bool, double> param;
+    if (value.typeId() == QMetaType::Bool) {
+        param = value.toBool();
+    } else if (value.canConvert<double>()) {
+        param = value.toDouble();
+    } else {
+        return;
+    }
+    _orientation.control_imu(key.toStdString(), param);
+}
+
 void VtkQuickItem::onReadSerialLine(const QByteArray& line) {
-    imu::sample s;
     QByteArray clean = line.trimmed();
     auto fields = clean.split(',');
     if (fields.size() != 10) return;
-    bool ok;
     QByteArray tsStr = fields[0].trimmed();
     tsStr = tsStr.replace("\r", "").replace("\n", "");
+    bool ok;
+    imu::sample s;
     s.ts_ms = tsStr.toULongLong(&ok);
     if (!ok) return;
     s.ax = fields[1].toDouble(&ok); if (!ok) return;
@@ -489,6 +494,35 @@ void VtkQuickItem::onReadSerialLine(const QByteArray& line) {
     }, Qt::QueuedConnection);
 }
 
+// void VtkQuickItem::applyQuaternion(const imu::quaternion& q) {
+//     auto pipeline = active_pipeline();
+//     if (!pipeline || pipeline->actors.empty()) return;
+//     auto actor = pipeline->actors.front();
+//     const double xx = q.x * q.x;
+//     const double yy = q.y * q.y;
+//     const double zz = q.z * q.z;
+//     const double xy = q.x * q.y;
+//     const double xz = q.x * q.z;
+//     const double yz = q.y * q.z;
+//     const double wx = q.w * q.x;
+//     const double wy = q.w * q.y;
+//     const double wz = q.w * q.z;
+//     vtkNew<vtkMatrix4x4> m;
+//     m->Identity();
+//     m->SetElement(0,0,1 - 2*(yy + zz));
+//     m->SetElement(0,1,2*(xy - wz));
+//     m->SetElement(0,2,2*(xz + wy));
+//     m->SetElement(1,0,2*(xy + wz));
+//     m->SetElement(1,1,1 - 2*(xx + zz));
+//     m->SetElement(1,2,2*(yz - wx));
+//     m->SetElement(2,0,2*(xz - wy));
+//     m->SetElement(2,1,2*(yz + wx));
+//     m->SetElement(2,2,1 - 2*(xx + yy));
+//     vtkNew<vtkTransform> t;
+//     t->SetMatrix(m);
+//     actor->SetUserTransform(t);
+// }
+
 void VtkQuickItem::applyQuaternion(const imu::quaternion& q) {
     auto pipeline = active_pipeline();
     if (!pipeline || pipeline->actors.empty()) return;
@@ -502,20 +536,26 @@ void VtkQuickItem::applyQuaternion(const imu::quaternion& q) {
     const double wx = q.w * q.x;
     const double wy = q.w * q.y;
     const double wz = q.w * q.z;
-    vtkNew<vtkMatrix4x4> m;
-    m->Identity();
-    m->SetElement(0,0,1 - 2*(yy + zz));
-    m->SetElement(0,1,2*(xy - wz));
-    m->SetElement(0,2,2*(xz + wy));
-    m->SetElement(1,0,2*(xy + wz));
-    m->SetElement(1,1,1 - 2*(xx + zz));
-    m->SetElement(1,2,2*(yz - wx));
-    m->SetElement(2,0,2*(xz - wy));
-    m->SetElement(2,1,2*(yz + wx));
-    m->SetElement(2,2,1 - 2*(xx + yy));
-    vtkNew<vtkTransform> t;
-    t->SetMatrix(m);
-    actor->SetUserTransform(t);
+    if (!m_rotationMatrix) {
+        m_rotationMatrix = vtkSmartPointer<vtkMatrix4x4>::New();
+        m_rotationMatrix->Identity();
+        m_transform = vtkSmartPointer<vtkMatrixToLinearTransform>::New();
+        m_transform->SetInput(m_rotationMatrix);
+    }
+    m_rotationMatrix->SetElement(0,0,1 - 2*(yy + zz));
+    m_rotationMatrix->SetElement(0,1,2*(xy - wz));
+    m_rotationMatrix->SetElement(0,2,2*(xz + wy));
+    m_rotationMatrix->SetElement(1,0,2*(xy + wz));
+    m_rotationMatrix->SetElement(1,1,1 - 2*(xx + zz));
+    m_rotationMatrix->SetElement(1,2,2*(yz - wx));
+    m_rotationMatrix->SetElement(2,0,2*(xz - wy));
+    m_rotationMatrix->SetElement(2,1,2*(yz + wx));
+    m_rotationMatrix->SetElement(2,2,1 - 2*(xx + yy));
+    m_rotationMatrix->Modified();
+    if (actor != m_lastActor) {
+        actor->SetUserTransform(m_transform);
+        m_lastActor = actor;
+    }
 }
 
 void VtkQuickItem::stop_imu_visualization() {
@@ -527,20 +567,6 @@ void VtkQuickItem::stop_imu_visualization() {
     delete _serialThread;
     _serial = nullptr;
     _serialThread = nullptr;
-}
-
-VtkQuickItem::~VtkQuickItem() {
-    stop_imu_visualization();
-    stop.store(true, std::memory_order_relaxed);
-    if (_thread.joinable()) {
-        _thread.join();
-    }
-}
-
-// QQuickVTKItem entry point
-QQuickVTKItem::vtkUserData
-    VtkQuickItem::initializeVTK(vtkRenderWindow *renderWindow) {
-        return _ctx = create_scene(renderWindow);
 }
 
 vtkStandardNewMacro(VtkContext);

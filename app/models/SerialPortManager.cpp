@@ -15,12 +15,14 @@ void SerialPortManager::start() {
     _port->setFlowControl(QSerialPort::NoFlowControl);
     connect(_port, &QSerialPort::readyRead,
         this, &SerialPortManager::onReadyRead);
+    connect(_port, &QSerialPort::errorOccurred,
+        this, &SerialPortManager::onErrorOccurred);
     if (!_port->open(QIODevice::ReadOnly)) {
         qDebug() << "Failed to open serial port:" << _portName;
         return;
     }
     _port->setDataTerminalReady(true);
-    _port->setRequestToSend(true);    
+    _port->setRequestToSend(true);
 }
 
 void SerialPortManager::stop() {
@@ -44,6 +46,22 @@ void SerialPortManager::onReadyRead() {
     }
 }
 
-void SerialPortManager::set_read_callback(ReadCallback cbk) {
+void SerialPortManager::onErrorOccurred(QSerialPort::SerialPortError error) {
+    if (error == QSerialPort::NoError) return;
+    qCritical() << "Serial port error on" << _portName
+        << ":" << error << "-" << _port->errorString();
+    switch (error) {
+        case QSerialPort::ResourceError:
+        case QSerialPort::PermissionError:
+        case QSerialPort::DeviceNotFoundError:
+            qCritical() << "closing serial port due to error: " << error;
+            stop();
+            break;
+        default:
+            break;
+    }
+}
+
+void SerialPortManager::set_read_callback(read_callback_t cbk) {
     _readCallback = cbk;
 }
