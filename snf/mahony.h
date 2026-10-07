@@ -1,79 +1,30 @@
-#ifndef IMU_H
-#define IMU_H
+#ifndef MAHONY_H
+#define MAHONY_H
 
 #include <cmath>
+#include <numbers>
 #include <cstdint>
 #include <numbers>
 #include <variant>
 #include <iostream>
 
-namespace imu {
+#include <snf/snf.h>
 
-struct sample {
-    uint64_t ts_ms;
-    double ax, ay, az;
-    double gx, gy, gz;
-    double mx, my, mz;
-};
+namespace snf {
 
-struct vec3 {
-    double x, y, z;
-    double n = 0;
-    bool normalize() {
-        n = std::sqrt(x*x + y*y + z*z);
-        bool ret = n > 1e-6;
-        if (ret) {
-            double inv = 1.0 / n;
-            x *= inv;
-            y *= inv;
-            z *= inv;
-        }
-        return ret;
-    }
-};
+struct mahony : public ahrs {
 
-struct quaternion {
-    double w = 1.0;
-    double x = 0.0;
-    double y = 0.0;
-    double z = 0.0;
-    quaternion operator *(const quaternion& q) const {
-        return {
-            w*q.w - x*q.x - y*q.y - z*q.z,
-            w*q.x + x*q.w + y*q.z - z*q.y,
-            w*q.y - x*q.z + y*q.w + z*q.x,
-            w*q.z + x*q.y - y*q.x + z*q.w
-        };
-    }
-    void normalize() {
-        double n = std::sqrt
-            (w*w + x*x + y*y + z*z);
-        if (n <= 1e-12) {
-            w = 1.0;
-            x = y = z = 0.0;
-            return;
-        }
-        double inv = 1.0 / n;
-        w *= inv;
-        x *= inv;
-        y *= inv;
-        z *= inv;
-    }
-};
-
-struct orientation {
-
-    orientation() { reset(); }
+    mahony() { reset(); }
 
     const quaternion& get_quaternion() const { return q_; }
 
     void reset() {
         prev_ts_ms_ = 0;
         has_prev_ = false;
-        // Identity body->world rotation. The filter defines the
+        // initial identity body->world rotation. The filter defines the
         // initial body frame as its world frame. Subsequent attitude
-        // estimates are expressed relative to this initial frame; and that
-        // has no relation to where the true magnetic north lies. Every
+        // estimates are expressed relative to this initial body frame; and
+        // that has no relation to where the true magnetic north lies. Every
         // rotation from the "current" body frame using q_ rotates the
         // vector into this "initial" body frame(aka world frame) and
         // every rotation from the world frame (i.e. the initial body
@@ -109,12 +60,14 @@ struct orientation {
         double e_ax = 0.0, e_ay = 0.0, e_az = 0.0;
         if (acc_valid) {
             // predicted gravity in body frame from the current attitude
-            // estimate. since q_ transforms body -> world, therefore
+            // estimate. since q_ transforms from body -> world, therefore
             // g(body) = inv(q_) * g(world) * q_
             vec3 gw = {0, 0, 1};
             vec3 gb = transform_world_to_body(q_, gw);
-            // acc proportional error
-            // a(measured) x g(body)
+            // a(measured) x g(body) |am||gb|sinθ is the gravity vector misalignment
+            // in the body frame across measured and world gravity. since both vectors
+            // are normalized; for small anglesthe error is approximately = θ; this then
+            // becomes the feedback to a proportional correction of the current angular velocity
             e_ax = a.y * gb.z - a.z * gb.y;
             e_ay = a.z * gb.x - a.x * gb.z;
             e_az = a.x * gb.y - a.y * gb.x;
@@ -209,26 +162,6 @@ struct orientation {
         q_.normalize();
     }
 
-    static vec3 transform_world_to_body(const quaternion& q, const vec3& v) {
-        // Transform a vector from the world frame into the
-        // body frame. q represents the body->world orientation.
-        // Computes q⁻¹ * v * q.
-        quaternion vq{0, v.x, v.y, v.z};
-        quaternion q_conjugate{q.w, -q.x, -q.y, -q.z};
-        quaternion rq = q_conjugate * vq * q;
-        return {rq.x, rq.y, rq.z};
-    }
-
-    static vec3 transform_body_to_world(const quaternion& q, const vec3& v) {
-        // Transform a vector from the body frame into the
-        // world frame. q represents the body->world orientation.
-        // Computes q * v * q⁻¹.
-        quaternion vq{0, v.x, v.y, v.z};
-        quaternion q_conjugate{q.w, -q.x, -q.y, -q.z};
-        quaternion rq = q * vq * q_conjugate;
-        return {rq.x, rq.y, rq.z};
-    }
-
     static quaternion axisAngleToQuaternion(
         double ux, double uy, double uz, double theta) {
         double half = theta * 0.5;
@@ -267,6 +200,6 @@ struct orientation {
     std::atomic<double> _ki_mag{0.01};
 };
 
-} //namespace imu
+} //namespace snf
 
 #endif

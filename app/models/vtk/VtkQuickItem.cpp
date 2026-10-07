@@ -461,7 +461,7 @@ void VtkQuickItem::control_imu_visualization(const QString& key, const QVariant&
     } else {
         return;
     }
-    _orientation.control_imu(key.toStdString(), param);
+    _filter.control_imu(key.toStdString(), param);
 }
 
 void VtkQuickItem::onReadSerialLine(const QByteArray& line) {
@@ -471,7 +471,7 @@ void VtkQuickItem::onReadSerialLine(const QByteArray& line) {
     QByteArray tsStr = fields[0].trimmed();
     tsStr = tsStr.replace("\r", "").replace("\n", "");
     bool ok;
-    imu::sample s;
+    snf::sample s;
     s.ts_ms = tsStr.toULongLong(&ok);
     if (!ok) return;
     s.ax = fields[1].toDouble(&ok); if (!ok) return;
@@ -483,12 +483,12 @@ void VtkQuickItem::onReadSerialLine(const QByteArray& line) {
     s.mx = fields[7].toDouble(&ok); if (!ok) return;
     s.my = fields[8].toDouble(&ok); if (!ok) return;
     s.mz = fields[9].toDouble(&ok); if (!ok) return;
-    _orientation.update(s);
+    _filter.update(s);
     QMetaObject::invokeMethod(qApp, [this]() {
         update();
         dispatch_async([this](vtkRenderWindow* rw, vtkUserData) {
             std::lock_guard<std::mutex> lg(mux);
-            applyQuaternion(_orientation.get_quaternion());
+            applyQuaternion(_filter.get_quaternion());
             rw->Render();
         });
     }, Qt::QueuedConnection);
@@ -523,7 +523,7 @@ void VtkQuickItem::onReadSerialLine(const QByteArray& line) {
 //     actor->SetUserTransform(t);
 // }
 
-void VtkQuickItem::applyQuaternion(const imu::quaternion& q) {
+void VtkQuickItem::applyQuaternion(const snf::quaternion& q) {
     auto pipeline = active_pipeline();
     if (!pipeline || pipeline->actors.empty()) return;
     auto actor = pipeline->actors.front();

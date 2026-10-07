@@ -10,7 +10,8 @@
 #include <vtkRenderWindowInteractor.h>
 #include <vtkMatrixToLinearTransform.h>
 
-#include <imu.h>
+//#include <snf/mahony.h>
+#include <snf/eskf.h>
 #include <QQuickVTKItem.h>
 #include <SerialPortManager.h>
 #include <point.cloud.pipeline.h>
@@ -44,7 +45,8 @@ struct VtkQuickItem : public QQuickVTKItem {
     std::atomic<bool> cloud_loaded{false};
     std::atomic<bool> camera_initialized{false};
 
-    imu::orientation _orientation;
+    snf::eskf _filter;
+    //snf::mahony _filter;
     vtkActor* m_lastActor = nullptr;
     QThread* _serialThread = nullptr;
     SerialPortManager *_serial = nullptr;
@@ -70,7 +72,7 @@ struct VtkQuickItem : public QQuickVTKItem {
     void syncToVTK(sppl pipeline);
     sppl get_pipeline(vis::filter f);
     void set_active_pipeline(sppl pipeline);
-    void applyQuaternion(const imu::quaternion& q);
+    void applyQuaternion(const snf::quaternion& q);
     void onReadSerialLine(const QByteArray& line);
 
     auto create_scene(vtkRenderWindow *);
