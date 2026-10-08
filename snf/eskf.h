@@ -1,5 +1,5 @@
-#ifndef IMU_ESKF_DIFFABLE_H
-#define IMU_ESKF_DIFFABLE_H
+#ifndef ESKF_H
+#define ESKF_H
 
 #include <cmath>
 #include <cstdint>
@@ -24,7 +24,7 @@ struct eskf {
         // Pqq/Pqb/Pbb are the covariance carried by the ESKF
         // They describe uncertainty in the *local error state*
         // [delta_theta, delta_bias], not the actual quaternion/bias values
-        // (q_, gyro_bias_) themselves; essence of an error-state KF.
+        // (q_, gyro_bias_) themselves; This is the essence of an error-state KF.
         Pqq = mat3::identity().scaled(1e-2);   // ~5.7 deg (1-sigma) initial orientation uncertainty
         Pqb = mat3{};                          // orientation<->bias correlation (starts uncorrelated)
         // Set relative to expected RESIDUAL bias after your firmware
@@ -92,7 +92,7 @@ struct eskf {
             vec3 gw = {0, 0, 1};
             vec3 a_pred = transform_world_to_body(q_, gw);
             vec3 r = a - a_pred; // MAHONY's e_a = a x gb
-            mat3 H = mat3::skew(a_pred).scaled(-1.0);
+            mat3 H = mat3::skew(a_pred);
             correct(H, r, R_acc);
         }
         // magnetometer -- identical yaw-only trick as in Mahony (m_ref built
@@ -109,7 +109,7 @@ struct eskf {
                 m_ref.normalize();
                 vec3 m_pred = transform_world_to_body(q_, m_ref);
                 vec3 r = m - m_pred; // MAHONY's e_m = m x m_pred
-                mat3 H = mat3::skew(m_pred).scaled(-1.0);
+                mat3 H = mat3::skew(m_pred);
                 correct(H, r, R_mag);
             }
         }

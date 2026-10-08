@@ -1,5 +1,5 @@
-#ifndef IMU_H
-#define IMU_H
+#ifndef SNF_H
+#define SNF_H
 
 #include <cmath>
 #include <stdint.h>
