@@ -6,10 +6,9 @@
 - Camera tool<br/>
 - 2D Floor planner tool<br/>
 - Point cloud visualizer<br/>
-- Mahony 9DOF non-linear filter visualization<br/>
+- ESKF/Mahony AHRS non-linear visualization<br/>
 - Block level backup tool(vhd/vhdx stream generator)<br/>
 - File diff tool (LCS based)<br/>
-- MCU tool (companion app for mcu repo)<br/>
 
 #### vcpkg dependencies
 
@@ -85,19 +84,6 @@ qml\Release\offset.exe
 windeployqt --qmldir E:\offset\app\qml E:\offset\build\app\Release\offset.exe
 ```
 vc redist is bundled with package zip; in case your system does not have that installed already
-
-<p align="center">
- <img src="https://lh3.googleusercontent.com/d/193lB9OfdeZ-hfUxqmythLaAwk1ExGaEE" width="65%">
-</p>
-<p align="center">
- <img src="https://lh3.googleusercontent.com/d/1L9AJ0i0d4H2kKGp-TRFpxCeYFjPgzDnW" width="70%">
-</p>
-<p align="center">
- <img src="https://lh3.googleusercontent.com/d/1LiNTVr3Ps8EfEbSOOcoRaBLHk4ymfEf7" width="70%">
-</p>
-<p align="center">
- <img src="https://lh3.googleusercontent.com/d/1gClqVfeIM45I8YqFpaDt0jUphnuAlqP1" width="70%">
-</p>
 
 #### Contact:
 Telegram: https://t.me/neelabhm
