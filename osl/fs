@@ -8,62 +8,6 @@
 
 namespace osl {
 
-#if defined (_WIN32)
-inline std::wstring utf8_to_win32(const std::string& utf8) {
-    thread_local std::wstring buffer;
-    int size = MultiByteToWideChar(
-        CP_UTF8,
-        MB_ERR_INVALID_CHARS,
-        utf8.data(),
-        static_cast<int>(utf8.size()),
-        nullptr,
-        0
-    );
-    if (size <= 0) {
-        throw std::runtime_error("Invalid UTF-8 input");
-    }
-    buffer.resize(size);
-    MultiByteToWideChar(
-        CP_UTF8,
-        MB_ERR_INVALID_CHARS,
-        utf8.data(),
-        static_cast<int>(utf8.size()),
-        buffer.data(),
-        size
-    );
-    return buffer;
-}
-
-inline std::string win32_to_utf8(const std::wstring& wstr) {
-    thread_local std::string buffer;
-    int size = WideCharToMultiByte(
-        CP_UTF8,
-        0,
-        wstr.data(),
-        static_cast<int>(wstr.size()),
-        nullptr,
-        0,
-        nullptr,
-        nullptr
-    );
-    if (size <= 0) {
-        throw std::runtime_error("Failed to convert UTF-16 to UTF-8");
-    }
-    buffer.resize(size);
-    WideCharToMultiByte(
-        CP_UTF8,
-        0,
-        wstr.data(),
-        static_cast<int>(wstr.size()),
-        buffer.data(),
-        size,
-        nullptr,
-        nullptr
-    );
-    return buffer;
-}
-#endif
-
 struct DllHelper {
     DllHelper(const std::string& dll) {
       hDll = LoadLibraryA(dll.c_str());
@@ -199,7 +143,7 @@ inline PVOLUME_BITMAP_BUFFER GetVolumeInUseBitmap(HANDLE hvolume) {
             &BytesReturned,
             NULL);
         if (fRet) {
-            // //DumpData("bitmap", bitmap->Buffer, (bitmap->BitmapSize.QuadPart)/8 + ( ((bitmap->BitmapSize.QuadPart)%8) ? 1 : 0 ));
+            //DumpData("bitmap", bitmap->Buffer, (bitmap->BitmapSize.QuadPart)/8 + ( ((bitmap->BitmapSize.QuadPart)%8) ? 1 : 0 ));
             return bitmap;
         }
         else if (GetLastError() != ERROR_MORE_DATA) {
@@ -233,8 +177,8 @@ inline auto AllowExtendedDasdIO(HANDLE hDevice) -> bool {
             0,
             nullptr,
             nullptr)) {
-    LOG << "FSCTL_ALLOW_EXTENDED_DASD_IO failed, error : " << GetLastError();
-    return false;
+        LOG << "FSCTL_ALLOW_EXTENDED_DASD_IO failed, error : " << GetLastError();
+        return false;
     }
     return true;
 }
@@ -275,7 +219,7 @@ inline auto GetPartitionInformation(const std::wstring& disk) {
             sizeof (PARTITION_INFORMATION_EX),
             &nReturned,
             NULL)) {
-      LOG << "IOCTL_DISK_GET_PARTITION_INFO_EX failed, error : " << GetLastError();
+        LOG << "IOCTL_DISK_GET_PARTITION_INFO_EX failed, error : " << GetLastError();
     }
     CloseHandle(h);
     return pie;

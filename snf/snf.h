@@ -2,6 +2,7 @@
 #define SNF_H
 
 #include <cmath>
+#include <numbers>
 #include <stdint.h>
 
 namespace snf {
@@ -117,6 +118,8 @@ static vec3 transform_body_to_world(const quaternion& q, const vec3& v) {
     quaternion rq = q * vq * q_conjugate;
     return {rq.x, rq.y, rq.z};
 }
+
+constexpr double DEG2RAD = std::numbers::pi / 180.0;
 
 struct ahrs {
 

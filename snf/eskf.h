@@ -27,7 +27,7 @@ struct eskf {
         // (q_, gyro_bias_) themselves; This is the essence of an error-state KF.
         Pqq = mat3::identity().scaled(1e-2);   // ~5.7 deg (1-sigma) initial orientation uncertainty
         Pqb = mat3{};                          // orientation<->bias correlation (starts uncorrelated)
-        // Set relative to expected RESIDUAL bias after your firmware
+        // Set relative to expected RESIDUAL bias after firmware
         // calibrate() step, not the raw sensor spec -- 1e-5 corresponds to
         // ~0.003 rad/s (~0.18 deg/s) 1-sigma. If startup calibration leaves
         // more residual than that, this should be larger, or the filter
@@ -43,7 +43,6 @@ struct eskf {
         // guard against timestamp glitches (dropped samples, clock jumps)
         // an unbounded dt would blow up the covariance propagation below
         if (dt <= 0.0 || dt > 0.1) return;
-        constexpr double DEG2RAD = std::numbers::pi / 180.0;
         // gyroscope
         double wx = s.gx * DEG2RAD - gyro_bias_.x;
         double wy = s.gy * DEG2RAD - gyro_bias_.y;

@@ -2,9 +2,7 @@
 #define MAHONY_H
 
 #include <cmath>
-#include <numbers>
 #include <cstdint>
-#include <numbers>
 #include <variant>
 #include <iostream>
 
@@ -21,14 +19,16 @@ struct mahony : public ahrs {
     void reset() {
         prev_ts_ms_ = 0;
         has_prev_ = false;
-        // initial identity body->world rotation. The filter defines the
-        // initial body frame as its world frame. Subsequent attitude
-        // estimates are expressed relative to this initial body frame; and
-        // that has no relation to where the true magnetic north lies. Every
-        // rotation from the "current" body frame using q_ rotates the
-        // vector into this "initial" body frame(aka world frame) and
-        // every rotation from the world frame (i.e. the initial body
-        // frame) using q_ rotates the vector into the "current" body frame
+        // Initially, the filter defines the world frame to coincide with the
+        // initial body frame. The identity quaternion represents this zero
+        // relative rotation. Subsequent attitude estimates describe the orientation
+        // of the current body frame relative to this fixed world frame. By convention
+        // q_ is interpreted as the body-to-world rotation:
+        // transform_body_to_world(q_, v): current body -> world (initial body)
+        // transform_world_to_body(q_, v): world (initial body) -> current body
+        // The identity quaternion is symmetric with respect to both directions
+        // the transformation direction is established by the convention used
+        // by these transformation functions.
         q_ = {1.0, 0.0, 0.0, 0.0};
     }
 
@@ -40,15 +40,10 @@ struct mahony : public ahrs {
                     << s.ax << "," << s.ay << "," << s.az << ","
                         << s.mx << "," << s.my << "," << s.mz << std::endl;
         }
-        if (!has_prev_) {
-            prev_ts_ms_ = s.ts_ms;
-            has_prev_ = true;
-            return;
-        }
+        if (!has_prev_) { prev_ts_ms_ = s.ts_ms; has_prev_ = true; return; }
         if (s.ts_ms <= prev_ts_ms_) return;
         double dt = (s.ts_ms - prev_ts_ms_) * 0.001;
         prev_ts_ms_ = s.ts_ms;
-        constexpr double DEG2RAD = std::numbers::pi / 180.0;
         // gyroscope
         double wx = s.gx * DEG2RAD;
         double wy = s.gy * DEG2RAD;
@@ -56,18 +51,21 @@ struct mahony : public ahrs {
         // accelerometer
         vec3 a = {s.ax, s.ay, s.az};
         bool acc_valid = a.normalize() &&
-            (std::abs(a.n - 1.0) <= 0.15);
+                (std::abs(a.n - 1.0) <= 0.15);
         double e_ax = 0.0, e_ay = 0.0, e_az = 0.0;
         if (acc_valid) {
-            // predicted gravity in body frame from the current attitude
-            // estimate. since q_ transforms from body -> world, therefore
-            // g(body) = inv(q_) * g(world) * q_
+            // Transform the world-frame gravity vector into the body frame using
+            // the current attitude estimate (q_). Since q_ represents the
+            // body-to-world rotation, the transformation is:
+            // g_body = q_^{-1} * g_world * q_.
             vec3 gw = {0, 0, 1};
             vec3 gb = transform_world_to_body(q_, gw);
-            // a(measured) x g(body) |am||gb|sinθ is the gravity vector misalignment
-            // in the body frame across measured and world gravity. since both vectors
-            // are normalized; for small anglesthe error is approximately = θ; this then
-            // becomes the feedback to a proportional correction of the current angular velocity
+            // The cross product a(measured) x g(body) gives the gravity
+            // misalignment error vector in the body frame, with magnitude
+            // |a||gb|sin(theta), where theta is the angle between the two vectors.
+            // Since both vectors are normalized, the error magnitude is sin(theta),
+            // which is approximately theta for small angles. This error is then
+            // fed back as a proportional correction to the estimated angular velocity.
             e_ax = a.y * gb.z - a.z * gb.y;
             e_ay = a.z * gb.x - a.x * gb.z;
             e_az = a.x * gb.y - a.y * gb.x;
@@ -75,34 +73,32 @@ struct mahony : public ahrs {
         // magnetometer
         // HMC y is 90 deg ccw to MPU y
         // HMC x is 90 deg ccw to MPU x
-        // Here I am using MPU as the primary ref frame
-        // and so mag values are changed accordingly
+        // Here we are using MPU as the primary ref
+        // frame so mag values are changed accordingly
         double tx = s.mx;
         double ty = s.my;
-        // s.mx = -ty; s.my = tx;
-        // vec3 m = {s.mx, s.my, s.mz};
-        vec3 m = {-ty, tx, s.mz};
-        bool mag_valid = m.normalize();
+        vec3 mb = {-ty, tx, s.mz};
+        bool mag_valid = mb.normalize();
         // mag proportional error m(measured) x m(reference)
         double e_mx = 0.0, e_my = 0.0, e_mz = 0.0;
         if (acc_valid && mag_valid) {
-            // mw is not expressed in the true Earth/world frame.
+            // mw is not expressed in the true earth/world frame.
             // It is expressed in the world frame implied by the
             // current attitude estimate. If the attitude estimate
             // is incorrect, mw will violate the expected magnetic
             // field geometry in that estimated frame.
-            vec3 mw = transform_body_to_world(q_, m);
+            vec3 mw = transform_body_to_world(q_, mb);
             // horizontal x-y plane field magnitude
-            double bx = std::sqrt(mw.x * mw.x + mw.y * mw.y);
+            double Bxy = std::sqrt(mw.x * mw.x + mw.y * mw.y);
             // avoid singularity
-            if (bx > 1e-6) {
+            if (Bxy > 1e-6) {
                 // construct reference magnetic field in the world frame.
                 // this is NOT EQUAL to mw. It retains mw's magnitude
                 // but discards the mw's azimuth. "mw's azimuth" is mw's proper
                 // azimuth + the azimuth error due to rotating it with bad q_
                 // The projection removes the horizontal azimuth regardless
                 // of its source.
-                vec3 m_ref = {bx, 0.0, mw.z};
+                vec3 m_ref = {Bxy, 0.0, mw.z};
                 m_ref.normalize();
                 // transform the fixed world mag ref into predicted reference
                 // magnetic field in body frame using the current orientation
@@ -114,9 +110,9 @@ struct mahony : public ahrs {
                 // apply corrections to angular velocities in the body frame. If we were to
                 // use that method instead then the resulting world error vector would have
                 // to be rotated back to body frame using _q. Both are mathematically equivalent.
-                e_mx = m.y * m_pred.z - m.z * m_pred.y;
-                e_my = m.z * m_pred.x - m.x * m_pred.z;
-                e_mz = m.x * m_pred.y - m.y * m_pred.x;
+                e_mx = mb.y * m_pred.z - mb.z * m_pred.y;
+                e_my = mb.z * m_pred.x - mb.x * m_pred.z;
+                e_mz = mb.x * m_pred.y - mb.y * m_pred.x;
             }
         }
         // load controller gains once per update
@@ -124,7 +120,8 @@ struct mahony : public ahrs {
         const double ki_acc = _ki_acc.load(std::memory_order_relaxed);
         const double kp_mag = _kp_mag.load(std::memory_order_relaxed);
         const double ki_mag = _ki_mag.load(std::memory_order_relaxed);
-        // gyro bias integral term
+        // Kp is applied directly to angular velocity, while
+        // Ki is integrated into the gyroscope bias estimate.
         gyro_bias_.x += (ki_acc * e_ax + ki_mag * e_mx) * dt;
         gyro_bias_.y += (ki_acc * e_ay + ki_mag * e_my) * dt;
         gyro_bias_.z += (ki_acc * e_az + ki_mag * e_mz) * dt;
@@ -164,14 +161,14 @@ struct mahony : public ahrs {
 
     static quaternion axisAngleToQuaternion(
         double ux, double uy, double uz, double theta) {
-        double half = theta * 0.5;
-        double s = std::sin(half);
-        return {
-            std::cos(half),
-            ux * s,
-            uy * s,
-            uz * s
-        };
+            double half = theta * 0.5;
+            double s = std::sin(half);
+            return {
+                std::cos(half),
+                ux * s,
+                uy * s,
+                uz * s
+            };
     }
 
     void control_imu(const std::string& key,
