@@ -80,17 +80,17 @@ auto recover_virtual_disk(const std::wstring& image, const std::wstring& blkdev)
         LOG << "Failed to create virtaul disk object";
         return false;
     }
-    auto target = osl::GetBlockDeviceHandle(blkdev);
+    auto target = osl::get_block_device_handle(blkdev);
     if (target == INVALID_HANDLE_VALUE) {
         LOG << "Failed to open block device " << blkdev.c_str() << ", error " << GetLastError();
         return false;
     }
     bool isdisk = blkdev.find(L"\\\\.\\PhysicalDrive") == 0;
     if (!isdisk) {
-        auto fRet = osl::LockAndDismountVolume(target);
+        auto fRet = osl::lock_and_dismount_voume(target);
         if (fRet == FALSE) {
-            LOG << "LockAndDismountVolume failed";
-            osl::unlockVolume(target);
+            LOG << "lock_and_dismount_voume failed";
+            osl::unlock_volume(target);
             return false;
         }
     }
@@ -119,7 +119,7 @@ auto recover_virtual_disk(const std::wstring& image, const std::wstring& blkdev)
     } while (nDone != nTotal);
     LOG << "nTotal : " << nTotal;
     if (!isdisk) {
-        osl::unlockVolume(target);
+        osl::unlock_volume(target);
     }
     return (nDone == nTotal);
 }
@@ -129,22 +129,22 @@ auto recover_volume_to_volume(const std::wstring& sourcevol, const std::wstring&
     DWORD dwBytesWritten = 0;
     DWORD lpNumberOfBytesRead = 0;
     std::unique_ptr<uint8_t[]> _buf;
-    auto source = osl::GetVolumeHandle(sourcevol.c_str());
+    auto source = osl::get_volume_handle(sourcevol);
     if (source == INVALID_HANDLE_VALUE) {
         LOG << "Failed to open " << sourcevol << ", error : " << GetLastError();
         return fRet;
     }
-    if (!osl::AllowExtendedDasdIO(source)) {
-        LOG << "AllowExtendedDasdIO failed, error : " << GetLastError();
+    if (!osl::allow_extended_dasd_io(source)) {
+        LOG << "allow_extended_dasd_io failed, error : " << GetLastError();
         CloseHandle(source);
         return fRet;
     }
-    auto target = osl::GetVolumeHandle(targetvol.c_str());
+    auto target = osl::get_volume_handle(targetvol);
     if (target == INVALID_HANDLE_VALUE) {
         LOG << "Failed to open target " << targetvol.c_str() << ", error " << GetLastError();
         goto _end;
     }
-    fRet = osl::LockAndDismountVolume(target);
+    fRet = osl::lock_and_dismount_voume(target);
     if (fRet == FALSE) {
         LOG << "LockAndDismountTargetBlockDevice failed";
         goto _end;
@@ -170,7 +170,7 @@ auto recover_volume_to_volume(const std::wstring& sourcevol, const std::wstring&
         CloseHandle(source);
     }
     if (target != INVALID_HANDLE_VALUE) {
-        osl::unlockVolume(target);
+        osl::unlock_volume(target);
     }
     return fRet;
 }
@@ -180,9 +180,9 @@ auto convertBlockDeviceToVirtualImages(const std::vector<TBackupConfig>& bc, TPr
     std::vector<std::future<void>> futures1, futures2;
     for (const auto& c : bc) {
         auto [volume, level, format, destination, exclude, live] = c;
-        if (fxc::IsVolumeSupported(volume.c_str()) && !live) {
+        if (ss::is_volume_supported(volume.c_str()) && !live) {
             supported.push_back(volume);
-            updateVolumeExludePathsForSnapshot(volume, exclude);
+            ss::updateVolumeExludePathsForSnapshot(volume, exclude);
         } else {
             auto target = getTargetForDestination(destination, volume.substr(4, 44), format);
             volume.pop_back();
@@ -196,9 +196,9 @@ auto convertBlockDeviceToVirtualImages(const std::vector<TBackupConfig>& bc, TPr
         }
     }
     if (supported.size()) {
-        CreateSnapshot(
+        ss::create_snapshot(
             supported,
-            [&] (fxc::TSnapshotSet ss) {
+            [&] (ss::TSnapshotSet ss) {
                 for (int i = 0; i < ss.size(); i++) {
                     auto [inputVolume, snapshotDevice, originalVolume] = ss[i];
                     LOG << L" " << inputVolume << L" " << snapshotDevice << L" " << originalVolume;
@@ -252,7 +252,7 @@ auto entry(std::vector<std::string> s_arguments) {
     arguments.erase(arguments.begin());
     arguments.erase(arguments.begin());
     if (cmd == L"-s") {
-        fxc::testSnapshot(arguments);
+        ss::test_snapshot(arguments);
     } else if (cmd == L"-d") {
         fxc::dump_virtual_disk(arguments[0]);
     } else if (cmd == L"-f") {

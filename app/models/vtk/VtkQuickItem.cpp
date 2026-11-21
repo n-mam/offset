@@ -55,13 +55,13 @@ auto VtkQuickItem::context() {
 }
 
 sppl VtkQuickItem::base_pipeline() {
-    auto* ctx = context();
+    auto *ctx = context();
     if (!ctx || ctx->pipelines.empty()) return nullptr;
     return ctx->pipelines[0];
 }
 
 sppl VtkQuickItem::active_pipeline() {
-    auto* ctx = context();
+    auto *ctx = context();
     if (!ctx || ctx->pipelines.empty()) return nullptr;
     return ctx->active_pipeline;
 }
@@ -141,7 +141,7 @@ void VtkQuickItem::clear_scene() {
         stop.store(true, std::memory_order_relaxed);
         _thread.join();
     }
-    auto* ctx = context();
+    auto *ctx = context();
     if (!ctx || ctx->pipelines.empty()) return;
     // remove all pipeline actors from renderer
     for (auto& pipeline : ctx->pipelines) {
@@ -291,7 +291,7 @@ void VtkQuickItem::compute_color_map(const std::string& arrayName) {
         };
         colors->SetTypedTuple(i, rgb);
     }
-    auto* pd = pipeline->polyData->GetPointData();
+    auto *pd = pipeline->polyData->GetPointData();
     // replace if it already exists
     pd->RemoveArray(arrayName.c_str());
     pd->AddArray(colors);
@@ -304,7 +304,7 @@ void VtkQuickItem::apply_scalar(QString name) {
     std::thread([this, arrayName] {
         auto pipeline = active_pipeline();
         if (!pipeline || pipeline->is_empty()) return;
-        auto* pd = pipeline->polyData->GetPointData();
+        auto *pd = pipeline->polyData->GetPointData();
         if (!pd->HasArray(arrayName.c_str())) {
             compute_color_map(arrayName);
         }
@@ -312,7 +312,7 @@ void VtkQuickItem::apply_scalar(QString name) {
             dispatch_async([this, arrayName](vtkRenderWindow* rw, vtkUserData ud) {
                 std::lock_guard<std::mutex> lg(mux);
                 auto pipeline = active_pipeline();
-                auto* pd = pipeline->polyData->GetPointData();
+                auto *pd = pipeline->polyData->GetPointData();
                 pd->SetActiveScalars(arrayName.c_str());
                 rw->Render();
             });

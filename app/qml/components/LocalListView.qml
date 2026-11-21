@@ -220,14 +220,17 @@ Item {
         property int selectedIndex: -1
         MenuItem {
             text: "Upload"
+            implicitHeight: 28
             onTriggered: root.model.QueueTransfers(true);
         }
         MenuItem {
             text: "Queue"
+            implicitHeight: 28
             onTriggered: root.model.QueueTransfers(false);
         }
         MenuItem {
             text: "New folder"
+            implicitHeight: 28
             onTriggered: {
                 newRenamePopup.context = "New folder"
                 newRenamePopup.inputHint = "Folder name"
@@ -237,6 +240,7 @@ Item {
         }
         MenuItem {
             text: "Rename"
+            implicitHeight: 28
             onTriggered: {
                 var fileName = root.model.get(contextMenu.selectedIndex, "fileName")
                 newRenamePopup.context = "Rename \"" + fileName + "\""
@@ -248,6 +252,7 @@ Item {
         }
         MenuItem {
             text: "Refresh"
+            implicitHeight: 28
             onTriggered: {
                 logger.updateStatus(1, "Ready")
                 root.model.currentDirectory = root.model.currentDirectory
@@ -255,6 +260,7 @@ Item {
         }
         MenuItem {
             text: "Delete"
+            implicitHeight: 28
             onTriggered: {
                 var fileName = root.model.get(contextMenu.selectedIndex, "fileName")
                 var fileIsDir = root.model.get(contextMenu.selectedIndex, "fileIsDir")

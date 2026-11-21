@@ -12,15 +12,14 @@
 #include <functional>
 #include <filesystem>
 
-namespace fxc {
+namespace ss {
 
 bool bCoInitializedSecurity = false;
 thread_local bool bCoInitialized = false;
 HANDLE g_writerQuitEvent = INVALID_HANDLE_VALUE;
 
-using TSnapshotSet = std::vector<
-  std::tuple<std::wstring, std::wstring, std::wstring>>;
-
+using TSnapshotSet = std::vector<std::tuple<
+    std::wstring, std::wstring, std::wstring>>;
 using TSnapshotCBK = std::function<void (TSnapshotSet)>;
 
 auto AsyncWait(IVssAsync **async) -> HRESULT {
@@ -38,7 +37,7 @@ auto AsyncWait(IVssAsync **async) -> HRESULT {
     return hr;
 }
 
-auto InitializeCOM(void) -> HRESULT {
+auto initialize_com(void) -> HRESULT {
     if (bCoInitialized) return S_OK;
     HRESULT hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
     if (!bCoInitializedSecurity) {
@@ -59,7 +58,7 @@ auto InitializeCOM(void) -> HRESULT {
     return hr;
 }
 
-auto InitializeBackupComponent(IVssBackupComponents **bc, bool bForRestore = true, BSTR document = NULL) -> HRESULT {
+auto initialize_backup_component(IVssBackupComponents **bc, bool bForRestore = true, BSTR document = NULL) -> HRESULT {
     HRESULT hr = CreateVssBackupComponents(bc);
     if (hr != S_OK) {
         LOG << "CreateVssBackupComponents failed " << std::hex << hr;
@@ -77,28 +76,28 @@ auto InitializeBackupComponent(IVssBackupComponents **bc, bool bForRestore = tru
     return hr;
 }
 
-auto IsVolumeSupported(const std::wstring& volumePath) -> bool {
+auto is_volume_supported(const std::wstring& volumePath) -> bool {
     HRESULT hr;
     BOOL bSupported = FALSE;
-    fxc::InitializeCOM();
+    initialize_com();
     IVssBackupComponents *pBC = nullptr;
-    CHKCOM(hr = InitializeBackupComponent(&pBC, false, nullptr))
+    CHKCOM(hr = initialize_backup_component(&pBC, false, nullptr))
     CHKCOM(hr = pBC->IsVolumeSupported(GUID_NULL, (wchar_t *)volumePath.c_str(), &bSupported))
     _end:
     if (pBC) pBC->Release();
     return bSupported;
 }
 
-auto CreateSnapshot(const std::vector<std::wstring>& volumes, TSnapshotCBK cbk = nullptr) -> bool {
+auto create_snapshot(const std::vector<std::wstring>& volumes, TSnapshotCBK cbk = nullptr) -> bool {
     HRESULT hr = 0;
     HRESULT qhr = 0;
     TSnapshotSet ss;
     VSS_ID m_snap[64] = { 0 };
     IVssAsync *pAS = nullptr;
     IVssBackupComponents *pBC = nullptr;
-    fxc::InitializeCOM();
+    initialize_com();
     STATUS(0) << "Creating backup component..";
-    CHKCOM(hr = InitializeBackupComponent(&pBC, false, nullptr))
+    CHKCOM(hr = initialize_backup_component(&pBC, false, nullptr))
     CHKCOM(hr = pBC->SetBackupState(FALSE, TRUE, VSS_BT_FULL, FALSE))
     STATUS(0) << "Gather writer metadata..";
     CHKCOM(hr = pBC->GatherWriterMetadata(&pAS))
@@ -134,21 +133,20 @@ auto CreateSnapshot(const std::vector<std::wstring>& volumes, TSnapshotCBK cbk =
     STATUS(0) << "BackupComplete..";
     CHKCOM(hr = pBC->BackupComplete(&pAS))
     CHKCOM(hr = AsyncWait(&pAS))
-
     _end:
     if (pAS) pAS->Release();
     if (pBC) pBC->Release();
     return (hr == S_OK && qhr == VSS_S_ASYNC_FINISHED);
 }
 
-auto EnumerateSnapshots() {
+auto enumerate_snapshots() {
     HRESULT hr;
     VSS_OBJECT_PROP Prop;
     std::vector<std::tuple<std::wstring, std::wstring>> ss;
-    fxc::InitializeCOM();
+    initialize_com();
     IVssEnumObject *pIEnumSnapshots = nullptr;
     IVssBackupComponents *pBC = nullptr;
-    CHKCOM(hr = InitializeBackupComponent(&pBC, false, nullptr))
+    CHKCOM(hr = initialize_backup_component(&pBC, false, nullptr))
     CHKCOM(hr = pBC->SetContext(VSS_CTX_ALL))
     CHKCOM(hr = pBC->SetBackupState(FALSE, TRUE, VSS_BT_FULL, FALSE))
     CHKCOM(hr = pBC->Query(
@@ -171,19 +169,18 @@ auto EnumerateSnapshots() {
     return ss;
 }
 
-auto testSnapshot(std::vector<std::wstring> volumes) {
-    fxc::EnumerateSnapshots();
+auto test_snapshot(std::vector<std::wstring> volumes) {
+    enumerate_snapshots();
     std::vector<std::wstring> supported, unsupported;
     for (const auto& volume : volumes) {
-        if (fxc::IsVolumeSupported(volume)) {
+        if (is_volume_supported(volume)) {
             supported.push_back(volume);
         } else {
             LOG << " excluding unsupported volume : " << volume;
         }
     }
-    fxc::CreateSnapshot(
-        supported,
-        [] (fxc::TSnapshotSet ss) {
+    create_snapshot(supported,
+        [] (TSnapshotSet ss) {
             for (auto& s : ss) {
                 auto [volume, snapshotDevice, volumeDevice] = s;
                 LOG << " " << volume << " " << snapshotDevice << " " << volumeDevice;
@@ -318,7 +315,7 @@ struct FxcWriter : public CVssWriter {
 };
 
 auto excludeListWriterThread(void) {
-    fxc::InitializeCOM();
+    initialize_com();
     FxcWriter writer;
     auto hr = writer.Initialize();
     if (FAILED(hr)) {
@@ -337,11 +334,11 @@ auto excludeListWriterThread(void) {
     writer.Uninitialize();
 }
 
-auto startExcludeListWriterThread(void) {
+auto start_writer_thread(void) {
     std::thread(excludeListWriterThread).detach();
 }
 
-auto stopExcludeListWriterThread(void) {
+auto stop_writer_thread(void) {
     if (g_writerQuitEvent != INVALID_HANDLE_VALUE) {
         SetEvent(g_writerQuitEvent);
     }

@@ -12,7 +12,7 @@ using RCTCBT = std::tuple <
 >;
 
 RCTCBT GetRCTRanges(const std::wstring& file, const std::wstring& rctid) {
-    HANDLE hvhd = osl::OpenVirtualDisk(file);
+    HANDLE hvhd = osl::open_virtual_disk(file);
     if (hvhd == INVALID_HANDLE_VALUE) return {};
     // query rctid
     DWORD fRet;

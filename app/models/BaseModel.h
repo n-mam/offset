@@ -59,7 +59,7 @@ class BaseModel : public QAbstractItemModel {
 
     public slots:
 
-    virtual void refreshModel() {};
+    virtual void refresh_model() {};
 
     protected:
 

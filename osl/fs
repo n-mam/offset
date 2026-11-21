@@ -6,6 +6,8 @@
 
 #include <string>
 
+#include <osl/str>
+
 namespace osl {
 
 struct DllHelper {
@@ -22,29 +24,39 @@ struct DllHelper {
     HMODULE hDll;
 };
 
-inline auto GetFileHandle(const std::wstring& file) {
-    return CreateFileW(
-        file.c_str(),
-        GENERIC_READ|GENERIC_WRITE,
-        FILE_SHARE_READ|FILE_SHARE_WRITE,
-        NULL,
-        OPEN_EXISTING,
-        FILE_ATTRIBUTE_NORMAL,
-        NULL);
+template <typename T>
+inline auto get_file_handle(
+        const T& file,
+        bool async = false,
+        bool create = false) {
+    HANDLE fd = INVALID_HANDLE_VALUE;
+    if constexpr (std::is_same<T, std::wstring>::value) {
+        fd = CreateFileW(
+            file.c_str(),
+            GENERIC_READ|GENERIC_WRITE,
+            FILE_SHARE_READ|FILE_SHARE_WRITE,
+            NULL,
+            (create ? CREATE_ALWAYS : OPEN_EXISTING),
+            (async ? FILE_FLAG_OVERLAPPED : 0) | FILE_ATTRIBUTE_NORMAL,
+            NULL);
+    } else if constexpr (std::is_same<T, std::string>::value) {
+        fd = CreateFileW(
+            osl::utf8_to_win32(file).c_str(),
+            GENERIC_READ|GENERIC_WRITE,
+            FILE_SHARE_READ|FILE_SHARE_WRITE,
+            NULL,
+            (create ? CREATE_ALWAYS : OPEN_EXISTING),
+            (async ? FILE_FLAG_OVERLAPPED : 0) | FILE_ATTRIBUTE_NORMAL,
+            NULL);
+    }
+    if (fd == INVALID_HANDLE_VALUE) {
+        ERR << file << L", CreateFileW failed: " << GetLastError();
+        return INVALID_HANDLE_VALUE;
+    }
+    return fd;
 }
 
-inline auto GetFileHandle(const std::string& file) {
-    return CreateFileA(
-        file.c_str(),
-        GENERIC_READ|GENERIC_WRITE,
-        FILE_SHARE_READ|FILE_SHARE_WRITE,
-        NULL,
-        OPEN_EXISTING,
-        FILE_ATTRIBUTE_NORMAL,
-        NULL);
-}
-
-inline auto OpenVirtualDisk(const std::wstring& file) {
+inline auto open_virtual_disk(const std::wstring& file) {
     DWORD fRet;
     HANDLE hvhd = INVALID_HANDLE_VALUE;
     OPEN_VIRTUAL_DISK_PARAMETERS params = { 0 };
@@ -54,12 +66,12 @@ inline auto OpenVirtualDisk(const std::wstring& file) {
         { 0xEC984AEC, 0xA0F9, 0x47e9, { 0x90, 0x1F, 0x71, 0x41, 0x5A, 0x66, 0x34, 0x5B } }
     };
     DllHelper virtDiskAPI("virtdisk.dll");
-    auto pfnOpenVirtualDisk = (decltype(::OpenVirtualDisk) *) virtDiskAPI["OpenVirtualDisk"];
-    if (pfnOpenVirtualDisk == NULL) {
+    auto pfn_open_virtual_disk = (decltype(::OpenVirtualDisk) *) virtDiskAPI["open_virtual_disk"];
+    if (pfn_open_virtual_disk == NULL) {
       LOG << "failed to get poinetr to OpenVirtualDisk " << GetLastError();
       return hvhd;
     }
-    fRet = pfnOpenVirtualDisk(
+    fRet = pfn_open_virtual_disk(
               &vst,
               file.c_str(),
               (VIRTUAL_DISK_ACCESS_MASK) 0,
@@ -73,7 +85,7 @@ inline auto OpenVirtualDisk(const std::wstring& file) {
 }
 
 inline auto attach_vhd(const std::wstring& source) {
-    HANDLE hvhd = OpenVirtualDisk(source);
+    HANDLE hvhd = osl::open_virtual_disk(source);
     ATTACH_VIRTUAL_DISK_PARAMETERS params = { 0 };
     params.Version = ATTACH_VIRTUAL_DISK_VERSION_1;
     DllHelper virtDiskAPI("virtdisk.dll");
@@ -108,7 +120,7 @@ inline auto detach_vhd(HANDLE hvhd) {
     return (rc == ERROR_SUCCESS);
 }
 
-inline auto GetPhysicalDiskPath(HANDLE hvhd) {
+inline auto get_physical_disk_path(HANDLE hvhd) {
     wchar_t buf[128] = { L'\0' };
     ULONG bufSize = sizeof(buf);
     DllHelper virtDiskAPI("virtdisk.dll");
@@ -125,7 +137,7 @@ inline auto GetPhysicalDiskPath(HANDLE hvhd) {
     return std::wstring(buf);
 }
 
-inline PVOLUME_BITMAP_BUFFER GetVolumeInUseBitmap(HANDLE hvolume) {
+inline PVOLUME_BITMAP_BUFFER get_volume_inuse_bitmap(HANDLE hvolume) {
     DWORD BytesReturned = 0;
     DWORD dwAllocatedSize = 64 * 1024;
     STARTING_LCN_INPUT_BUFFER startLCN;
@@ -155,7 +167,7 @@ inline PVOLUME_BITMAP_BUFFER GetVolumeInUseBitmap(HANDLE hvolume) {
     }
 }
 
-inline auto GetVolumeMetadata(const std::wstring& volume) {
+inline auto get_volume_metadata(const std::wstring& volume) {
     DWORD d1,d2,d3;
     std::wstring name = volume;
     wchar_t b1[128] = {L'\0'};
@@ -167,7 +179,7 @@ inline auto GetVolumeMetadata(const std::wstring& volume) {
     return std::make_tuple(std::wstring(b1), std::wstring(b2), d1);
 }
 
-inline auto AllowExtendedDasdIO(HANDLE hDevice) -> bool {
+inline auto allow_extended_dasd_io(HANDLE hDevice) -> bool {
     if (!DeviceIoControl(
             hDevice,
             FSCTL_ALLOW_EXTENDED_DASD_IO,
@@ -183,11 +195,11 @@ inline auto AllowExtendedDasdIO(HANDLE hDevice) -> bool {
     return true;
 }
 
-inline auto GetNTFSVolumeData(HANDLE hDevice) {
+inline auto get_ntfs_volume_data(HANDLE hDevice) {
     DWORD fRet, BytesReturned;
     NTFS_VOLUME_DATA_BUFFER nvdb = { 0 };
-    if (!AllowExtendedDasdIO(hDevice)) {
-        LOG << "AllowExtendedDasdIO failed, error : " << GetLastError();
+    if (!allow_extended_dasd_io(hDevice)) {
+        LOG << "allow_extended_dasd_io failed, error : " << GetLastError();
         return nvdb;
     }
     fRet = DeviceIoControl(
@@ -206,10 +218,10 @@ inline auto GetNTFSVolumeData(HANDLE hDevice) {
     return nvdb;
 }
 
-inline auto GetPartitionInformation(const std::wstring& disk) {
+inline auto get_partition_information(const std::wstring& disk) {
     DWORD nReturned;
     PARTITION_INFORMATION_EX  pie = { 0 };
-    auto h = GetFileHandle(disk);
+    auto h = get_file_handle(disk);
     if (!DeviceIoControl(
             h,
             IOCTL_DISK_GET_PARTITION_INFO_EX,
@@ -243,38 +255,38 @@ inline auto get_block_device_length(HANDLE hVolume) {
     return gli.Length.QuadPart;
 }
 
-inline auto GetVolumeHandle(const std::wstring& name) {
-    wchar_t _guid[128] = { 0 };
+inline auto get_volume_handle(const std::wstring& name) {
+    wchar_t guid[128] = { 0 };
     if (name.find(L"HarddiskVolumeShadowCopy") != std::string::npos) {
-        return GetFileHandle(name);
+        return get_file_handle(name);
     } else {
         auto fRet = GetVolumeNameForVolumeMountPointW(
                         (name.back() == L'\\') ?
                             name.c_str() : (name + L"\\").c_str(),
-                        _guid,
-                        sizeof(_guid));
+                        guid,
+                        sizeof(guid));
         if (fRet) {
-            _guid[wcslen(_guid) - 1] = L'\0';
-            return GetFileHandle(_guid);
+            guid[wcslen(guid) - 1] = L'\0';
+            return get_file_handle(std::wstring(guid));
         }
     }
     return INVALID_HANDLE_VALUE;
 }
 
-inline auto GetBlockDeviceHandle(const std::wstring& blkdev) {
+inline auto get_block_device_handle(const std::wstring& blkdev) {
     bool isdisk = blkdev.find(L"\\\\.\\PhysicalDrive") == 0;
     if (isdisk) {
-        return osl::GetFileHandle(blkdev.c_str());
+        return osl::get_file_handle(blkdev);
     } else {
         assert(blkdev.find(L"\\\\?\\") == 0);
-        return osl::GetVolumeHandle(blkdev.c_str());
+        return osl::get_volume_handle(blkdev);
     }
     return INVALID_HANDLE_VALUE;
 }
 
-inline auto GetVolumeDiskExtents(const std::wstring& volume) {
+inline auto get_volume_disk_extents(const std::wstring& volume) {
     std::vector<int> disks;
-    HANDLE hSource = GetVolumeHandle(volume);
+    HANDLE hSource = get_volume_handle(volume);
     if (hSource == INVALID_HANDLE_VALUE) {
         LOG << "Failed to open source volume, error : " << GetLastError();
         return disks;
@@ -303,17 +315,17 @@ inline auto GetVolumeDiskExtents(const std::wstring& volume) {
 }
 
 template<typename T>
-inline auto GetTotalAndFree(const T& volume) {
-    auto h = osl::GetVolumeHandle(volume);
+inline auto get_total_and_free(const T& volume) {
+    auto h = osl::get_volume_handle(volume);
     auto l = osl::get_block_device_length(h);
-    auto nvdb = osl::GetNTFSVolumeData(h);
+    auto nvdb = osl::get_ntfs_volume_data(h);
     CloseHandle(h);
     uint64_t size = nvdb.TotalClusters.QuadPart * nvdb.BytesPerCluster;
     uint64_t free = nvdb.FreeClusters.QuadPart * nvdb.BytesPerCluster;
     return std::make_pair(size, free);
 }
 
-inline auto EnumerateVolumes(void) {
+inline auto enumerate_volumes(void) {
     BOOL fRet = TRUE;
     wchar_t _guid[128];
     DWORD nReturned = 0;
@@ -351,21 +363,21 @@ inline auto EnumerateVolumes(void) {
     return out;
 }
 
-inline auto GetVolumeList(void) {
-    auto volumes = EnumerateVolumes();
+inline auto get_volume_list(void) {
+    auto volumes = enumerate_volumes();
     for(const auto& names : volumes) {
         std::wstring paths;
         for(auto i = 1; i < names.size(); i++) {
             paths += names[i] + L" ";
         }
-        auto h = GetVolumeHandle(names[0]);
+        auto h = get_volume_handle(names[0]);
         auto length = get_block_device_length(h);
-        auto nvdb = GetNTFSVolumeData(h);
+        auto nvdb = get_ntfs_volume_data(h);
         CloseHandle(h);
     }
 }
 
-inline auto unlockVolume(HANDLE hTarget) {
+inline auto unlock_volume(HANDLE hTarget) {
     auto fRet = DeviceIoControl(
             hTarget,
             FSCTL_UNLOCK_VOLUME,
@@ -382,7 +394,7 @@ inline auto unlockVolume(HANDLE hTarget) {
     return fRet;
 }
 
-inline auto LockAndDismountVolume(HANDLE hTarget) {
+inline auto lock_and_dismount_voume(HANDLE hTarget) {
     auto fRet = DeviceIoControl(
             hTarget,
             FSCTL_LOCK_VOLUME,
@@ -409,8 +421,8 @@ inline auto LockAndDismountVolume(HANDLE hTarget) {
         LOG << "Failed to dismount target, error " << GetLastError();
         return FALSE;
     }
-    if (!osl::AllowExtendedDasdIO(hTarget)) {
-        LOG << "AllowExtendedDasdIO failed, error : " << GetLastError();
+    if (!osl::allow_extended_dasd_io(hTarget)) {
+        LOG << "allow_extended_dasd_io failed, error : " << GetLastError();
         return FALSE;
     }
     return fRet;

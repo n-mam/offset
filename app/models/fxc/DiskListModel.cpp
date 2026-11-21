@@ -3,12 +3,12 @@
 #include <DiskListModel.h>
 
 DiskListModel::DiskListModel() {
-    refreshModel();
-    fxc::startExcludeListWriterThread();
+    refresh_model();
+    ss::start_writer_thread();
 }
 
 DiskListModel::~DiskListModel() {
-    fxc::stopExcludeListWriterThread();
+    ss::stop_writer_thread();
 }
 
 QHash<int, QByteArray> DiskListModel::roleNames() const {
@@ -225,11 +225,11 @@ bool DiskListModel::convertSelectedItemsToVirtualDisks(QString destination) {
     return true;
 }
 
-void DiskListModel::refreshModel() {
+void DiskListModel::refresh_model() {
     beginResetModel();
     m_model.clear();
-    auto volumes = osl::EnumerateVolumes();
-    auto snapshots = fxc::EnumerateSnapshots();
+    auto volumes = osl::enumerate_volumes();
+    auto snapshots = ss::enumerate_snapshots();
     for (auto& names : volumes) {
         QVector<QString> children;
         for (const auto& ss : snapshots) {
@@ -239,10 +239,10 @@ void DiskListModel::refreshModel() {
                 children.push_back(childlabel);
             }
         }
-        auto [size, free] = osl::GetTotalAndFree(names[0]);
-        auto [label, fs, serial] = osl::GetVolumeMetadata(names[0]);
-        auto isSnapshotable = fxc::IsVolumeSupported(names[0]);
-        auto disks = osl::GetVolumeDiskExtents(names[0]);
+        auto [size, free] = osl::get_total_and_free(names[0]);
+        auto [label, fs, serial] = osl::get_volume_metadata(names[0]);
+        auto isSnapshotable = ss::is_volume_supported(names[0]);
+        auto disks = osl::get_volume_disk_extents(names[0]);
         //this(also) fails for dvd but is successful for RAW volumes
         if (!disks.size() || disks.size() > 1) continue;
         auto diskName = QString("PhysicalDrive") + QString::number(disks[0]);
@@ -256,7 +256,7 @@ void DiskListModel::refreshModel() {
             item->m_disk = disks[0];
             item->m_isDisk = true;
             item->m_enabled = false;
-            auto pi = osl::GetPartitionInformation(
+            auto pi = osl::get_partition_information(
                 std::wstring(L"\\\\.\\PhysicalDrive") + std::to_wstring(disks[0]));
             if (pi.PartitionStyle == PARTITION_STYLE_MBR)
                 item->m_diskPartition = "MBR";
@@ -301,7 +301,7 @@ void DiskListModel::refreshModel() {
         item->m_disk = disks[0];
         m_model.push_back(item);
         for (const auto& child : children) {
-            auto [size, free] = osl::GetTotalAndFree(child.toStdWString().c_str());
+            auto [size, free] = osl::get_total_and_free(child.toStdWString().c_str());
             auto c = std::make_shared<BlockDevice>(QVector<QString>(child), depth, 0, size, free);
             c->m_sourceOptions << "live";
             c->m_sourceIndex = c->m_sourceOptions.indexOf("live");
@@ -312,7 +312,7 @@ void DiskListModel::refreshModel() {
             } else {
                 c->m_formatIndex = c->m_formatOptions.indexOf("d-vhdx");
             }
-            auto [label, fs, serial] = osl::GetVolumeMetadata(child.toStdWString());
+            auto [label, fs, serial] = osl::get_volume_metadata(child.toStdWString());
             c->m_fs = QString::fromStdWString(fs);
             c->m_label = QString::fromStdWString(label);
             c->m_serial.setNum(serial, 16);

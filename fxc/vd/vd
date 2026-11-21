@@ -10,8 +10,8 @@ namespace fxc {
 //create a raw image from source at ofset 0 and write to target
 auto image_copy_from(npl::spfile source, npl::spsubject target, TProgressCallback cbk = nullptr) {
 
-    if (!osl::AllowExtendedDasdIO(source->_fd_sync)) {
-        LOG << "AllowExtendedDasdIO failed, error : " << GetLastError();
+    if (!osl::allow_extended_dasd_io(source->_fd_sync)) {
+        LOG << "allow_extended_dasd_io failed, error : " << GetLastError();
     }
     auto length = osl::get_block_device_length(source->_fd_sync);
     LOG << "Total length " << length;
@@ -31,7 +31,7 @@ auto image_copy_from(npl::spfile source, npl::spsubject target, TProgressCallbac
         if (pendingBytes >= bs) {
             toRead = bs;
         } else {
-            toRead = (DWORD)(pendingBytes + ((pendingBytes % 512) ? 
+            toRead = (DWORD)(pendingBytes + ((pendingBytes % 512) ?
                 (512 - (pendingBytes % 512)) : 0));
         }
 
@@ -40,9 +40,9 @@ auto image_copy_from(npl::spfile source, npl::spsubject target, TProgressCallbac
         // read the source device
         auto dwBytesRead = source->read_sync(
             buffer.get(), toRead, r_offset.QuadPart);
-        
+
         if (dwBytesRead != toRead) {
-            LOG << "dwBytesRead: " << dwBytesRead 
+            LOG << "dwBytesRead: " << dwBytesRead
                     << " not equal to toRead: " << toRead;
             break;
         }
@@ -52,7 +52,7 @@ auto image_copy_from(npl::spfile source, npl::spsubject target, TProgressCallbac
             buffer.get(), dwBytesRead, w_offset.QuadPart);
 
         if (dwBytesWritten != dwBytesRead) {
-            LOG << "dwBytesWritten: " << dwBytesWritten 
+            LOG << "dwBytesWritten: " << dwBytesWritten
                     << "not equal to dwBytesRead: " << dwBytesRead;
             break;
         }
@@ -84,7 +84,7 @@ auto image_copy_from(npl::spfile source, npl::spsubject target, TProgressCallbac
 auto create_base_vhd(const std::wstring& volume, npl::spsubject target, TProgressCallback cbk) {
     auto source = npl::make_file(volume, false);
     assert(source);
-    auto nvdb = osl::GetNTFSVolumeData(source->_fd_sync);
+    auto nvdb = osl::get_ntfs_volume_data(source->_fd_sync);
     uint64_t length = osl::get_block_device_length(source->_fd_sync);
     LOG << "source volume length " << length;
     auto disk = std::make_shared<vhd>(length, _2M, format::dynamic, nullptr);
@@ -107,7 +107,7 @@ auto create_base_vhd(const std::wstring& volume, npl::spsubject target, TProgres
     uint64_t batIndex = 1;
     uint64_t validBATEntryCount = 1;
     auto blockInUse = false;
-    auto bitmap = osl::GetVolumeInUseBitmap(source->_fd_sync);
+    auto bitmap = osl::get_volume_inuse_bitmap(source->_fd_sync);
     for (int64_t i = 1; i <= nvdb.TotalClusters.QuadPart; i++) {
         if (bitmap->Buffer[(i - 1) / 8]) {
             blockInUse = true;
@@ -236,7 +236,7 @@ auto create_child_vhd(const std::wstring& source, const std::wstring& parent,
         LOG << "create_child_vhd failed to attach vhd";
         return false;
     }
-    auto phyDiskPath = osl::GetPhysicalDiskPath(hvhd);
+    auto phyDiskPath = osl::get_physical_disk_path(hvhd);
     if (!phyDiskPath.size()) {
         LOG << "create_child_vhd failed to get physical disk object";
         return false;
@@ -315,7 +315,7 @@ auto create_raw_image(const std::wstring& device, npl::spsubject target, TProgre
 void create_base_vhdx(const std::wstring& volume, npl::spsubject target, TProgressCallback cbk) {
     auto source = npl::make_file(volume, false);
     assert(source);
-    auto nvdb = osl::GetNTFSVolumeData(source->_fd_sync);
+    auto nvdb = osl::get_ntfs_volume_data(source->_fd_sync);
     uint64_t length = osl::get_block_device_length(source->_fd_sync);
     LOG << "source volume length " << length;
     auto disk = std::make_shared<vhdx>(length, _4M, format::dynamic, nullptr);
@@ -359,7 +359,7 @@ void create_base_vhdx(const std::wstring& volume, npl::spsubject target, TProgre
     uint64_t batIndex = 1;
     uint64_t validBATEntryCount = 1;
     auto blockInUse = false;
-    auto bitmap = osl::GetVolumeInUseBitmap(source->_fd_sync);
+    auto bitmap = osl::get_volume_inuse_bitmap(source->_fd_sync);
     for (int64_t i = 1; i <= nvdb.TotalClusters.QuadPart; i++) {
         if (bitmap->Buffer[(i - 1) / 8]) {
             blockInUse = true;
@@ -509,7 +509,7 @@ bool create_child_vhdx(const std::wstring& source, const std::wstring& parent, n
         LOG << "create_child_vhdx failed to attach vhd";
         return false;
     }
-    auto phyDiskPath = osl::GetPhysicalDiskPath(hvhd);
+    auto phyDiskPath = osl::get_physical_disk_path(hvhd);
     if (!phyDiskPath.size()) {
         LOG << "create_child_vhdx failed to get physical disk object";
         return false;

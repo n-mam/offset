@@ -73,7 +73,7 @@ class DiskListModel : public BaseModel {
     bool getStop() const;
     void setTransfer(int);
     int getTransfer() const;
-    void refreshModel() override;
+    void refresh_model() override;
 
     private:
 

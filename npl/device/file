@@ -64,58 +64,10 @@ struct file_device : public subject {
     template<typename T>
     file_device(const T& path, bool create) {
         #ifdef _WIN32
-        if constexpr (std::is_same<T, std::wstring>::value) {
-            _fd_async = CreateFileW(
-                path.c_str(),
-                GENERIC_READ|GENERIC_WRITE,
-                FILE_SHARE_READ|FILE_SHARE_WRITE,
-                NULL,
-                (create ? CREATE_ALWAYS : OPEN_EXISTING),
-                FILE_FLAG_OVERLAPPED|FILE_FLAG_SEQUENTIAL_SCAN,
-                NULL);
-        } else if constexpr (std::is_same<T, std::string>::value) {
-            _fd_async = CreateFileW(
-                osl::utf8_to_win32(path).c_str(),
-                GENERIC_READ|GENERIC_WRITE,
-                FILE_SHARE_READ|FILE_SHARE_WRITE,
-                NULL,
-                (create ? CREATE_ALWAYS : OPEN_EXISTING),
-                FILE_FLAG_OVERLAPPED|FILE_FLAG_SEQUENTIAL_SCAN,
-                NULL);
-        }
-        if (_fd_async == INVALID_HANDLE_VALUE) {
-            ERR << path << L", _fd_async CreateFile failed: " << GetLastError();
-            return;
-        }
-
-        if constexpr (std::is_same<T, std::wstring>::value) {
-            _fd_sync = CreateFileW(
-                path.c_str(),
-                GENERIC_READ|GENERIC_WRITE,
-                FILE_SHARE_READ|FILE_SHARE_WRITE,
-                NULL,
-                OPEN_EXISTING,
-                FILE_ATTRIBUTE_NORMAL,
-                NULL);
-        } else if constexpr (std::is_same<T, std::string>::value) {
-            _fd_sync = CreateFileW(
-                osl::utf8_to_win32(path).c_str(),
-                GENERIC_READ|GENERIC_WRITE,
-                FILE_SHARE_READ|FILE_SHARE_WRITE,
-                NULL,
-                OPEN_EXISTING,
-                FILE_ATTRIBUTE_NORMAL,
-                NULL);
-        }
-        if (_fd_sync == INVALID_HANDLE_VALUE) {
-            ERR << path << L", _fd_sync CreateFile failed: " << GetLastError();
-            return;
-        }
+        _fd_async = osl::get_file_handle(path, true, create);
+        _fd_sync = osl::get_file_handle(path);
         #else
-        int flags = 0|O_RDWR ;
-        if (create) {
-            flags |= O_CREAT;
-        }
+        int flags = (create ? O_CREAT : 0)|O_RDWR ;
         _fd_async = open(path.c_str(), flags, 0640);
         if (_fd_async < 0) {
             ERR << path << L", error: " << strerror(errno);
@@ -270,7 +222,7 @@ struct file_device : public subject {
         }
         return nBytesWritten;
     }
-    #else 
+    #else
     virtual int32_t read_sync(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override {
         return read(_fd_async, (void *)b, l);
     }
