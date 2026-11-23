@@ -7,7 +7,6 @@ ListView {
     clip: true
     spacing: appSpacing
     currentIndex: -1
-    interactive: false
     delegate: Rectangle {
         id: listDelegate
         // radius: 3

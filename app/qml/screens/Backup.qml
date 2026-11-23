@@ -2,18 +2,21 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Dialogs
 import QtQuick.Controls
+import QtQuick.Controls.Material
 import "qrc:/components"
 
 Rectangle {
+    id: root
     radius: 3
     border.width: 1
     border.color: borderColor
     color: Material.background
-    width: parent.width
-    height: parent.height
+    width: parent ? parent.width : 800
+    height: parent ? parent.height : 600
     clip: true
 
     SplitView {
+        id: mainSplitView
         anchors.top: parent.top
         anchors.bottom: fxcFooter.top
         anchors.left: parent.left
@@ -21,60 +24,71 @@ Rectangle {
         orientation: Qt.Horizontal
 
         Item {
+            id: conversionPanel
             clip: true
-            SplitView.preferredWidth: parent.width * 0.60
-            List {
-                id: devlist
-                width: parent.width
-                height: parent.height * 0.85
-                model: diskListModel
-                Connections {
-                    target: diskListModel
-                    function onTransferChanged(transfer) {}
-                }
-            }
-            Rectangle {
-                id: actionsRect
-                width: parent.width
-                anchors.top: devlist.bottom
-                height: parent.height * 0.15
-                color: Material.background
-                Column {
-                    clip: true
-                    anchors.fill: parent
-                    spacing: appSpacing * 2
-                    FileFolderSelector {
-                        id: destinationSelector
-                        height: 32
-                        width: 380
-                        isFolderSelector: true
-                        image: "qrc:/folder.png"
-                        placeholder: "Destination"
-                        anchors.horizontalCenter: parent.horizontalCenter
-                    }
-                    Row {
-                        width: 240
-                        height: 32
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        ButtonX {
-                            id: startButton
-                            width: 120
-                            text: "Start"
-                            height: parent.height
-                            enabled: (diskListModel.transfer === 0)
-                            onButtonXClicked: {
-                                diskListModel.convertSelectedItemsToVirtualDisks(
-                                    destinationSelector.getText())
-                            }
+            SplitView.preferredWidth: mainSplitView.width * 0.60
+            SplitView.minimumWidth: 350
+            SplitView.fillWidth: true
+            ColumnLayout {
+                anchors.fill: parent
+                spacing: 0
+                List {
+                    id: devlist
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    model: diskListModel
+                    Connections {
+                        target: diskListModel
+                        function onTransferChanged(transfer) {
+                            // Transfer state is reflected by the UI.
                         }
-                        ButtonX {
-                            id: cancelbutton
-                            width: 120
-                            text: "Cancel"
-                            height: parent.height
-                            enabled: (diskListModel.transfer !== 0)
-                            onButtonXClicked: {
-                                diskListModel.stop = true;
+                    }
+                }
+                Rectangle {
+                    id: actionsRect
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 115
+
+                    color: Material.background
+                    ColumnLayout {
+                        anchors.fill: parent
+                        anchors.margins: 5
+                        spacing: appSpacing
+                        FileFolderSelector {
+                            id: destinationSelector
+                            Layout.alignment: Qt.AlignHCenter
+                            Layout.preferredWidth: 380
+                            Layout.maximumWidth: parent.width
+                            Layout.preferredHeight: 32
+                            isFolderSelector: true
+                            image: "qrc:/folder.png"
+                            placeholder: "Destination"
+                        }
+                        RowLayout {
+                            Layout.alignment: Qt.AlignHCenter
+                            spacing: 0
+                            ButtonX {
+                                id: startButton
+                                Layout.preferredWidth: 120
+                                Layout.preferredHeight: 32
+                                text: "Start"
+                                enabled: diskListModel.transfer === 0
+                                         && destinationSelector.getText().trim().length > 0
+                                onButtonXClicked: {
+                                    diskListModel.convertSelectedItemsToVirtualDisks(
+                                        destinationSelector.getText().trim()
+                                    )
+                                }
+                            }
+                            ButtonX {
+                                id: cancelButton
+                                Layout.preferredWidth: 120
+                                Layout.preferredHeight: 32
+                                text: "Cancel"
+                                enabled: diskListModel.transfer !== 0
+                                onButtonXClicked: {
+                                    diskListModel.stop = true
+                                }
                             }
                         }
                     }
@@ -82,136 +96,204 @@ Rectangle {
             }
         }
         Item {
-            GroupBox {
-                id: mountGroup
-                title: "Mount"
-                clip: true
-                anchors.top: parent.top
-                anchors.left: parent.left
-                anchors.right: parent.right
+            id: rightPanel
+            SplitView.preferredWidth: mainSplitView.width * 0.40
+            SplitView.minimumWidth: 300
+            ColumnLayout {
+                anchors.fill: parent
                 anchors.margins: 5
-                ColumnLayout {
-                    spacing: appSpacing
-                    GroupBox {
-                        title: "Mode"
-                        RowLayout {
-                            RadioButton {
-                                text: "Read-Only"
-                                checked: true
-                                Layout.maximumHeight: 35
+                spacing: 8
+                GroupBox {
+                    id: mountGroup
+                    title: "Mount"
+                    Layout.fillWidth: true
+                    Layout.fillHeight: false
+                    clip: true
+                    ColumnLayout {
+                        anchors.fill: parent
+                        spacing: appSpacing
+                        // Mount mode
+                        GroupBox {
+                            title: "Mode"
+                            Layout.fillWidth: true
+                            ButtonGroup {
+                                id: modeGroup
                             }
-                            RadioButton {
-                                text: "Read-Write"
-                                Layout.maximumHeight: 35
+                            RowLayout {
+                                anchors.fill: parent
+                                spacing: appSpacing
+                                RadioButton {
+                                    id: readOnlyMode
+                                    text: "Read-Only"
+                                    checked: true
+                                    ButtonGroup.group: modeGroup
+                                    Layout.maximumHeight: 35
+                                }
+                                RadioButton {
+                                    id: readWriteMode
+                                    text: "Read-Write"
+                                    ButtonGroup.group: modeGroup
+                                    Layout.maximumHeight: 35
+                                }
                             }
                         }
-                    }
-                    GroupBox {
-                        title: "Write"
+                        GroupBox {
+                            title: "Write"
+                            Layout.fillWidth: true
+                            ButtonGroup {
+                                id: writeGroup
+                            }
+                            RowLayout {
+                                anchors.fill: parent
+                                spacing: appSpacing
+                                RadioButton {
+                                    id: type1Mode
+                                    text: "Type1"
+                                    ButtonGroup.group: writeGroup
+                                    Layout.maximumHeight: 35
+                                }
+                                RadioButton {
+                                    id: type2Mode
+                                    text: "Type2"
+                                    checked: true
+                                    ButtonGroup.group: writeGroup
+                                    Layout.maximumHeight: 35
+                                }
+                                RadioButton {
+                                    id: directMode
+                                    text: "Direct"
+                                    ButtonGroup.group: writeGroup
+                                    Layout.maximumHeight: 35
+                                }
+                            }
+                        }
                         RowLayout {
+                            Layout.fillWidth: true
                             spacing: appSpacing
-                            RadioButton {
-                                text: "Type1"
+                            Label {
+                                text: "Drive:"
+                            }
+                            ComboBox {
+                                id: driveSelector
+                                model: ["Z:", "Y:", "X:"]
+                                Layout.preferredWidth: 75
                                 Layout.maximumHeight: 35
                             }
-                            RadioButton {
-                                text: "Type2"
-                                checked: true
-                                Layout.maximumHeight: 35
+                            Label {
+                                text: "Partition:"
                             }
-                            RadioButton {
-                                text: "Direct"
+                            TextField {
+                                id: partitionField
+                                text: "0"
+                                Layout.preferredWidth: 55
                                 Layout.maximumHeight: 35
+                                validator: IntValidator {
+                                    bottom: 0
+                                }
+                                inputMethodHints: Qt.ImhDigitsOnly
                             }
                         }
-                    }
-                    RowLayout {
-                        spacing: appSpacing
-                        Label {
-                            text: "Drive:"
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: appSpacing
+                            Label {
+                                text: "Size:"
+                            }
+                            TextField {
+                                id: sizeField
+                                Layout.preferredWidth: 65
+                                Layout.maximumHeight: 35
+                                placeholderText: "Size"
+                                validator: IntValidator {
+                                    bottom: 0
+                                }
+                                inputMethodHints: Qt.ImhDigitsOnly
+                            }
+                            CheckBox {
+                                id: encryptCheck
+                                text: "Encrypt"
+                            }
                         }
-                        ComboBox {
-                            model: ["Z:", "Y:", "X:"]
-                            Layout.maximumWidth: 70
-                            Layout.maximumHeight: 35
-                        }
-                        Label {
-                            text: "Partition:"
-                        }
-                        TextField {
-                            text: "0"
-                            Layout.maximumWidth: 50
-                            Layout.maximumHeight: 35
-                            inputMethodHints: Qt.ImhDigitsOnly
-                        }
-                    }
-                    RowLayout {
-                        spacing: appSpacing
-                        Label {
-                            text: "Size:"
-                        }
-                        TextField {
-                            Layout.maximumWidth: 50
-                            Layout.maximumHeight: 35
-                        }
-                        CheckBox {
-                            text: "Encrypt"
-                        }
-                    }
-                    Button {
-                        text: "Mount"
-                        Layout.alignment: Qt.AlignCenter
-                        onClicked: function() {
-                            recoverManager.imageFile = imagePath.text
-                            recoverManager.mount()
+                        Button {
+                            id: mountButton
+                            text: "Mount"
+                            Layout.alignment: Qt.AlignHCenter
+                            enabled: partitionField.acceptableInput
+                                     && sizeField.acceptableInput
+                            onClicked: {
+                                if (partitionField.text.trim().length === 0)
+                                    return
+                                if (sizeField.text.trim().length === 0)
+                                    return
+                                recoverManager.imageFile = source.text.trim()
+                                recoverManager.mount()
+                            }
                         }
                     }
                 }
-            }
-            GroupBox {
-                id: imageGroup
-                title: "Image"
-                clip: true
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.top: mountGroup.bottom
-                anchors.margins: 5
-                ColumnLayout {
-                    spacing: appSpacing
-                    RowLayout {
-                        spacing: 3
-                        Label {
-                            text: "Source:"
+                GroupBox {
+                    id: imageGroup
+                    title: "Image"
+                    Layout.fillWidth: true
+                    Layout.fillHeight: false
+                    clip: true
+                    ColumnLayout {
+                        anchors.fill: parent
+                        spacing: appSpacing
+                        // Source image
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: 3
+                            Label {
+                                text: "Source:"
+                            }
+                            TextField {
+                                id: source
+                                Layout.fillWidth: true
+                                Layout.maximumHeight: 32
+                                placeholderText: "Image file path"
+                                selectByMouse: true
+                            }
                         }
-                        TextField {
-                            id: source
-                            Layout.maximumHeight: 32
-                            placeholderText: "image"
-                            inputMethodHints: Qt.ImhDigitsOnly
-                            Layout.minimumWidth: imageGroup.width * 0.65
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: 3
+                            Label {
+                                text: "Target:"
+                            }
+                            TextField {
+                                id: target
+                                Layout.fillWidth: true
+                                Layout.maximumHeight: 32
+                                placeholderText: "Block device"
+                                selectByMouse: true
+                            }
+                        }
+                        Button {
+                            id: recoverButton
+                            text: "Recover"
+                            Layout.alignment: Qt.AlignHCenter
+                            Layout.preferredWidth: 110
+                            Layout.preferredHeight: 36
+                            enabled: source.text.trim().length > 0
+                                     && target.text.trim().length > 0
+                                     && diskListModel.transfer === 0
+                            onClicked: {
+                                if (source.text.trim().length === 0
+                                        || target.text.trim().length === 0) {
+                                    return
+                                }
+                                diskListModel.recoverVirtualDisk(
+                                    source.text.trim(),
+                                    target.text.trim()
+                                )
+                            }
                         }
                     }
-                    RowLayout {
-                        Label {
-                            text: "Target:"
-                        }
-                        TextField {
-                            id: target
-                            Layout.maximumHeight: 32
-                            placeholderText: "block device"
-                            inputMethodHints: Qt.ImhDigitsOnly
-                            Layout.minimumWidth: imageGroup.width * 0.65
-                        }
-                    }
-                    Button {
-                        text: "Recover"
-                        Layout.maximumWidth: 110
-                        Layout.maximumHeight: 58
-                        Layout.alignment: Qt.AlignCenter
-                        onClicked: function() {
-                            diskListModel.recoverVirtualDisk(source.text, target.text);
-                        }
-                    }
+                }
+                Item {
+                    Layout.fillHeight: true
                 }
             }
         }
@@ -220,7 +302,6 @@ Rectangle {
     FxcFooter {
         id: fxcFooter
         height: 25
-        //width: parent.width
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom

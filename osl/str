@@ -275,6 +275,7 @@ inline auto sim_match(const T& a, const T& b) {
     return (int)(((double)same/(diff+same)) * 100);
 }
 
+#if defined(_WIN32)
 inline std::wstring utf8_to_win32(const std::string& utf8) {
     thread_local std::wstring buffer;
     int size = MultiByteToWideChar(
@@ -326,6 +327,7 @@ inline std::string win32_to_utf8(const std::wstring& wstr) {
         nullptr);
     return buffer;
 }
+#endif
 
 } // namespace
 
