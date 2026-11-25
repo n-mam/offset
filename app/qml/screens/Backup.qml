@@ -26,7 +26,7 @@ Rectangle {
         Item {
             id: conversionPanel
             clip: true
-            SplitView.preferredWidth: mainSplitView.width * 0.60
+            SplitView.preferredWidth: mainSplitView.width * 0.50
             SplitView.minimumWidth: 350
             SplitView.fillWidth: true
             ColumnLayout {
@@ -48,7 +48,6 @@ Rectangle {
                     id: actionsRect
                     Layout.fillWidth: true
                     Layout.preferredHeight: 115
-
                     color: Material.background
                     ColumnLayout {
                         anchors.fill: parent
@@ -97,7 +96,7 @@ Rectangle {
         }
         Item {
             id: rightPanel
-            SplitView.preferredWidth: mainSplitView.width * 0.40
+            SplitView.preferredWidth: mainSplitView.width * 0.50
             SplitView.minimumWidth: 300
             ColumnLayout {
                 anchors.fill: parent

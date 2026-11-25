@@ -50,7 +50,7 @@ class DiskListModel : public BaseModel {
 
     Q_INVOKABLE bool mountVirtualDisk();
     Q_INVOKABLE void recoverVirtualDisk(QString image, QString volume);
-    Q_INVOKABLE bool convertSelectedItemsToVirtualDisks(QString folder);
+    Q_INVOKABLE bool convertSelectedItemsToVirtualDisks(QString destination);
 
     Q_PROPERTY(bool stop READ getStop WRITE setStop);
     Q_PROPERTY(int transfer READ getTransfer WRITE setTransfer NOTIFY transferChanged);

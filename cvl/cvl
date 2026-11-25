@@ -1,9 +1,16 @@
 #ifndef CVL_HPP
 #define CVL_HPP
 
+#include <atomic>
 #include <memory>
 #include <thread>
+#include <string>
+#include <vector>
+#include <cctype>
 #include <chrono>
+#include <cstdint>
+#include <utility>
+#include <algorithm>
 #include <functional>
 
 #include <queue.hpp>
@@ -14,8 +21,6 @@
 #include <opencv2/highgui.hpp>
 
 namespace cvl {
-
-using TFrameCallback = std::function<void (const cv::Mat&)>;
 
 struct camera {
 
@@ -37,27 +42,46 @@ struct camera {
         stop();
     }
 
+    using TFrameCallback = std::function<void (const cv::Mat&)>;
+
     void start(TFrameCallback cbk) {
-        stop();
         _process_thread = std::thread(&camera::process_frames, this);
-        if (cbk) {
+        if (cbk) { // QT
             _frame_cbk = cbk;
             _queue_thread = std::thread(&camera::queue_frames, this);
-        } else {
+        } else { // console
             camera::queue_frames();
         }
     }
 
     void stop() {
-        _stop = true;
+        _stop.store(true,
+            std::memory_order_relaxed);
         if (_queue_thread.joinable())
             _queue_thread.join();
         if (_process_thread.joinable())
             _process_thread.join();
         _count = 0;
-        _stop = false;
+        _stop.store(false,
+            std::memory_order_relaxed);
         q_in.clear();
         q_out.clear();
+    }
+
+    auto open_capture() {
+        _cap.set(cv::CAP_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_ANY);
+        if (!cc->_source.empty()) {
+            if (std::ranges::all_of(cc->_source,
+                    [](auto c){return std::isdigit(c);})) {
+                _cap.open(std::stoi(cc->_source), cv::CAP_ANY);
+            } else {
+                _cap.open(cc->_source, cv::CAP_ANY);
+            }
+        }
+        if (!_cap.isOpened()) {
+            ERR << "queue_frames error: unable to open camera";
+            return;
+        }
     }
 
     double m_scalef = 1.0;
@@ -65,30 +89,12 @@ struct camera {
 
     private:
 
-    bool _stop = false;
-    uint32_t _count = 0;
-    cvl::queue<cv::Mat> q_in;
-    cvl::queue<cv::Mat> q_out;
-    TFrameCallback _frame_cbk;
-    std::thread _queue_thread;
-    std::thread _process_thread;
-
     void queue_frames(void) {
-        cv::VideoCapture cap;
-        cap.set(cv::CAP_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_ANY);
-        if (cc->_source.length() == 1 && isdigit(cc->_source[0])) {
-            cap.open(std::stoi(cc->_source), cv::CAP_ANY);
-        } else {
-            cap.open(cc->_source, cv::CAP_ANY);
-        }
-        if (!cap.isOpened()) {
-            ERR << "queue_frames error: unable to open camera";
-            _stop = true;
-        }
+        open_capture();
         cv::Mat f_in;
-        while (!_stop) {
-            cap >> f_in;
-            if (f_in.empty() || f_in.cols <= 0 
+        while (!_stop.load(std::memory_order_relaxed)) {
+            _cap >> f_in;
+            if (f_in.empty() || f_in.cols <= 0
                 || f_in.rows <= 0) continue;
             _count++;
             auto f_square = cvl::geometry::makeSquare(f_in);
@@ -104,18 +110,20 @@ struct camera {
                 }
                 if (cc->_waitKeyTimeout > 0) {
                     if (cv::waitKey(cc->_waitKeyTimeout) >= 0) {
-                        _stop = true;
+                        _stop.store(true,
+                            std::memory_order_relaxed);
                         break;
                     }
                 }
             }
         }
+        _cap.release();
         DBG << "queue_frames thread returning";
     }
 
     void process_frames() {
         cvl::pipeline pipeLine;
-        while (!_stop) {
+        while (!_stop.load(std::memory_order_relaxed)) {
             auto frame = q_in.dequeue();
             if (frame.empty()) {
                 std::this_thread::sleep_for(
@@ -129,6 +137,15 @@ struct camera {
         }
         DBG << "process_frames thread returning";
     }
+
+    uint32_t _count = 0;
+    cv::VideoCapture _cap;
+    cvl::queue<cv::Mat> q_in;
+    cvl::queue<cv::Mat> q_out;
+    TFrameCallback _frame_cbk;
+    std::thread _queue_thread;
+    std::thread _process_thread;
+    std::atomic<bool> _stop = {false};
 };
 
 inline auto entry(std::vector<std::string> arguments) {
