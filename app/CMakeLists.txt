@@ -52,7 +52,7 @@ set_property(TARGET offset PROPERTY CXX_STANDARD 23)
 
 target_compile_definitions(offset PRIVATE ${PCL_DEFINITIONS})
 
-target_include_directories(offset PRIVATE 
+target_include_directories(offset PRIVATE
     ${PCL_INCLUDE_DIRS}
     ${CMAKE_CURRENT_SOURCE_DIR}/models
     ${CMAKE_CURRENT_SOURCE_DIR}/models/vtk

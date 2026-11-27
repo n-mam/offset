@@ -1,6 +1,7 @@
 #ifndef PIPELINE_HPP
 #define PIPELINE_HPP
 
+#include <atomic>
 #include <vector>
 #include <chrono>
 #include <fstream>
@@ -15,18 +16,27 @@ namespace cvl {
 
 struct pipeline {
 
-    pipeline() {
+    enum stage {
+        face_detection = 1u << 0,
+        face_recognition = 1u << 1,
+        object_detection = 1u << 2,
+        bgk_subtraction = 1u << 3,
+        length_detection = 1u << 4,
+    };
+
+    pipeline(spcc cc) {
+        _cc = cc;
         _tracker = std::make_unique<cvl::Tracker>();
         _faceDetector = std::make_unique<cvl::FaceDetector>();
-        _thread = std::thread(&pipeline::detectionSaveThread, this);
         _objectDetector = std::make_unique<cvl::ObjectDetector>("person");
         _backgroundSubtractor = std::make_unique<cvl::BackgroundSubtractor>();
         _faceRecognizer = std::make_unique<cvl::FaceRecognizer>(
             std::getenv("CVL_MODELS_ROOT") + std::string("FaceRecognition/fr.csv"));
+        _thread = std::thread(&pipeline::detectionSaveThread, this);
     }
 
     ~pipeline() {
-        _stop = true;
+        _stop.store(true, std::memory_order_relaxed);
         if (_thread.joinable()) {
             _thread.join();
         }
@@ -59,8 +69,8 @@ struct pipeline {
         return filtered_contours;
     }
 
-    auto detectMotion(cv::Mat& frame, spcc cc) {
-        auto bbs = _backgroundSubtractor->Detect(frame, cc);
+    auto detectMotion(cv::Mat& frame) {
+        auto bbs = _backgroundSubtractor->Detect(frame,_cc);
         for (const auto& bb : bbs) {
             cv::rectangle(frame, bb, cv::Scalar(0, 255, 0), 1);
             cv::putText(frame, std::to_string((int)(bb.width * bb.height)),
@@ -84,51 +94,46 @@ struct pipeline {
         cv::drawContours(frame, filtered_contours, -1, cv::Scalar(0, 255, 0), 2);
     }
 
-    auto detectFaces(cv::Mat& frame, spcc cc) {
-        return _faceDetector->Detect(frame, cc);
+    auto detectFaces(cv::Mat& frame) {
+        return _faceDetector->Detect(frame, _cc);
     }
 
-    auto detectObjects(cv::Mat& frame, spcc cc) {
-        return _objectDetector->Detect(frame, cc);
+    auto detectObjects(cv::Mat& frame) {
+        return _objectDetector->Detect(frame, _cc);
     }
 
-    auto faceRecognition(cv::Mat& frame, spcc cc) {
-        return _faceRecognizer->predict(frame, cc);
+    auto faceRecognition(cv::Mat& frame) {
+        return _faceRecognizer->predict(frame, _cc);
     }
 
-    auto execute(cv::Mat& frame, spcc cc) {
+    auto execute(cv::Mat& frame) {
         if (frame.empty()) return;
         Detections detections;
-        int stages = cc->_stages;
-        if (cc->_flags & 2) {
-            _tracker->updateTrackingContexts(frame, cc);
+        int stages = _cc->_stages;
+        if (_cc->_flags & 2) {
+            _tracker->updateTrackingContexts(frame, _cc);
         }
-        if (stages & 1) {
-            detections = detectFaces(frame, cc);
+        if (stages & stage::face_detection) {
+            detections = detectFaces(frame);
         }
-        if (stages & 2) {
-            detections = detectObjects(frame, cc);
+        if (stages & stage::object_detection) {
+            detections = detectObjects(frame);
         }
-        if (stages & 4) {
-            detections = detectMotion(frame, cc);
+        if (stages & stage::bgk_subtraction) {
+            detections = detectMotion(frame);
         }
-        if (stages & 8) {
-
-        }
-        if (stages & 16) {
+        if (stages & stage::length_detection) {
             detectLength(frame);
         }
 
         cvl::Detector::FilterDetections(detections, frame);
-        _save_path = cc->_resultsFolder;
-        _save = (bool)cc->_resultsFolder.length();
 
         for (auto i = 0; i < detections.size(); i++) {
             std::string label;
             cvl::DetectionResult r;
             const auto& roi = detections[i];
             r._mat = frame(roi).clone();
-            if (cc->_flags & 2) {
+            if (_cc->_flags & stage::object_detection) {
                 // match this detection with all tracking contexts
                 if (_tracker->matchDetectionWithTrackingContext(roi, frame)) {
                     label += "T ";
@@ -136,44 +141,34 @@ struct pipeline {
                     _tracker->addNewTrackingContext(roi, frame);
                 }
             }
-            if ((stages & 8) && (stages & 1)) {
-                const auto& [id, confidence] = faceRecognition(r._mat, cc);
+            if ((stages & stage::face_detection) && (stages & stage::face_recognition)) {
+                const auto& [id, confidence] = faceRecognition(r._mat);
                 if (id > 0 && confidence > 0) {
-                    label += _faceRecognizer->getTagFromId(id) + ": " + geometry::toStringWithPrecision<2>(confidence);
+                    label += _faceRecognizer->getTagFromId(id) + ": " +
+                        geometry::toStringWithPrecision<2>(confidence);
                 }
             }
-            if (_save) {
+            if (!_cc->_resultsFolder.empty()) {
                 r._stages = stages;
                 r._ts = duration_cast<std::chrono::microseconds>(
                     std::chrono::system_clock::now().time_since_epoch()).count();
                 _detectionsQueue.enqueue(r);
             }
-            cv::rectangle(frame, roi, cv::Scalar(0, 255, 0), cc->_bbThickness);
-            cv::putText(frame, label, cv::Point((int)roi.x, (int)(roi.y - 5)), cv::FONT_HERSHEY_SIMPLEX,
-                    0.5, cv::Scalar(0, 0, 255), cc->_bbThickness);
+            cv::rectangle(frame, roi, cv::Scalar(0, 255, 0), _cc->_bbThickness);
+            cv::putText(frame, label, cv::Point((int)roi.x, (int)(roi.y - 5)),
+                    cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 255), _cc->_bbThickness);
         }
     }
 
     protected:
-
-    bool _stop = false;
-    bool _save = false;
-    std::thread _thread;
-    std::string _save_path;
-    std::unique_ptr<cvl::Tracker> _tracker = nullptr;
-    cvl::queue<cvl::DetectionResult> _detectionsQueue;
-    std::unique_ptr<cvl::FaceRecognizer> _faceRecognizer;
-    std::unique_ptr<cvl::FaceDetector> _faceDetector = nullptr;
-    std::unique_ptr<cvl::ObjectDetector> _objectDetector = nullptr;
-    std::unique_ptr<cvl::BackgroundSubtractor> _backgroundSubtractor = nullptr;
 
     auto compute_ema(double current, double previous, double alpha) {
         return alpha * current + (1.0 - alpha) * previous;
     }
 
     void detectionSaveThread() {
-        while (!_stop) {
-            if (!_save || _save_path.length() == 0) {
+        while (!_stop.load(std::memory_order_relaxed)) {
+            if (!_cc->_resultsFolder.empty()) {
                 std::this_thread::sleep_for(std::chrono::milliseconds(350));
                 continue;
             }
@@ -182,10 +177,20 @@ struct pipeline {
                 std::this_thread::sleep_for(std::chrono::milliseconds(50));
                 continue;
             }
-            cvl::geometry::saveMatAsImage(d._mat, _save_path + "/" +
-                    std::to_string(d._ts), ".jpg");
+            cvl::geometry::saveMatAsImage(d._mat, _cc->_resultsFolder
+                    + "/" + std::to_string(d._ts), ".jpg");
         }
     }
+
+    spcc _cc;
+    std::thread _thread;
+    std::atomic<bool> _stop = {false};
+    std::unique_ptr<cvl::Tracker> _tracker = nullptr;
+    cvl::queue<cvl::DetectionResult> _detectionsQueue;
+    std::unique_ptr<cvl::FaceRecognizer> _faceRecognizer;
+    std::unique_ptr<cvl::FaceDetector> _faceDetector = nullptr;
+    std::unique_ptr<cvl::ObjectDetector> _objectDetector = nullptr;
+    std::unique_ptr<cvl::BackgroundSubtractor> _backgroundSubtractor = nullptr;
 };
 
 }

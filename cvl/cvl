@@ -122,7 +122,7 @@ struct camera {
     }
 
     void process_frames() {
-        cvl::pipeline pipeLine;
+        cvl::pipeline pipeLine(cc);
         while (!_stop.load(std::memory_order_relaxed)) {
             auto frame = q_in.dequeue();
             if (frame.empty()) {
@@ -131,7 +131,7 @@ struct camera {
                 continue;
             }
             if (cc->_stages) {
-                pipeLine.execute(frame, cc);
+                pipeLine.execute(frame);
             }
             q_out.enqueue(frame);
         }

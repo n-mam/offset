@@ -6,9 +6,9 @@
 - Camera tool<br/>
 - 2D Floor planner tool<br/>
 - Point cloud visualizer<br/>
+- File diff tool (LCS based)<br/>
 - ESKF/Mahony AHRS non-linear visualization<br/>
 - Block level backup tool(vhd/vhdx stream generator)<br/>
-- File diff tool (LCS based)<br/>
 
 #### vcpkg dependencies
 
@@ -83,7 +83,7 @@ qml\Release\offset.exe
 ```sh
 windeployqt --qmldir E:\offset\app\qml E:\offset\build\app\Release\offset.exe
 ```
-vc redist is bundled with package zip; in case your system does not have that installed already
+vc redist should be installed on the system
 
 #### Contact:
 Telegram: https://t.me/neelabhm
